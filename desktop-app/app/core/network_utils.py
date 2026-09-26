@@ -15,6 +15,18 @@ CANDIDATE_PORTS = [21, 22, 23, 80, 81, 443, 554, 3389, 8000, 8080, 8899, 37777]
 PING_TIMEOUT_MS = 500
 MAX_HOSTS = 65534  # hard cap so a typo like /8 can't lock up the app
 
+# A GUI (--windowed) PyInstaller build has no console of its own, so every
+# subprocess.run() would otherwise pop up its own flashing console window on
+# Windows — with a 254-host sweep that looked like "dozens of new windows
+# opening". CREATE_NO_WINDOW suppresses that; it's a no-op on other OSes.
+_IS_WINDOWS = platform.system().lower() == "windows"
+_NO_WINDOW_KWARGS = {"creationflags": subprocess.CREATE_NO_WINDOW} if _IS_WINDOWS else {}
+
+# Reverse DNS lookups have no per-call timeout in the socket module; without
+# a default, a single unreachable DNS server could stall a host for a long
+# time. This bounds every blocking socket call made from this module.
+socket.setdefaulttimeout(1.5)
+
 
 class InvalidTargetError(ValueError):
     pass
@@ -68,14 +80,17 @@ def parse_targets(spec: str) -> list[str]:
 
 def _ping_once(ip: str) -> bool:
     """Shells out to the OS ping command — no raw sockets, so no admin/root needed."""
-    system = platform.system().lower()
-    if system == "windows":
+    if _IS_WINDOWS:
         cmd = ["ping", "-n", "1", "-w", str(PING_TIMEOUT_MS), ip]
     else:
         cmd = ["ping", "-c", "1", "-W", str(max(1, PING_TIMEOUT_MS // 1000)), ip]
     try:
         result = subprocess.run(
-            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+            **_NO_WINDOW_KWARGS,
         )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, OSError):
@@ -84,11 +99,13 @@ def _ping_once(ip: str) -> bool:
 
 def _read_arp_table() -> dict[str, str]:
     """Reads the OS's already-populated ARP/neighbor cache (post-ping) for MACs."""
-    system = platform.system().lower()
-    cmd = ["arp", "-a"]
     try:
         output = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=5
+            ["arp", "-a"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            **_NO_WINDOW_KWARGS,
         ).stdout
     except OSError:
         return {}
@@ -101,7 +118,6 @@ def _read_arp_table() -> dict[str, str]:
         mac_match = mac_re.search(line)
         if ip_match and mac_match:
             mac_by_ip[ip_match.group(1)] = mac_match.group(1).replace("-", ":").lower()
-    del system  # (kept for clarity that both platforms use `arp -a`)
     return mac_by_ip
 
 
@@ -112,8 +128,11 @@ def ping_sweep(targets: list[str], max_workers: int = 128) -> list[str]:
         futures = {pool.submit(_ping_once, ip): ip for ip in targets}
         for future in as_completed(futures):
             ip = futures[future]
-            if future.result():
-                alive.append(ip)
+            try:
+                if future.result():
+                    alive.append(ip)
+            except Exception:
+                continue
     return alive
 
 

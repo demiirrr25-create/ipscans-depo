@@ -33,9 +33,12 @@ class WmiResult:
 def query_local_machine() -> WmiResult | None:
     if not _HAS_WMI:
         return None
-    connection = _wmi.WMI()
-    os_info = next(iter(connection.Win32_OperatingSystem()), None)
-    bios_info = next(iter(connection.Win32_BIOS()), None)
+    try:
+        connection = _wmi.WMI()
+        os_info = next(iter(connection.Win32_OperatingSystem()), None)
+        bios_info = next(iter(connection.Win32_BIOS()), None)
+    except Exception:
+        return None
     if os_info is None and bios_info is None:
         return None
     return WmiResult(

@@ -7,7 +7,7 @@ try:
     from mac_vendor_lookup import MacLookup
 
     _mac_lookup = MacLookup()
-except ImportError:  # library not installed yet — degrade gracefully
+except Exception:  # library missing, or its bundled OUI file didn't ship — degrade gracefully
     _mac_lookup = None
 
 
@@ -17,5 +17,5 @@ def lookup_vendor(mac: str | None) -> str | None:
         return None
     try:
         return _mac_lookup.lookup(mac)
-    except (KeyError, ValueError):
+    except Exception:
         return None

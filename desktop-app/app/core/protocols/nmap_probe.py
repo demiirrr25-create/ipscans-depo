@@ -35,9 +35,9 @@ def is_available() -> bool:
 def query(ip: str, with_os_detection: bool = False) -> NmapResult | None:
     if not _HAS_NMAP:
         return None
-    scanner = nmap.PortScanner()
     arguments = "-sV --version-light -T4" + (" -O" if with_os_detection else "")
     try:
+        scanner = nmap.PortScanner()  # raises if the `nmap` binary isn't on PATH
         scanner.scan(hosts=ip, arguments=arguments, timeout=20)
     except Exception:
         return None

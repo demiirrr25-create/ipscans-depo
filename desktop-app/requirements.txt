@@ -4,8 +4,11 @@ PyQt6>=6.6
 # MAC vendor (OUI) lookup — bundled offline database, no network calls
 mac-vendor-lookup>=0.1.12
 
-# SNMP v1/v2c GET (sysDescr, sysName, serial number OIDs)
-pysnmp>=6.1
+# SNMP support is intentionally NOT pinned here: modern pysnmp (>=6) dropped
+# the classic synchronous hlapi our code targets, and older pysnmp releases
+# don't run on current Python (they import the removed stdlib `imp` module).
+# snmp_probe.py degrades to a safe no-op when pysnmp isn't importable —
+# install a compatible pysnmp build yourself if you need this protocol.
 
 # UPnP/SSDP device discovery
 upnpclient>=1.0

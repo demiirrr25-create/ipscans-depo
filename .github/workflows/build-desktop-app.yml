@@ -29,7 +29,10 @@ jobs:
 
       - name: Build one-file .exe
         run: |
-          pyinstaller --name ipscans-network-scanner --onefile --windowed main.py
+          pyinstaller --name ipscans-network-scanner --onefile --windowed `
+            --icon=assets/icon.ico `
+            --add-data "assets;assets" `
+            main.py
 
       - name: Smoke test the packaged .exe
         run: |

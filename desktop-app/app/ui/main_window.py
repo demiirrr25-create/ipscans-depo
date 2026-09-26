@@ -25,6 +25,7 @@ from app.core import network_utils
 from app.core.models import Device
 from app.core.network_utils import InvalidTargetError
 from app.core.scanner import ScanOptions
+from app.ui.resources import load_logo_pixmap
 from app.ui.styles import DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput, section_label
 from app.workers.scan_worker import ScanWorker
@@ -74,33 +75,50 @@ class MainWindow(QWidget):
 
     def _build_header(self) -> QWidget:
         bar = QFrame(objectName="TitleBar")
-        bar.setFixedHeight(46)
+        bar.setFixedHeight(60)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(16, 0, 16, 0)
-        layout.addWidget(QLabel("ipscans  •  Ağ Tarayıcı", objectName="TitleText"))
+        layout.setContentsMargins(20, 0, 20, 0)
+        layout.setSpacing(12)
+
+        logo = QLabel()
+        logo.setPixmap(load_logo_pixmap(32))
+        logo.setFixedSize(32, 32)
+        layout.addWidget(logo)
+
+        titles = QVBoxLayout()
+        titles.setSpacing(0)
+        title = QLabel("ipscans", objectName="TitleText")
+        subtitle = QLabel("Derin Ağ Tarama Aracı", objectName="SubtitleText")
+        titles.addWidget(title)
+        titles.addWidget(subtitle)
+        layout.addLayout(titles)
+
         layout.addStretch(1)
         return bar
 
     def _build_scan_controls(self) -> QWidget:
-        wrap = QWidget()
-        layout = QVBoxLayout(wrap)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        card = QFrame(objectName="OptionsCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
 
         layout.addWidget(section_label("Tarama Hedefi"))
 
         row = QHBoxLayout()
+        row.setSpacing(10)
         self.target_input = TargetInput()
         row.addWidget(self.target_input, stretch=1)
 
-        self.scan_btn = QPushButton("Taramayı Başlat", objectName="PrimaryButton")
-        self.stop_btn = QPushButton("Durdur", objectName="GhostButton")
+        self.scan_btn = QPushButton("▶  Taramayı Başlat", objectName="PrimaryButton")
+        self.stop_btn = QPushButton("■  Durdur", objectName="GhostButton")
         self.stop_btn.setEnabled(False)
         row.addWidget(self.scan_btn)
         row.addWidget(self.stop_btn)
         layout.addLayout(row)
 
         options_row = QHBoxLayout()
+        options_row.setSpacing(16)
+        options_row.addWidget(section_label("Protokoller"))
         self.snmp_check = QCheckBox("SNMP")
         self.snmp_check.setChecked(True)
         self.upnp_check = QCheckBox("UPnP")
@@ -114,18 +132,19 @@ class MainWindow(QWidget):
         options_row.addStretch(1)
         layout.addLayout(options_row)
 
-        return wrap
+        return card
 
     def _build_filter_bar(self) -> QWidget:
         wrap = QWidget()
         layout = QHBoxLayout(wrap)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
 
         self.filter_edit = QLineEdit()
         self.filter_edit.setPlaceholderText(
-            "IP, üretici veya MAC adresine göre anında filtrele..."
+            "Ara: IP, üretici veya MAC adresine göre anında filtrele..."
         )
-        layout.addWidget(self.filter_edit)
+        layout.addWidget(self.filter_edit, stretch=1)
         return wrap
 
     def _build_table(self) -> QTableView:

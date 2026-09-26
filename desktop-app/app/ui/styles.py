@@ -26,9 +26,20 @@ DARK_QSS = """
 }
 
 #TitleBar QLabel#TitleText {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+#TitleBar QLabel#SubtitleText {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: -2px;
+}
+
+#OptionsCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
 }
 
 QPushButton#WindowButton {
@@ -59,6 +70,25 @@ QRadioButton::indicator:checked {
     border: 1px solid #ffffff;
     background: qradialgradient(cx:0.5, cy:0.5, radius:0.5,
         stop:0 #ffffff, stop:0.5 #ffffff, stop:0.6 transparent, stop:1 transparent);
+}
+
+QCheckBox {
+    font-size: 13px;
+    spacing: 6px;
+}
+QCheckBox::indicator {
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.04);
+}
+QCheckBox::indicator:checked {
+    border: 1px solid #ffffff;
+    background: #ffffff;
+}
+QCheckBox::indicator:disabled {
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 QLineEdit, QComboBox {
@@ -112,7 +142,7 @@ QTableView {
     font-size: 12px;
 }
 QTableView::item {
-    padding: 6px 8px;
+    padding: 8px 10px;
     border: none;
 }
 QTableView::item:selected {
@@ -155,7 +185,6 @@ QLabel#SectionLabel {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 
 QProgressBar {
