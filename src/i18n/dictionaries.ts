@@ -191,7 +191,7 @@ const dictionaries = {
       title: "Ağ Tarayıcı Masaüstü Uygulaması",
       subtitle:
         "ARP/ping, SNMP, WMI, UPnP ve Nmap ile derin ağ taraması yapan açık kaynak masaüstü aracımızı indir.",
-      badge: "Ücretsiz • Açık kaynak (Python)",
+      badge: "Ücretsiz • Kurulum gerektirmez",
       features: [
         "Yerel ağındaki tüm canlı cihazları çok iş parçacıklı taramayla bulur",
         "MAC adresi, üretici (vendor), hostname ve açık portları gösterir",
@@ -199,8 +199,8 @@ const dictionaries = {
         "Sonuçlarda bir IP'ye tıklayınca cihazın web arayüzünü tarayıcıda açar",
         "Karanlık temalı, modern PyQt6 arayüzü",
       ],
-      button: "Kaynak Kodunu İndir (.zip)",
-      note: "Python 3.10+ gerektirir. İndirdikten sonra: pip install -r requirements.txt && python main.py",
+      button: "Windows için indir (.exe)",
+      note: "Yaklaşık 47 MB. İndirdikten sonra çift tıklayıp çalıştır — Python kurulumu gerekmez. SmartScreen uyarısı verirse 'Daha fazla bilgi > Yine de çalıştır' de.",
       safe: "Yalnızca sahibi olduğun ağlarda kullan.",
     },
     blog: {
@@ -407,7 +407,7 @@ const dictionaries = {
       title: "Network Scanner Desktop App",
       subtitle:
         "Download our open-source desktop tool for deep network scanning via ARP/ping, SNMP, WMI, UPnP and Nmap.",
-      badge: "Free • Open source (Python)",
+      badge: "Free • No installation",
       features: [
         "Finds every live device on your local network with multi-threaded scanning",
         "Shows MAC address, vendor, hostname and open ports",
@@ -415,8 +415,8 @@ const dictionaries = {
         "Click any IP in the results to open the device's web UI in your browser",
         "Dark-themed, modern PyQt6 interface",
       ],
-      button: "Download Source (.zip)",
-      note: "Requires Python 3.10+. After downloading: pip install -r requirements.txt && python main.py",
+      button: "Download for Windows (.exe)",
+      note: "About 47 MB. Double-click to run after downloading — no Python install needed. If SmartScreen warns, choose 'More info > Run anyway'.",
       safe: "Only use on networks you own.",
     },
     blog: {
@@ -626,7 +626,7 @@ const dictionaries = {
       title: "Netzwerkscanner-Desktop-App",
       subtitle:
         "Lade unser Open-Source-Desktop-Tool für tiefgehende Netzwerkscans per ARP/Ping, SNMP, WMI, UPnP und Nmap herunter.",
-      badge: "Kostenlos • Open Source (Python)",
+      badge: "Kostenlos • Keine Installation",
       features: [
         "Findet jedes aktive Gerät in deinem lokalen Netzwerk per Multi-Thread-Scan",
         "Zeigt MAC-Adresse, Hersteller, Hostname und offene Ports an",
@@ -634,8 +634,8 @@ const dictionaries = {
         "Klick auf eine IP in den Ergebnissen öffnet die Web-UI des Geräts im Browser",
         "Dunkles, modernes PyQt6-Interface",
       ],
-      button: "Quellcode herunterladen (.zip)",
-      note: "Erfordert Python 3.10+. Nach dem Download: pip install -r requirements.txt && python main.py",
+      button: "Für Windows herunterladen (.exe)",
+      note: "Etwa 47 MB. Nach dem Download doppelklicken zum Ausführen — keine Python-Installation nötig. Bei SmartScreen-Warnung 'Weitere Informationen > Trotzdem ausführen' wählen.",
       safe: "Nur in Netzwerken verwenden, die dir gehören.",
     },
     blog: {
@@ -845,7 +845,7 @@ const dictionaries = {
       title: "Application de bureau — Scanner réseau",
       subtitle:
         "Téléchargez notre outil de bureau open source pour un scan réseau approfondi via ARP/ping, SNMP, WMI, UPnP et Nmap.",
-      badge: "Gratuit • Open source (Python)",
+      badge: "Gratuit • Sans installation",
       features: [
         "Trouve tous les appareils actifs sur votre réseau local via un scan multi-thread",
         "Affiche l'adresse MAC, le fabricant, le nom d'hôte et les ports ouverts",
@@ -853,8 +853,8 @@ const dictionaries = {
         "Cliquez sur une IP dans les résultats pour ouvrir l'interface web de l'appareil",
         "Interface PyQt6 moderne en thème sombre",
       ],
-      button: "Télécharger le code source (.zip)",
-      note: "Nécessite Python 3.10+. Après téléchargement : pip install -r requirements.txt && python main.py",
+      button: "Télécharger pour Windows (.exe)",
+      note: "Environ 47 Mo. Double-cliquez pour exécuter après le téléchargement — aucune installation de Python requise. Si SmartScreen avertit, choisissez 'Plus d'infos > Exécuter quand même'.",
       safe: "À utiliser uniquement sur des réseaux que vous possédez.",
     },
     blog: {
@@ -1064,7 +1064,7 @@ const dictionaries = {
       title: "Aplicación de escritorio — Escáner de red",
       subtitle:
         "Descarga nuestra herramienta de escritorio de código abierto para un escaneo de red profundo vía ARP/ping, SNMP, WMI, UPnP y Nmap.",
-      badge: "Gratis • Código abierto (Python)",
+      badge: "Gratis • Sin instalación",
       features: [
         "Encuentra todos los dispositivos activos en tu red local con escaneo multi-hilo",
         "Muestra dirección MAC, fabricante, nombre de host y puertos abiertos",
@@ -1072,8 +1072,8 @@ const dictionaries = {
         "Haz clic en una IP de los resultados para abrir la interfaz web del dispositivo",
         "Interfaz PyQt6 moderna con tema oscuro",
       ],
-      button: "Descargar código fuente (.zip)",
-      note: "Requiere Python 3.10+. Tras la descarga: pip install -r requirements.txt && python main.py",
+      button: "Descargar para Windows (.exe)",
+      note: "Unos 47 MB. Haz doble clic para ejecutar tras la descarga — no necesitas instalar Python. Si SmartScreen avisa, elige 'Más información > Ejecutar de todos modos'.",
       safe: "Úsalo solo en redes que poseas.",
     },
     blog: {
