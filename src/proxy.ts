@@ -13,6 +13,14 @@ function getPreferredLocale(request: NextRequest): string {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Next's dynamically-generated icon routes (no file extension in their
+  // URL, so the matcher below can't exclude them via ".*\\..*") must be
+  // served at the exact root path — redirecting them under /tr or /en broke
+  // both the browser tab favicon and Google's favicon discovery.
+  if (pathname === "/icon" || pathname === "/apple-icon") {
+    return NextResponse.next();
+  }
+
   const hasLocale = locales.some(
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
   );
@@ -25,5 +33,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|.*\\..*).*)"],
+  matcher: ["/((?!_next|api|icon|apple-icon|.*\\..*).*)"],
 };
