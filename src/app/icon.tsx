@@ -21,10 +21,10 @@ export default function Icon() {
           <polygon
             points="32,4 56,18 56,46 32,60 8,46 8,18"
             fill="none"
-            stroke="#00C2FF"
+            stroke="#FFFFFF"
             strokeWidth="5"
           />
-          <circle cx="32" cy="32" r="9" fill="#00F5A0" />
+          <circle cx="32" cy="32" r="9" fill="#FFFFFF" />
         </svg>
       </div>
     ),

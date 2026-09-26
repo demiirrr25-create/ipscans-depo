@@ -3,11 +3,19 @@ import type { Locale } from "@/i18n/config";
 export type Post = {
   slug: string;
   date: string;
-  title: Record<Locale, string>;
-  excerpt: Record<Locale, string>;
+  // Only tr/en are fully translated today; other locales fall back to English.
+  title: Partial<Record<Locale, string>>;
+  excerpt: Partial<Record<Locale, string>>;
   /** Static, code-authored HTML — never derived from user input. */
-  body: Record<Locale, string>;
+  body: Partial<Record<Locale, string>>;
 };
+
+export function localizedPostText(
+  field: Partial<Record<Locale, string>>,
+  locale: Locale
+): string {
+  return field[locale] ?? field.en ?? Object.values(field)[0] ?? "";
+}
 
 export const posts: Post[] = [
   {

@@ -259,28 +259,28 @@ export function SpeedTest({
           value={download}
           unit="Mbps"
           active={phase === "download"}
-          accent="#00C2FF"
+          accent="#FFFFFF"
         />
         <Gauge
           label={dict.upload}
           value={upload}
           unit="Mbps"
           active={phase === "upload"}
-          accent="#00F5A0"
+          accent="#D4D4D4"
         />
         <Gauge
           label={dict.ping}
           value={ping}
           unit="ms"
           active={phase === "ping"}
-          accent="#FF7A45"
+          accent="#A3A3A3"
         />
         <Gauge
           label="Jitter"
           value={jitter}
           unit="ms"
           active={phase === "ping"}
-          accent="#FFB020"
+          accent="#737373"
         />
       </div>
 
@@ -297,14 +297,14 @@ export function SpeedTest({
       </div>
 
       {phase === "done" && (
-        <div className="mt-8 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-5 text-center">
-          <h3 className="font-semibold text-amber-200">{dict.crossSell.title}</h3>
+        <div className="mt-8 rounded-xl border border-white/20 bg-white/[0.06] p-5 text-center">
+          <h3 className="font-semibold text-white">{dict.crossSell.title}</h3>
           <p className="mx-auto mt-1 max-w-md text-sm text-neutral-300">
             {dict.crossSell.body}
           </p>
           <Link
             href={`/${locale}/shop`}
-            className="mt-3 inline-block rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-300"
+            className="mt-3 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-neutral-200"
           >
             {dict.crossSell.cta} →
           </Link>

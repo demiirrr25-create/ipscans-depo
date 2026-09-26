@@ -128,14 +128,14 @@ body {
 .text-depth {
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.15),
-    0 2px 8px rgba(0, 194, 255, 0.15),
+    0 2px 8px rgba(255, 255, 255, 0.12),
     0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 /* Visible, high-contrast focus ring for keyboard navigation (a11y).
    Applies to every focusable element site-wide. */
 :focus-visible {
-  outline: 2px solid #00c2ff;
+  outline: 2px solid #ffffff;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -165,7 +165,7 @@ body {
   margin-top: 0.5em;
 }
 .prose-ipscans li::marker {
-  color: #00c2ff;
+  color: #ffffff;
 }
 .prose-ipscans code {
   background: rgba(255, 255, 255, 0.08);
@@ -174,7 +174,7 @@ body {
   font-size: 0.9em;
 }
 .prose-ipscans a {
-  color: #00c2ff;
+  color: #ffffff;
   text-decoration: underline;
   text-underline-offset: 2px;
 }

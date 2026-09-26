@@ -54,7 +54,7 @@ export default async function DownloadPage({
           </a>
 
           <p className="mt-4 text-xs text-neutral-500">{t.note}</p>
-          <p className="mt-2 text-xs text-amber-300/70">{t.safe}</p>
+          <p className="mt-2 text-xs text-neutral-400">{t.safe}</p>
         </div>
       </div>
     </PageShell>

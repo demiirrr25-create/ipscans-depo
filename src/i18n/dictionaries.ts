@@ -2,6 +2,9 @@ import type { Locale } from "./config";
 
 const dictionaries = {
   tr: {
+    a11y: {
+      skipToContent: "İçeriğe geç",
+    },
     meta: {
       title: "ipscans — IP Sorgulama, Ağ Tarama ve Hız Testi",
       description:
@@ -33,7 +36,7 @@ const dictionaries = {
       title: "Rakamlarla ipscans",
       items: [
         { value: "6+", label: "Ağ aracı" },
-        { value: "2", label: "Dil (TR/EN)" },
+        { value: "5", label: "Dil desteği" },
         { value: "%100", label: "Ücretsiz" },
         { value: "0", label: "Kayıt gerektirmez" },
       ],
@@ -217,6 +220,9 @@ const dictionaries = {
     },
   },
   en: {
+    a11y: {
+      skipToContent: "Skip to content",
+    },
     meta: {
       title: "ipscans — IP Lookup, Network Scanning & Speed Test",
       description:
@@ -248,7 +254,7 @@ const dictionaries = {
       title: "ipscans in numbers",
       items: [
         { value: "6+", label: "Network tools" },
-        { value: "2", label: "Languages (TR/EN)" },
+        { value: "5", label: "Languages" },
         { value: "100%", label: "Free" },
         { value: "0", label: "Sign-up needed" },
       ],
@@ -425,6 +431,660 @@ const dictionaries = {
       comingSoonTitle: "Coming Soon...",
       comingSoonBody:
         "We're building our network security and smart home hardware shop. Next-gen security cameras and installation services, launching soon.",
+    },
+  },
+  de: {
+    a11y: {
+      skipToContent: "Zum Inhalt springen",
+    },
+    meta: {
+      title: "ipscans — IP-Abfrage, Netzwerkscan & Geschwindigkeitstest",
+      description:
+        "IP-Adressabfrage, Geolokalisierung, Internet-Geschwindigkeitstest und Netzwerktools. Schnell, kostenlos und datenschutzfreundlich.",
+    },
+    nav: {
+      home: "Startseite",
+      tools: "Werkzeuge",
+      ipLookup: "IP-Abfrage",
+      dns: "DNS-Abfrage",
+      whois: "WHOIS",
+      ports: "Port-Prüfung",
+      speedTest: "Geschwindigkeitstest",
+      scan: "Netzwerkscan",
+      appDownload: "Windows-App",
+      blog: "Blog",
+      shop: "Shop",
+    },
+    hero: {
+      badge: "Netzwerktool-Plattform",
+      title: "Kenne deine IP, teste dein Netzwerk",
+      subtitle:
+        "IP-Abfrage, Geolokalisierung, Geschwindigkeitstest und Netzwerktools an einem Ort. Kostenlos und ohne Registrierung.",
+      ctaPrimary: "Meine IP finden",
+      ctaSecondary: "Geschwindigkeitstest starten",
+      yourIp: "Deine IP-Adresse",
+    },
+    stats: {
+      title: "ipscans in Zahlen",
+      items: [
+        { value: "6+", label: "Netzwerktools" },
+        { value: "5", label: "Sprachen" },
+        { value: "100%", label: "Kostenlos" },
+        { value: "0", label: "Keine Registrierung" },
+      ],
+    },
+    cta: {
+      title: "Bereit, dein Netzwerk zu erkunden?",
+      subtitle:
+        "Frage deine IP ab, miss deine Geschwindigkeit und prüfe DNS-Einträge in Sekunden.",
+      button: "Jetzt starten",
+    },
+    features: {
+      title: "Was kannst du tun?",
+      subtitle: "Verwalte alles rund um dein Netzwerk an einem Ort.",
+      items: [
+        {
+          title: "IP-Abfrage",
+          desc: "Finde Standort, ISP und Netzwerkdetails jeder IP-Adresse heraus.",
+          href: "/ip-suche",
+        },
+        {
+          title: "DNS-Abfrage",
+          desc: "Zeige A-, MX-, TXT-, NS- und weitere DNS-Einträge einer Domain an.",
+          href: "/dns-abfrage",
+        },
+        {
+          title: "WHOIS-Abfrage",
+          desc: "Erfahre Registrierungsdetails, Registrar und Daten einer Domain.",
+          href: "/whois-abfrage",
+        },
+        {
+          title: "Port-Prüfung",
+          desc: "Teste, ob gängige Ports auf einem Server offen sind.",
+          href: "/port-pruefung",
+        },
+        {
+          title: "Windows-App",
+          desc: "Lade unser kostenloses Desktop-Tool für einen echten lokalen Netzwerkscan herunter.",
+          href: "/download",
+        },
+        {
+          title: "Geschwindigkeitstest",
+          desc: "Miss Download-, Upload- und Latenzwerte (Ping).",
+          href: "/geschwindigkeitstest",
+        },
+        {
+          title: "Netzwerkscan",
+          desc: "Lerne Konzepte zu Netzwerkscans, Ports und Sicherheit.",
+          href: "/scan",
+        },
+        {
+          title: "Blog",
+          desc: "Anleitungen und Artikel zu Netzwerksicherheit und Internet.",
+          href: "/blog",
+        },
+        {
+          title: "Shop",
+          desc: "Unser Shop für Netzwerksicherheits-Hardware startet bald.",
+          href: "/shop",
+        },
+      ],
+    },
+    ipLookup: {
+      title: "IP-Abfrage",
+      subtitle:
+        "Gib eine IP-Adresse ein oder lass das Feld leer, um deine eigene abzufragen.",
+      placeholder: "z. B. 8.8.8.8",
+      button: "Abfragen",
+      myIp: "Meine IP verwenden",
+      loading: "Wird abgefragt...",
+      error: "IP-Informationen konnten nicht geladen werden. Bitte erneut versuchen.",
+      fields: {
+        ip: "IP-Adresse",
+        country: "Land",
+        region: "Region",
+        city: "Stadt",
+        isp: "Internetanbieter",
+        org: "Organisation",
+        timezone: "Zeitzone",
+        coordinates: "Koordinaten",
+      },
+      mapLabel: "Standort auf der Karte",
+    },
+    dns: {
+      title: "DNS-Abfrage",
+      subtitle:
+        "Frage die DNS-Einträge (A, AAAA, MX, TXT, NS, CNAME) einer Domain ab.",
+      placeholder: "z. B. example.com",
+      button: "Abfragen",
+      loading: "Wird abgefragt...",
+      error: "DNS-Einträge konnten nicht geladen werden. Prüfe den Domainnamen.",
+      noRecords: "Keine Einträge für diesen Typ gefunden.",
+    },
+    whois: {
+      title: "WHOIS-Abfrage",
+      subtitle:
+        "Zeige Registrierungsdetails einer Domain (Inhaber, Registrar, Daten) an.",
+      placeholder: "z. B. example.com",
+      button: "Abfragen",
+      loading: "Wird abgefragt...",
+      error: "WHOIS-Daten konnten nicht geladen werden. Prüfe den Domainnamen.",
+      fields: {
+        domain: "Domain",
+        registrar: "Registrar",
+        created: "Erstellt",
+        updated: "Aktualisiert",
+        expires: "Läuft ab",
+        status: "Status",
+        nameservers: "Nameserver",
+      },
+    },
+    ports: {
+      title: "Port-Prüfung",
+      subtitle: "Prüfe, ob gängige Ports auf einem Server offen sind.",
+      placeholder: "z. B. example.com oder 8.8.8.8",
+      button: "Prüfen",
+      loading: "Wird geprüft...",
+      error: "Prüfung fehlgeschlagen. Serveradresse überprüfen.",
+      open: "Offen",
+      closed: "Geschlossen",
+      disclaimer:
+        "Nur bei Servern verwenden, die dir gehören oder für die du eine Erlaubnis hast.",
+      crossSell: {
+        title: "Deine Kamera könnte ungeschützt sein",
+        body: "Einige offene Ports könnten zu Kamera- oder Rekorder-Diensten gehören. Unser Shop für Sicherheits-Hardware startet bald.",
+        cta: "Shop ansehen",
+      },
+    },
+    speedTest: {
+      title: "Internet-Geschwindigkeitstest",
+      subtitle: "Miss die Geschwindigkeit und Latenz deiner Verbindung.",
+      start: "Test starten",
+      running: "Test läuft...",
+      restart: "Erneut testen",
+      download: "Download",
+      upload: "Upload",
+      ping: "Ping",
+      note: "Die Ergebnisse können je nach Browser und Netzwerkbedingungen variieren.",
+      crossSell: {
+        title: "Ist dein Netzwerk langsam?",
+        body: "Unser kommender Shop bietet Netzwerk- und Sicherheits-Hardware, die hilft.",
+        cta: "Shop ansehen",
+      },
+    },
+    scan: {
+      title: "Netzwerkscan",
+      subtitle: "Was ist Netzwerk- und Portscanning und wie funktioniert es?",
+      body: "Browser erlauben aus Sicherheitsgründen keinen direkten Portscan. Ein echter Netzwerkscan erfordert Desktop-Tools oder autorisierte serverbasierte Dienste. In diesem Abschnitt lernst du Scan-Konzepte, gängige Ports und sichere Nutzungsprinzipien.",
+      disclaimer:
+        "Scanne nur Netzwerke, die dir gehören oder für die du eine Erlaubnis hast. Unbefugtes Scannen kann illegal sein.",
+    },
+    download: {
+      title: "Windows-Netzwerkscanner",
+      subtitle:
+        "Lade unser kostenloses Desktop-Tool für einen echten lokalen Netzwerkscan herunter.",
+      badge: "Kostenlos • Keine Installation",
+      features: [
+        "Findet jedes aktive Gerät in deinem lokalen Netzwerk",
+        "Zeigt MAC-Adresse und Gerätename an",
+        "Scannt gängige offene Ports auf jedem Gerät",
+        "Einzelne Datei, läuft mit .NET (Windows 10/11)",
+      ],
+      button: "Für Windows herunterladen (.exe)",
+      note: "Etwa 12 KB. Nach dem Download doppelklicken zum Ausführen. Bei SmartScreen-Warnung 'Weitere Informationen > Trotzdem ausführen' wählen.",
+      safe: "Nur in Netzwerken verwenden, die dir gehören.",
+    },
+    blog: {
+      title: "Blog",
+      subtitle: "Artikel über Netzwerke, Sicherheit und das Internet.",
+      readMore: "Weiterlesen",
+      empty: "Noch keine Beiträge. Bald verfügbar.",
+    },
+    footer: {
+      tagline: "Netzwerktools, alles an einem Ort.",
+      rights: "Alle Rechte vorbehalten.",
+    },
+    shop: {
+      title: "Shop",
+      comingSoonTitle: "Bald verfügbar...",
+      comingSoonBody:
+        "Wir bauen unseren Shop für Netzwerksicherheit und Smart-Home-Hardware auf. Sicherheitskameras der nächsten Generation und Installationsservices, bald verfügbar.",
+    },
+  },
+  fr: {
+    a11y: {
+      skipToContent: "Aller au contenu",
+    },
+    meta: {
+      title: "ipscans — Recherche IP, scan réseau et test de vitesse",
+      description:
+        "Recherche d'adresse IP, géolocalisation, test de vitesse internet et outils réseau. Rapide, gratuit et respectueux de la vie privée.",
+    },
+    nav: {
+      home: "Accueil",
+      tools: "Outils",
+      ipLookup: "Recherche IP",
+      dns: "Recherche DNS",
+      whois: "WHOIS",
+      ports: "Vérification de port",
+      speedTest: "Test de vitesse",
+      scan: "Scan réseau",
+      appDownload: "Application Windows",
+      blog: "Blog",
+      shop: "Boutique",
+    },
+    hero: {
+      badge: "Plateforme d'outils réseau",
+      title: "Connaissez votre IP, testez votre réseau",
+      subtitle:
+        "Recherche IP, géolocalisation, test de vitesse et outils réseau en un seul endroit. Gratuit et sans inscription.",
+      ctaPrimary: "Trouver mon IP",
+      ctaSecondary: "Lancer le test de vitesse",
+      yourIp: "Votre adresse IP",
+    },
+    stats: {
+      title: "ipscans en chiffres",
+      items: [
+        { value: "6+", label: "Outils réseau" },
+        { value: "5", label: "Langues" },
+        { value: "100%", label: "Gratuit" },
+        { value: "0", label: "Inscription requise" },
+      ],
+    },
+    cta: {
+      title: "Prêt à explorer votre réseau ?",
+      subtitle:
+        "Recherchez votre IP, mesurez votre vitesse et vérifiez les enregistrements DNS en quelques secondes.",
+      button: "Commencer",
+    },
+    features: {
+      title: "Que pouvez-vous faire ?",
+      subtitle: "Gérez tout ce qui concerne votre réseau depuis un seul endroit.",
+      items: [
+        {
+          title: "Recherche IP",
+          desc: "Découvrez la localisation, le FAI et les détails réseau de toute adresse IP.",
+          href: "/recherche-ip",
+        },
+        {
+          title: "Recherche DNS",
+          desc: "Affichez les enregistrements A, MX, TXT, NS et autres d'un domaine.",
+          href: "/recherche-dns",
+        },
+        {
+          title: "Recherche WHOIS",
+          desc: "Découvrez les détails d'enregistrement, le registrar et les dates d'un domaine.",
+          href: "/recherche-whois",
+        },
+        {
+          title: "Vérification de port",
+          desc: "Testez si les ports courants sont ouverts sur un serveur.",
+          href: "/verification-port",
+        },
+        {
+          title: "Application Windows",
+          desc: "Téléchargez notre outil de bureau gratuit pour un vrai scan réseau local.",
+          href: "/download",
+        },
+        {
+          title: "Test de vitesse",
+          desc: "Mesurez votre débit descendant, montant et la latence (ping).",
+          href: "/test-de-vitesse",
+        },
+        {
+          title: "Scan réseau",
+          desc: "Découvrez les concepts de scan réseau, de ports et de sécurité.",
+          href: "/scan",
+        },
+        {
+          title: "Blog",
+          desc: "Guides et articles sur la sécurité réseau et internet.",
+          href: "/blog",
+        },
+        {
+          title: "Boutique",
+          desc: "Notre boutique de matériel de sécurité réseau arrive bientôt.",
+          href: "/shop",
+        },
+      ],
+    },
+    ipLookup: {
+      title: "Recherche IP",
+      subtitle:
+        "Entrez une adresse IP ou laissez vide pour rechercher la vôtre.",
+      placeholder: "ex. 8.8.8.8",
+      button: "Rechercher",
+      myIp: "Utiliser mon IP",
+      loading: "Recherche en cours...",
+      error: "Impossible de récupérer les informations IP. Veuillez réessayer.",
+      fields: {
+        ip: "Adresse IP",
+        country: "Pays",
+        region: "Région",
+        city: "Ville",
+        isp: "Fournisseur d'accès",
+        org: "Organisation",
+        timezone: "Fuseau horaire",
+        coordinates: "Coordonnées",
+      },
+      mapLabel: "Localisation sur la carte",
+    },
+    dns: {
+      title: "Recherche DNS",
+      subtitle:
+        "Interrogez les enregistrements DNS (A, AAAA, MX, TXT, NS, CNAME) d'un domaine.",
+      placeholder: "ex. example.com",
+      button: "Rechercher",
+      loading: "Recherche en cours...",
+      error: "Impossible de récupérer les enregistrements DNS. Vérifiez le nom de domaine.",
+      noRecords: "Aucun enregistrement trouvé pour ce type.",
+    },
+    whois: {
+      title: "Recherche WHOIS",
+      subtitle:
+        "Affichez les détails d'enregistrement d'un domaine (propriétaire, registrar, dates).",
+      placeholder: "ex. example.com",
+      button: "Rechercher",
+      loading: "Recherche en cours...",
+      error: "Impossible de récupérer les données WHOIS. Vérifiez le nom de domaine.",
+      fields: {
+        domain: "Domaine",
+        registrar: "Registrar",
+        created: "Créé le",
+        updated: "Mis à jour le",
+        expires: "Expire le",
+        status: "Statut",
+        nameservers: "Serveurs de noms",
+      },
+    },
+    ports: {
+      title: "Vérification de port",
+      subtitle: "Vérifiez si les ports courants sont ouverts sur un serveur.",
+      placeholder: "ex. example.com ou 8.8.8.8",
+      button: "Vérifier",
+      loading: "Vérification en cours...",
+      error: "Échec de la vérification. Vérifiez l'adresse du serveur.",
+      open: "Ouvert",
+      closed: "Fermé",
+      disclaimer:
+        "À utiliser uniquement sur des serveurs que vous possédez ou pour lesquels vous avez une autorisation.",
+      crossSell: {
+        title: "Votre caméra pourrait être exposée",
+        body: "Certains ports ouverts pourraient appartenir à des services de caméra ou d'enregistreur. Notre boutique de matériel de sécurité arrive bientôt.",
+        cta: "Voir la boutique",
+      },
+    },
+    speedTest: {
+      title: "Test de vitesse internet",
+      subtitle: "Mesurez la vitesse et la latence de votre connexion.",
+      start: "Démarrer le test",
+      running: "Test en cours...",
+      restart: "Refaire le test",
+      download: "Téléchargement",
+      upload: "Envoi",
+      ping: "Ping",
+      note: "Les résultats peuvent varier selon le navigateur et les conditions réseau.",
+      crossSell: {
+        title: "Votre réseau est-il lent ?",
+        body: "Notre future boutique proposera du matériel réseau et de sécurité pour vous aider.",
+        cta: "Voir la boutique",
+      },
+    },
+    scan: {
+      title: "Scan réseau",
+      subtitle: "Qu'est-ce que le scan réseau et de ports, et comment ça marche ?",
+      body: "Les navigateurs n'autorisent pas le scan de ports direct pour des raisons de sécurité. Un vrai scan réseau nécessite des outils de bureau ou des services serveur autorisés. Dans cette section, vous apprendrez les concepts de scan, les ports courants et les principes d'utilisation sûre.",
+      disclaimer:
+        "Ne scannez que des réseaux que vous possédez ou pour lesquels vous avez une autorisation. Le scan non autorisé peut être illégal.",
+    },
+    download: {
+      title: "Scanner réseau Windows",
+      subtitle:
+        "Téléchargez notre outil de bureau gratuit pour un vrai scan réseau local.",
+      badge: "Gratuit • Sans installation",
+      features: [
+        "Trouve tous les appareils actifs sur votre réseau local",
+        "Affiche l'adresse MAC et le nom de l'appareil",
+        "Scanne les ports ouverts courants sur chaque appareil",
+        "Fichier unique, fonctionne avec .NET (Windows 10/11)",
+      ],
+      button: "Télécharger pour Windows (.exe)",
+      note: "Environ 12 Ko. Double-cliquez pour exécuter après le téléchargement. Si SmartScreen avertit, choisissez 'Plus d'infos > Exécuter quand même'.",
+      safe: "À utiliser uniquement sur des réseaux que vous possédez.",
+    },
+    blog: {
+      title: "Blog",
+      subtitle: "Articles sur les réseaux, la sécurité et internet.",
+      readMore: "Lire la suite",
+      empty: "Aucun article pour le moment. Bientôt disponible.",
+    },
+    footer: {
+      tagline: "Les outils réseau, tous en un seul endroit.",
+      rights: "Tous droits réservés.",
+    },
+    shop: {
+      title: "Boutique",
+      comingSoonTitle: "Bientôt disponible...",
+      comingSoonBody:
+        "Nous préparons notre boutique de matériel de sécurité réseau et domotique. Caméras de sécurité nouvelle génération et services d'installation, bientôt disponibles.",
+    },
+  },
+  es: {
+    a11y: {
+      skipToContent: "Ir al contenido",
+    },
+    meta: {
+      title: "ipscans — Búsqueda de IP, escaneo de red y test de velocidad",
+      description:
+        "Búsqueda de dirección IP, geolocalización, test de velocidad de internet y herramientas de red. Rápido, gratuito y respetuoso con la privacidad.",
+    },
+    nav: {
+      home: "Inicio",
+      tools: "Herramientas",
+      ipLookup: "Buscar IP",
+      dns: "Buscar DNS",
+      whois: "WHOIS",
+      ports: "Verificar puerto",
+      speedTest: "Test de velocidad",
+      scan: "Escaneo de red",
+      appDownload: "Aplicación Windows",
+      blog: "Blog",
+      shop: "Tienda",
+    },
+    hero: {
+      badge: "Plataforma de herramientas de red",
+      title: "Conoce tu IP, prueba tu red",
+      subtitle:
+        "Búsqueda de IP, geolocalización, test de velocidad y herramientas de red en un solo lugar. Gratis y sin registro.",
+      ctaPrimary: "Buscar mi IP",
+      ctaSecondary: "Hacer test de velocidad",
+      yourIp: "Tu dirección IP",
+    },
+    stats: {
+      title: "ipscans en números",
+      items: [
+        { value: "6+", label: "Herramientas de red" },
+        { value: "5", label: "Idiomas" },
+        { value: "100%", label: "Gratis" },
+        { value: "0", label: "Registro requerido" },
+      ],
+    },
+    cta: {
+      title: "¿Listo para explorar tu red?",
+      subtitle:
+        "Busca tu IP, mide tu velocidad y consulta registros DNS en segundos.",
+      button: "Empezar ahora",
+    },
+    features: {
+      title: "¿Qué puedes hacer?",
+      subtitle: "Gestiona todo lo relacionado con tu red desde un solo lugar.",
+      items: [
+        {
+          title: "Buscar IP",
+          desc: "Descubre la ubicación, el ISP y los detalles de red de cualquier dirección IP.",
+          href: "/buscar-ip",
+        },
+        {
+          title: "Buscar DNS",
+          desc: "Consulta los registros A, MX, TXT, NS y otros de un dominio.",
+          href: "/buscar-dns",
+        },
+        {
+          title: "Buscar WHOIS",
+          desc: "Descubre los detalles de registro, el registrador y las fechas de un dominio.",
+          href: "/buscar-whois",
+        },
+        {
+          title: "Verificar puerto",
+          desc: "Comprueba si los puertos comunes están abiertos en un servidor.",
+          href: "/verificar-puerto",
+        },
+        {
+          title: "Aplicación Windows",
+          desc: "Descarga nuestra herramienta de escritorio gratuita para un escaneo de red local real.",
+          href: "/download",
+        },
+        {
+          title: "Test de velocidad",
+          desc: "Mide tu velocidad de descarga, subida y latencia (ping).",
+          href: "/test-de-velocidad",
+        },
+        {
+          title: "Escaneo de red",
+          desc: "Aprende conceptos de escaneo de red, puertos y seguridad.",
+          href: "/scan",
+        },
+        {
+          title: "Blog",
+          desc: "Guías y artículos sobre seguridad de red e internet.",
+          href: "/blog",
+        },
+        {
+          title: "Tienda",
+          desc: "Nuestra tienda de hardware de seguridad de red llega pronto.",
+          href: "/shop",
+        },
+      ],
+    },
+    ipLookup: {
+      title: "Buscar IP",
+      subtitle:
+        "Introduce una dirección IP o déjalo vacío para buscar la tuya.",
+      placeholder: "ej. 8.8.8.8",
+      button: "Buscar",
+      myIp: "Usar mi IP",
+      loading: "Buscando...",
+      error: "No se pudo obtener la información de IP. Inténtalo de nuevo.",
+      fields: {
+        ip: "Dirección IP",
+        country: "País",
+        region: "Región",
+        city: "Ciudad",
+        isp: "Proveedor de internet",
+        org: "Organización",
+        timezone: "Zona horaria",
+        coordinates: "Coordenadas",
+      },
+      mapLabel: "Ubicación en el mapa",
+    },
+    dns: {
+      title: "Buscar DNS",
+      subtitle:
+        "Consulta los registros DNS (A, AAAA, MX, TXT, NS, CNAME) de un dominio.",
+      placeholder: "ej. example.com",
+      button: "Buscar",
+      loading: "Buscando...",
+      error: "No se pudieron obtener los registros DNS. Verifica el nombre de dominio.",
+      noRecords: "No se encontraron registros para este tipo.",
+    },
+    whois: {
+      title: "Buscar WHOIS",
+      subtitle:
+        "Consulta los detalles de registro de un dominio (propietario, registrador, fechas).",
+      placeholder: "ej. example.com",
+      button: "Buscar",
+      loading: "Buscando...",
+      error: "No se pudieron obtener los datos WHOIS. Verifica el nombre de dominio.",
+      fields: {
+        domain: "Dominio",
+        registrar: "Registrador",
+        created: "Creado",
+        updated: "Actualizado",
+        expires: "Expira",
+        status: "Estado",
+        nameservers: "Servidores de nombres",
+      },
+    },
+    ports: {
+      title: "Verificar puerto",
+      subtitle: "Comprueba si los puertos comunes están abiertos en un servidor.",
+      placeholder: "ej. example.com o 8.8.8.8",
+      button: "Verificar",
+      loading: "Verificando...",
+      error: "La verificación falló. Comprueba la dirección del servidor.",
+      open: "Abierto",
+      closed: "Cerrado",
+      disclaimer:
+        "Úsalo solo con servidores que poseas o para los que tengas permiso.",
+      crossSell: {
+        title: "Tu cámara podría estar expuesta",
+        body: "Algunos puertos abiertos podrían pertenecer a servicios de cámaras o grabadores. Nuestra tienda de hardware de seguridad llega pronto.",
+        cta: "Ver tienda",
+      },
+    },
+    speedTest: {
+      title: "Test de velocidad de internet",
+      subtitle: "Mide la velocidad y la latencia de tu conexión.",
+      start: "Iniciar test",
+      running: "Probando...",
+      restart: "Repetir test",
+      download: "Descarga",
+      upload: "Subida",
+      ping: "Ping",
+      note: "Los resultados pueden variar según el navegador y las condiciones de red.",
+      crossSell: {
+        title: "¿Tu red va lenta?",
+        body: "Nuestra próxima tienda ofrecerá hardware de red y seguridad para ayudarte.",
+        cta: "Ver tienda",
+      },
+    },
+    scan: {
+      title: "Escaneo de red",
+      subtitle: "¿Qué es el escaneo de red y de puertos, y cómo funciona?",
+      body: "Los navegadores no permiten el escaneo directo de puertos por razones de seguridad. Un escaneo de red real requiere herramientas de escritorio o servicios autorizados basados en servidor. En esta sección aprenderás conceptos de escaneo, puertos comunes y principios de uso seguro.",
+      disclaimer:
+        "Escanea solo redes que poseas o para las que tengas permiso. El escaneo no autorizado puede ser ilegal.",
+    },
+    download: {
+      title: "Escáner de red para Windows",
+      subtitle:
+        "Descarga nuestra herramienta de escritorio gratuita para un escaneo de red local real.",
+      badge: "Gratis • Sin instalación",
+      features: [
+        "Encuentra todos los dispositivos activos en tu red local",
+        "Muestra la dirección MAC y el nombre del dispositivo",
+        "Escanea los puertos abiertos comunes en cada dispositivo",
+        "Archivo único, funciona con .NET (Windows 10/11)",
+      ],
+      button: "Descargar para Windows (.exe)",
+      note: "Aproximadamente 12 KB. Haz doble clic para ejecutar tras la descarga. Si SmartScreen avisa, elige 'Más información > Ejecutar de todos modos'.",
+      safe: "Úsalo solo en redes que poseas.",
+    },
+    blog: {
+      title: "Blog",
+      subtitle: "Artículos sobre redes, seguridad e internet.",
+      readMore: "Leer más",
+      empty: "Aún no hay artículos. Próximamente.",
+    },
+    footer: {
+      tagline: "Herramientas de red, todas en un solo lugar.",
+      rights: "Todos los derechos reservados.",
+    },
+    shop: {
+      title: "Tienda",
+      comingSoonTitle: "Próximamente...",
+      comingSoonBody:
+        "Estamos preparando nuestra tienda de seguridad de red y hardware para el hogar inteligente. Cámaras de seguridad de nueva generación y servicios de instalación, muy pronto.",
     },
   },
 } as const;

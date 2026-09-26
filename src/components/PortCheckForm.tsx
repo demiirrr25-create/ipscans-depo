@@ -64,10 +64,10 @@ export function PortCheckForm({
         </button>
       </form>
 
-      <p className="mt-3 text-xs text-amber-300/80">{dict.disclaimer}</p>
+      <p className="mt-3 text-xs text-neutral-400">{dict.disclaimer}</p>
 
       {error && (
-        <p className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <p className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
           {dict.error}
         </p>
       )}
@@ -106,8 +106,8 @@ export function PortCheckForm({
           </div>
 
           {result.ports.some((p) => p.open) && (
-            <div className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-5">
-              <h3 className="font-semibold text-amber-200">
+            <div className="mt-6 rounded-xl border border-white/20 bg-white/[0.06] p-5">
+              <h3 className="font-semibold text-white">
                 {dict.crossSell.title}
               </h3>
               <p className="mt-1 text-sm text-neutral-300">
@@ -115,7 +115,7 @@ export function PortCheckForm({
               </p>
               <Link
                 href={`/${locale}/shop`}
-                className="mt-3 inline-block rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-300"
+                className="mt-3 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-neutral-200"
               >
                 {dict.crossSell.cta} →
               </Link>

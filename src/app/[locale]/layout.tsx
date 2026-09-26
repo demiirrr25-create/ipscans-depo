@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, locales, ogLocales, localeTags } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -48,7 +48,7 @@ export async function generateMetadata({
     metadataBase: new URL("https://ipscans.com"),
     alternates: {
       canonical: `/${locale}`,
-      languages: { tr: "/tr", en: "/en" },
+      languages: Object.fromEntries(locales.map((l) => [l, `/${l}`])),
     },
     openGraph: {
       type: "website",
@@ -56,7 +56,7 @@ export async function generateMetadata({
       title: dict.meta.title,
       description: dict.meta.description,
       url: `https://ipscans.com/${locale}`,
-      locale: locale === "tr" ? "tr_TR" : "en_US",
+      locale: ogLocales[locale],
     },
     twitter: {
       card: "summary",
@@ -85,10 +85,15 @@ export default async function LocaleLayout({
         "@id": "https://ipscans.com/#organization",
         name: "ipscans",
         url: "https://ipscans.com",
+        // Opaque dark-background render — a bare white-on-transparent SVG
+        // isn't reliably indexed as a logo by Google's structured data.
         logo: {
           "@type": "ImageObject",
-          url: "https://ipscans.com/logo.svg",
+          url: "https://ipscans.com/api/logo",
+          width: 512,
+          height: 512,
         },
+        image: "https://ipscans.com/api/logo",
       },
       {
         "@type": "WebSite",
@@ -96,7 +101,7 @@ export default async function LocaleLayout({
         name: "ipscans",
         url: "https://ipscans.com",
         publisher: { "@id": "https://ipscans.com/#organization" },
-        inLanguage: locale === "tr" ? "tr-TR" : "en-US",
+        inLanguage: localeTags[locale],
       },
     ],
   };
@@ -116,7 +121,7 @@ export default async function LocaleLayout({
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black"
         >
-          {locale === "tr" ? "İçeriğe geç" : "Skip to content"}
+          {dict.a11y.skipToContent}
         </a>
         <AuroraBackground />
         <Header locale={locale} dict={dict} />

@@ -33,7 +33,7 @@ export default async function ScanPage({
       <div className="mx-auto max-w-3xl">
         <p className="text-neutral-300 leading-relaxed">{dict.scan.body}</p>
 
-        <div className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <div className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-neutral-100">
           {dict.scan.disclaimer}
         </div>
 

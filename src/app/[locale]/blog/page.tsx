@@ -2,7 +2,7 @@ import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
-import { posts } from "@/content/posts";
+import { posts, localizedPostText } from "@/content/posts";
 import { notFound } from "next/navigation";
 
 export default async function BlogPage({
@@ -28,10 +28,10 @@ export default async function BlogPage({
             >
               <time className="text-xs text-neutral-500">{post.date}</time>
               <h2 className="mt-2 text-lg font-semibold text-white group-hover:text-white">
-                {post.title[locale]}
+                {localizedPostText(post.title, locale)}
               </h2>
               <p className="mt-2 text-sm text-neutral-400">
-                {post.excerpt[locale]}
+                {localizedPostText(post.excerpt, locale)}
               </p>
               <span className="mt-3 inline-block text-sm text-white">
                 {dict.blog.readMore} →

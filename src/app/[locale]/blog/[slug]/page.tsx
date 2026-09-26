@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, locales, localeTags } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
-import { getPost, posts } from "@/content/posts";
+import { getPost, posts, localizedPostText } from "@/content/posts";
 import { notFound } from "next/navigation";
 
 export function generateStaticParams() {
@@ -21,8 +21,16 @@ export async function generateMetadata({
   const post = getPost(slug);
   if (!isLocale(locale) || !post) return {};
   return {
-    title: `${post.title[locale]} — ipscans`,
-    description: post.excerpt[locale],
+    title: `${localizedPostText(post.title, locale)} — ipscans`,
+    description: localizedPostText(post.excerpt, locale),
+    // Only hreflang to locales that actually have a translation for this post.
+    alternates: {
+      languages: Object.fromEntries(
+        locales
+          .filter((l) => post.title[l])
+          .map((l) => [l, `/${l}/blog/${slug}`])
+      ),
+    },
   };
 }
 
@@ -36,20 +44,21 @@ export default async function BlogPostPage({
   const post = getPost(slug);
   if (!post) notFound();
   const dict = getDictionary(locale);
+  const effectiveLocale = post.title[locale] ? locale : "en";
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: post.title[locale],
-    description: post.excerpt[locale],
+    headline: localizedPostText(post.title, locale),
+    description: localizedPostText(post.excerpt, locale),
     datePublished: post.date,
-    inLanguage: locale === "tr" ? "tr-TR" : "en-US",
+    inLanguage: localeTags[effectiveLocale],
     author: { "@type": "Organization", name: "ipscans" },
     publisher: { "@type": "Organization", name: "ipscans" },
   };
 
   return (
-    <PageShell title={post.title[locale]}>
+    <PageShell title={localizedPostText(post.title, locale)}>
       <script
         type="application/ld+json"
         // Static, code-authored structured data — safe to inject directly.
@@ -62,7 +71,7 @@ export default async function BlogPostPage({
         <div
           className="prose-ipscans mt-6"
           // Body HTML is static content authored in src/content/posts.ts, not user input.
-          dangerouslySetInnerHTML={{ __html: post.body[locale] }}
+          dangerouslySetInnerHTML={{ __html: localizedPostText(post.body, locale) }}
         />
         <div className="mt-10 text-center">
           <Link

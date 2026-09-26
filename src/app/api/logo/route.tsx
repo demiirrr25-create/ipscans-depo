@@ -1,16 +1,11 @@
 import { ImageResponse } from "next/og";
-import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ size: string }> }
-) {
-  const { size } = await params;
-  const px = Math.min(1024, Math.max(16, parseInt(size, 10) || 512));
-  const inner = Math.round(px * 0.7);
-
+// Square, opaque dark-background render of the (all-white) logo mark.
+// Referenced from Organization JSON-LD — a transparent/white-on-white SVG
+// would be invisible to Google's logo indexing, this guarantees contrast.
+export async function GET() {
   return new ImageResponse(
     (
       <div
@@ -20,15 +15,15 @@ export async function GET(
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0A0B0D",
+          background: "#000000",
         }}
       >
-        <svg width={inner} height={inner} viewBox="0 0 64 64">
+        <svg width="360" height="360" viewBox="0 0 64 64">
           <polygon
             points="32,4 56,18 56,46 32,60 8,46 8,18"
             fill="none"
             stroke="#FFFFFF"
-            strokeWidth="4"
+            strokeWidth="3"
           />
           <g stroke="#FFFFFF" strokeWidth="2" opacity={0.9}>
             <line x1="32" y1="4" x2="32" y2="26" />
@@ -42,6 +37,6 @@ export async function GET(
         </svg>
       </div>
     ),
-    { width: px, height: px }
+    { width: 512, height: 512 }
   );
 }
