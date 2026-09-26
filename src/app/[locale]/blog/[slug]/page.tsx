@@ -37,15 +37,33 @@ export default async function BlogPostPage({
   if (!post) notFound();
   const dict = getDictionary(locale);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title[locale],
+    description: post.excerpt[locale],
+    datePublished: post.date,
+    inLanguage: locale === "tr" ? "tr-TR" : "en-US",
+    author: { "@type": "Organization", name: "ipscans" },
+    publisher: { "@type": "Organization", name: "ipscans" },
+  };
+
   return (
     <PageShell title={post.title[locale]}>
+      <script
+        type="application/ld+json"
+        // Static, code-authored structured data — safe to inject directly.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <article className="mx-auto max-w-2xl">
         <time className="block text-center text-sm text-neutral-500">
           {post.date}
         </time>
-        <p className="mt-6 leading-relaxed text-neutral-300">
-          {post.body[locale]}
-        </p>
+        <div
+          className="prose-ipscans mt-6"
+          // Body HTML is static content authored in src/content/posts.ts, not user input.
+          dangerouslySetInnerHTML={{ __html: post.body[locale] }}
+        />
         <div className="mt-10 text-center">
           <Link
             href={`/${locale}/blog`}

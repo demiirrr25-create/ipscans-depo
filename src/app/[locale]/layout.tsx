@@ -7,7 +7,6 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AuroraBackground } from "@/components/AuroraBackground";
-import { CartProvider } from "@/context/CartContext";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -40,12 +39,29 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   const dict = getDictionary(locale);
   return {
-    title: dict.meta.title,
+    title: {
+      default: dict.meta.title,
+      template: `%s — ipscans`,
+    },
     description: dict.meta.description,
+    applicationName: "ipscans",
     metadataBase: new URL("https://ipscans.com"),
     alternates: {
       canonical: `/${locale}`,
       languages: { tr: "/tr", en: "/en" },
+    },
+    openGraph: {
+      type: "website",
+      siteName: "ipscans",
+      title: dict.meta.title,
+      description: dict.meta.description,
+      url: `https://ipscans.com/${locale}`,
+      locale: locale === "tr" ? "tr_TR" : "en_US",
+    },
+    twitter: {
+      card: "summary",
+      title: dict.meta.title,
+      description: dict.meta.description,
     },
   };
 }
@@ -61,18 +77,53 @@ export default async function LocaleLayout({
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://ipscans.com/#organization",
+        name: "ipscans",
+        url: "https://ipscans.com",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://ipscans.com/logo.svg",
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://ipscans.com/#website",
+        name: "ipscans",
+        url: "https://ipscans.com",
+        publisher: { "@id": "https://ipscans.com/#organization" },
+        inLanguage: locale === "tr" ? "tr-TR" : "en-US",
+      },
+    ],
+  };
+
   return (
     <html
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col text-white">
+        <script
+          type="application/ld+json"
+          // Static, code-defined structured data — safe to inject directly.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black"
+        >
+          {locale === "tr" ? "İçeriğe geç" : "Skip to content"}
+        </a>
         <AuroraBackground />
-        <CartProvider>
-          <Header locale={locale} dict={dict} />
-          <main className="flex-1">{children}</main>
-          <Footer locale={locale} dict={dict} />
-        </CartProvider>
+        <Header locale={locale} dict={dict} />
+        <main id="main-content" className="flex-1">
+          {children}
+        </main>
+        <Footer locale={locale} dict={dict} />
         <Analytics />
         <SpeedInsights />
       </body>

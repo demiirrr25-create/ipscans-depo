@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { Logo } from "./Logo";
+import { toolPath } from "@/lib/tool-routes";
 
 export function Footer({
   locale,
@@ -15,9 +17,7 @@ export function Footer({
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-white text-sm font-bold text-black">
-              ip
-            </span>
+            <Logo size={28} />
             <span className="font-semibold font-[family-name:var(--font-display)]">
               ipscans
             </span>
@@ -25,10 +25,10 @@ export function Footer({
           <p className="mt-2 text-sm text-neutral-400">{dict.footer.tagline}</p>
         </div>
         <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-neutral-400">
-          <Link href={`/${locale}/ip-lookup`} className="hover:text-white">
+          <Link href={toolPath("ipLookup", locale)} className="hover:text-white">
             {dict.nav.ipLookup}
           </Link>
-          <Link href={`/${locale}/speed-test`} className="hover:text-white">
+          <Link href={toolPath("speedTest", locale)} className="hover:text-white">
             {dict.nav.speedTest}
           </Link>
           <Link href={`/${locale}/scan`} className="hover:text-white">

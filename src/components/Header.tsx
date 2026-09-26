@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { CartButton } from "./CartButton";
+import { Logo } from "./Logo";
+import { toolPath } from "@/lib/tool-routes";
 
 export function Header({
   locale,
@@ -21,11 +22,11 @@ export function Header({
   const toolsRef = useRef<HTMLDivElement>(null);
 
   const tools = [
-    { href: `/${locale}/ip-lookup`, label: dict.nav.ipLookup },
-    { href: `/${locale}/dns`, label: dict.nav.dns },
-    { href: `/${locale}/whois`, label: dict.nav.whois },
-    { href: `/${locale}/ports`, label: dict.nav.ports },
-    { href: `/${locale}/speed-test`, label: dict.nav.speedTest },
+    { href: toolPath("ipLookup", locale), label: dict.nav.ipLookup },
+    { href: toolPath("dns", locale), label: dict.nav.dns },
+    { href: toolPath("whois", locale), label: dict.nav.whois },
+    { href: toolPath("ports", locale), label: dict.nav.ports },
+    { href: toolPath("speedTest", locale), label: dict.nav.speedTest },
     { href: `/${locale}/download`, label: dict.nav.appDownload },
   ];
   const topLinks = [
@@ -62,9 +63,7 @@ export function Header({
     <header className="sticky top-0 z-50 glass">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href={`/${locale}`} className="flex items-center gap-2 group">
-          <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-white font-bold text-black shadow-[0_0_20px_-4px_rgba(255,255,255,0.7)] transition group-hover:scale-105">
-            <span className="font-[family-name:var(--font-display)]">ip</span>
-          </span>
+          <Logo size={36} />
           <span className="text-lg font-semibold tracking-tight font-[family-name:var(--font-display)]">
             ipscans
           </span>
@@ -139,7 +138,6 @@ export function Header({
         </nav>
 
         <div className="flex items-center gap-3">
-          <CartButton locale={locale} />
           <LanguageSwitcher locale={locale} />
           <button
             aria-label="Menu"

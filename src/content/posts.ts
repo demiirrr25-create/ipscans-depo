@@ -5,6 +5,7 @@ export type Post = {
   date: string;
   title: Record<Locale, string>;
   excerpt: Record<Locale, string>;
+  /** Static, code-authored HTML — never derived from user input. */
   body: Record<Locale, string>;
 };
 
@@ -21,8 +22,32 @@ export const posts: Post[] = [
       en: "The basics of IP addresses, the difference between IPv4 and IPv6, and how the internet handles addressing.",
     },
     body: {
-      tr: "IP adresi, internete bağlı her cihaza atanan benzersiz bir tanımlayıcıdır. IPv4 adresleri 32 bit uzunluğundadır ve 192.168.1.1 gibi yazılır. IPv6 ise 128 bit uzunluğunda olup çok daha fazla adres alanı sunar. Bir web sitesine bağlandığında, cihazın IP adresi üzerinden veri paketleri gönderilir ve alınır. Genel (public) IP adresin internete açık kimliğindir; yerel (private) IP adresin ise ev ağındaki cihazları ayırt eder.",
-      en: "An IP address is a unique identifier assigned to every device connected to the internet. IPv4 addresses are 32 bits long and written like 192.168.1.1. IPv6 is 128 bits long and offers a much larger address space. When you connect to a website, data packets are sent and received through your device's IP address. Your public IP is your identity on the internet, while your private IP distinguishes devices on your home network.",
+      tr: `
+        <p>IP adresi, internete bağlı her cihaza atanan benzersiz bir sayısal tanımlayıcıdır. Bir mektubun üzerindeki adres gibi düşünebilirsin: veri paketlerinin doğru cihaza ulaşması için gereklidir.</p>
+        <h2>IPv4 ve IPv6 arasındaki fark nedir?</h2>
+        <p><strong>IPv4</strong> adresleri 32 bit uzunluğundadır ve <code>192.168.1.1</code> gibi dört bölümden oluşur. Toplam adres alanı yaklaşık 4,3 milyar ile sınırlıdır ve bu alan artık dolmuş durumda. <strong>IPv6</strong> ise 128 bit uzunluğunda olup <code>2001:0db8:85a3::8a2e:0370:7334</code> gibi yazılır ve pratik olarak tükenmeyecek kadar geniş bir adres alanı sunar.</p>
+        <h2>Genel (public) ve yerel (private) IP farkı</h2>
+        <ul>
+          <li><strong>Genel IP:</strong> İnternet servis sağlayıcın tarafından sana atanan, internette görünen adres.</li>
+          <li><strong>Yerel IP:</strong> Ev veya ofis ağındaki cihazları birbirinden ayıran, yönlendiricinin dağıttığı adres (örn. 192.168.x.x).</li>
+        </ul>
+        <p>Bir web sitesine bağlandığında tarayıcın, hedef sunucunun IP adresini DNS üzerinden çözer, ardından veri paketleri bu adres üzerinden gidip gelir. IP adresini öğrenmek istersen <a href="/tr/ip-sorgulama">IP sorgulama aracımızı</a> kullanabilirsin.</p>
+        <h2>IP adresin neden önemli?</h2>
+        <p>Yaklaşık konumunu, internet servis sağlayıcını ve bazı durumlarda organizasyonunu ortaya çıkarabilir. Bu yüzden VPN kullanımı, gizlilik odaklı kullanıcılar arasında yaygınlaşmıştır.</p>
+      `,
+      en: `
+        <p>An IP address is a unique numeric identifier assigned to every device connected to the internet. Think of it like the address on an envelope — it's how data packets know where to go.</p>
+        <h2>What's the difference between IPv4 and IPv6?</h2>
+        <p><strong>IPv4</strong> addresses are 32 bits long, written as four segments like <code>192.168.1.1</code>. The total address space is capped at about 4.3 billion and has already run out. <strong>IPv6</strong> is 128 bits long, written like <code>2001:0db8:85a3::8a2e:0370:7334</code>, and offers a practically inexhaustible address space.</p>
+        <h2>Public vs. private IP</h2>
+        <ul>
+          <li><strong>Public IP:</strong> The address your ISP assigns you that's visible on the internet.</li>
+          <li><strong>Private IP:</strong> The address your router hands out to distinguish devices on your home or office network (e.g. 192.168.x.x).</li>
+        </ul>
+        <p>When you connect to a website, your browser resolves the destination server's IP via DNS, then data packets travel back and forth over that address. Want to check your own? Try our <a href="/en/ip-lookup">IP lookup tool</a>.</p>
+        <h2>Why does your IP matter?</h2>
+        <p>It can reveal your approximate location, ISP, and sometimes your organization — which is why privacy-conscious users increasingly rely on VPNs.</p>
+      `,
     },
   },
   {
@@ -37,8 +62,126 @@ export const posts: Post[] = [
       en: "Practical tips to fix slow internet: router placement, DNS settings and more.",
     },
     body: {
-      tr: "Yavaş internet birçok faktörden kaynaklanabilir. 1) Yönlendiricini merkezi ve yüksek bir konuma yerleştir. 2) 5 GHz Wi-Fi bandını kullan. 3) DNS sunucunu 1.1.1.1 veya 8.8.8.8 olarak değiştir. 4) Arka planda çalışan güncellemeleri kapat. 5) Kablolu bağlantı (Ethernet) tercih et. 6) Yönlendirici donanım yazılımını güncel tut. 7) Düzenli olarak hız testi yaparak sağlayıcının vaat ettiği hızı aldığını doğrula.",
-      en: "Slow internet can stem from many factors. 1) Place your router in a central, elevated spot. 2) Use the 5 GHz Wi-Fi band. 3) Change your DNS to 1.1.1.1 or 8.8.8.8. 4) Disable background updates. 5) Prefer a wired (Ethernet) connection. 6) Keep router firmware up to date. 7) Run regular speed tests to confirm you get the speed your provider promises.",
+      tr: `
+        <p>Yavaş internet birçok farklı sebepten kaynaklanabilir. Aşağıdaki yedi adım, çoğu ev ve ofis ağında gözle görülür bir fark yaratır.</p>
+        <ol>
+          <li><strong>Yönlendiriciyi doğru yerleştir:</strong> Merkezi, açık ve yüksek bir konum, sinyal kaybını azaltır.</li>
+          <li><strong>5 GHz bandını kullan:</strong> 2.4 GHz'e göre daha hızlıdır, ancak menzili biraz daha kısadır.</li>
+          <li><strong>DNS sunucunu değiştir:</strong> <code>1.1.1.1</code> (Cloudflare) veya <code>8.8.8.8</code> (Google) genellikle ISS'nin varsayılan sunucusundan daha hızlı yanıt verir.</li>
+          <li><strong>Arka plan trafiğini kapat:</strong> Otomatik güncellemeler ve bulut senkronizasyonu bant genişliğini sessizce tüketir.</li>
+          <li><strong>Kablolu bağlantıyı tercih et:</strong> Ethernet, Wi-Fi'nin çoğu zaman ulaşamayacağı stabiliteyi sağlar.</li>
+          <li><strong>Yönlendirici yazılımını güncel tut:</strong> Üretici güncellemeleri performans ve güvenlik düzeltmeleri içerir.</li>
+          <li><strong>Düzenli test yap:</strong> <a href="/tr/hiz-testi">Hız testi aracımızla</a> sağlayıcının vaat ettiği hızı gerçekten alıp almadığını doğrula.</li>
+        </ol>
+        <h2>Ne zaman ISS'ni aramalısın?</h2>
+        <p>Kablolu bağlantıda bile testler vaat edilen hızın belirgin şekilde altında kalıyorsa, sorun genellikle ağındaki cihazlarda değil, altyapı tarafındadır.</p>
+      `,
+      en: `
+        <p>Slow internet can stem from many different factors. The seven steps below make a noticeable difference in most home and office networks.</p>
+        <ol>
+          <li><strong>Place your router correctly:</strong> a central, open, elevated spot reduces signal loss.</li>
+          <li><strong>Use the 5 GHz band:</strong> faster than 2.4 GHz, though with slightly shorter range.</li>
+          <li><strong>Switch your DNS:</strong> <code>1.1.1.1</code> (Cloudflare) or <code>8.8.8.8</code> (Google) often respond faster than your ISP's default.</li>
+          <li><strong>Disable background traffic:</strong> automatic updates and cloud sync quietly eat bandwidth.</li>
+          <li><strong>Prefer a wired connection:</strong> Ethernet delivers stability Wi-Fi often can't match.</li>
+          <li><strong>Keep your router's firmware current:</strong> vendor updates include performance and security fixes.</li>
+          <li><strong>Test regularly:</strong> use our <a href="/en/speed-test">speed test tool</a> to confirm you're actually getting the speed you're paying for.</li>
+        </ol>
+        <h2>When should you call your ISP?</h2>
+        <p>If tests stay significantly below the promised speed even over a wired connection, the issue is usually upstream — not with the devices on your network.</p>
+      `,
+    },
+  },
+  {
+    slug: "vpn-nedir",
+    date: "2026-09-20",
+    title: {
+      tr: "VPN Nedir, Nasıl Çalışır ve Gerçekten Gerekli mi?",
+      en: "What Is a VPN, How Does It Work, and Do You Really Need One?",
+    },
+    excerpt: {
+      tr: "VPN'lerin trafiğini nasıl şifrelediğini, gizliliği nasıl etkilediğini ve ne zaman işe yaradığını anlaşılır şekilde açıklıyoruz.",
+      en: "A clear look at how VPNs encrypt your traffic, how they affect your privacy, and when they actually help.",
+    },
+    body: {
+      tr: `
+        <p>VPN (Virtual Private Network), cihazın ile bir VPN sunucusu arasında şifreli bir "tünel" oluşturur. Bu tünel sayesinde internet servis sağlayıcın ve aynı ağdaki diğer kişiler trafiğinin içeriğini göremez.</p>
+        <h2>VPN kullanınca IP adresin ne olur?</h2>
+        <p>İnternete VPN sunucusunun IP adresi üzerinden çıkarsın. Ziyaret ettiğin siteler senin gerçek IP'ni değil, VPN sağlayıcının IP'sini görür. Bunu <a href="/tr/ip-sorgulama">IP sorgulama aracımızla</a> VPN açıp kapatarak test edebilirsin.</p>
+        <h2>VPN neyi çözer, neyi çözmez?</h2>
+        <ul>
+          <li><strong>Çözer:</strong> Açık Wi-Fi ağlarında trafiğinin dinlenmesini, ISS'nin gezinme geçmişini görmesini, coğrafi kısıtlamaları.</li>
+          <li><strong>Çözmez:</strong> Giriş yaptığın hesaplar üzerinden seni tanımlanabilir kılan çerezleri, tarayıcı parmak izini veya kötü amaçlı yazılımları.</li>
+        </ul>
+        <h2>Nasıl bir VPN seçmeli?</h2>
+        <p>"Log tutmuyoruz" iddiası bağımsız denetimle desteklenmiyorsa temkinli yaklaş. Ücretsiz VPN'lerin bir kısmı, gelirini kullanıcı verisini satarak elde eder — bu da amacın tam tersidir.</p>
+      `,
+      en: `
+        <p>A VPN (Virtual Private Network) creates an encrypted "tunnel" between your device and a VPN server. Inside that tunnel, your ISP and anyone else on the same network can't see the contents of your traffic.</p>
+        <h2>What happens to your IP when you use a VPN?</h2>
+        <p>You appear to browse the internet from the VPN server's IP address. Sites you visit see the VPN provider's IP, not your real one. You can verify this yourself with our <a href="/en/ip-lookup">IP lookup tool</a> — check before and after connecting.</p>
+        <h2>What a VPN fixes — and what it doesn't</h2>
+        <ul>
+          <li><strong>Fixes:</strong> traffic snooping on open Wi-Fi, your ISP seeing your browsing history, some geographic restrictions.</li>
+          <li><strong>Doesn't fix:</strong> being identified through logged-in accounts, browser fingerprinting, or malware.</li>
+        </ul>
+        <h2>How to choose a VPN</h2>
+        <p>Be cautious of "no-logs" claims that aren't backed by an independent audit. Some free VPNs fund themselves by selling user data — which defeats the whole purpose.</p>
+      `,
+    },
+  },
+  {
+    slug: "yaygin-port-numaralari-rehberi",
+    date: "2026-09-05",
+    title: {
+      tr: "Yaygın Port Numaraları Rehberi: 15 Port ve Ne İşe Yaradıkları",
+      en: "A Guide to Common Port Numbers: 15 Ports and What They Do",
+    },
+    excerpt: {
+      tr: "80, 443, 22, 3389... Bu port numaraları ne anlama geliyor? Ağ ve güvenlik temelli bir rehber.",
+      en: "80, 443, 22, 3389... what do these port numbers actually mean? A network and security primer.",
+    },
+    body: {
+      tr: `
+        <p>Bir port, bir sunucu üzerinde çalışan belirli bir servise yönlendiren sayısal bir kapı gibi düşünülebilir. IP adresi seni doğru cihaza, port numarası ise o cihazdaki doğru uygulamaya götürür.</p>
+        <h2>En sık karşılaşılan portlar</h2>
+        <ul>
+          <li><strong>20/21 — FTP:</strong> Dosya transfer protokolü.</li>
+          <li><strong>22 — SSH:</strong> Sunuculara güvenli uzaktan erişim.</li>
+          <li><strong>25 — SMTP:</strong> E-posta gönderimi.</li>
+          <li><strong>53 — DNS:</strong> Alan adı çözümleme.</li>
+          <li><strong>80 — HTTP:</strong> Şifresiz web trafiği.</li>
+          <li><strong>110 — POP3 / 143 — IMAP:</strong> E-posta alma protokolleri.</li>
+          <li><strong>443 — HTTPS:</strong> Şifreli web trafiği; günümüzde web sitelerinin standardı.</li>
+          <li><strong>3306 — MySQL:</strong> Veritabanı bağlantıları.</li>
+          <li><strong>3389 — RDP:</strong> Windows uzak masaüstü bağlantısı.</li>
+          <li><strong>8080 — HTTP-alt:</strong> Genellikle geliştirme ortamlarında veya proxy'lerde kullanılır.</li>
+        </ul>
+        <h2>Açık bir port ne zaman risk oluşturur?</h2>
+        <p>Bir portun açık olması tek başına güvenlik açığı demek değildir; ancak gereksiz yere dışa açık bırakılmış yönetim portları (ör. 3389, 22) saldırganlar için ilk hedeftir. <a href="/tr/port-kontrol">Port kontrol aracımızla</a> hangi portların dışa açık olduğunu hızlıca görebilirsin.</p>
+        <h2>Pratik öneri</h2>
+        <p>Yönetim amaçlı portları mümkünse VPN arkasında tut, güçlü kimlik doğrulama kullan ve kullanılmayan servisleri kapat.</p>
+      `,
+      en: `
+        <p>A port is like a numbered doorway that routes traffic to a specific service running on a server. The IP address gets you to the right device; the port number gets you to the right application on it.</p>
+        <h2>The most common ports</h2>
+        <ul>
+          <li><strong>20/21 — FTP:</strong> file transfer protocol.</li>
+          <li><strong>22 — SSH:</strong> secure remote access to servers.</li>
+          <li><strong>25 — SMTP:</strong> sending email.</li>
+          <li><strong>53 — DNS:</strong> domain name resolution.</li>
+          <li><strong>80 — HTTP:</strong> unencrypted web traffic.</li>
+          <li><strong>110 — POP3 / 143 — IMAP:</strong> email retrieval protocols.</li>
+          <li><strong>443 — HTTPS:</strong> encrypted web traffic — the modern standard.</li>
+          <li><strong>3306 — MySQL:</strong> database connections.</li>
+          <li><strong>3389 — RDP:</strong> Windows remote desktop.</li>
+          <li><strong>8080 — HTTP-alt:</strong> commonly used in dev environments or proxies.</li>
+        </ul>
+        <h2>When is an open port a risk?</h2>
+        <p>An open port alone isn't a vulnerability — but unnecessarily exposed management ports (like 3389 or 22) are a top target for attackers. Use our <a href="/en/port-check">port check tool</a> to quickly see what's exposed on a host.</p>
+        <h2>A practical tip</h2>
+        <p>Keep management ports behind a VPN where possible, enforce strong authentication, and shut down services you're not using.</p>
+      `,
     },
   },
 ];

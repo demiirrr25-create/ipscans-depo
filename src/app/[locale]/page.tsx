@@ -4,6 +4,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { LiveIp } from "@/components/LiveIp";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { Reveal } from "@/components/Reveal";
+import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
 
 export default async function HomePage({
@@ -35,7 +36,7 @@ export default async function HomePage({
 
           <Reveal index={1}>
             <h1 className="mx-auto mt-6 max-w-4xl font-[family-name:var(--font-display)] text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
-              <span className="text-gradient">{dict.hero.title}</span>
+              <span className="text-gradient text-depth">{dict.hero.title}</span>
             </h1>
           </Reveal>
 
@@ -48,13 +49,13 @@ export default async function HomePage({
           <Reveal index={3}>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href={`/${locale}/ip-lookup`}
+                href={toolPath("ipLookup", locale)}
                 className="btn-primary rounded-xl px-6 py-3 font-semibold"
               >
                 {dict.hero.ctaPrimary}
               </Link>
               <Link
-                href={`/${locale}/speed-test`}
+                href={toolPath("speedTest", locale)}
                 className="btn-ghost rounded-xl px-6 py-3 font-semibold"
               >
                 {dict.hero.ctaSecondary}
@@ -128,7 +129,7 @@ export default async function HomePage({
               {dict.cta.subtitle}
             </p>
             <Link
-              href={`/${locale}/ip-lookup`}
+              href={toolPath("ipLookup", locale)}
               className="btn-primary mt-8 inline-block rounded-xl px-8 py-3 font-semibold"
             >
               {dict.cta.button}

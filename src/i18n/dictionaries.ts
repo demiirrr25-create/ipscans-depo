@@ -50,22 +50,22 @@ const dictionaries = {
         {
           title: "IP Sorgulama",
           desc: "Herhangi bir IP adresinin konumunu, ISS'sini ve ağ bilgilerini öğren.",
-          href: "/ip-lookup",
+          href: "/ip-sorgulama",
         },
         {
           title: "DNS Sorgulama",
           desc: "Alan adlarının A, MX, TXT, NS ve diğer DNS kayıtlarını görüntüle.",
-          href: "/dns",
+          href: "/dns-sorgulama",
         },
         {
           title: "WHOIS Sorgulama",
           desc: "Alan adı kayıt bilgilerini, kayıtçıyı ve tarihleri öğren.",
-          href: "/whois",
+          href: "/whois-sorgulama",
         },
         {
           title: "Port Kontrol",
           desc: "Bir sunucudaki yaygın portların açık olup olmadığını test et.",
-          href: "/ports",
+          href: "/port-kontrol",
         },
         {
           title: "Windows Uygulaması",
@@ -75,7 +75,7 @@ const dictionaries = {
         {
           title: "Hız Testi",
           desc: "İndirme, yükleme ve gecikme (ping) değerlerini ölç.",
-          href: "/speed-test",
+          href: "/hiz-testi",
         },
         {
           title: "Ağ Tarama",
@@ -88,8 +88,8 @@ const dictionaries = {
           href: "/blog",
         },
         {
-          title: "Kamera & Montaj Mağazası",
-          desc: "Güvenlik kamerası satın al, montaj hizmetini aynı sepette ekle.",
+          title: "Mağaza",
+          desc: "Ağ güvenliği donanımları mağazamız çok yakında açılıyor.",
           href: "/shop",
         },
       ],
@@ -157,8 +157,8 @@ const dictionaries = {
         "Yalnızca sahibi olduğun veya izin aldığın sunuculara yönelik kullan.",
       crossSell: {
         title: "Kameranız güvenlik açığına sahip olabilir",
-        body: "Açık bulunan portlar arasında kamera veya kayıt cihazı servislerine ait olabilecekler var. Profesyonel güvenlik denetimi ve montaj hizmetimize göz atın.",
-        cta: "Güvenlik Ürünlerine Göz At",
+        body: "Açık bulunan portlar arasında kamera veya kayıt cihazı servislerine ait olabilecekler var. Güvenlik ürünleri mağazamız çok yakında.",
+        cta: "Mağazaya Göz At",
       },
     },
     speedTest: {
@@ -173,8 +173,8 @@ const dictionaries = {
       note: "Sonuçlar tarayıcı ve ağ koşullarına göre değişebilir.",
       crossSell: {
         title: "Ağınız yavaş mı?",
-        body: "Ev veya işyeri ağınızı optimize eden kurulum hizmetimizle güvenlik kameranızı da sorunsuz şekilde bağlatın.",
-        cta: "Kurulum Hizmetini İncele",
+        body: "Çok yakında açılacak mağazamızda ağ ve güvenlik donanımlarını bulacaksınız.",
+        cta: "Mağazaya Göz At",
       },
     },
     scan: {
@@ -210,49 +210,10 @@ const dictionaries = {
       rights: "Tüm hakları saklıdır.",
     },
     shop: {
-      title: "Kamera & Montaj Mağazası",
-      subtitle:
-        "Güvenlik kamerası seç, profesyonel montaj hizmetini aynı sepette ekle.",
-      viewProduct: "Ürünü İncele",
-      specsTitle: "Teknik Özellikler",
-      installTitle: "Kurulum Tercihi",
-      installOptions: {
-        none: { label: "Sadece Ürün", desc: "Kendim kurarım", price: "+0₺" },
-        install: {
-          label: "Profesyonel Montaj",
-          desc: "Uzman teknisyen adresinize gelir",
-          price: "+750₺",
-        },
-        installPlus: {
-          label: "Montaj + Yıllık Bakım",
-          desc: "1 yıl ücretsiz bakım ve destek dahil",
-          price: "+1.200₺",
-        },
-      },
-      addToCart: "Sepete Ekle",
-      addedToCart: "Sepete eklendi.",
-      goToCart: "Sepete git",
-      backToShop: "← Mağazaya dön",
-    },
-    cart: {
-      title: "Sepetim",
-      subtitle: "Ürünlerini gözden geçir, montaj randevunu planla.",
-      empty: "Sepetin boş.",
-      continueShopping: "Alışverişe devam et",
-      remove: "Kaldır",
-      installLabel: "Kurulum",
-      bookingTitle: "Montaj Randevusu",
-      dateLabel: "Tarih",
-      timeLabel: "Saat",
-      addressLabel: "Montaj Adresi",
-      addressPlaceholder: "Mahalle, cadde, no, ilçe/il",
-      total: "Toplam",
-      checkout: "Siparişi Tamamla",
-      placingOrder: "Sipariş oluşturuluyor...",
-      orderSuccessTitle: "Siparişin alındı!",
-      orderSuccessBody: "Sipariş numaran:",
-      orderSuccessNote:
-        "Montaj seçtiysen teknisyenimiz randevu öncesi seninle iletişime geçecek.",
+      title: "Mağaza",
+      comingSoonTitle: "Çok Yakında...",
+      comingSoonBody:
+        "Ağ güvenliği ve akıllı ev donanımları mağazamızı hazırlıyoruz. Yeni nesil güvenlik kameraları ve kurulum hizmetleriyle çok yakında burada.",
     },
   },
   en: {
@@ -309,17 +270,17 @@ const dictionaries = {
         {
           title: "DNS Lookup",
           desc: "View A, MX, TXT, NS and other DNS records of any domain.",
-          href: "/dns",
+          href: "/dns-lookup",
         },
         {
           title: "WHOIS Lookup",
           desc: "Discover domain registration details, registrar and dates.",
-          href: "/whois",
+          href: "/whois-lookup",
         },
         {
           title: "Port Check",
           desc: "Test whether common ports are open on a server.",
-          href: "/ports",
+          href: "/port-check",
         },
         {
           title: "Windows App",
@@ -342,8 +303,8 @@ const dictionaries = {
           href: "/blog",
         },
         {
-          title: "Camera & Installation Shop",
-          desc: "Buy a security camera and add installation service to the same cart.",
+          title: "Shop",
+          desc: "Our network security hardware shop is launching soon.",
           href: "/shop",
         },
       ],
@@ -408,8 +369,8 @@ const dictionaries = {
       disclaimer: "Only use against servers you own or have permission to test.",
       crossSell: {
         title: "Your camera might be exposed",
-        body: "Some open ports could belong to camera or recorder services. Check out our professional security audit and installation service.",
-        cta: "Browse Security Products",
+        body: "Some open ports could belong to camera or recorder services. Our security hardware shop is launching soon.",
+        cta: "Browse Shop",
       },
     },
     speedTest: {
@@ -424,8 +385,8 @@ const dictionaries = {
       note: "Results may vary based on browser and network conditions.",
       crossSell: {
         title: "Is your network slow?",
-        body: "Get your home or office network optimized and your security camera installed seamlessly with our setup service.",
-        cta: "See Installation Service",
+        body: "Our upcoming shop will feature networking and security hardware to help.",
+        cta: "Browse Shop",
       },
     },
     scan: {
@@ -460,49 +421,10 @@ const dictionaries = {
       rights: "All rights reserved.",
     },
     shop: {
-      title: "Camera & Installation Shop",
-      subtitle:
-        "Pick a security camera and add professional installation to the same cart.",
-      viewProduct: "View Product",
-      specsTitle: "Specifications",
-      installTitle: "Installation Choice",
-      installOptions: {
-        none: { label: "Product Only", desc: "I'll install it myself", price: "+0₺" },
-        install: {
-          label: "Professional Installation",
-          desc: "A technician comes to your address",
-          price: "+750₺",
-        },
-        installPlus: {
-          label: "Installation + Yearly Maintenance",
-          desc: "Includes 1 year of free maintenance and support",
-          price: "+1,200₺",
-        },
-      },
-      addToCart: "Add to Cart",
-      addedToCart: "Added to cart.",
-      goToCart: "Go to cart",
-      backToShop: "← Back to shop",
-    },
-    cart: {
-      title: "My Cart",
-      subtitle: "Review your items and plan your installation appointment.",
-      empty: "Your cart is empty.",
-      continueShopping: "Continue shopping",
-      remove: "Remove",
-      installLabel: "Installation",
-      bookingTitle: "Installation Appointment",
-      dateLabel: "Date",
-      timeLabel: "Time",
-      addressLabel: "Installation Address",
-      addressPlaceholder: "Street, number, city",
-      total: "Total",
-      checkout: "Complete Order",
-      placingOrder: "Placing order...",
-      orderSuccessTitle: "Order received!",
-      orderSuccessBody: "Your order number:",
-      orderSuccessNote:
-        "If you chose installation, our technician will contact you before the appointment.",
+      title: "Shop",
+      comingSoonTitle: "Coming Soon...",
+      comingSoonBody:
+        "We're building our network security and smart home hardware shop. Next-gen security cameras and installation services, launching soon.",
     },
   },
 } as const;
