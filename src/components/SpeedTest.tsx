@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
+import type { Locale } from "@/i18n/config";
 
 type Phase = "idle" | "ping" | "download" | "upload" | "done";
 
@@ -132,7 +134,13 @@ function Gauge({
   );
 }
 
-export function SpeedTest({ dict }: { dict: Dictionary["speedTest"] }) {
+export function SpeedTest({
+  dict,
+  locale,
+}: {
+  dict: Dictionary["speedTest"];
+  locale: Locale;
+}) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [ping, setPing] = useState<number | null>(null);
   const [jitter, setJitter] = useState<number | null>(null);
@@ -181,6 +189,21 @@ export function SpeedTest({ dict }: { dict: Dictionary["speedTest"] }) {
         </button>
         <p className="mt-4 text-xs text-neutral-500">{dict.note}</p>
       </div>
+
+      {phase === "done" && (
+        <div className="mt-8 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-5 text-center">
+          <h3 className="font-semibold text-amber-200">{dict.crossSell.title}</h3>
+          <p className="mx-auto mt-1 max-w-md text-sm text-neutral-300">
+            {dict.crossSell.body}
+          </p>
+          <Link
+            href={`/${locale}/shop`}
+            className="mt-3 inline-block rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-300"
+          >
+            {dict.crossSell.cta} →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

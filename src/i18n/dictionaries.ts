@@ -18,6 +18,7 @@ const dictionaries = {
       scan: "Ağ Tarama",
       appDownload: "Windows Uygulaması",
       blog: "Blog",
+      shop: "Mağaza",
     },
     hero: {
       badge: "Ağ araçları platformu",
@@ -86,6 +87,11 @@ const dictionaries = {
           desc: "Ağ güvenliği ve internet üzerine rehberler ve makaleler.",
           href: "/blog",
         },
+        {
+          title: "Kamera & Montaj Mağazası",
+          desc: "Güvenlik kamerası satın al, montaj hizmetini aynı sepette ekle.",
+          href: "/shop",
+        },
       ],
     },
     ipLookup: {
@@ -149,6 +155,11 @@ const dictionaries = {
       closed: "Kapalı",
       disclaimer:
         "Yalnızca sahibi olduğun veya izin aldığın sunuculara yönelik kullan.",
+      crossSell: {
+        title: "Kameranız güvenlik açığına sahip olabilir",
+        body: "Açık bulunan portlar arasında kamera veya kayıt cihazı servislerine ait olabilecekler var. Profesyonel güvenlik denetimi ve montaj hizmetimize göz atın.",
+        cta: "Güvenlik Ürünlerine Göz At",
+      },
     },
     speedTest: {
       title: "İnternet Hız Testi",
@@ -160,6 +171,11 @@ const dictionaries = {
       upload: "Yükleme",
       ping: "Ping",
       note: "Sonuçlar tarayıcı ve ağ koşullarına göre değişebilir.",
+      crossSell: {
+        title: "Ağınız yavaş mı?",
+        body: "Ev veya işyeri ağınızı optimize eden kurulum hizmetimizle güvenlik kameranızı da sorunsuz şekilde bağlatın.",
+        cta: "Kurulum Hizmetini İncele",
+      },
     },
     scan: {
       title: "Ağ Tarama",
@@ -193,6 +209,51 @@ const dictionaries = {
       tagline: "Ağ araçları, tek bir yerde.",
       rights: "Tüm hakları saklıdır.",
     },
+    shop: {
+      title: "Kamera & Montaj Mağazası",
+      subtitle:
+        "Güvenlik kamerası seç, profesyonel montaj hizmetini aynı sepette ekle.",
+      viewProduct: "Ürünü İncele",
+      specsTitle: "Teknik Özellikler",
+      installTitle: "Kurulum Tercihi",
+      installOptions: {
+        none: { label: "Sadece Ürün", desc: "Kendim kurarım", price: "+0₺" },
+        install: {
+          label: "Profesyonel Montaj",
+          desc: "Uzman teknisyen adresinize gelir",
+          price: "+750₺",
+        },
+        installPlus: {
+          label: "Montaj + Yıllık Bakım",
+          desc: "1 yıl ücretsiz bakım ve destek dahil",
+          price: "+1.200₺",
+        },
+      },
+      addToCart: "Sepete Ekle",
+      addedToCart: "Sepete eklendi.",
+      goToCart: "Sepete git",
+      backToShop: "← Mağazaya dön",
+    },
+    cart: {
+      title: "Sepetim",
+      subtitle: "Ürünlerini gözden geçir, montaj randevunu planla.",
+      empty: "Sepetin boş.",
+      continueShopping: "Alışverişe devam et",
+      remove: "Kaldır",
+      installLabel: "Kurulum",
+      bookingTitle: "Montaj Randevusu",
+      dateLabel: "Tarih",
+      timeLabel: "Saat",
+      addressLabel: "Montaj Adresi",
+      addressPlaceholder: "Mahalle, cadde, no, ilçe/il",
+      total: "Toplam",
+      checkout: "Siparişi Tamamla",
+      placingOrder: "Sipariş oluşturuluyor...",
+      orderSuccessTitle: "Siparişin alındı!",
+      orderSuccessBody: "Sipariş numaran:",
+      orderSuccessNote:
+        "Montaj seçtiysen teknisyenimiz randevu öncesi seninle iletişime geçecek.",
+    },
   },
   en: {
     meta: {
@@ -211,6 +272,7 @@ const dictionaries = {
       scan: "Network Scan",
       appDownload: "Windows App",
       blog: "Blog",
+      shop: "Shop",
     },
     hero: {
       badge: "Network tools platform",
@@ -279,6 +341,11 @@ const dictionaries = {
           desc: "Guides and articles on network security and the internet.",
           href: "/blog",
         },
+        {
+          title: "Camera & Installation Shop",
+          desc: "Buy a security camera and add installation service to the same cart.",
+          href: "/shop",
+        },
       ],
     },
     ipLookup: {
@@ -339,6 +406,11 @@ const dictionaries = {
       open: "Open",
       closed: "Closed",
       disclaimer: "Only use against servers you own or have permission to test.",
+      crossSell: {
+        title: "Your camera might be exposed",
+        body: "Some open ports could belong to camera or recorder services. Check out our professional security audit and installation service.",
+        cta: "Browse Security Products",
+      },
     },
     speedTest: {
       title: "Internet Speed Test",
@@ -350,6 +422,11 @@ const dictionaries = {
       upload: "Upload",
       ping: "Ping",
       note: "Results may vary based on browser and network conditions.",
+      crossSell: {
+        title: "Is your network slow?",
+        body: "Get your home or office network optimized and your security camera installed seamlessly with our setup service.",
+        cta: "See Installation Service",
+      },
     },
     scan: {
       title: "Network Scan",
@@ -381,6 +458,51 @@ const dictionaries = {
     footer: {
       tagline: "Network tools, all in one place.",
       rights: "All rights reserved.",
+    },
+    shop: {
+      title: "Camera & Installation Shop",
+      subtitle:
+        "Pick a security camera and add professional installation to the same cart.",
+      viewProduct: "View Product",
+      specsTitle: "Specifications",
+      installTitle: "Installation Choice",
+      installOptions: {
+        none: { label: "Product Only", desc: "I'll install it myself", price: "+0₺" },
+        install: {
+          label: "Professional Installation",
+          desc: "A technician comes to your address",
+          price: "+750₺",
+        },
+        installPlus: {
+          label: "Installation + Yearly Maintenance",
+          desc: "Includes 1 year of free maintenance and support",
+          price: "+1,200₺",
+        },
+      },
+      addToCart: "Add to Cart",
+      addedToCart: "Added to cart.",
+      goToCart: "Go to cart",
+      backToShop: "← Back to shop",
+    },
+    cart: {
+      title: "My Cart",
+      subtitle: "Review your items and plan your installation appointment.",
+      empty: "Your cart is empty.",
+      continueShopping: "Continue shopping",
+      remove: "Remove",
+      installLabel: "Installation",
+      bookingTitle: "Installation Appointment",
+      dateLabel: "Date",
+      timeLabel: "Time",
+      addressLabel: "Installation Address",
+      addressPlaceholder: "Street, number, city",
+      total: "Total",
+      checkout: "Complete Order",
+      placingOrder: "Placing order...",
+      orderSuccessTitle: "Order received!",
+      orderSuccessBody: "Your order number:",
+      orderSuccessNote:
+        "If you chose installation, our technician will contact you before the appointment.",
     },
   },
 } as const;

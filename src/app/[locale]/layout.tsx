@@ -7,6 +7,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AuroraBackground } from "@/components/AuroraBackground";
+import { CartProvider } from "@/context/CartContext";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -67,9 +68,11 @@ export default async function LocaleLayout({
     >
       <body className="min-h-full flex flex-col text-white">
         <AuroraBackground />
-        <Header locale={locale} dict={dict} />
-        <main className="flex-1">{children}</main>
-        <Footer locale={locale} dict={dict} />
+        <CartProvider>
+          <Header locale={locale} dict={dict} />
+          <main className="flex-1">{children}</main>
+          <Footer locale={locale} dict={dict} />
+        </CartProvider>
         <Analytics />
         <SpeedInsights />
       </body>

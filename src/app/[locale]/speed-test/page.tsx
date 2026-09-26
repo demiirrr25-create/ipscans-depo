@@ -15,7 +15,7 @@ export default async function SpeedTestPage({
 
   return (
     <PageShell title={dict.speedTest.title} subtitle={dict.speedTest.subtitle}>
-      <SpeedTest dict={dict.speedTest} />
+      <SpeedTest dict={dict.speedTest} locale={locale} />
     </PageShell>
   );
 }

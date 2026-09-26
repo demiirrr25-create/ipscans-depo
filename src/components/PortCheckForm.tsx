@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
+import type { Locale } from "@/i18n/config";
 
 type PortResult = {
   host: string;
@@ -9,7 +11,13 @@ type PortResult = {
   ports: { port: number; name: string; open: boolean }[];
 };
 
-export function PortCheckForm({ dict }: { dict: Dictionary["ports"] }) {
+export function PortCheckForm({
+  dict,
+  locale,
+}: {
+  dict: Dictionary["ports"];
+  locale: Locale;
+}) {
   const [host, setHost] = useState("");
   const [result, setResult] = useState<PortResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,6 +104,23 @@ export function PortCheckForm({ dict }: { dict: Dictionary["ports"] }) {
               </div>
             ))}
           </div>
+
+          {result.ports.some((p) => p.open) && (
+            <div className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-5">
+              <h3 className="font-semibold text-amber-200">
+                {dict.crossSell.title}
+              </h3>
+              <p className="mt-1 text-sm text-neutral-300">
+                {dict.crossSell.body}
+              </p>
+              <Link
+                href={`/${locale}/shop`}
+                className="mt-3 inline-block rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-300"
+              >
+                {dict.crossSell.cta} →
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

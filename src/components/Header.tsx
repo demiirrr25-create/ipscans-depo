@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { CartButton } from "./CartButton";
 
 export function Header({
   locale,
@@ -29,6 +30,7 @@ export function Header({
   ];
   const topLinks = [
     { href: `/${locale}`, label: dict.nav.home },
+    { href: `/${locale}/shop`, label: dict.nav.shop },
     { href: `/${locale}/scan`, label: dict.nav.scan },
     { href: `/${locale}/blog`, label: dict.nav.blog },
   ];
@@ -49,10 +51,12 @@ export function Header({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setToolsOpen(false);
     setOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <header className="sticky top-0 z-50 glass">
@@ -135,6 +139,7 @@ export function Header({
         </nav>
 
         <div className="flex items-center gap-3">
+          <CartButton locale={locale} />
           <LanguageSwitcher locale={locale} />
           <button
             aria-label="Menu"

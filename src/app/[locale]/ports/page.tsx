@@ -15,7 +15,7 @@ export default async function PortsPage({
 
   return (
     <PageShell title={dict.ports.title} subtitle={dict.ports.subtitle}>
-      <PortCheckForm dict={dict.ports} />
+      <PortCheckForm dict={dict.ports} locale={locale} />
     </PageShell>
   );
 }
