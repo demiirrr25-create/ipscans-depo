@@ -1,61 +1,53 @@
 # ipscans Network Scanner (desktop)
 
-Hybrid deep network scanner: Tauri (Rust backend + system webview) with a
-plain TypeScript/Vite frontend, matching the ipscans.com black/white/gray
-design language.
+PyQt6 tabanlı, ipscans.com ile aynı siyah/beyaz/gri temaya sahip masaüstü ağ
+tarama uygulaması. Çerçevesiz, yuvarlak köşeli, gölgeli pencere; ARP/ping ile
+hızlı host keşfi + SNMP/WMI/UPnP/Nmap ile derinlemesine cihaz bilgisi.
 
-## Why Tauri over Electron
-
-- Rust backend gives direct, typed access to raw sockets, ICMP, SNMP and UDP
-  multicast (WS-Discovery/SSDP) without shelling out to native tools.
-- Ships a native installer (~10-20 MB) using the OS's own WebView2 runtime on
-  Windows, instead of bundling a full Chromium (~150 MB+ with Electron).
-- Rust's `tokio` async runtime scans hundreds of hosts concurrently with a
-  fraction of Electron/Node's memory footprint.
-
-## Architecture
-
-```
-src-tauri/src/
-  main.rs            Tauri commands: scan_network, open_ip_in_browser
-  scanner/
-    discovery.rs      ICMP sweep + ARP/neighbor-table MAC resolution
-    ports.rs          Common-port TCP connect probe (80/443/554/RTSP/etc.)
-    snmp.rs           SNMP v2c GET (sysDescr, sysName, entPhysicalSerialNum)
-    onvif.rs          WS-Discovery UDP multicast probe (ONVIF cameras/NVRs)
-    upnp.rs           SSDP M-SEARCH + device description fetch
-    wmi_probe.rs      Windows-only: local-machine WMI (Win32_OperatingSystem, Win32_BIOS)
-    types.rs          Shared `Device` model merged from all of the above
-```
-
-`scanner::run_full_scan()` runs the ICMP sweep first, fires the two
-network-wide multicast discoveries (ONVIF, UPnP) in parallel, then per host
-does a port probe + SNMP GET. Whichever protocol answers first contributes
-its fields to the same `Device` record, keyed by IP.
-
-## Known limitations of this scaffold
-
-- **Remote WMI** (querying *other* Windows PCs, not just the host machine)
-  needs DCOM + admin credentials on the target and is off by default on
-  modern Windows — `wmi_probe.rs` only enriches the local machine today.
-- **ONVIF** device info (manufacturer/model/serial) requires a second SOAP
-  call (`GetDeviceInformation`) to each responder's `XAddr`; only the
-  WS-Discovery probe/match step is implemented here.
-- The manual XML field extraction in `onvif.rs`/`upnp.rs` is intentionally
-  minimal (no external XML parser dependency) — swap in `quick-xml` for a
-  production build.
-- Raw ARP requests (rather than reading the OS ARP cache) need elevated
-  privileges on most OSes; `discovery.rs` deliberately avoids that so the
-  app doesn't need to run as admin/root just to list hosts.
-
-## Building
+## Kurulum
 
 ```bash
-npm install
-npm run tauri dev     # local development
-npm run tauri build    # produces an NSIS/MSI installer for Windows
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
 ```
 
-Requires the Rust toolchain (`rustup`) and, for Windows builds, the
-`x86_64-pc-windows-msvc` target plus the Tauri Windows prerequisites
-(WebView2 runtime, MSVC build tools).
+Nmap desteği için `nmap` komut satırı aracının ayrıca kurulu ve PATH'te
+olması gerekir (https://nmap.org/download.html). WMI yalnızca Windows'ta
+etkindir.
+
+## Mimari
+
+```
+app/
+  core/
+    models.py           Device veri modeli (tüm protokollerin birleştiği yer)
+    network_utils.py     Hedef ayrıştırma (tek IP / aralık / CIDR), ping sweep,
+                          ARP tablosu okuma, hostname çözümleme, port tarama
+    vendor_lookup.py     MAC -> üretici (OUI) çevrimdışı sözlük
+    scanner.py            Tüm protokolleri birleştiren orkestrasyon (ThreadPoolExecutor)
+    protocols/
+      snmp_probe.py       SNMP v2c GET (sysDescr, sysName, seri no OID'i)
+      wmi_probe.py        Windows WMI (Win32_OperatingSystem, Win32_BIOS)
+      upnp_probe.py       SSDP/UPnP keşfi
+      nmap_probe.py       python-nmap ile servis/OS parmak izi
+  workers/
+    scan_worker.py        QThread sarmalayıcı — arayüzü asla dondurmaz
+  ui/
+    styles.py             Karanlık QSS teması
+    widgets.py             Cihaz tablo modeli, canlı filtre, hedef seçici
+    main_window.py         Çerçevesiz ana pencere, çift tık -> tarayıcıda aç
+```
+
+## Bilinen sınırlamalar
+
+- **Uzak WMI** (başka bir Windows makinesini sorgulamak) DCOM + yönetici
+  kimlik bilgisi gerektirir ve modern güvenlik duvarlarında varsayılan kapalıdır;
+  `wmi_probe.query_local_machine()` yalnızca çalıştığı makineyi güvenilir şekilde
+  zenginleştirir. `query_remote()` açıkça kimlik bilgisi verildiğinde kullanılabilir.
+- **Nmap** taraması diğer protokollere göre yavaştır, bu yüzden varsayılan
+  olarak kapalıdır (arayüzden açılabilir).
+- Ping, ham soket yerine işletim sisteminin `ping`/`arp` komutlarını
+  kullanır — böylece yönetici/root yetkisi gerekmez, ama bazı güvenlik
+  duvarları ICMP'yi engelleyen cihazları "kapalı" gösterebilir.

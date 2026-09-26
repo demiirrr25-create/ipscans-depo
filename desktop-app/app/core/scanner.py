@@ -1,0 +1,110 @@
+"""Orchestrates the full hybrid scan: fast ping sweep first, then per-host
+enrichment (MAC/vendor/hostname/ports/SNMP/WMI/Nmap) plus one network-wide
+UPnP discovery pass, merged into a single Device per responding host.
+"""
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from typing import Callable
+
+from app.core import network_utils, vendor_lookup
+from app.core.models import Device
+from app.core.protocols import nmap_probe, snmp_probe, upnp_probe, wmi_probe
+
+
+@dataclass
+class ScanOptions:
+    enable_snmp: bool = True
+    snmp_community: str = "public"
+    enable_wmi: bool = True
+    enable_upnp: bool = True
+    enable_nmap: bool = False  # off by default: nmap is comparatively slow
+    nmap_os_detection: bool = False
+    max_workers: int = 32
+
+
+def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict, options: ScanOptions) -> Device:
+    mac = mac_by_ip.get(ip)
+    device = Device(
+        ip=ip,
+        mac=mac,
+        vendor=vendor_lookup.lookup_vendor(mac),
+        hostname=network_utils.resolve_hostname(ip),
+        open_ports=network_utils.scan_ports(ip),
+    )
+
+    if options.enable_snmp:
+        snmp_result = snmp_probe.query(ip, options.snmp_community)
+        if snmp_result:
+            device.snmp_sys_descr = snmp_result.sys_descr
+            device.snmp_sys_name = snmp_result.sys_name
+            device.serial_number = device.serial_number or snmp_result.serial_number
+            device.sources.append("SNMP")
+
+    upnp_result = upnp_by_ip.get(ip)
+    if upnp_result:
+        device.upnp_friendly_name = upnp_result.friendly_name
+        device.upnp_device_type = upnp_result.device_type
+        device.sources.append("UPnP")
+
+    if options.enable_wmi:
+        wmi_result = wmi_probe.query_local_machine() if _looks_like_self(ip) else None
+        if wmi_result:
+            device.wmi_computer_name = wmi_result.computer_name
+            device.wmi_os_caption = wmi_result.os_caption
+            device.serial_number = device.serial_number or wmi_result.bios_serial_number
+            device.sources.append("WMI")
+
+    if options.enable_nmap:
+        nmap_result = nmap_probe.query(ip, with_os_detection=options.nmap_os_detection)
+        if nmap_result:
+            device.nmap_os_guess = nmap_result.os_guess
+            device.nmap_services = nmap_result.services
+            device.sources.append("Nmap")
+
+    return device
+
+
+def _looks_like_self(ip: str) -> bool:
+    import socket
+
+    try:
+        return ip in socket.gethostbyname_ex(socket.gethostname())[2]
+    except OSError:
+        return False
+
+
+def run_scan(
+    targets: list[str],
+    options: ScanOptions,
+    on_device_found: Callable[[Device], None],
+    on_progress: Callable[[int, int], None] | None = None,
+    should_stop: Callable[[], bool] | None = None,
+) -> None:
+    """Runs synchronously on a background thread (see workers/scan_worker.py);
+    calls `on_device_found` incrementally so the UI can populate rows live.
+    """
+    alive_hosts = network_utils.ping_sweep(targets)
+    if not alive_hosts:
+        return
+
+    mac_by_ip = network_utils.resolve_macs(alive_hosts)
+    upnp_by_ip = upnp_probe.discover() if options.enable_upnp else {}
+
+    total = len(alive_hosts)
+    completed = 0
+    with ThreadPoolExecutor(max_workers=options.max_workers) as pool:
+        futures = {
+            pool.submit(_enrich_host, ip, mac_by_ip, upnp_by_ip, options): ip
+            for ip in alive_hosts
+        }
+        for future in as_completed(futures):
+            if should_stop and should_stop():
+                pool.shutdown(cancel_futures=True)
+                break
+            device = future.result()
+            on_device_found(device)
+            completed += 1
+            if on_progress:
+                on_progress(completed, total)

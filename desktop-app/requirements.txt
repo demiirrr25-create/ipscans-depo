@@ -1,0 +1,18 @@
+# GUI
+PyQt6>=6.6
+
+# MAC vendor (OUI) lookup — bundled offline database, no network calls
+mac-vendor-lookup>=0.1.12
+
+# SNMP v1/v2c GET (sysDescr, sysName, serial number OIDs)
+pysnmp>=6.1
+
+# UPnP/SSDP device discovery
+upnpclient>=1.0
+
+# Nmap-backed service/OS fingerprinting (requires the `nmap` binary on PATH)
+python-nmap>=0.7.1
+
+# Windows-only local/remote WMI access
+wmi>=1.5.1; sys_platform == "win32"
+pywin32; sys_platform == "win32"
