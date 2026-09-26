@@ -1,17 +1,14 @@
-"""Main application window: frameless, rounded, dark, with a drop shadow —
-the "zamanın ötesinde" look — housing the target selector, live filter bar
-and the device results table.
+"""Main application window: a normal, resizable/maximizable OS window with
+a dark theme applied throughout — houses the target selector, live filter
+bar and the device results table.
 """
 from __future__ import annotations
 
 import webbrowser
 
-from PyQt6.QtCore import QPoint, Qt
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QCheckBox,
     QFrame,
-    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -36,17 +33,20 @@ from app.workers.scan_worker import ScanWorker
 class MainWindow(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self._drag_offset: QPoint | None = None
         self._worker: ScanWorker | None = None
 
-        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setObjectName("AppRoot")
+        self.setWindowTitle("ipscans — Ağ Tarayıcı")
+        # A plain, native window: resizable and maximizable out of the box.
+        # (A previous frameless/translucent version caused unreadable,
+        # partially-unstyled rendering on real Windows and blocked maximize.)
         self.resize(1180, 760)
         self.setMinimumSize(900, 600)
         self.setStyleSheet(DARK_QSS)
 
         self._build_ui()
         self._wire_signals()
+        self._prefill_detected_network()
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self) -> None:
@@ -54,16 +54,13 @@ class MainWindow(QWidget):
         outer.setContentsMargins(20, 20, 20, 20)
 
         card = QFrame(objectName="RootCard")
-        shadow = QGraphicsDropShadowEffect(blurRadius=48, xOffset=0, yOffset=18)
-        shadow.setColor(QColor(0, 0, 0, 160))
-        card.setGraphicsEffect(shadow)
         outer.addWidget(card)
 
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(0, 0, 0, 0)
         card_layout.setSpacing(0)
 
-        card_layout.addWidget(self._build_title_bar())
+        card_layout.addWidget(self._build_header())
 
         body = QVBoxLayout()
         body.setContentsMargins(20, 16, 20, 20)
@@ -75,28 +72,13 @@ class MainWindow(QWidget):
         body.addWidget(self._build_table(), stretch=1)
         body.addLayout(self._build_status_bar())
 
-    def _build_title_bar(self) -> QWidget:
+    def _build_header(self) -> QWidget:
         bar = QFrame(objectName="TitleBar")
         bar.setFixedHeight(46)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(16, 0, 10, 0)
-
-        title = QLabel("ipscans  •  Ağ Tarayıcı", objectName="TitleText")
-        layout.addWidget(title)
+        layout.setContentsMargins(16, 0, 16, 0)
+        layout.addWidget(QLabel("ipscans  •  Ağ Tarayıcı", objectName="TitleText"))
         layout.addStretch(1)
-
-        minimize_btn = QPushButton("—", objectName="WindowButton")
-        minimize_btn.clicked.connect(self.showMinimized)
-        close_btn = QPushButton("✕", objectName="CloseButton")
-        close_btn.setProperty("class", "WindowButton")
-        close_btn.setObjectName("WindowButton")
-        close_btn.clicked.connect(self.close)
-        for btn in (minimize_btn, close_btn):
-            btn.setFixedSize(30, 26)
-            layout.addWidget(btn)
-
-        bar.mousePressEvent = self._title_bar_press  # type: ignore[method-assign]
-        bar.mouseMoveEvent = self._title_bar_move  # type: ignore[method-assign]
         return bar
 
     def _build_scan_controls(self) -> QWidget:
@@ -185,6 +167,15 @@ class MainWindow(QWidget):
         self.stop_btn.clicked.connect(self._stop_scan)
         self.filter_edit.textChanged.connect(self.proxy.set_filter_text)
 
+    def _prefill_detected_network(self) -> None:
+        """Auto-detects the machine's local /24 and writes a ready-to-scan
+        range into the target field, so most users can just press Start.
+        """
+        suggestion = network_utils.suggest_range_spec()
+        if suggestion:
+            self.target_input.set_value(suggestion)
+            self.status_label.setText(f"Algılanan yerel ağ: {suggestion}")
+
     # ------------------------------------------------------------- actions
     def _start_scan(self) -> None:
         spec = self.target_input.spec()
@@ -245,12 +236,3 @@ class MainWindow(QWidget):
             # The "clickable IP" feature: opens the device's web UI in the
             # user's default browser (https if a secure port is open).
             webbrowser.open(device.url)
-
-    # --------------------------------------------------- frameless dragging
-    def _title_bar_press(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
-
-    def _title_bar_move(self, event) -> None:
-        if self._drag_offset is not None and event.buttons() & Qt.MouseButton.LeftButton:
-            self.move(event.globalPosition().toPoint() - self._drag_offset)

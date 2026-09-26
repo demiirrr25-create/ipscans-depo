@@ -3,10 +3,12 @@ from __future__ import annotations
 
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel
 from PyQt6.QtWidgets import (
-    QComboBox,
+    QButtonGroup,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QRadioButton,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -96,35 +98,60 @@ class DeviceFilterProxyModel(QSortFilterProxyModel):
 
 class TargetInput(QWidget):
     """Single IP / IP range / CIDR selector — returns a spec string that
-    `network_utils.parse_targets` understands.
+    `network_utils.parse_targets` understands. Presented as radio buttons
+    (rather than a dropdown) so the active mode is always visible at a glance.
+    Defaults to "IP Aralığı" (range) mode, per product requirement.
     """
 
-    MODES = ("Tek IP", "IP Aralığı", "CIDR")
+    MODES = ("IP Aralığı", "Tek IP", "CIDR")
+    PLACEHOLDERS = {
+        "Tek IP": "192.168.1.50",
+        "IP Aralığı": "192.168.1.10-192.168.1.150",
+        "CIDR": "192.168.1.0/24",
+    }
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-
-        self.mode_box = QComboBox()
-        self.mode_box.addItems(self.MODES)
-        self.mode_box.currentIndexChanged.connect(self._update_placeholder)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(8)
 
         self.value_edit = QLineEdit()
+
+        mode_row = QHBoxLayout()
+        mode_row.setSpacing(14)
+        self.mode_group = QButtonGroup(self)
+        self._radios: dict[str, QRadioButton] = {}
+        for mode in self.MODES:
+            radio = QRadioButton(mode)
+            self.mode_group.addButton(radio)
+            self._radios[mode] = radio
+            mode_row.addWidget(radio)
+        mode_row.addStretch(1)
+        self._radios["IP Aralığı"].setChecked(True)
+        for radio in self._radios.values():
+            radio.toggled.connect(self._on_mode_toggled)
+
         self._update_placeholder()
 
-        layout.addWidget(self.mode_box)
-        layout.addWidget(self.value_edit, stretch=1)
+        outer.addLayout(mode_row)
+        outer.addWidget(self.value_edit)
+
+    def _on_mode_toggled(self, checked: bool) -> None:
+        if checked:
+            self._update_placeholder()
 
     def _update_placeholder(self) -> None:
-        mode = self.mode_box.currentText()
-        examples = {
-            "Tek IP": "192.168.1.50",
-            "IP Aralığı": "192.168.1.10-192.168.1.150",
-            "CIDR": "192.168.1.0/24",
-        }
-        self.value_edit.setPlaceholderText(examples[mode])
+        self.value_edit.setPlaceholderText(self.PLACEHOLDERS[self.current_mode()])
+
+    def current_mode(self) -> str:
+        for mode, radio in self._radios.items():
+            if radio.isChecked():
+                return mode
+        return "IP Aralığı"
+
+    def set_value(self, text: str) -> None:
+        self.value_edit.setText(text)
 
     def spec(self) -> str:
         return self.value_edit.text().strip()

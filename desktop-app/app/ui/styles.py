@@ -1,7 +1,6 @@
 """Monochrome (black/white/gray) dark theme — matches ipscans.com's palette.
-Rounded corners and translucency are applied per-widget via QSS; the drop
-shadow itself is a QGraphicsDropShadowEffect (see main_window.py) since Qt
-stylesheets don't support box-shadow.
+Applied globally (including QMessageBox/QToolTip popups) so no native,
+unstyled white-background/black-text widget ever appears.
 """
 
 DARK_QSS = """
@@ -9,6 +8,10 @@ DARK_QSS = """
     font-family: "Segoe UI", "Inter", Arial, sans-serif;
     color: #ffffff;
     outline: none;
+}
+
+#AppRoot {
+    background-color: #000000;
 }
 
 #RootCard {
@@ -39,8 +42,23 @@ QPushButton#WindowButton:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
 }
-QPushButton#CloseButton:hover {
-    background: rgba(255, 255, 255, 0.16);
+
+QRadioButton {
+    font-size: 13px;
+    spacing: 6px;
+    padding: 2px 0;
+}
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.04);
+}
+QRadioButton::indicator:checked {
+    border: 1px solid #ffffff;
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5,
+        stop:0 #ffffff, stop:0.5 #ffffff, stop:0.6 transparent, stop:1 transparent);
 }
 
 QLineEdit, QComboBox {
@@ -102,14 +120,13 @@ QTableView::item:selected {
     color: #ffffff;
 }
 QHeaderView::section {
-    background: transparent;
-    color: rgba(255, 255, 255, 0.55);
+    background-color: #141414;
+    color: rgba(255, 255, 255, 0.65);
     border: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.14);
     padding: 8px;
     font-size: 11px;
     font-weight: 600;
-    text-transform: uppercase;
 }
 
 QScrollBar:vertical {
@@ -160,5 +177,27 @@ QToolTip {
     border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 4px 8px;
     border-radius: 6px;
+}
+
+/* QMessageBox/QDialog popups are separate top-level windows — Fusion still
+   paints their own light background unless explicitly overridden here,
+   which is what made warning/error dialogs unreadable. */
+QDialog, QMessageBox {
+    background-color: #0a0a0a;
+}
+QMessageBox QLabel {
+    color: #ffffff;
+    background: transparent;
+}
+QDialog QPushButton, QMessageBox QPushButton {
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    min-width: 64px;
+}
+QDialog QPushButton:hover, QMessageBox QPushButton:hover {
+    background: #e6e6e6;
 }
 """

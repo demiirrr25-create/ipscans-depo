@@ -125,14 +125,45 @@ def resolve_hostname(ip: str) -> str | None:
 
 
 def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3) -> list[int]:
-    open_ports: list[int] = []
-    for port in ports or CANDIDATE_PORTS:
+    ports = ports or CANDIDATE_PORTS
+
+    def _check(port: int) -> int | None:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(timeout)
-            if sock.connect_ex((ip, port)) == 0:
-                open_ports.append(port)
-    return open_ports
+            return port if sock.connect_ex((ip, port)) == 0 else None
+
+    # Ports for a single host are checked concurrently too — with 11
+    # candidate ports at up to 0.3s each, a serial loop could take ~3.3s per
+    # host; in parallel it's bounded by the single slowest port instead.
+    with ThreadPoolExecutor(max_workers=len(ports)) as pool:
+        results = pool.map(_check, ports)
+    return sorted(p for p in results if p is not None)
 
 
 def resolve_macs(ips: list[str]) -> dict[str, str]:
     return {ip: mac for ip, mac in _read_arp_table().items() if ip in ips}
+
+
+def detect_local_network(prefix_len: int = 24) -> ipaddress.IPv4Network | None:
+    """Finds the machine's own local IPv4 address (via a connect-less UDP
+    "connect", which never actually sends a packet) and derives the /24
+    network it likely belongs to — used to prefill the scan target on launch.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            local_ip = sock.getsockname()[0]
+        return ipaddress.ip_network(f"{local_ip}/{prefix_len}", strict=False)
+    except OSError:
+        return None
+
+
+def suggest_range_spec() -> str | None:
+    """Returns a ready-to-scan "start-end" string for the detected local network."""
+    network = detect_local_network()
+    if network is None:
+        return None
+    hosts = list(network.hosts())
+    if not hosts:
+        return None
+    return f"{hosts[0]}-{hosts[-1]}"
