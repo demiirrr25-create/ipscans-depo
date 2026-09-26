@@ -1,0 +1,45 @@
+import Link from "next/link";
+import { isLocale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+import { PageShell } from "@/components/PageShell";
+import { posts } from "@/content/posts";
+import { notFound } from "next/navigation";
+
+export default async function BlogPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const dict = getDictionary(locale);
+
+  return (
+    <PageShell title={dict.blog.title} subtitle={dict.blog.subtitle}>
+      {posts.length === 0 ? (
+        <p className="text-center text-neutral-400">{dict.blog.empty}</p>
+      ) : (
+        <div className="mx-auto grid max-w-4xl gap-5 sm:grid-cols-2">
+          {posts.map((post) => (
+            <Link
+              key={post.slug}
+              href={`/${locale}/blog/${post.slug}`}
+              className="group rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-white/25 hover:bg-white/5"
+            >
+              <time className="text-xs text-neutral-500">{post.date}</time>
+              <h2 className="mt-2 text-lg font-semibold text-white group-hover:text-white">
+                {post.title[locale]}
+              </h2>
+              <p className="mt-2 text-sm text-neutral-400">
+                {post.excerpt[locale]}
+              </p>
+              <span className="mt-3 inline-block text-sm text-white">
+                {dict.blog.readMore} →
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </PageShell>
+  );
+}

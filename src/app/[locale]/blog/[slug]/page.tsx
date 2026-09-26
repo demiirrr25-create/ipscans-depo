@@ -1,0 +1,60 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { isLocale, locales } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+import { PageShell } from "@/components/PageShell";
+import { getPost, posts } from "@/content/posts";
+import { notFound } from "next/navigation";
+
+export function generateStaticParams() {
+  return locales.flatMap((locale) =>
+    posts.map((post) => ({ locale, slug: post.slug }))
+  );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const post = getPost(slug);
+  if (!isLocale(locale) || !post) return {};
+  return {
+    title: `${post.title[locale]} — ipscans`,
+    description: post.excerpt[locale],
+  };
+}
+
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}) {
+  const { locale, slug } = await params;
+  if (!isLocale(locale)) notFound();
+  const post = getPost(slug);
+  if (!post) notFound();
+  const dict = getDictionary(locale);
+
+  return (
+    <PageShell title={post.title[locale]}>
+      <article className="mx-auto max-w-2xl">
+        <time className="block text-center text-sm text-neutral-500">
+          {post.date}
+        </time>
+        <p className="mt-6 leading-relaxed text-neutral-300">
+          {post.body[locale]}
+        </p>
+        <div className="mt-10 text-center">
+          <Link
+            href={`/${locale}/blog`}
+            className="text-sm text-white hover:underline"
+          >
+            ← {dict.blog.title}
+          </Link>
+        </div>
+      </article>
+    </PageShell>
+  );
+}
