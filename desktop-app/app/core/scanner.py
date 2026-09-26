@@ -102,10 +102,16 @@ def run_scan(
     on_device_found: Callable[[Device], None],
     on_progress: Callable[[int, int], None] | None = None,
     should_stop: Callable[[], bool] | None = None,
+    on_phase: Callable[[str], None] | None = None,
 ) -> None:
     """Runs synchronously on a background thread (see workers/scan_worker.py);
     calls `on_device_found` incrementally so the UI can populate rows live.
+    `on_phase` reports coarse progress ("discovering" while the host sweep has
+    no per-item progress yet, then "enriching" once per-host counts are known)
+    so the UI can switch between an indeterminate spinner and a real progress bar.
     """
+    if on_phase:
+        on_phase("discovering")
     alive_hosts = network_utils.ping_sweep(targets)
     if not alive_hosts:
         return
@@ -115,6 +121,8 @@ def run_scan(
 
     total = len(alive_hosts)
     completed = 0
+    if on_phase:
+        on_phase("enriching")
     with ThreadPoolExecutor(max_workers=options.max_workers) as pool:
         futures = {
             pool.submit(_enrich_host, ip, mac_by_ip, upnp_by_ip, options): ip

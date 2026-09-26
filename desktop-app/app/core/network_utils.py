@@ -43,10 +43,10 @@ def parse_targets(spec: str) -> list[str]:
         try:
             network = ipaddress.ip_network(spec, strict=False)
         except ValueError as e:
-            raise InvalidTargetError(f"Geçersiz CIDR: {spec}") from e
+            raise InvalidTargetError(f"Invalid CIDR: {spec}") from e
         hosts = [str(h) for h in network.hosts()]
         if len(hosts) > MAX_HOSTS:
-            raise InvalidTargetError("Bu aralık çok geniş (en fazla /16 destekleniyor).")
+            raise InvalidTargetError("This range is too large (max /16 supported).")
         return hosts
 
     if "-" in spec:
@@ -54,7 +54,7 @@ def parse_targets(spec: str) -> list[str]:
         try:
             start = ipaddress.ip_address(start_str)
         except ValueError as e:
-            raise InvalidTargetError(f"Geçersiz başlangıç IP: {start_str}") from e
+            raise InvalidTargetError(f"Invalid start IP: {start_str}") from e
 
         # Allow the short form "192.168.1.10-150" (only the last octet changes).
         if re.fullmatch(r"\d{1,3}", end_str):
@@ -64,18 +64,18 @@ def parse_targets(spec: str) -> list[str]:
         try:
             end = ipaddress.ip_address(end_str)
         except ValueError as e:
-            raise InvalidTargetError(f"Geçersiz bitiş IP: {end_str}") from e
+            raise InvalidTargetError(f"Invalid end IP: {end_str}") from e
 
         if int(end) < int(start):
-            raise InvalidTargetError("Bitiş IP, başlangıçtan küçük olamaz.")
+            raise InvalidTargetError("End IP cannot be smaller than start IP.")
         if int(end) - int(start) > MAX_HOSTS:
-            raise InvalidTargetError("Bu aralık çok geniş.")
+            raise InvalidTargetError("This range is too large.")
         return [str(ipaddress.ip_address(i)) for i in range(int(start), int(end) + 1)]
 
     try:
         return [str(ipaddress.ip_address(spec))]
     except ValueError as e:
-        raise InvalidTargetError(f"Geçersiz IP adresi: {spec}") from e
+        raise InvalidTargetError(f"Invalid IP address: {spec}") from e
 
 
 def _ping_once(ip: str) -> bool:

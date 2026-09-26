@@ -196,8 +196,19 @@ QProgressBar {
     color: transparent;
 }
 QProgressBar::chunk {
-    background: #ffffff;
     border-radius: 4px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #8a8a8a, stop:0.5 #ffffff, stop:1 #8a8a8a);
+}
+
+QTextEdit {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 12px;
+    selection-background-color: #ffffff;
+    selection-color: #000000;
 }
 
 QToolTip {

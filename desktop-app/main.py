@@ -1,11 +1,16 @@
 """ipscans Network Scanner — PyQt6 desktop app entry point."""
 import sys
 
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 
 from app.ui.main_window import MainWindow
+from app.ui.privacy_dialog import PrivacyTermsDialog, has_accepted_privacy_terms
 from app.ui.resources import load_app_icon
+from app.ui.splash import WelcomeSplash
 from app.ui.styles import DARK_QSS
+
+SPLASH_DURATION_MS = 1400
 
 
 def main() -> None:
@@ -24,17 +29,34 @@ def main() -> None:
     app_icon = load_app_icon()
     app.setWindowIcon(app_icon)
 
-    window = MainWindow()
-    window.setWindowIcon(app_icon)
-
-
     if selftest:
+        window = MainWindow()
+        window.setWindowIcon(app_icon)
         print("selftest: window created OK")
         sys.exit(0)
 
-    window.show()
+    splash = WelcomeSplash()
+    splash.show()
+    app.processEvents()
+
+    def finish_startup() -> None:
+        splash.close()
+
+        if not has_accepted_privacy_terms():
+            dialog = PrivacyTermsDialog()
+            if dialog.exec() != PrivacyTermsDialog.DialogCode.Accepted:
+                app.quit()
+                return
+
+        window = MainWindow()
+        window.setWindowIcon(app_icon)
+        window.show()
+        app.window_ref = window  # keep a live reference so it isn't garbage-collected
+
+    QTimer.singleShot(SPLASH_DURATION_MS, finish_startup)
     sys.exit(app.exec())
 
 
 if __name__ == "__main__":
     main()
+

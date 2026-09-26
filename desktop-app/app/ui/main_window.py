@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import webbrowser
 
+from PyQt6.QtCore import QPropertyAnimation
 from PyQt6.QtWidgets import (
     QCheckBox,
     QFrame,
@@ -26,6 +27,7 @@ from app.core.models import Device
 from app.core.network_utils import InvalidTargetError
 from app.core.scanner import ScanOptions
 from app.ui.resources import load_logo_pixmap
+from app.ui.spinner import Spinner
 from app.ui.styles import DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput, section_label
 from app.workers.scan_worker import ScanWorker
@@ -37,7 +39,7 @@ class MainWindow(QWidget):
         self._worker: ScanWorker | None = None
 
         self.setObjectName("AppRoot")
-        self.setWindowTitle("ipscans — Ağ Tarayıcı")
+        self.setWindowTitle("ipscans — Network Scanner")
         # A plain, native window: resizable and maximizable out of the box.
         # (A previous frameless/translucent version caused unreadable,
         # partially-unstyled rendering on real Windows and blocked maximize.)
@@ -48,6 +50,15 @@ class MainWindow(QWidget):
         self._build_ui()
         self._wire_signals()
         self._prefill_detected_network()
+
+        self._fade_in = QPropertyAnimation(self, b"windowOpacity")
+        self._fade_in.setDuration(320)
+        self._fade_in.setStartValue(0.0)
+        self._fade_in.setEndValue(1.0)
+
+    def showEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        super().showEvent(event)
+        self._fade_in.start()
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self) -> None:
@@ -88,7 +99,7 @@ class MainWindow(QWidget):
         titles = QVBoxLayout()
         titles.setSpacing(0)
         title = QLabel("ipscans", objectName="TitleText")
-        subtitle = QLabel("Derin Ağ Tarama Aracı", objectName="SubtitleText")
+        subtitle = QLabel("Deep Network Scanning Tool", objectName="SubtitleText")
         titles.addWidget(title)
         titles.addWidget(subtitle)
         layout.addLayout(titles)
@@ -102,15 +113,15 @@ class MainWindow(QWidget):
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(10)
 
-        layout.addWidget(section_label("Tarama Hedefi"))
+        layout.addWidget(section_label("Scan Target"))
 
         row = QHBoxLayout()
         row.setSpacing(10)
         self.target_input = TargetInput()
         row.addWidget(self.target_input, stretch=1)
 
-        self.scan_btn = QPushButton("▶  Taramayı Başlat", objectName="PrimaryButton")
-        self.stop_btn = QPushButton("■  Durdur", objectName="GhostButton")
+        self.scan_btn = QPushButton("▶  Start Scan", objectName="PrimaryButton")
+        self.stop_btn = QPushButton("■  Stop", objectName="GhostButton")
         self.stop_btn.setEnabled(False)
         row.addWidget(self.scan_btn)
         row.addWidget(self.stop_btn)
@@ -118,14 +129,14 @@ class MainWindow(QWidget):
 
         options_row = QHBoxLayout()
         options_row.setSpacing(16)
-        options_row.addWidget(section_label("Protokoller"))
+        options_row.addWidget(section_label("Protocols"))
         self.snmp_check = QCheckBox("SNMP")
         self.snmp_check.setChecked(True)
         self.upnp_check = QCheckBox("UPnP")
         self.upnp_check.setChecked(True)
-        self.wmi_check = QCheckBox("WMI (yerel)")
+        self.wmi_check = QCheckBox("WMI (local)")
         self.wmi_check.setChecked(True)
-        self.nmap_check = QCheckBox("Nmap (yavaş)")
+        self.nmap_check = QCheckBox("Nmap (slower)")
         self.nmap_check.setChecked(False)
         for chk in (self.snmp_check, self.upnp_check, self.wmi_check, self.nmap_check):
             options_row.addWidget(chk)
@@ -142,7 +153,7 @@ class MainWindow(QWidget):
 
         self.filter_edit = QLineEdit()
         self.filter_edit.setPlaceholderText(
-            "Ara: IP, üretici veya MAC adresine göre anında filtrele..."
+            "Search: filter instantly by IP, vendor or MAC address..."
         )
         layout.addWidget(self.filter_edit, stretch=1)
         return wrap
@@ -171,12 +182,16 @@ class MainWindow(QWidget):
 
     def _build_status_bar(self) -> QHBoxLayout:
         layout = QHBoxLayout()
-        self.status_label = QLabel("Hazır.", objectName="StatusLabel")
-        self.progress_bar = QProgressBar()
+        self.status_label = QLabel("Ready.", objectName="StatusLabel")
+        self.spinner = Spinner(16)
+        self.spinner.hide()
+        self.progress_bar = QProgressBar(objectName="ScanProgress")
         self.progress_bar.setFixedWidth(160)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
+        self.progress_bar.hide()
         layout.addWidget(self.status_label, stretch=1)
+        layout.addWidget(self.spinner)
         layout.addWidget(self.progress_bar)
         return layout
 
@@ -193,7 +208,7 @@ class MainWindow(QWidget):
         suggestion = network_utils.suggest_range_spec()
         if suggestion:
             self.target_input.set_value(suggestion)
-            self.status_label.setText(f"Algılanan yerel ağ: {suggestion}")
+            self.status_label.setText(f"Detected local network: {suggestion}")
 
     # ------------------------------------------------------------- actions
     def _start_scan(self) -> None:
@@ -201,12 +216,14 @@ class MainWindow(QWidget):
         try:
             targets = network_utils.parse_targets(spec)
         except InvalidTargetError as exc:
-            QMessageBox.warning(self, "Geçersiz hedef", str(exc))
+            QMessageBox.warning(self, "Invalid target", str(exc))
             return
 
         self.model.clear()
         self.progress_bar.setValue(0)
-        self.status_label.setText(f"{len(targets)} adres taranıyor...")
+        self.progress_bar.hide()
+        self.spinner.start()
+        self.status_label.setText(f"Discovering hosts among {len(targets)} addresses...")
         self.scan_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
 
@@ -220,6 +237,7 @@ class MainWindow(QWidget):
         self._worker = ScanWorker(targets, options)
         self._worker.device_found.connect(self._on_device_found)
         self._worker.progress.connect(self._on_progress)
+        self._worker.phase_changed.connect(self._on_phase_changed)
         self._worker.finished_ok.connect(self._on_scan_finished)
         self._worker.failed.connect(self._on_scan_failed)
         self._worker.start()
@@ -227,26 +245,40 @@ class MainWindow(QWidget):
     def _stop_scan(self) -> None:
         if self._worker:
             self._worker.stop()
-        self.status_label.setText("Durduruluyor...")
+        self.status_label.setText("Stopping...")
 
     def _on_device_found(self, device: Device) -> None:
         self.model.add_device(device)
 
+    def _on_phase_changed(self, phase: str) -> None:
+        if phase == "discovering":
+            self.spinner.start()
+            self.progress_bar.hide()
+        elif phase == "enriching":
+            self.spinner.stop()
+            self.progress_bar.show()
+
     def _on_progress(self, done: int, total: int) -> None:
         percent = int((done / total) * 100) if total else 0
         self.progress_bar.setValue(percent)
-        self.status_label.setText(f"{done}/{total} tarandı — {self.model.rowCount()} cihaz bulundu")
+        self.status_label.setText(
+            f"Scanning {done}/{total} — {self.model.rowCount()} device(s) found"
+        )
 
     def _on_scan_finished(self) -> None:
+        self.spinner.stop()
+        self.progress_bar.hide()
         self.scan_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-        self.status_label.setText(f"Tamamlandı — {self.model.rowCount()} cihaz bulundu")
+        self.status_label.setText(f"Done — {self.model.rowCount()} device(s) found")
 
     def _on_scan_failed(self, message: str) -> None:
+        self.spinner.stop()
+        self.progress_bar.hide()
         self.scan_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-        self.status_label.setText("Tarama hatası")
-        QMessageBox.critical(self, "Tarama hatası", message)
+        self.status_label.setText("Scan error")
+        QMessageBox.critical(self, "Scan error", message)
 
     def _on_row_double_clicked(self, proxy_index) -> None:
         source_index = self.proxy.mapToSource(proxy_index)

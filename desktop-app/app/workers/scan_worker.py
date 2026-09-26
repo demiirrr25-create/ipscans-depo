@@ -12,6 +12,7 @@ from app.core.scanner import ScanOptions, run_scan
 class ScanWorker(QThread):
     device_found = pyqtSignal(object)  # Device
     progress = pyqtSignal(int, int)  # completed, total
+    phase_changed = pyqtSignal(str)  # "discovering" | "enriching"
     finished_ok = pyqtSignal()
     failed = pyqtSignal(str)
 
@@ -32,6 +33,7 @@ class ScanWorker(QThread):
                 on_device_found=lambda device: self.device_found.emit(device),
                 on_progress=lambda done, total: self.progress.emit(done, total),
                 should_stop=lambda: self._stop_requested,
+                on_phase=lambda phase: self.phase_changed.emit(phase),
             )
             self.finished_ok.emit()
         except Exception as exc:  # keep the UI thread alive no matter what

@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 
 from app.core.models import Device
 
-COLUMNS = ["IP", "MAC", "Üretici", "Hostname", "Açık Portlar", "Seri No", "Kaynak"]
+COLUMNS = ["IP", "MAC", "Vendor", "Hostname", "Open Ports", "Serial No", "Source"]
 
 
 class DeviceTableModel(QAbstractTableModel):
@@ -100,13 +100,13 @@ class TargetInput(QWidget):
     """Single IP / IP range / CIDR selector — returns a spec string that
     `network_utils.parse_targets` understands. Presented as radio buttons
     (rather than a dropdown) so the active mode is always visible at a glance.
-    Defaults to "IP Aralığı" (range) mode, per product requirement.
+    Defaults to "IP Range" mode, per product requirement.
     """
 
-    MODES = ("IP Aralığı", "Tek IP", "CIDR")
+    MODES = ("IP Range", "Single IP", "CIDR")
     PLACEHOLDERS = {
-        "Tek IP": "192.168.1.50",
-        "IP Aralığı": "192.168.1.10-192.168.1.150",
+        "Single IP": "192.168.1.50",
+        "IP Range": "192.168.1.10-192.168.1.150",
         "CIDR": "192.168.1.0/24",
     }
 
@@ -128,7 +128,7 @@ class TargetInput(QWidget):
             self._radios[mode] = radio
             mode_row.addWidget(radio)
         mode_row.addStretch(1)
-        self._radios["IP Aralığı"].setChecked(True)
+        self._radios["IP Range"].setChecked(True)
         for radio in self._radios.values():
             radio.toggled.connect(self._on_mode_toggled)
 
@@ -148,7 +148,7 @@ class TargetInput(QWidget):
         for mode, radio in self._radios.items():
             if radio.isChecked():
                 return mode
-        return "IP Aralığı"
+        return "IP Range"
 
     def set_value(self, text: str) -> None:
         self.value_edit.setText(text)
