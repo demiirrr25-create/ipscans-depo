@@ -20,6 +20,13 @@ DARK_QSS = """
     border-radius: 18px;
 }
 
+#SplashCard {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #0a0a0a, stop:0.5 #050505, stop:1 #0a0a0a);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 22px;
+}
+
 #TitleBar {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 rgba(255, 255, 255, 0.04), stop:1 transparent);

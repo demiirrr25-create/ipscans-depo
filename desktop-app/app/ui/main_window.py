@@ -166,7 +166,7 @@ class MainWindow(QWidget):
     def _build_status_bar(self) -> QHBoxLayout:
         layout = QHBoxLayout()
         self.status_label = QLabel(t(self.lang, "status_ready"), objectName="StatusLabel")
-        self.spinner = Spinner(16)
+        self.spinner = Spinner(18)
         self.spinner.hide()
         self.progress_bar = QProgressBar(objectName="ScanProgress")
         self.progress_bar.setFixedWidth(160)
@@ -232,11 +232,12 @@ class MainWindow(QWidget):
         self.model.add_device(device)
 
     def _on_phase_changed(self, phase: str) -> None:
+        # The comet-trail spinner keeps spinning across both phases (it
+        # doubles as the "a scan is running" indicator); only the
+        # percentage-based progress bar toggles once real progress exists.
         if phase == "discovering":
-            self.spinner.start()
             self.progress_bar.hide()
         elif phase == "enriching":
-            self.spinner.stop()
             self.progress_bar.show()
 
     def _on_progress(self, done: int, total: int) -> None:

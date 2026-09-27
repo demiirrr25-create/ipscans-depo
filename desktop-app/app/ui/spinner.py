@@ -1,11 +1,13 @@
-"""A small, dependency-free custom-painted loading spinner (QPainter + QTimer),
-used for the indeterminate "discovering hosts" phase of a scan — a plain
-QProgressBar has no meaningful percentage at that point.
+"""A small, dependency-free custom-painted loading spinner (QPainter + QTimer)
+with a smooth fading "comet trail" arc — used for the indeterminate
+"discovering hosts" phase of a scan and throughout the startup flow. A plain
+QProgressBar has no meaningful percentage at that point, and this reads as
+noticeably more modern than a flat static arc.
 """
 from __future__ import annotations
 
 from PyQt6.QtCore import QTimer, Qt
-from PyQt6.QtGui import QColor, QPainter, QPen
+from PyQt6.QtGui import QBrush, QColor, QConicalGradient, QPainter, QPen
 from PyQt6.QtWidgets import QWidget
 
 
@@ -28,23 +30,31 @@ class Spinner(QWidget):
         self.hide()
 
     def _tick(self) -> None:
-        self._angle = (self._angle + 6) % 360
+        self._angle = (self._angle + 4) % 360
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802 (Qt override)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        margin = 2
+        width = max(2, self._size // 9)
+        margin = width
         rect = self.rect().adjusted(margin, margin, -margin, -margin)
 
-        track = QPen(QColor(255, 255, 255, 40))
-        track.setWidth(2)
+        track = QPen(QColor(255, 255, 255, 30))
+        track.setWidth(width)
+        track.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(track)
         painter.drawEllipse(rect)
 
-        arc_pen = QPen(QColor(255, 255, 255, 230))
-        arc_pen.setWidth(2)
+        # Comet trail: a conic gradient that fades from bright to transparent
+        # around the ring, rotated by the current angle, instead of a flat
+        # fixed-length arc — reads as a smoother, more modern loading motion.
+        gradient = QConicalGradient(rect.center(), -self._angle)
+        gradient.setColorAt(0.0, QColor(255, 255, 255, 0))
+        gradient.setColorAt(0.75, QColor(255, 255, 255, 90))
+        gradient.setColorAt(0.97, QColor(255, 255, 255, 235))
+        gradient.setColorAt(1.0, QColor(255, 255, 255, 0))
+        arc_pen = QPen(QBrush(gradient), width)
         arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(arc_pen)
-        span = 100 * 16  # ~100 degrees, in 1/16th-degree units
-        painter.drawArc(rect, -self._angle * 16, span)
+        painter.drawArc(rect, 0, 360 * 16)

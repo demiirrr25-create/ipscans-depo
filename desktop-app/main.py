@@ -44,12 +44,6 @@ def main() -> None:
     def finish_startup() -> None:
         splash.close()
 
-        if not has_accepted_privacy_terms():
-            dialog = PrivacyTermsDialog()
-            if dialog.exec() != PrivacyTermsDialog.DialogCode.Accepted:
-                app.quit()
-                return
-
         language = get_saved_language()
         if language is None:
             lang_dialog = LanguageDialog()
@@ -58,8 +52,16 @@ def main() -> None:
                 app.quit()
                 return
             language = lang_dialog.selected_language
+        language = language or DEFAULT_LANGUAGE
 
-        window = MainWindow(language or DEFAULT_LANGUAGE)
+        if not has_accepted_privacy_terms():
+            dialog = PrivacyTermsDialog(language)
+            dialog.setWindowIcon(app_icon)
+            if dialog.exec() != PrivacyTermsDialog.DialogCode.Accepted:
+                app.quit()
+                return
+
+        window = MainWindow(language)
         window.setWindowIcon(app_icon)
         window.show()
         app.window_ref = window  # keep a live reference so it isn't garbage-collected

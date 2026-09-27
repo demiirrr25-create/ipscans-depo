@@ -1,7 +1,7 @@
-"""First-run language picker: shown once, right after the privacy notice is
-accepted — an ipscans-branded screen where the user chooses one of 5+
-supported languages before the main window opens. The choice is remembered
-(QSettings) so returning users go straight to the main window.
+"""First-run language picker: shown right after the splash screen, before the
+privacy notice, so the privacy/terms text that follows can be presented in
+the user's chosen language. The choice is remembered (QSettings) so
+returning users skip straight past it.
 """
 from __future__ import annotations
 

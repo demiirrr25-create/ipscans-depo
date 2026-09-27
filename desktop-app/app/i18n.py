@@ -53,6 +53,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "status_done": "Done — {count} device(s) found",
         "status_error": "Scan error",
         "invalid_target_title": "Invalid target",
+        "privacy_window_title": "Privacy Notice & Terms of Use",
+        "privacy_heading": "Before you continue",
+        "privacy_checkbox": "I have read and agree to the Privacy Notice and Terms of Use above.",
+        "privacy_decline": "Decline and Exit",
+        "privacy_accept": "I Agree",
     },
     "tr": {
         "app_title": "ipscans — Ağ Tarayıcı",
@@ -82,6 +87,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "status_done": "Tamamlandı — {count} cihaz bulundu",
         "status_error": "Tarama hatası",
         "invalid_target_title": "Geçersiz hedef",
+        "privacy_window_title": "Gizlilik Bildirimi ve Kullanım Şartları",
+        "privacy_heading": "Devam etmeden önce",
+        "privacy_checkbox": "Yukarıdaki Gizlilik Bildirimi ve Kullanım Şartları'nı okudum ve kabul ediyorum.",
+        "privacy_decline": "Reddet ve Çık",
+        "privacy_accept": "Kabul Ediyorum",
     },
     "de": {
         "app_title": "ipscans — Netzwerkscanner",
@@ -111,6 +121,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "status_done": "Fertig — {count} Gerät(e) gefunden",
         "status_error": "Scan-Fehler",
         "invalid_target_title": "Ungültiges Ziel",
+        "privacy_window_title": "Datenschutzhinweis und Nutzungsbedingungen",
+        "privacy_heading": "Bevor Sie fortfahren",
+        "privacy_checkbox": "Ich habe den obigen Datenschutzhinweis und die Nutzungsbedingungen gelesen und stimme zu.",
+        "privacy_decline": "Ablehnen und beenden",
+        "privacy_accept": "Ich stimme zu",
     },
     "fr": {
         "app_title": "ipscans — Scanner réseau",
@@ -140,6 +155,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "status_done": "Terminé — {count} appareil(s) trouvé(s)",
         "status_error": "Erreur de scan",
         "invalid_target_title": "Cible invalide",
+        "privacy_window_title": "Avis de confidentialité et conditions d'utilisation",
+        "privacy_heading": "Avant de continuer",
+        "privacy_checkbox": "J'ai lu et j'accepte l'avis de confidentialité et les conditions d'utilisation ci-dessus.",
+        "privacy_decline": "Refuser et quitter",
+        "privacy_accept": "J'accepte",
     },
     "es": {
         "app_title": "ipscans — Escáner de red",
@@ -169,6 +189,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "status_done": "Listo — {count} dispositivo(s) encontrado(s)",
         "status_error": "Error de escaneo",
         "invalid_target_title": "Objetivo no válido",
+        "privacy_window_title": "Aviso de privacidad y condiciones de uso",
+        "privacy_heading": "Antes de continuar",
+        "privacy_checkbox": "He leído y acepto el Aviso de privacidad y las Condiciones de uso anteriores.",
+        "privacy_decline": "Rechazar y salir",
+        "privacy_accept": "Acepto",
     },
     "ru": {
         "app_title": "ipscans — Сканер сети",
@@ -198,6 +223,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "status_done": "Готово — найдено {count} устр.",
         "status_error": "Ошибка сканирования",
         "invalid_target_title": "Неверная цель",
+        "privacy_window_title": "Уведомление о конфиденциальности и условия использования",
+        "privacy_heading": "Прежде чем продолжить",
+        "privacy_checkbox": "Я прочитал(а) и принимаю указанные выше Уведомление о конфиденциальности и Условия использования.",
+        "privacy_decline": "Отклонить и выйти",
+        "privacy_accept": "Принимаю",
     },
 }
 
@@ -221,3 +251,175 @@ def t(lang: str, key: str, **kwargs) -> str:
     table = _STRINGS.get(lang) or _STRINGS[DEFAULT_LANGUAGE]
     text = table.get(key) or _STRINGS[DEFAULT_LANGUAGE].get(key, key)
     return text.format(**kwargs) if kwargs else text
+
+
+PRIVACY_BODY: dict[str, str] = {
+    "en": """
+<h3>Privacy Notice &amp; Terms of Use</h3>
+<p><b>What this app does:</b> ipscans Network Scanner discovers devices on
+the local network you point it at (via ICMP ping, ARP, and optional SNMP /
+WMI / UPnP queries) and displays their IP, MAC address, vendor, hostname,
+open ports and, where available, serial number.</p>
+<p><b>Data collection:</b> This application does not transmit any scan
+results, device information, or telemetry to ipscans.com or any third
+party. All scanning happens locally between your computer and the devices
+on your own network. No account, sign-up, or internet connection is
+required for the app to function.</p>
+<p><b>Local storage:</b> The only data this app stores is your chosen
+language, your acceptance of this notice, and your scan settings, saved
+locally on your own machine.</p>
+<p><b>Your responsibility:</b> You must only scan networks and devices you
+own, administer, or have explicit permission to test. Scanning networks
+without authorization may be illegal in your jurisdiction. The authors of
+this software are not responsible for misuse.</p>
+<p><b>No warranty:</b> This software is provided "as is", without warranty
+of any kind. Network scan results (vendor lookups, serial numbers, open
+ports) are best-effort and may be incomplete or inaccurate depending on
+the devices and protocols available on your network.</p>
+<p>By clicking "I Agree", you confirm that you have read and accept this
+notice and that you will only use this tool on networks you are
+authorized to scan.</p>
+""",
+    "tr": """
+<h3>Gizlilik Bildirimi &amp; Kullanım Şartları</h3>
+<p><b>Bu uygulama ne yapar:</b> ipscans Network Scanner, yönelttiğiniz yerel
+ağdaki cihazları (ICMP ping, ARP ve isteğe bağlı SNMP / WMI / UPnP sorguları
+ile) keşfeder; IP, MAC adresi, üretici, ana bilgisayar adı, açık portlar ve
+varsa seri numarasını gösterir.</p>
+<p><b>Veri toplama:</b> Bu uygulama hiçbir tarama sonucunu, cihaz bilgisini
+veya telemetriyi ipscans.com'a ya da üçüncü bir tarafa iletmez. Tüm tarama
+işlemi yalnızca bilgisayarınız ile kendi ağınızdaki cihazlar arasında,
+yerel olarak gerçekleşir. Uygulamanın çalışması için hesap, kayıt veya
+internet bağlantısı gerekmez.</p>
+<p><b>Yerel depolama:</b> Bu uygulamanın sakladığı tek veri, seçtiğiniz dil,
+bu bildirimi kabul ettiğiniz bilgisi ve tarama ayarlarınızdır; bunların
+hepsi yalnızca kendi bilgisayarınızda tutulur.</p>
+<p><b>Sorumluluğunuz:</b> Yalnızca sahibi olduğunuz, yönettiğiniz veya test
+etme izniniz olan ağları ve cihazları tarayabilirsiniz. İzinsiz ağ taraması
+bulunduğunuz yargı bölgesinde yasa dışı olabilir. Bu yazılımın yazarları
+kötüye kullanımdan sorumlu değildir.</p>
+<p><b>Garanti verilmez:</b> Bu yazılım "olduğu gibi", hiçbir garanti
+olmaksızın sağlanır. Ağ tarama sonuçları (üretici sorguları, seri
+numaraları, açık portlar) en iyi çaba ile elde edilir ve ağınızdaki
+cihazlara/protokollere bağlı olarak eksik veya hatalı olabilir.</p>
+<p>"Kabul Ediyorum"a tıklayarak bu bildirimi okuyup kabul ettiğinizi ve bu
+aracı yalnızca taramaya yetkili olduğunuz ağlarda kullanacağınızı
+onaylarsınız.</p>
+""",
+    "de": """
+<h3>Datenschutzhinweis &amp; Nutzungsbedingungen</h3>
+<p><b>Was diese App tut:</b> ipscans Network Scanner findet Geräte im
+lokalen Netzwerk, das Sie angeben (per ICMP-Ping, ARP und optionalen
+SNMP-/WMI-/UPnP-Abfragen), und zeigt deren IP, MAC-Adresse, Hersteller,
+Hostname, offene Ports und, falls verfügbar, Seriennummer an.</p>
+<p><b>Datenerhebung:</b> Diese Anwendung überträgt keine Scan-Ergebnisse,
+Geräteinformationen oder Telemetriedaten an ipscans.com oder Dritte. Der
+gesamte Scan-Vorgang findet lokal zwischen Ihrem Computer und den Geräten
+in Ihrem eigenen Netzwerk statt. Für die Funktion der App ist kein Konto,
+keine Registrierung und keine Internetverbindung erforderlich.</p>
+<p><b>Lokale Speicherung:</b> Die App speichert lediglich Ihre gewählte
+Sprache, Ihre Zustimmung zu diesem Hinweis und Ihre Scan-Einstellungen —
+alles ausschließlich lokal auf Ihrem eigenen Rechner.</p>
+<p><b>Ihre Verantwortung:</b> Sie dürfen ausschließlich Netzwerke und
+Geräte scannen, die Ihnen gehören, die Sie verwalten oder für deren Test
+Sie eine ausdrückliche Erlaubnis haben. Unbefugtes Scannen kann in Ihrer
+Rechtsordnung illegal sein. Die Autoren dieser Software haften nicht für
+Missbrauch.</p>
+<p><b>Keine Gewährleistung:</b> Diese Software wird "wie besehen", ohne
+jegliche Gewährleistung, bereitgestellt. Scan-Ergebnisse (Herstellerdaten,
+Seriennummern, offene Ports) beruhen auf bestem Bemühen und können je nach
+Geräten/Protokollen in Ihrem Netzwerk unvollständig oder ungenau sein.</p>
+<p>Mit einem Klick auf "Ich stimme zu" bestätigen Sie, dass Sie diesen
+Hinweis gelesen haben und akzeptieren, und dass Sie dieses Tool nur in
+Netzwerken verwenden, für deren Scan Sie berechtigt sind.</p>
+""",
+    "fr": """
+<h3>Avis de confidentialité &amp; conditions d'utilisation</h3>
+<p><b>Ce que fait cette application :</b> ipscans Network Scanner détecte
+les appareils du réseau local que vous ciblez (via ping ICMP, ARP et,
+en option, des requêtes SNMP / WMI / UPnP) et affiche leur IP, adresse
+MAC, fabricant, nom d'hôte, ports ouverts et, si disponible, numéro de
+série.</p>
+<p><b>Collecte de données :</b> Cette application ne transmet aucun
+résultat de scan, information sur les appareils ni télémétrie à
+ipscans.com ou à un tiers. Tout le scan se déroule localement entre votre
+ordinateur et les appareils de votre propre réseau. Aucun compte,
+inscription ou connexion internet n'est requis pour que l'application
+fonctionne.</p>
+<p><b>Stockage local :</b> La seule donnée conservée par l'application est
+la langue choisie, votre acceptation de cet avis et vos paramètres de
+scan, enregistrés uniquement sur votre propre machine.</p>
+<p><b>Votre responsabilité :</b> Vous ne devez scanner que des réseaux et
+appareils que vous possédez, administrez ou pour lesquels vous avez une
+autorisation explicite. Le scan non autorisé peut être illégal selon votre
+juridiction. Les auteurs de ce logiciel ne sont pas responsables d'une
+mauvaise utilisation.</p>
+<p><b>Aucune garantie :</b> Ce logiciel est fourni "tel quel", sans
+garantie d'aucune sorte. Les résultats de scan réseau (fabricant, numéros
+de série, ports ouverts) sont fournis au mieux et peuvent être incomplets
+ou inexacts selon les appareils/protocoles présents sur votre réseau.</p>
+<p>En cliquant sur "J'accepte", vous confirmez avoir lu et accepté cet
+avis, et que vous n'utiliserez cet outil que sur des réseaux que vous êtes
+autorisé à scanner.</p>
+""",
+    "es": """
+<h3>Aviso de privacidad &amp; condiciones de uso</h3>
+<p><b>Qué hace esta aplicación:</b> ipscans Network Scanner detecta
+dispositivos en la red local que indiques (mediante ping ICMP, ARP y,
+opcionalmente, consultas SNMP / WMI / UPnP) y muestra su IP, dirección
+MAC, fabricante, nombre de host, puertos abiertos y, si está disponible,
+número de serie.</p>
+<p><b>Recopilación de datos:</b> Esta aplicación no transmite resultados
+de escaneo, información de dispositivos ni telemetría a ipscans.com ni a
+terceros. Todo el escaneo ocurre localmente entre tu ordenador y los
+dispositivos de tu propia red. No se requiere cuenta, registro ni conexión
+a internet para que funcione la aplicación.</p>
+<p><b>Almacenamiento local:</b> Lo único que guarda esta aplicación es el
+idioma elegido, tu aceptación de este aviso y tus ajustes de escaneo,
+guardados únicamente en tu propio equipo.</p>
+<p><b>Tu responsabilidad:</b> Solo debes escanear redes y dispositivos que
+poseas, administres o para los que tengas permiso explícito. Escanear sin
+autorización puede ser ilegal en tu jurisdicción. Los autores de este
+software no se responsabilizan del mal uso.</p>
+<p><b>Sin garantía:</b> Este software se ofrece "tal cual", sin garantía
+de ningún tipo. Los resultados del escaneo de red (fabricante, números de
+serie, puertos abiertos) son de mejor esfuerzo y pueden ser incompletos o
+inexactos según los dispositivos/protocolos presentes en tu red.</p>
+<p>Al hacer clic en "Acepto", confirmas que has leído y aceptas este
+aviso, y que solo usarás esta herramienta en redes que estés autorizado a
+escanear.</p>
+""",
+    "ru": """
+<h3>Уведомление о конфиденциальности и условия использования</h3>
+<p><b>Что делает это приложение:</b> ipscans Network Scanner обнаруживает
+устройства в указанной вами локальной сети (через ICMP ping, ARP и,
+опционально, запросы SNMP / WMI / UPnP) и показывает их IP, MAC-адрес,
+производителя, имя хоста, открытые порты и, если доступно, серийный
+номер.</p>
+<p><b>Сбор данных:</b> Это приложение не передаёт результаты сканирования,
+информацию об устройствах или телеметрию на ipscans.com или третьим
+лицам. Всё сканирование происходит локально между вашим компьютером и
+устройствами в вашей собственной сети. Для работы приложения не требуется
+учётная запись, регистрация или подключение к интернету.</p>
+<p><b>Локальное хранение:</b> Приложение сохраняет только выбранный вами
+язык, факт согласия с этим уведомлением и настройки сканирования — всё
+это хранится исключительно на вашем собственном компьютере.</p>
+<p><b>Ваша ответственность:</b> Вы должны сканировать только те сети и
+устройства, которыми владеете, управляете или на тестирование которых у
+вас есть явное разрешение. Несанкционированное сканирование может быть
+незаконным в вашей юрисдикции. Авторы этого ПО не несут ответственности
+за неправомерное использование.</p>
+<p><b>Без гарантий:</b> Это программное обеспечение предоставляется
+"как есть", без каких-либо гарантий. Результаты сетевого сканирования
+(данные производителя, серийные номера, открытые порты) предоставляются
+на основе лучших усилий и могут быть неполными или неточными в
+зависимости от устройств/протоколов в вашей сети.</p>
+<p>Нажимая «Принимаю», вы подтверждаете, что прочитали и принимаете это
+уведомление, и что будете использовать этот инструмент только в сетях,
+которые вам разрешено сканировать.</p>
+""",
+}
+
+
+def get_privacy_body(lang: str) -> str:
+    return PRIVACY_BODY.get(lang) or PRIVACY_BODY[DEFAULT_LANGUAGE]

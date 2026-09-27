@@ -3,9 +3,10 @@
 PyQt6 tabanlı, ipscans.com ile aynı siyah/beyaz/gri temaya sahip masaüstü ağ
 tarama uygulaması. Normal, yeniden boyutlandırılabilir pencere; ARP/ping ile
 hızlı host keşfi + SNMP/WMI/UPnP ile derinlemesine cihaz bilgisi (Nmap
-opsiyonel, varsayılan kapalı). İlk açılışta gizlilik onayının ardından
-ipscans logolu bir dil seçim ekranı gelir (6 dil: EN/TR/DE/FR/ES/RU); seçim
-bir daha sorulmaz.
+opsiyonel, varsayılan kapalı). İlk açılışta akış şu şekildedir: animasyonlu
+karşılama ekranı → dil seçimi (6 dil: EN/TR/DE/FR/ES/RU) → seçilen dilde
+gizlilik bildirimi/kullanım şartları onayı → ana pencere. Dil seçimi ve
+onay bir daha sorulmaz.
 
 ## Kurulum
 

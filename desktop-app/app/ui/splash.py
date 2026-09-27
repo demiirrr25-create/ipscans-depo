@@ -1,73 +1,90 @@
-"""Startup welcome splash: the app logo plus a short greeting, shown for a
-moment before the main window appears.
+"""Startup welcome splash: a frameless, translucent card with the app logo,
+a live animated spinner and a short greeting — shown for a moment before the
+language/privacy screens appear. Built as a real (animated) widget rather
+than a static painted pixmap so the loading motion itself feels modern.
 """
 from __future__ import annotations
 
 from PyQt6.QtCore import QPropertyAnimation, Qt
-from PyQt6.QtGui import QColor, QFont, QPainter, QPixmap
-from PyQt6.QtWidgets import QSplashScreen
+from PyQt6.QtGui import QGuiApplication
+from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
-from app.ui.resources import resource_path
+from app.ui.resources import load_logo_pixmap
+from app.ui.spinner import Spinner
+from app.ui.styles import DARK_QSS
 
-WIDTH, HEIGHT = 480, 300
-
-
-def _build_pixmap() -> QPixmap:
-    pixmap = QPixmap(WIDTH, HEIGHT)
-    pixmap.fill(QColor("#000000"))
-
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-    border_pen = painter.pen()
-    border_pen.setColor(QColor(255, 255, 255, 30))
-    border_pen.setWidth(1)
-    painter.setPen(border_pen)
-    painter.drawRect(pixmap.rect().adjusted(0, 0, -1, -1))
-
-    logo_path = resource_path("assets", "icon.png")
-    if logo_path.exists():
-        logo = QPixmap(str(logo_path)).scaled(
-            72,
-            72,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        painter.drawPixmap((WIDTH - logo.width()) // 2, 56, logo)
-
-    painter.setPen(QColor("#ffffff"))
-    title_font = QFont("Segoe UI", 20, QFont.Weight.Bold)
-    painter.setFont(title_font)
-    painter.drawText(0, 148, WIDTH, 36, Qt.AlignmentFlag.AlignCenter, "ipscans")
-
-    painter.setPen(QColor(255, 255, 255, 210))
-    subtitle_font = QFont("Segoe UI", 12)
-    painter.setFont(subtitle_font)
-    painter.drawText(
-        0, 182, WIDTH, 24, Qt.AlignmentFlag.AlignCenter, "Welcome to ipscans Network Scanner"
-    )
-
-    painter.setPen(QColor(255, 255, 255, 110))
-    hint_font = QFont("Segoe UI", 9)
-    painter.setFont(hint_font)
-    painter.drawText(
-        0, HEIGHT - 34, WIDTH, 20, Qt.AlignmentFlag.AlignCenter, "Starting up..."
-    )
-
-    painter.end()
-    return pixmap
+WIDTH, HEIGHT = 420, 300
 
 
-class WelcomeSplash(QSplashScreen):
+class WelcomeSplash(QWidget):
     def __init__(self) -> None:
-        super().__init__(_build_pixmap())
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
-        self.setWindowOpacity(0.0)
+        super().__init__()
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setStyleSheet(DARK_QSS)
+        self.setFixedSize(WIDTH, HEIGHT)
+        self._build_ui()
+        self._center_on_screen()
+
         self._fade_in = QPropertyAnimation(self, b"windowOpacity")
         self._fade_in.setDuration(280)
         self._fade_in.setStartValue(0.0)
         self._fade_in.setEndValue(1.0)
 
+    def _build_ui(self) -> None:
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        card = QFrame(objectName="SplashCard")
+        outer.addWidget(card)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(24, 36, 24, 30)
+        layout.setSpacing(14)
+        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        logo = QLabel()
+        logo.setPixmap(load_logo_pixmap(56))
+        logo.setFixedSize(56, 56)
+        layout.addWidget(logo, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        title = QLabel("ipscans", objectName="TitleText")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+
+        subtitle = QLabel("Welcome to ipscans Network Scanner", objectName="SubtitleText")
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(subtitle)
+
+        layout.addSpacing(10)
+        self.spinner = Spinner(34)
+        layout.addWidget(self.spinner, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        layout.addStretch(1)
+        hint = QLabel("Starting up...", objectName="StatusLabel")
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(hint)
+
+    def _center_on_screen(self) -> None:
+        screen = QGuiApplication.primaryScreen()
+        if screen is None:
+            return
+        geo = screen.availableGeometry()
+        self.move(
+            geo.center().x() - self.width() // 2,
+            geo.center().y() - self.height() // 2,
+        )
+
     def show(self) -> None:  # noqa: D102 (Qt override)
         super().show()
+        self.spinner.start()
         self._fade_in.start()
+
+    def close(self) -> bool:  # noqa: D102 (Qt override)
+        self.spinner.stop()
+        return super().close()
+
