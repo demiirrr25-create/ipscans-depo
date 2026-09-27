@@ -1,14 +1,15 @@
 import type { MetadataRoute } from "next";
-import { locales, type Locale } from "@/i18n/config";
+import { locales, defaultLocale, type Locale } from "@/i18n/config";
 import { posts } from "@/content/posts";
 import { toolSlugs, toolKeys } from "@/lib/tool-routes";
 
 const BASE_URL = "https://ipscans.com";
 
 function altLanguages(pathFor: (locale: Locale) => string) {
-  return Object.fromEntries(
-    locales.map((l) => [l, `${BASE_URL}${pathFor(l)}`])
-  );
+  return {
+    ...Object.fromEntries(locales.map((l) => [l, `${BASE_URL}${pathFor(l)}`])),
+    "x-default": `${BASE_URL}${pathFor(defaultLocale)}`,
+  };
 }
 
 // One sitemap file per locale/region (Next.js emits a /sitemap.xml index
@@ -24,7 +25,7 @@ export default function sitemap({
   id: number;
 }): MetadataRoute.Sitemap {
   const locale = locales[id];
-  const staticPaths = ["", "/scan", "/download", "/blog", "/shop"];
+  const staticPaths = ["", "/scan", "/download", "/blog", "/shop", "/privacy", "/terms"];
   const entries: MetadataRoute.Sitemap = [];
 
   for (const path of staticPaths) {

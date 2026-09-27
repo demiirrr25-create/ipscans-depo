@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
-import { isLocale, locales, ogLocales, localeTags } from "@/i18n/config";
+import { isLocale, locales, defaultLocale, ogLocales, localeTags } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AuroraBackground } from "@/components/AuroraBackground";
+import { GoogleTag } from "@/components/GoogleTag";
+import { CookieConsent } from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -48,7 +50,36 @@ export async function generateMetadata({
     metadataBase: new URL("https://ipscans.com"),
     alternates: {
       canonical: `/${locale}`,
-      languages: Object.fromEntries(locales.map((l) => [l, `/${l}`])),
+      languages: {
+        ...Object.fromEntries(locales.map((l) => [l, `/${l}`])),
+        "x-default": `/${defaultLocale}`,
+      },
+    },
+    // Explicit opt-in to larger snippet/image previews in Google results,
+    // which improves click-through rate (an indirect ranking signal).
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
+    // Search-engine site-verification meta tags — set these env vars once
+    // the Search Console / Bing Webmaster Tools properties are created.
+    verification: {
+      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+      other: {
+        ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+          ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+          : {}),
+        ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID
+          ? { "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID }
+          : {}),
+      },
     },
     openGraph: {
       type: "website",
@@ -77,6 +108,14 @@ export default async function LocaleLayout({
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
 
+  // Optional comma-separated list of social/profile URLs (e.g. X, LinkedIn,
+  // GitHub) — set NEXT_PUBLIC_SAME_AS to strengthen entity recognition for
+  // Google Knowledge Graph and AI answer engines.
+  const sameAs = (process.env.NEXT_PUBLIC_SAME_AS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -94,6 +133,7 @@ export default async function LocaleLayout({
           height: 512,
         },
         image: "https://ipscans.com/api/logo",
+        ...(sameAs.length ? { sameAs } : {}),
       },
       {
         "@type": "WebSite",
@@ -131,6 +171,8 @@ export default async function LocaleLayout({
         <Footer locale={locale} dict={dict} />
         <Analytics />
         <SpeedInsights />
+        <GoogleTag />
+        <CookieConsent dict={dict} />
       </body>
     </html>
   );

@@ -213,6 +213,13 @@ const dictionaries = {
     footer: {
       tagline: "Ağ araçları, tek bir yerde.",
       rights: "Tüm hakları saklıdır.",
+      privacy: "Gizlilik Politikası",
+      terms: "Kullanım Koşulları",
+    },
+    cookieConsent: {
+      message: "Deneyiminizi iyileştirmek ve (etkinleştirildiğinde) reklam göstermek için çerez kullanıyoruz.",
+      accept: "Kabul Et",
+      reject: "Reddet",
     },
     shop: {
       title: "Mağaza",
@@ -430,6 +437,13 @@ const dictionaries = {
     footer: {
       tagline: "Network tools, all in one place.",
       rights: "All rights reserved.",
+      privacy: "Privacy Policy",
+      terms: "Terms of Service",
+    },
+    cookieConsent: {
+      message: "We use cookies to improve your experience and, when enabled, to show ads.",
+      accept: "Accept",
+      reject: "Reject",
     },
     shop: {
       title: "Shop",
@@ -650,6 +664,13 @@ const dictionaries = {
     footer: {
       tagline: "Netzwerktools, alles an einem Ort.",
       rights: "Alle Rechte vorbehalten.",
+      privacy: "Datenschutzerklärung",
+      terms: "Nutzungsbedingungen",
+    },
+    cookieConsent: {
+      message: "Wir verwenden Cookies, um Ihr Erlebnis zu verbessern und, sofern aktiviert, Werbung anzuzeigen.",
+      accept: "Akzeptieren",
+      reject: "Ablehnen",
     },
     shop: {
       title: "Shop",
@@ -870,6 +891,13 @@ const dictionaries = {
     footer: {
       tagline: "Les outils réseau, tous en un seul endroit.",
       rights: "Tous droits réservés.",
+      privacy: "Politique de confidentialité",
+      terms: "Conditions d'utilisation",
+    },
+    cookieConsent: {
+      message: "Nous utilisons des cookies pour améliorer votre expérience et, si activé, afficher des publicités.",
+      accept: "Accepter",
+      reject: "Refuser",
     },
     shop: {
       title: "Boutique",
@@ -1090,6 +1118,13 @@ const dictionaries = {
     footer: {
       tagline: "Herramientas de red, todas en un solo lugar.",
       rights: "Todos los derechos reservados.",
+      privacy: "Política de privacidad",
+      terms: "Términos de servicio",
+    },
+    cookieConsent: {
+      message: "Usamos cookies para mejorar tu experiencia y, cuando esté habilitado, mostrar anuncios.",
+      accept: "Aceptar",
+      reject: "Rechazar",
     },
     shop: {
       title: "Tienda",

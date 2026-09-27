@@ -48,13 +48,30 @@ export default async function BlogPostPage({
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: localizedPostText(post.title, locale),
-    description: localizedPostText(post.excerpt, locale),
-    datePublished: post.date,
-    inLanguage: localeTags[effectiveLocale],
-    author: { "@type": "Organization", name: "ipscans" },
-    publisher: { "@type": "Organization", name: "ipscans" },
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        headline: localizedPostText(post.title, locale),
+        description: localizedPostText(post.excerpt, locale),
+        datePublished: post.date,
+        inLanguage: localeTags[effectiveLocale],
+        author: { "@type": "Organization", name: "ipscans" },
+        publisher: { "@type": "Organization", name: "ipscans" },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "ipscans", item: `https://ipscans.com/${locale}` },
+          { "@type": "ListItem", position: 2, name: dict.blog.title, item: `https://ipscans.com/${locale}/blog` },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: localizedPostText(post.title, locale),
+            item: `https://ipscans.com/${locale}/blog/${slug}`,
+          },
+        ],
+      },
+    ],
   };
 
   return (

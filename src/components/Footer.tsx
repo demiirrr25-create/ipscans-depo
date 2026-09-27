@@ -37,6 +37,12 @@ export function Footer({
           <Link href={`/${locale}/blog`} className="hover:text-white">
             {dict.nav.blog}
           </Link>
+          <Link href={`/${locale}/privacy`} className="hover:text-white">
+            {dict.footer.privacy}
+          </Link>
+          <Link href={`/${locale}/terms`} className="hover:text-white">
+            {dict.footer.terms}
+          </Link>
         </nav>
       </div>
       <div className="border-t border-white/5 px-4 py-4 text-center text-xs text-neutral-500">
