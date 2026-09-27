@@ -30,49 +30,44 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build one-dir app
+      - name: Build one-file .exe
         run: |
-          # --onedir (not --onefile): a single self-extracting exe re-unpacks
-          # 40+ DLLs to a temp folder on *every* launch, which is both slow on
-          # first run and one of the most common patterns Windows
-          # Defender/SmartScreen heuristically flags/quarantines on unsigned
-          # binaries — the exact "downloads fine, double-click does nothing"
-          # symptom this is fixing. --onedir starts instantly and is far less
-          # likely to be silently deleted by antivirus after download.
-          pyinstaller --name ipscans-network-scanner --onedir --windowed `
+          # --noupx: UPX-compressed executables are one of the most common
+          # patterns Defender/SmartScreen heuristics flag on unsigned
+          # binaries ("packed executable"), so compression is disabled.
+          # --version-file: embeds normal-looking publisher/product metadata,
+          # which unsigned-but-metadata-less exes lack and heuristics dislike.
+          pyinstaller --name ipscans-network-scanner --onefile --windowed --noupx `
             --icon=assets/icon.ico `
+            --version-file=version_info.txt `
             --add-data "assets;assets" `
             main.py
 
-      - name: Smoke test the packaged app
+      - name: Smoke test the packaged .exe
         run: |
-          .\dist\ipscans-network-scanner\ipscans-network-scanner.exe --selftest
+          .\dist\ipscans-network-scanner.exe --selftest
 
-      - name: Zip the packaged app
-        run: |
-          Compress-Archive -Path "dist\ipscans-network-scanner\*" -DestinationPath "dist\ipscans-network-scanner.zip" -Force
-
-      - name: Publish built app to the website's download folder
+      - name: Publish built .exe to the website's download folder
         run: |
           New-Item -ItemType Directory -Force -Path "..\public\downloads" | Out-Null
-          Copy-Item -Path "dist\ipscans-network-scanner.zip" -Destination "..\public\downloads\ipscans-network-scanner.zip" -Force
+          Copy-Item -Path "dist\ipscans-network-scanner.exe" -Destination "..\public\downloads\ipscans-network-scanner.exe" -Force
 
-      - name: Commit updated app archive
+      - name: Commit updated .exe
         working-directory: .
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/downloads/ipscans-network-scanner.zip
-          if (Test-Path "public\downloads\ipscans-network-scanner.exe") {
-            git rm --cached public/downloads/ipscans-network-scanner.exe
-            Remove-Item "public\downloads\ipscans-network-scanner.exe"
+          git add public/downloads/ipscans-network-scanner.exe
+          if (Test-Path "public\downloads\ipscans-network-scanner.zip") {
+            git rm --cached public/downloads/ipscans-network-scanner.zip
+            Remove-Item "public\downloads\ipscans-network-scanner.zip"
           }
-          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt desktop app archive [skip ci]"
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt desktop app .exe [skip ci]"
           git push
 
 
       - uses: actions/upload-artifact@v4
         with:
           name: ipscans-network-scanner-windows
-          path: desktop-app/dist/ipscans-network-scanner.zip
+          path: desktop-app/dist/ipscans-network-scanner.exe
           if-no-files-found: error
