@@ -1,5 +1,5 @@
-"""Startup welcome splash: a frameless, translucent card with the app logo,
-a live animated spinner and a short greeting — shown for a moment before the
+"""Startup welcome splash: a frameless card with the app logo, a live
+animated spinner and a short greeting — shown for a moment before the
 language/privacy screens appear. Built as a real (animated) widget rather
 than a static painted pixmap so the loading motion itself feels modern.
 """
@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
 from app.ui.resources import load_logo_pixmap
 from app.ui.spinner import Spinner
-from app.ui.styles import DARK_QSS
 
 WIDTH, HEIGHT = 420, 300
 
@@ -19,13 +18,15 @@ WIDTH, HEIGHT = 420, 300
 class WelcomeSplash(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.Tool
-        )
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setStyleSheet(DARK_QSS)
+        # Frameless is enough on its own. WA_TranslucentBackground requires
+        # working DWM composition and has been unreliable on real Windows
+        # machines (RDP sessions, composition disabled, older GPU drivers) —
+        # the exact same class of bug already worked around in MainWindow
+        # (see its comment) by dropping translucency there. Splash used to
+        # keep it, which could render as a blank/invisible window on those
+        # setups. #AppRoot gives it the same solid black background instead.
+        self.setObjectName("AppRoot")
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setFixedSize(WIDTH, HEIGHT)
         self._build_ui()
         self._center_on_screen()

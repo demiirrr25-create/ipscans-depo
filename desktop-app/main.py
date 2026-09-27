@@ -16,26 +16,34 @@ from app.ui.styles import DARK_QSS
 
 SPLASH_DURATION_MS = 1400
 
+# Written next to every run (not just on crash) so a support request can
+# include real diagnostics even without a crash — see _log().
+_LOG_PATH = Path.home() / "ipscans-network-scanner.log"
+
+
+def _log(message: str) -> None:
+    try:
+        with _LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(message.rstrip("\n") + "\n")
+    except OSError:
+        pass
+
+
 # A --windowed PyInstaller build has no console, and PyQt6 aborts the whole
 # process (no dialog, no traceback) on an unhandled exception raised inside a
 # Qt slot/timer callback — from the user's side that looks exactly like
 # "double-click the .exe and nothing happens". This hook makes such crashes
 # visible (message box) and diagnosable (log file next to the exe).
 def _install_crash_handler() -> None:
-    log_path = Path.home() / "ipscans-network-scanner-crash.log"
-
     def handle_exception(exc_type, exc_value, exc_tb):
         message = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
-        try:
-            log_path.write_text(message, encoding="utf-8")
-        except OSError:
-            pass
+        _log(message)
         try:
             QMessageBox.critical(
                 None,
                 "ipscans — Startup error",
                 "The application hit an unexpected error and needs to close.\n\n"
-                f"Details were saved to:\n{log_path}\n\n{exc_value}",
+                f"Details were saved to:\n{_LOG_PATH}\n\n{exc_value}",
             )
         except Exception:
             pass
@@ -49,6 +57,7 @@ def main() -> None:
     selftest = "--selftest" in sys.argv
 
     _install_crash_handler()
+    _log("--- startup ---")
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
@@ -67,9 +76,17 @@ def main() -> None:
         print("selftest: window created OK")
         sys.exit(0)
 
-    splash = WelcomeSplash()
-    splash.show()
-    app.processEvents()
+    # Splash is a nice-to-have, not a requirement — if it fails to build/show
+    # for any reason, log it and skip straight to the onboarding flow instead
+    # of taking the whole app down with it.
+    splash = None
+    try:
+        splash = WelcomeSplash()
+        splash.show()
+        app.processEvents()
+    except Exception:
+        _log("Splash failed, skipping it:\n" + traceback.format_exc())
+        splash = None
 
     def finish_startup() -> None:
         try:
@@ -85,30 +102,45 @@ def main() -> None:
     sys.exit(app.exec())
 
 
-def _finish_startup_impl(app: QApplication, splash: WelcomeSplash, app_icon) -> None:
-    splash.close()
+def _finish_startup_impl(app: QApplication, splash: WelcomeSplash | None, app_icon) -> None:
+    if splash is not None:
+        try:
+            splash.close()
+        except Exception:
+            _log("Splash close failed:\n" + traceback.format_exc())
 
+    # Each onboarding step degrades to a safe default instead of blocking the
+    # whole app if it throws — users getting no language/privacy prompt is
+    # far better than users getting no app at all.
     language = get_saved_language()
     if language is None:
-        lang_dialog = LanguageDialog()
-        lang_dialog.setWindowIcon(app_icon)
-        if lang_dialog.exec() != LanguageDialog.DialogCode.Accepted:
-            app.quit()
-            return
-        language = lang_dialog.selected_language
+        try:
+            lang_dialog = LanguageDialog()
+            lang_dialog.setWindowIcon(app_icon)
+            if lang_dialog.exec() != LanguageDialog.DialogCode.Accepted:
+                app.quit()
+                return
+            language = lang_dialog.selected_language
+        except Exception:
+            _log("Language dialog failed, defaulting language:\n" + traceback.format_exc())
+            language = DEFAULT_LANGUAGE
     language = language or DEFAULT_LANGUAGE
 
     if not has_accepted_privacy_terms():
-        dialog = PrivacyTermsDialog(language)
-        dialog.setWindowIcon(app_icon)
-        if dialog.exec() != PrivacyTermsDialog.DialogCode.Accepted:
-            app.quit()
-            return
+        try:
+            dialog = PrivacyTermsDialog(language)
+            dialog.setWindowIcon(app_icon)
+            if dialog.exec() != PrivacyTermsDialog.DialogCode.Accepted:
+                app.quit()
+                return
+        except Exception:
+            _log("Privacy dialog failed, continuing without it:\n" + traceback.format_exc())
 
     window = MainWindow(language)
     window.setWindowIcon(app_icon)
     window.show()
     app.window_ref = window  # keep a live reference so it isn't garbage-collected
+    _log("Main window shown OK")
 
 
 if __name__ == "__main__":
