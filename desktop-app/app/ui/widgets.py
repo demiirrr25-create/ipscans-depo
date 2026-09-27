@@ -1,6 +1,8 @@
 """Custom widgets: the device table model and the scan-target input group."""
 from __future__ import annotations
 
+import ipaddress
+
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel
 from PyQt6.QtWidgets import (
     QButtonGroup,
@@ -105,6 +107,23 @@ class DeviceFilterProxyModel(QSortFilterProxyModel):
             filter(None, [device.ip, device.mac, device.vendor, device.hostname])
         ).lower()
         return self._needle in haystack
+
+    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:  # noqa: N802
+        # The IP column needs a numeric comparison — plain string sort would
+        # put "192.168.1.10" before "192.168.1.2", which users clicking the
+        # column header to sort low-to-high would immediately notice as wrong.
+        if left.column() == 0:
+            model: DeviceTableModel = self.sourceModel()  # type: ignore[assignment]
+            left_device = model.device_at(left.row())
+            right_device = model.device_at(right.row())
+            if left_device is not None and right_device is not None:
+                try:
+                    return int(ipaddress.ip_address(left_device.ip)) < int(
+                        ipaddress.ip_address(right_device.ip)
+                    )
+                except ValueError:
+                    pass
+        return super().lessThan(left, right)
 
 
 class TargetInput(QWidget):

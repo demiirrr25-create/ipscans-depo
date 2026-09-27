@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import webbrowser
 
-from PyQt6.QtCore import QPropertyAnimation
+from PyQt6.QtCore import QPropertyAnimation, Qt
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -154,10 +154,16 @@ class MainWindow(QWidget):
         self.table.horizontalHeader().setMinimumSectionSize(90)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setVisible(False)
+        # Clicking a column header sorts by it — the IP column sorts
+        # numerically low-to-high (see DeviceFilterProxyModel.lessThan)
+        # instead of as plain text, which is the whole point of the feature.
+        self.table.setSortingEnabled(True)
+        self.table.horizontalHeader().setSortIndicator(0, Qt.SortOrder.AscendingOrder)
 
         self.model = DeviceTableModel(self.lang)
         self.proxy = DeviceFilterProxyModel()
         self.proxy.setSourceModel(self.model)
+        self.proxy.sort(0, Qt.SortOrder.AscendingOrder)
         self.table.setModel(self.proxy)
         self.table.doubleClicked.connect(self._on_row_double_clicked)
         return self.table

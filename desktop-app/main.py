@@ -56,10 +56,26 @@ def _install_crash_handler() -> None:
     sys.excepthook = handle_exception
 
 
+def _reset_onboarding() -> None:
+    """`--reset-onboarding`: clears the saved language + terms/privacy
+    acceptance so the next launch replays the full first-run flow — useful
+    for verifying a "fresh download" experience without touching the
+    registry by hand (QSettings(...).clear() removes the whole
+    ipscans/NetworkScanner key, not just these three values, which is fine
+    since scan settings aren't persisted anywhere yet).
+    """
+    from PyQt6.QtCore import QSettings
+
+    QSettings("ipscans", "NetworkScanner").clear()
+
+
 def main() -> None:
     # `--selftest` boots the window and exits immediately (exit code 0 on
     # success) — used by CI to smoke-test a packaged .exe without a real display.
     selftest = "--selftest" in sys.argv
+
+    if "--reset-onboarding" in sys.argv:
+        _reset_onboarding()
 
     _install_crash_handler()
     _log("--- startup ---")
