@@ -4,6 +4,8 @@ import sys
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 
+from app.i18n import DEFAULT_LANGUAGE, get_saved_language
+from app.ui.language_dialog import LanguageDialog
 from app.ui.main_window import MainWindow
 from app.ui.privacy_dialog import PrivacyTermsDialog, has_accepted_privacy_terms
 from app.ui.resources import load_app_icon
@@ -30,7 +32,7 @@ def main() -> None:
     app.setWindowIcon(app_icon)
 
     if selftest:
-        window = MainWindow()
+        window = MainWindow(DEFAULT_LANGUAGE)
         window.setWindowIcon(app_icon)
         print("selftest: window created OK")
         sys.exit(0)
@@ -48,7 +50,16 @@ def main() -> None:
                 app.quit()
                 return
 
-        window = MainWindow()
+        language = get_saved_language()
+        if language is None:
+            lang_dialog = LanguageDialog()
+            lang_dialog.setWindowIcon(app_icon)
+            if lang_dialog.exec() != LanguageDialog.DialogCode.Accepted:
+                app.quit()
+                return
+            language = lang_dialog.selected_language
+
+        window = MainWindow(language or DEFAULT_LANGUAGE)
         window.setWindowIcon(app_icon)
         window.show()
         app.window_ref = window  # keep a live reference so it isn't garbage-collected

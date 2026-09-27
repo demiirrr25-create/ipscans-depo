@@ -4,23 +4,34 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel
 from PyQt6.QtWidgets import (
     QButtonGroup,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QRadioButton,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from app.core.models import Device
+from app.i18n import t
 
-COLUMNS = ["IP", "MAC", "Vendor", "Hostname", "Open Ports", "Serial No", "Source"]
+COLUMN_KEYS = [
+    "col_ip",
+    "col_mac",
+    "col_vendor",
+    "col_hostname",
+    "col_ports",
+    "col_serial",
+    "col_source",
+]
 
 
 class DeviceTableModel(QAbstractTableModel):
-    def __init__(self) -> None:
+    def __init__(self, lang: str = "en") -> None:
         super().__init__()
         self._devices: list[Device] = []
+        self._columns = [t(lang, key) for key in COLUMN_KEYS]
 
     def add_device(self, device: Device) -> None:
         row = len(self._devices)
@@ -43,11 +54,11 @@ class DeviceTableModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self._devices)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: N802
-        return 0 if parent.isValid() else len(COLUMNS)
+        return 0 if parent.isValid() else len(self._columns)
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):  # noqa: N802
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            return COLUMNS[section]
+            return self._columns[section]
         return None
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole):
@@ -98,57 +109,61 @@ class DeviceFilterProxyModel(QSortFilterProxyModel):
 
 class TargetInput(QWidget):
     """Single IP / IP range / CIDR selector — returns a spec string that
-    `network_utils.parse_targets` understands. Presented as radio buttons
-    (rather than a dropdown) so the active mode is always visible at a glance.
+    `network_utils.parse_targets` understands. Presented as a modern segmented
+    control (pill-shaped, single-row) so the active mode is always visible at
+    a glance without the visual weight of classic radio buttons.
     Defaults to "IP Range" mode, per product requirement.
     """
 
-    MODES = ("IP Range", "Single IP", "CIDR")
+    MODE_KEYS = ("mode_range", "mode_single", "mode_cidr")
     PLACEHOLDERS = {
-        "Single IP": "192.168.1.50",
-        "IP Range": "192.168.1.10-192.168.1.150",
-        "CIDR": "192.168.1.0/24",
+        "mode_single": "192.168.1.50",
+        "mode_range": "192.168.1.10-192.168.1.150",
+        "mode_cidr": "192.168.1.0/24",
     }
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(8)
+        outer.setSpacing(10)
 
         self.value_edit = QLineEdit()
 
-        mode_row = QHBoxLayout()
-        mode_row.setSpacing(14)
+        segment_bar = QFrame(objectName="SegmentBar")
+        segment_layout = QHBoxLayout(segment_bar)
+        segment_layout.setContentsMargins(4, 4, 4, 4)
+        segment_layout.setSpacing(4)
+
         self.mode_group = QButtonGroup(self)
-        self._radios: dict[str, QRadioButton] = {}
-        for mode in self.MODES:
-            radio = QRadioButton(mode)
-            self.mode_group.addButton(radio)
-            self._radios[mode] = radio
-            mode_row.addWidget(radio)
-        mode_row.addStretch(1)
-        self._radios["IP Range"].setChecked(True)
-        for radio in self._radios.values():
-            radio.toggled.connect(self._on_mode_toggled)
+        self.mode_group.setExclusive(True)
+        self._buttons: dict[str, QPushButton] = {}
+        for key in self.MODE_KEYS:
+            btn = QPushButton(t(lang, key), objectName="SegmentButton")
+            btn.setCheckable(True)
+            self.mode_group.addButton(btn)
+            self._buttons[key] = btn
+            segment_layout.addWidget(btn, stretch=1)
+        self._buttons["mode_range"].setChecked(True)
+        self.mode_group.buttonToggled.connect(self._on_mode_toggled)
 
         self._update_placeholder()
 
-        outer.addLayout(mode_row)
+        outer.addWidget(segment_bar)
         outer.addWidget(self.value_edit)
 
-    def _on_mode_toggled(self, checked: bool) -> None:
+    def _on_mode_toggled(self, button: QPushButton, checked: bool) -> None:
         if checked:
             self._update_placeholder()
 
     def _update_placeholder(self) -> None:
-        self.value_edit.setPlaceholderText(self.PLACEHOLDERS[self.current_mode()])
+        self.value_edit.setPlaceholderText(self.PLACEHOLDERS[self.current_mode_key()])
 
-    def current_mode(self) -> str:
-        for mode, radio in self._radios.items():
-            if radio.isChecked():
-                return mode
-        return "IP Range"
+    def current_mode_key(self) -> str:
+        for key, btn in self._buttons.items():
+            if btn.isChecked():
+                return key
+        return "mode_range"
 
     def set_value(self, text: str) -> None:
         self.value_edit.setText(text)

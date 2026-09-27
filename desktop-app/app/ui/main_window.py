@@ -8,7 +8,6 @@ import webbrowser
 
 from PyQt6.QtCore import QPropertyAnimation
 from PyQt6.QtWidgets import (
-    QCheckBox,
     QFrame,
     QHBoxLayout,
     QHeaderView,
@@ -26,6 +25,7 @@ from app.core import network_utils
 from app.core.models import Device
 from app.core.network_utils import InvalidTargetError
 from app.core.scanner import ScanOptions
+from app.i18n import DEFAULT_LANGUAGE, t
 from app.ui.resources import load_logo_pixmap
 from app.ui.spinner import Spinner
 from app.ui.styles import DARK_QSS
@@ -34,12 +34,13 @@ from app.workers.scan_worker import ScanWorker
 
 
 class MainWindow(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, lang: str = DEFAULT_LANGUAGE) -> None:
         super().__init__()
         self._worker: ScanWorker | None = None
+        self.lang = lang
 
         self.setObjectName("AppRoot")
-        self.setWindowTitle("ipscans — Network Scanner")
+        self.setWindowTitle(t(lang, "app_title"))
         # A plain, native window: resizable and maximizable out of the box.
         # (A previous frameless/translucent version caused unreadable,
         # partially-unstyled rendering on real Windows and blocked maximize.)
@@ -99,7 +100,7 @@ class MainWindow(QWidget):
         titles = QVBoxLayout()
         titles.setSpacing(0)
         title = QLabel("ipscans", objectName="TitleText")
-        subtitle = QLabel("Deep Network Scanning Tool", objectName="SubtitleText")
+        subtitle = QLabel(t(self.lang, "app_subtitle"), objectName="SubtitleText")
         titles.addWidget(title)
         titles.addWidget(subtitle)
         layout.addLayout(titles)
@@ -113,35 +114,19 @@ class MainWindow(QWidget):
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(10)
 
-        layout.addWidget(section_label("Scan Target"))
+        layout.addWidget(section_label(t(self.lang, "scan_target")))
 
         row = QHBoxLayout()
         row.setSpacing(10)
-        self.target_input = TargetInput()
+        self.target_input = TargetInput(self.lang)
         row.addWidget(self.target_input, stretch=1)
 
-        self.scan_btn = QPushButton("▶  Start Scan", objectName="PrimaryButton")
-        self.stop_btn = QPushButton("■  Stop", objectName="GhostButton")
+        self.scan_btn = QPushButton(f"▶  {t(self.lang, 'start_scan')}", objectName="PrimaryButton")
+        self.stop_btn = QPushButton(f"■  {t(self.lang, 'stop_scan')}", objectName="GhostButton")
         self.stop_btn.setEnabled(False)
         row.addWidget(self.scan_btn)
         row.addWidget(self.stop_btn)
         layout.addLayout(row)
-
-        options_row = QHBoxLayout()
-        options_row.setSpacing(16)
-        options_row.addWidget(section_label("Protocols"))
-        self.snmp_check = QCheckBox("SNMP")
-        self.snmp_check.setChecked(True)
-        self.upnp_check = QCheckBox("UPnP")
-        self.upnp_check.setChecked(True)
-        self.wmi_check = QCheckBox("WMI (local)")
-        self.wmi_check.setChecked(True)
-        self.nmap_check = QCheckBox("Nmap (slower)")
-        self.nmap_check.setChecked(False)
-        for chk in (self.snmp_check, self.upnp_check, self.wmi_check, self.nmap_check):
-            options_row.addWidget(chk)
-        options_row.addStretch(1)
-        layout.addLayout(options_row)
 
         return card
 
@@ -152,9 +137,7 @@ class MainWindow(QWidget):
         layout.setSpacing(8)
 
         self.filter_edit = QLineEdit()
-        self.filter_edit.setPlaceholderText(
-            "Search: filter instantly by IP, vendor or MAC address..."
-        )
+        self.filter_edit.setPlaceholderText(t(self.lang, "search_placeholder"))
         layout.addWidget(self.filter_edit, stretch=1)
         return wrap
 
@@ -173,7 +156,7 @@ class MainWindow(QWidget):
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setVisible(False)
 
-        self.model = DeviceTableModel()
+        self.model = DeviceTableModel(self.lang)
         self.proxy = DeviceFilterProxyModel()
         self.proxy.setSourceModel(self.model)
         self.table.setModel(self.proxy)
@@ -182,7 +165,7 @@ class MainWindow(QWidget):
 
     def _build_status_bar(self) -> QHBoxLayout:
         layout = QHBoxLayout()
-        self.status_label = QLabel("Ready.", objectName="StatusLabel")
+        self.status_label = QLabel(t(self.lang, "status_ready"), objectName="StatusLabel")
         self.spinner = Spinner(16)
         self.spinner.hide()
         self.progress_bar = QProgressBar(objectName="ScanProgress")
@@ -208,7 +191,7 @@ class MainWindow(QWidget):
         suggestion = network_utils.suggest_range_spec()
         if suggestion:
             self.target_input.set_value(suggestion)
-            self.status_label.setText(f"Detected local network: {suggestion}")
+            self.status_label.setText(t(self.lang, "status_detected", value=suggestion))
 
     # ------------------------------------------------------------- actions
     def _start_scan(self) -> None:
@@ -216,23 +199,21 @@ class MainWindow(QWidget):
         try:
             targets = network_utils.parse_targets(spec)
         except InvalidTargetError as exc:
-            QMessageBox.warning(self, "Invalid target", str(exc))
+            QMessageBox.warning(self, t(self.lang, "invalid_target_title"), str(exc))
             return
 
         self.model.clear()
         self.progress_bar.setValue(0)
         self.progress_bar.hide()
         self.spinner.start()
-        self.status_label.setText(f"Discovering hosts among {len(targets)} addresses...")
+        self.status_label.setText(t(self.lang, "status_discovering", count=len(targets)))
         self.scan_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
 
-        options = ScanOptions(
-            enable_snmp=self.snmp_check.isChecked(),
-            enable_upnp=self.upnp_check.isChecked(),
-            enable_wmi=self.wmi_check.isChecked(),
-            enable_nmap=self.nmap_check.isChecked(),
-        )
+        # Every enrichment protocol (SNMP/UPnP/WMI) runs with its sensible
+        # default — there's no per-protocol UI toggle to keep the scan
+        # screen simple; Nmap stays opt-in-only since it's noticeably slower.
+        options = ScanOptions()
 
         self._worker = ScanWorker(targets, options)
         self._worker.device_found.connect(self._on_device_found)
@@ -245,7 +226,7 @@ class MainWindow(QWidget):
     def _stop_scan(self) -> None:
         if self._worker:
             self._worker.stop()
-        self.status_label.setText("Stopping...")
+        self.status_label.setText(t(self.lang, "status_stopping"))
 
     def _on_device_found(self, device: Device) -> None:
         self.model.add_device(device)
@@ -262,7 +243,7 @@ class MainWindow(QWidget):
         percent = int((done / total) * 100) if total else 0
         self.progress_bar.setValue(percent)
         self.status_label.setText(
-            f"Scanning {done}/{total} — {self.model.rowCount()} device(s) found"
+            t(self.lang, "status_scanning", done=done, total=total, found=self.model.rowCount())
         )
 
     def _on_scan_finished(self) -> None:
@@ -270,15 +251,16 @@ class MainWindow(QWidget):
         self.progress_bar.hide()
         self.scan_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-        self.status_label.setText(f"Done — {self.model.rowCount()} device(s) found")
+        self.status_label.setText(t(self.lang, "status_done", count=self.model.rowCount()))
 
     def _on_scan_failed(self, message: str) -> None:
         self.spinner.stop()
         self.progress_bar.hide()
         self.scan_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-        self.status_label.setText("Scan error")
-        QMessageBox.critical(self, "Scan error", message)
+        error_title = t(self.lang, "status_error")
+        self.status_label.setText(error_title)
+        QMessageBox.critical(self, error_title, message)
 
     def _on_row_double_clicked(self, proxy_index) -> None:
         source_index = self.proxy.mapToSource(proxy_index)

@@ -1,8 +1,11 @@
 # ipscans Network Scanner (desktop)
 
 PyQt6 tabanlı, ipscans.com ile aynı siyah/beyaz/gri temaya sahip masaüstü ağ
-tarama uygulaması. Çerçevesiz, yuvarlak köşeli, gölgeli pencere; ARP/ping ile
-hızlı host keşfi + SNMP/WMI/UPnP/Nmap ile derinlemesine cihaz bilgisi.
+tarama uygulaması. Normal, yeniden boyutlandırılabilir pencere; ARP/ping ile
+hızlı host keşfi + SNMP/WMI/UPnP ile derinlemesine cihaz bilgisi (Nmap
+opsiyonel, varsayılan kapalı). İlk açılışta gizlilik onayının ardından
+ipscans logolu bir dil seçim ekranı gelir (6 dil: EN/TR/DE/FR/ES/RU); seçim
+bir daha sorulmaz.
 
 ## Kurulum
 
@@ -35,10 +38,17 @@ app/
   workers/
     scan_worker.py        QThread sarmalayıcı — arayüzü asla dondurmaz
   ui/
-    styles.py             Karanlık QSS teması
+    language_dialog.py    İlk açılışta gösterilen dil seçim ekranı
+    styles.py             Karanlık QSS teması (modern segmented control dahil)
     widgets.py             Cihaz tablo modeli, canlı filtre, hedef seçici
-    main_window.py         Çerçevesiz ana pencere, çift tık -> tarayıcıda aç
+    main_window.py         Ana pencere, çift tık -> tarayıcıda aç
+  i18n.py                  Arayüz metinleri için çeviri tablosu (6 dil)
 ```
+
+Tarama ekranında artık protokol bazlı (SNMP/UPnP/WMI/Nmap) açma-kapama
+kutucukları yok — sadeleştirme kapsamında kaldırıldı; SNMP/UPnP/WMI her
+taramada varsayılan olarak etkin çalışır, Nmap ise hız nedeniyle varsayılan
+kapalı kalır (`ScanOptions` içinde sabit).
 
 ## Bilinen sınırlamalar
 

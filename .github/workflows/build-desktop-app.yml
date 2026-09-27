@@ -8,6 +8,9 @@ on:
       - ".github/workflows/build-desktop-app.yml"
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -37,6 +40,20 @@ jobs:
       - name: Smoke test the packaged .exe
         run: |
           .\dist\ipscans-network-scanner.exe --selftest
+
+      - name: Publish built .exe to the website's download folder
+        run: |
+          Copy-Item -Path "dist\ipscans-network-scanner.exe" -Destination "..\public\downloads\ipscans-network-scanner.exe" -Force
+
+      - name: Commit updated .exe
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/ipscans-network-scanner.exe
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt desktop app .exe [skip ci]"
+          git push
+
 
       - uses: actions/upload-artifact@v4
         with:

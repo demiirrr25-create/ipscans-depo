@@ -17,12 +17,15 @@ DARK_QSS = """
 #RootCard {
     background-color: #0a0a0a;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
+    border-radius: 18px;
 }
 
 #TitleBar {
-    background: transparent;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(255, 255, 255, 0.04), stop:1 transparent);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
 }
 
 #TitleBar QLabel#TitleText {
@@ -37,9 +40,58 @@ DARK_QSS = """
 }
 
 #OptionsCard {
-    background: rgba(255, 255, 255, 0.03);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(255, 255, 255, 0.05), stop:1 rgba(255, 255, 255, 0.02));
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
+    border-radius: 16px;
+}
+
+/* Modern segmented control replacing the old radio-button row for the
+   scan-target mode (IP Range / Single IP / CIDR). */
+#SegmentBar {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+QPushButton#SegmentButton {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.62);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+}
+QPushButton#SegmentButton:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+QPushButton#SegmentButton:checked {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* First-run language picker (LanguageDialog). */
+#LanguageDialog {
+    background-color: #0a0a0a;
+}
+QPushButton#LanguageOption {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+}
+QPushButton#LanguageOption:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+QPushButton#LanguageOption:checked {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+    font-weight: 700;
 }
 
 QPushButton#WindowButton {
@@ -105,16 +157,20 @@ QLineEdit:focus, QComboBox:focus {
 }
 
 QPushButton#PrimaryButton {
-    background: #ffffff;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #ffffff, stop:1 #e2e2e2);
     color: #000000;
     border: none;
-    border-radius: 10px;
+    border-radius: 11px;
     padding: 9px 20px;
     font-weight: 600;
     font-size: 13px;
 }
 QPushButton#PrimaryButton:hover {
-    background: #e6e6e6;
+    background: #ffffff;
+}
+QPushButton#PrimaryButton:pressed {
+    background: #cfcfcf;
 }
 QPushButton#PrimaryButton:disabled {
     background: rgba(255, 255, 255, 0.25);
@@ -125,12 +181,13 @@ QPushButton#GhostButton {
     background: transparent;
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 10px;
+    border-radius: 11px;
     padding: 9px 18px;
     font-size: 13px;
 }
 QPushButton#GhostButton:hover {
     background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 QTableView {
