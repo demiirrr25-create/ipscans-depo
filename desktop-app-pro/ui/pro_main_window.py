@@ -36,12 +36,9 @@ from ui.dashboard_widget import DashboardWidget
 from ui.device_history_dialog import DeviceHistoryDialog
 from ui.event_log_widget import EventLogWidget
 from ui.inventory_widget import InventoryWidget
-from ui.license_panel import LicensePanel
-from ui.monitoring_controls import MonitoringControlsWidget
-from ui.my_sites_widget import MySitesWidget
 from ui.notifications_bridge import notification_for_event
 from ui.pro_resources import load_pro_app_icon, load_pro_logo_pixmap
-from ui.topology_widget import TopologyWidget
+from ui.settings_widget import SettingsWidget
 
 
 class ProMainWindow(QWidget):
@@ -74,9 +71,6 @@ class ProMainWindow(QWidget):
         self.dashboard_tab = DashboardWidget(lang)
         self.tabs.addTab(self.dashboard_tab, t(lang, "tab_dashboard"))
 
-        self.monitoring_tab = MonitoringControlsWidget(lang)
-        self.tabs.addTab(self.monitoring_tab, t(lang, "tab_monitoring"))
-
         self.event_log_tab = EventLogWidget(lang)
         self.tabs.addTab(self.event_log_tab, t(lang, "tab_event_log"))
 
@@ -88,14 +82,9 @@ class ProMainWindow(QWidget):
         self.inventory_tab.export_csv_btn.clicked.connect(self._on_export_csv)
         self.tabs.addTab(self.inventory_tab, t(lang, "tab_inventory"))
 
-        self.topology_tab = TopologyWidget(lang)
-        self.tabs.addTab(self.topology_tab, t(lang, "tab_topology"))
-
-        self.my_sites_tab = MySitesWidget(self.license_provider, lang)
-        self.tabs.addTab(self.my_sites_tab, t(lang, "tab_my_sites"))
-
-        self.license_tab = LicensePanel(self.license_provider, lang)
-        self.tabs.addTab(self.license_tab, t(lang, "tab_license"))
+        self.settings_tab = SettingsWidget(self.license_provider, lang)
+        self.monitoring_tab = self.settings_tab.monitoring  # kept as an alias: same widget, old name
+        self.tabs.addTab(self.settings_tab, t(lang, "tab_settings"))
 
         self.monitoring_tab.start_btn.clicked.connect(self._start_monitoring)
         self.monitoring_tab.stop_btn.clicked.connect(self._stop_monitoring)
@@ -217,7 +206,7 @@ class ProMainWindow(QWidget):
             return
         if not self.license_provider.get_status().has_feature("continuous_monitoring"):
             QMessageBox.information(self, t(self.lang, "pro_feature_title"), t(self.lang, "pro_feature_body"))
-            self.tabs.setCurrentWidget(self.license_tab)
+            self.tabs.setCurrentWidget(self.settings_tab)
             return
         self._ask_permission_if_needed()
 
@@ -303,4 +292,3 @@ class ProMainWindow(QWidget):
         devices = self.db.all_devices()
         self.inventory_tab.set_groups(self.db.distinct_tags())
         self.inventory_tab.refresh(devices)
-        self.topology_tab.refresh(devices)

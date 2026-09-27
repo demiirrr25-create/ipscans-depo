@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -21,7 +22,7 @@ if str(_FREE_APP_ROOT) not in sys.path:
 from app.core import network_utils  # noqa: E402
 from app.core.scanner import ScanOptions, run_scan  # noqa: E402
 
-from pro.conflict_engine import identity_key_for, process_ping_result, process_scan_pass  # noqa: E402
+from pro.conflict_engine import process_ping_result, process_scan_pass  # noqa: E402
 from pro.database import Database, now_iso  # noqa: E402
 from pro.device_classifier import classify_device_type  # noqa: E402
 from pro.health_score import compute_health_score  # noqa: E402
@@ -84,11 +85,18 @@ class MonitorWorker(QThread):
         scan_results: list[ScanPassResult] = []
 
         def on_device_found(device) -> None:
-            device_type = classify_device_type(device.open_ports, device.vendor, device.hostname)
+            device_type = classify_device_type(
+                device.open_ports, device.vendor, device.hostname,
+                upnp_friendly_name=device.upnp_friendly_name,
+                upnp_device_type=device.upnp_device_type,
+                snmp_sys_descr=device.snmp_sys_descr,
+            )
             scan_results.append(
                 ScanPassResult(
                     ip=device.ip, mac=device.mac, vendor=device.vendor, hostname=device.hostname,
                     device_type=device_type, open_ports=device.open_ports,
+                    upnp_friendly_name=device.upnp_friendly_name, upnp_device_type=device.upnp_device_type,
+                    snmp_sys_descr=device.snmp_sys_descr, serial_number=device.serial_number,
                 )
             )
 
@@ -104,37 +112,69 @@ class MonitorWorker(QThread):
         high_latency = 0
         packet_losses: list[float] = []
         tick_ts = now_iso()
+        found_ips = {result.ip for result in scan_results}
+
         for result in scan_results:
-            key = identity_key_for(result.mac, result.ip)
+            # process_scan_pass already resolved+upserted the correct
+            # identity for this IP (merging an "ip:"-keyed placeholder into
+            # a MAC-based key if this pass was the first to resolve a MAC —
+            # see conflict_engine.resolve_identity_key) — look it up instead
+            # of recomputing independently, or ping stats could land on a
+            # stale/different row than the one conflict detection just used.
+            device_row = self._db.find_device_by_ip(result.ip)
+            if device_row is None:
+                continue
+            key = device_row["identity_key"]
             ping = ping_with_latency(result.ip, samples=2)
             self._db.set_ping_stats(key, ping.latency_ms, ping.packet_loss_pct)
             self._db.record_metric(key, tick_ts, ping.latency_ms, ping.packet_loss_pct)
             packet_losses.append(ping.packet_loss_pct)
             if ping.latency_ms is not None and ping.latency_ms >= LATENCY_HIGH_MS:
                 high_latency += 1
-            device_row = self._db.get_device(key)
-            threshold = (
-                CRITICAL_OFFLINE_THRESHOLD if device_row and device_row["is_critical"] else self._offline_threshold
-            )
-            offline_event = process_ping_result(
-                self._db, key, result.ip, ping.alive, threshold, self._lang
-            )
+            threshold = CRITICAL_OFFLINE_THRESHOLD if device_row["is_critical"] else self._offline_threshold
+            offline_event = process_ping_result(self._db, key, result.ip, ping.alive, threshold, self._lang)
             if offline_event:
                 events.append(offline_event)
                 self._db.add_event(offline_event)
 
+        # A device that goes fully dark doesn't answer the fast ping SWEEP
+        # (run_scan above) at all, so it never appears in scan_results —
+        # without this second pass, an unplugged device's offline counter
+        # would never increment and no alert/notification would ever fire.
+        # Every previously-known device not seen this tick gets an explicit,
+        # authoritative ping check here. Run concurrently (mirrors the
+        # sweep's own approach) so a large offline batch — e.g. a whole
+        # switch losing power — doesn't stall this tick for minutes.
+        missing_rows = [row for row in self._db.all_devices() if row["ip"] not in found_ips]
+        if missing_rows:
+            with ThreadPoolExecutor(max_workers=min(32, len(missing_rows))) as pool:
+                missing_pings = list(pool.map(lambda row: ping_with_latency(row["ip"], samples=2), missing_rows))
+            for device_row, ping in zip(missing_rows, missing_pings):
+                key = device_row["identity_key"]
+                self._db.set_ping_stats(key, ping.latency_ms, ping.packet_loss_pct)
+                self._db.record_metric(key, tick_ts, ping.latency_ms, ping.packet_loss_pct)
+                packet_losses.append(ping.packet_loss_pct)
+                if ping.latency_ms is not None and ping.latency_ms >= LATENCY_HIGH_MS:
+                    high_latency += 1
+                threshold = CRITICAL_OFFLINE_THRESHOLD if device_row["is_critical"] else self._offline_threshold
+                offline_event = process_ping_result(
+                    self._db, key, device_row["ip"], ping.alive, threshold, self._lang
+                )
+                if offline_event:
+                    events.append(offline_event)
+                    self._db.add_event(offline_event)
+
         for event in events:
             self.event_created.emit(event)
 
+        all_devices = self._db.all_devices()
         conflicts = sum(1 for e in events if e.type.value == "ip_conflict")
-        offline_devices = sum(
-            1 for row in self._db.all_devices() if row["status"] == "offline"
-        )
-        unknown = sum(1 for row in self._db.all_devices() if not row["vendor"])
+        offline_devices = sum(1 for row in all_devices if row["status"] == "offline")
+        unknown = sum(1 for row in all_devices if not row["vendor"])
         avg_loss = sum(packet_losses) / len(packet_losses) if packet_losses else 0.0
 
         breakdown = compute_health_score(
-            total_devices=len(scan_results),
+            total_devices=len(all_devices),
             ip_conflicts=conflicts,
             offline_devices=offline_devices,
             high_latency_devices=high_latency,
@@ -142,7 +182,7 @@ class MonitorWorker(QThread):
             unknown_devices=unknown,
         )
         self.health_updated.emit(breakdown)
-        for row in self._db.all_devices():
+        for row in all_devices:
             self.device_updated.emit(row)
         self._sync_site(breakdown)
         self.tick_finished.emit()

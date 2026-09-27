@@ -63,6 +63,13 @@ class ScanPassResult:
     hostname: str | None = None
     device_type: str = "Unknown"
     open_ports: list[int] = field(default_factory=list)
+    # Best-effort device identification (spec item 15's "vendor and model"
+    # ask) — populated from the free app's SNMP/UPnP enrichment, which was
+    # already being fetched but previously discarded here.
+    upnp_friendly_name: str | None = None
+    upnp_device_type: str | None = None
+    snmp_sys_descr: str | None = None
+    serial_number: str | None = None
     ping: PingResult | None = None
 
 

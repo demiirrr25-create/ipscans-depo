@@ -97,6 +97,18 @@ QTreeView::branch, QTreeWidget::branch {
     background: transparent;
 }
 
+/* QScrollArea (Settings tab) defaults to a native white viewport unless
+   both the frame AND its inner viewport widget are explicitly made
+   transparent — otherwise it shows through as a washed-out white veil
+   over the dark-styled child widgets. */
+QScrollArea {
+    background: transparent;
+    border: none;
+}
+QScrollArea > QWidget > QWidget {
+    background: transparent;
+}
+
 QScrollBar:horizontal {
     background: transparent;
     height: 10px;

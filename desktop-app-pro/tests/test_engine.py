@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from pro.conflict_engine import process_scan_pass, process_ping_result
+from pro.conflict_engine import process_scan_pass, process_ping_result, resolve_identity_key
 from pro.database import Database
 from pro.device_classifier import classify_device_type
 from pro.health_score import compute_health_score
@@ -126,6 +126,54 @@ def test_device_classifier():
     print("PASS: device_classifier")
 
 
+def test_device_classifier_prioritizes_self_description_over_ports():
+    # A camera that also happens to have port 80 open (its web UI) must not
+    # be misclassified as a router just because 80/443 are open.
+    assert classify_device_type(
+        [80, 443], "TP-Link", None, upnp_device_type="urn:schemas-upnp-org:device:Camera:1"
+    ) == "IP Camera"
+    # A known camera-vendor MAC should win even with zero recognized ports
+    # (e.g. right after power-on, before RTSP/ONVIF has started listening).
+    assert classify_device_type([], "Hikvision Digital Technology", None) == "IP Camera"
+    print("PASS: device_classifier_prioritizes_self_description_over_ports")
+
+
+def test_identity_merges_when_mac_resolves_on_a_later_pass():
+    """Regression test for the exact bug reported: a device first seen
+    without a MAC (common — ARP resolution can lag the ping sweep by a
+    beat) must NOT show up as a second "new device" once its MAC is
+    resolved on a later pass. It should merge into one continuous record.
+    """
+    db = make_db()
+    events_pass1 = process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac=None, vendor="Hikvision")])
+    assert len(events_pass1) == 1 and events_pass1[0].type == EventType.NEW_DEVICE
+    db.set_custom_name("ip:192.168.1.100", "Front Gate Camera")
+
+    events_pass2 = process_scan_pass(
+        db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:DD:EE:FF", vendor="Hikvision")]
+    )
+    assert not any(e.type == EventType.NEW_DEVICE for e in events_pass2), (
+        "should not be treated as a new device once its MAC resolves"
+    )
+
+    all_rows = db.all_devices()
+    assert len(all_rows) == 1, f"expected exactly one device row, got {len(all_rows)}"
+    assert all_rows[0]["custom_name"] == "Front Gate Camera"  # history/name preserved
+    assert all_rows[0]["identity_key"] == "aa:bb:cc:dd:ee:ff"
+    print("PASS: identity_merges_when_mac_resolves_on_a_later_pass")
+
+
+def test_resolve_identity_key_reuses_known_device_without_mac():
+    db = make_db()
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:11:22:33")])
+    # A later pass that fails to resolve a MAC for the same IP (transient
+    # ARP hiccup) should resolve back to the SAME existing device, not spin
+    # up a fresh "ip:" placeholder for it.
+    key = resolve_identity_key(db, "192.168.1.50", None)
+    assert key == "aa:bb:cc:11:22:33"
+    print("PASS: resolve_identity_key_reuses_known_device_without_mac")
+
+
 def test_database_migrates_old_schema_without_data_loss():
     """Regression test: adding a column to SCHEMA does nothing for a DB file
     that already exists on disk (CREATE TABLE IF NOT EXISTS is a no-op) —
@@ -178,6 +226,65 @@ def test_critical_device_lower_offline_threshold():
     event = process_ping_result(db, key, "192.168.1.60", alive=False, offline_threshold=1)
     assert event is not None and event.type == EventType.DEVICE_OFFLINE
     print("PASS: critical_device_lower_offline_threshold")
+
+
+def test_monitor_detects_device_that_goes_fully_dark():
+    """Regression test for the exact bug reported: unplugging a device
+    means it no longer answers the ping SWEEP at all, so it never appears
+    in scan_results — MonitorWorker must still explicitly re-check every
+    previously-known device that's missing from the current pass, or its
+    offline counter never increments and no alert/notification ever fires.
+    """
+    import pro.monitor as monitor_module
+    from pro.models import PingResult
+
+    db = make_db()
+    call_count = {"n": 0}
+
+    class _FakeDevice:
+        ip = "192.168.1.77"
+        mac = "AA:BB:CC:00:11:22"
+        vendor = "TestVendor"
+        hostname = None
+        open_ports: list[int] = []
+        upnp_friendly_name = None
+        upnp_device_type = None
+        snmp_sys_descr = None
+        serial_number = None
+
+    def fake_run_scan(targets, options, on_device_found=None, should_stop=None):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            on_device_found(_FakeDevice())
+        # Ticks 2+: the sweep finds nothing (device unplugged).
+
+    def fake_ping_with_latency(ip, samples=2):
+        if call_count["n"] == 1:
+            return PingResult(ip=ip, alive=True, latency_ms=5.0, packet_loss_pct=0.0)
+        return PingResult(ip=ip, alive=False, latency_ms=None, packet_loss_pct=100.0)
+
+    original_run_scan = monitor_module.run_scan
+    original_ping = monitor_module.ping_with_latency
+    monitor_module.run_scan = fake_run_scan
+    monitor_module.ping_with_latency = fake_ping_with_latency
+    try:
+        worker = monitor_module.MonitorWorker(db, ["192.168.1.77"], interval_sec=9999)
+        worker._offline_threshold = 2  # keep the test fast
+
+        worker._run_one_tick()  # tick 1: found by the sweep, online
+        assert db.get_device("aa:bb:cc:00:11:22")["status"] == "online"
+
+        worker._run_one_tick()  # tick 2: missing from the sweep (miss 1 of 2)
+        assert db.get_device("aa:bb:cc:00:11:22")["consecutive_failures"] == 1
+        assert db.get_device("aa:bb:cc:00:11:22")["status"] == "online"  # not yet crossed
+
+        worker._run_one_tick()  # tick 3: still missing (miss 2 -> crosses threshold)
+        row = db.get_device("aa:bb:cc:00:11:22")
+        assert row["status"] == "offline", "device that vanished from the sweep must still be marked offline"
+    finally:
+        monitor_module.run_scan = original_run_scan
+        monitor_module.ping_with_latency = original_ping
+    print("PASS: monitor_detects_device_that_goes_fully_dark")
 
 
 if __name__ == "__main__":

@@ -21,7 +21,25 @@ from pro.pro_content import t
 
 # Column indices — named so the rest of the class (and callers) don't have
 # to track raw integers.
-COL_IP, COL_MAC, COL_NAME, COL_TAGS, COL_VENDOR, COL_STATUS, COL_CRITICAL, COL_LATENCY, COL_LOSS, COL_LAST_SEEN = range(10)
+(
+    COL_IP, COL_MAC, COL_NAME, COL_TAGS, COL_VENDOR, COL_MODEL,
+    COL_STATUS, COL_CRITICAL, COL_LATENCY, COL_LOSS, COL_LAST_SEEN,
+) = range(11)
+
+
+class _IPSortItem(QTableWidgetItem):
+    """Sorts the IP column numerically (octet by octet) instead of as a
+    plain string — a plain string sort puts "192.168.1.10" before
+    "192.168.1.2", which is wrong and was reported as a bug.
+    """
+
+    def __lt__(self, other: object) -> bool:
+        try:
+            a = tuple(int(p) for p in self.text().split("."))
+            b = tuple(int(p) for p in other.text().split("."))  # type: ignore[attr-defined]
+            return a < b
+        except (ValueError, AttributeError):
+            return super().__lt__(other)
 
 
 class InventoryWidget(QWidget):
@@ -50,12 +68,13 @@ class InventoryWidget(QWidget):
         top_row.addWidget(self.export_csv_btn)
         outer.addLayout(top_row)
 
-        columns = [""] * 10
+        columns = [""] * 11
         columns[COL_IP] = t(lang, "col_ip")
         columns[COL_MAC] = t(lang, "col_mac")
         columns[COL_NAME] = t(lang, "col_name")
         columns[COL_TAGS] = t(lang, "col_tags")
         columns[COL_VENDOR] = t(lang, "col_vendor")
+        columns[COL_MODEL] = t(lang, "col_model")
         columns[COL_STATUS] = t(lang, "col_status")
         columns[COL_CRITICAL] = t(lang, "col_critical")
         columns[COL_LATENCY] = t(lang, "col_latency")
@@ -118,16 +137,19 @@ class InventoryWidget(QWidget):
             display_name = device["custom_name"] or device["hostname"] or "—"
             status_display = t(self.lang, "status_online") if device["status"] == "online" else t(self.lang, "status_offline")
             values = {
-                COL_IP: device["ip"],
                 COL_MAC: device["mac"] or "—",
                 COL_NAME: display_name,
                 COL_TAGS: device["tags"] or "",
                 COL_VENDOR: device["vendor"] or "Unknown",
+                COL_MODEL: device["model_info"] or "—",
                 COL_STATUS: status_display,
                 COL_LATENCY: f"{device['last_latency_ms']:.0f} ms" if device["last_latency_ms"] else "—",
                 COL_LOSS: f"{device['last_packet_loss_pct']:.0f}%" if device["last_packet_loss_pct"] is not None else "—",
                 COL_LAST_SEEN: device["last_seen"],
             }
+            ip_item = _IPSortItem(device["ip"])
+            ip_item.setFlags(ip_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row, COL_IP, ip_item)
             for col, value in values.items():
                 item = QTableWidgetItem(str(value))
                 if col not in (COL_NAME, COL_TAGS):

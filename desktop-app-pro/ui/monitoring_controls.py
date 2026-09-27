@@ -25,7 +25,7 @@ INTERVAL_SECONDS = [10, 30, 60, 300, None]
 
 
 class MonitoringControlsWidget(QWidget):
-    def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
+    def __init__(self, lang: str = "en", show_buttons: bool = True, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.lang = lang
         outer = QVBoxLayout(self)
@@ -92,10 +92,14 @@ class MonitoringControlsWidget(QWidget):
         self.stop_btn.setEnabled(False)
         btn_row.addWidget(self.start_btn)
         btn_row.addWidget(self.stop_btn)
-        outer.addLayout(btn_row)
-
         self.status_label = QLabel(t(lang, "monitoring_stopped"), objectName="StatusLabel")
-        outer.addWidget(self.status_label)
+        # Dashboard is the single place Start/Stop lives now (spec: fewer
+        # tabs, monitoring starts from the panel) — Settings only shows
+        # configuration. The buttons still exist and stay wired so existing
+        # signal connections keep working either way.
+        if show_buttons:
+            outer.addLayout(btn_row)
+            outer.addWidget(self.status_label)
         outer.addStretch(1)
 
     def _on_interval_changed(self, index: int) -> None:

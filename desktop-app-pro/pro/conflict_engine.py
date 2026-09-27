@@ -28,12 +28,42 @@ None of this claims certainty — see the neutral message wording below.
 from __future__ import annotations
 
 from pro.database import Database, now_iso
+from pro.device_classifier import build_model_info
 from pro.models import Confidence, Event, EventType, ScanPassResult, Severity
 from pro.pro_content import DEFAULT_LANGUAGE, t
 
 
 def identity_key_for(mac: str | None, ip: str) -> str:
     return mac.lower() if mac else f"ip:{ip}"
+
+
+def resolve_identity_key(db: Database, ip: str, mac: str | None) -> str:
+    """Like identity_key_for, but merge-aware: a device first seen without
+    a MAC (common right after it appears — ARP resolution can lag a beat
+    behind the ping sweep) gets keyed "ip:<ip>"; if it's THEN seen again
+    with a MAC on a later pass, naively switching to the MAC-based key
+    would make it look like a brand-new device, discarding its name/tags/
+    history. This detects that exact situation and migrates the old
+    "ip:"-keyed row forward onto the MAC-based key instead.
+
+    This does NOT touch genuine MAC-change/conflict scenarios (a different
+    MAC previously recorded for this IP) — that stays the conflict
+    engine's job; this only merges when the old row has no MAC at all.
+    """
+    if mac:
+        mac_key = mac.lower()
+        if db.get_device(mac_key) is None:
+            ip_key = f"ip:{ip}"
+            stale = db.get_device(ip_key)
+            if stale is not None and stale["mac"] is None:
+                db.migrate_identity(ip_key, mac_key)
+        return mac_key
+
+    # No MAC resolved this pass — reuse the existing device for this IP
+    # (if any) rather than minting a new "ip:" placeholder every time MAC
+    # resolution happens to miss a beat.
+    existing = db.find_device_by_ip(ip)
+    return existing["identity_key"] if existing is not None else f"ip:{ip}"
 
 
 def _friendly(row, ip: str) -> str:
@@ -62,7 +92,7 @@ def process_scan_pass(db: Database, results: list[ScanPassResult], lang: str = D
 def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> list[Event]:
     events: list[Event] = []
     ip, mac = result.ip, result.mac
-    key = identity_key_for(mac, ip)
+    key = resolve_identity_key(db, ip, mac)
 
     existing_device = db.get_device(key)
     # The MAC that occupied *this IP* just before this pass — independent of
@@ -134,7 +164,13 @@ def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> li
     if mac:
         db.record_mac_change(ip, mac, ts)
 
-    db.upsert_device(key, ip, mac, result.vendor, result.hostname, result.device_type, ts)
+    model_info = build_model_info(
+        result.upnp_friendly_name, result.upnp_device_type, result.snmp_sys_descr, result.vendor,
+    )
+    db.upsert_device(
+        key, ip, mac, result.vendor, result.hostname, result.device_type, ts,
+        model_info=model_info, serial_number=result.serial_number,
+    )
     for event in events:
         db.add_event(event)
     return events

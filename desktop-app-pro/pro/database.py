@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS devices (
     notes               TEXT,
     tags                TEXT, -- comma-separated free-form labels, e.g. "Camera,Block A"
     is_critical         INTEGER NOT NULL DEFAULT 0, -- lower offline threshold + priority alert
+    model_info          TEXT, -- best-available device description (UPnP/SNMP), e.g. "Hikvision IP Camera"
+    serial_number       TEXT,
     first_seen          TEXT NOT NULL,
     last_seen           TEXT NOT NULL,
     status              TEXT NOT NULL DEFAULT 'online', -- online|offline|unknown
@@ -131,6 +133,8 @@ class Database:
             "devices": [
                 ("tags", "TEXT"),
                 ("is_critical", "INTEGER NOT NULL DEFAULT 0"),
+                ("model_info", "TEXT"),
+                ("serial_number", "TEXT"),
             ],
             "license": [
                 ("license_key", "TEXT"),
@@ -167,6 +171,27 @@ class Database:
             cur.execute("SELECT * FROM devices ORDER BY ip")
             return cur.fetchall()
 
+    def find_device_by_ip(self, ip: str) -> sqlite3.Row | None:
+        """Most-recently-seen device row for this IP, regardless of which
+        identity_key it's filed under — used to resolve a stable identity
+        for a device even when MAC resolution timing varies pass to pass
+        (see conflict_engine.resolve_identity_key).
+        """
+        with self.cursor() as cur:
+            cur.execute("SELECT * FROM devices WHERE ip=? ORDER BY last_seen DESC LIMIT 1", (ip,))
+            return cur.fetchone()
+
+    def migrate_identity(self, old_key: str, new_key: str) -> None:
+        """Renames a device's identity_key everywhere it's referenced —
+        used when a device first seen without a MAC (keyed "ip:<ip>") is
+        later seen WITH a MAC: without this, it would show up as a brand
+        new "device" instead of continuing its existing history/name/tags.
+        """
+        with self.cursor() as cur:
+            cur.execute("UPDATE devices SET identity_key=? WHERE identity_key=?", (new_key, old_key))
+            cur.execute("UPDATE ip_history SET identity_key=? WHERE identity_key=?", (new_key, old_key))
+            cur.execute("UPDATE metrics_history SET identity_key=? WHERE identity_key=?", (new_key, old_key))
+
     def upsert_device(
         self,
         identity_key: str,
@@ -176,6 +201,8 @@ class Database:
         hostname: str | None,
         device_type: str,
         seen_at: str,
+        model_info: str | None = None,
+        serial_number: str | None = None,
     ) -> None:
         existing = self.get_device(identity_key)
         with self.cursor() as cur:
@@ -183,16 +210,21 @@ class Database:
                 cur.execute(
                     """INSERT INTO devices
                        (identity_key, ip, mac, vendor, hostname, device_type,
-                        first_seen, last_seen, status, consecutive_failures)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'online', 0)""",
-                    (identity_key, ip, mac, vendor, hostname, device_type, seen_at, seen_at),
+                        model_info, serial_number, first_seen, last_seen, status, consecutive_failures)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'online', 0)""",
+                    (identity_key, ip, mac, vendor, hostname, device_type, model_info, serial_number, seen_at, seen_at),
                 )
             else:
+                # A device's model/serial rarely changes once identified —
+                # keep the existing value if this pass didn't find one
+                # (e.g. UPnP/SNMP is intermittent, especially right after a
+                # device powers back on), instead of blanking it out.
                 cur.execute(
                     """UPDATE devices SET ip=?, mac=?, vendor=?, hostname=?,
-                       device_type=?, last_seen=?, status='online', consecutive_failures=0
+                       device_type=?, last_seen=?, status='online', consecutive_failures=0,
+                       model_info=COALESCE(?, model_info), serial_number=COALESCE(?, serial_number)
                        WHERE identity_key=?""",
-                    (ip, mac, vendor, hostname, device_type, seen_at, identity_key),
+                    (ip, mac, vendor, hostname, device_type, seen_at, model_info, serial_number, identity_key),
                 )
 
     def set_custom_name(self, identity_key: str, name: str) -> None:
