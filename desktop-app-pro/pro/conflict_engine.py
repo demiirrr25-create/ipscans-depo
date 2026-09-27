@@ -138,6 +138,14 @@ def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> li
         confidence, is_conflict = _classify_mac_change(db, ip, old_mac=prior_mac, new_mac=mac)
         display = _friendly(existing_device, ip)
         if is_conflict:
+            # HIGH confidence (live burst catch, or genuine repeated
+            # flapping) can assert this as confirmed; MEDIUM confidence (a
+            # brand-new MAC with no supporting history either way — e.g. a
+            # phone manually set to a camera's static IP) is still reported
+            # as a conflict, just with softer, non-"CONFIRMED" wording, so
+            # the single most common real-world case is never silently
+            # downgraded to an easy-to-miss "MAC changed" notice.
+            message_key = "msg_ip_conflict" if confidence == Confidence.HIGH else "msg_ip_conflict_possible"
             events.append(
                 Event(
                     ts=ts,
@@ -146,15 +154,16 @@ def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> li
                     ip=ip,
                     mac=mac,
                     confidence=confidence,
-                    message=t(lang, "msg_ip_conflict", ip=display, old_mac=prior_mac, new_mac=mac),
+                    message=t(lang, message_key, ip=display, old_mac=prior_mac, new_mac=mac),
                 )
             )
-        elif confidence == Confidence.LOW:
-            # A benign explanation was found (this is the previous
-            # occupant peacefully returning, or the old MAC legitimately
-            # moved to a new address itself, e.g. via DHCP) — reassure
-            # instead of alarming; repeatedly crying "conflict!" for
-            # ordinary address handovers is exactly what erodes trust.
+        else:
+            # Only remaining case is LOW confidence: a benign explanation
+            # was found (this is the previous occupant peacefully
+            # returning, or the old MAC legitimately moved to a new
+            # address itself, e.g. via DHCP) — reassure instead of
+            # alarming; repeatedly crying "conflict!" for ordinary address
+            # handovers is exactly what erodes trust.
             events.append(
                 Event(
                     ts=ts,
@@ -164,18 +173,6 @@ def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> li
                     mac=mac,
                     confidence=confidence,
                     message=t(lang, "msg_mac_changed_normal", ip=display, old_mac=prior_mac, new_mac=mac),
-                )
-            )
-        else:
-            events.append(
-                Event(
-                    ts=ts,
-                    severity=Severity.WARNING,
-                    type=EventType.MAC_CHANGED,
-                    ip=ip,
-                    mac=mac,
-                    confidence=confidence,
-                    message=t(lang, "msg_mac_changed", ip=display, old_mac=prior_mac, new_mac=mac),
                 )
             )
 
@@ -245,10 +242,13 @@ def _classify_mac_change(db: Database, ip: str, old_mac: str, new_mac: str) -> t
 
     # A brand-new MAC neither ever seen at this IP nor accounted for
     # elsewhere. We can't be certain both devices are live at this exact
-    # instant (the burst check above found nothing), but this IS the
-    # moment worth surfacing to the user — report it clearly rather than
-    # silently logging it as an ordinary MAC change.
-    return Confidence.MEDIUM, False
+    # instant (the burst check above found nothing), but this is exactly
+    # the scenario a real user hit and expected to be warned about (e.g. a
+    # phone manually given a camera's static IP): with no benign
+    # explanation found anywhere in history, this must be surfaced as an
+    # actual IP conflict (medium confidence, softer wording), not filed as
+    # an easy-to-dismiss plain "MAC changed" event.
+    return Confidence.MEDIUM, True
 
 
 def process_ping_result(

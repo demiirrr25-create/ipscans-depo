@@ -7,9 +7,9 @@ export const runtime = "nodejs";
  * these values when a new .exe is published; no database needed for this.
  */
 const LATEST = {
-  version: "1.2.0",
+  version: "1.2.1",
   downloadUrl: "https://ipscans.com/downloads/ipscans-network-health-pro.exe",
-  notes: "Rewrote IP conflict detection: it now judges a MAC change by what is happening right now (with a real-time re-check) instead of misreading history, so a device peacefully reclaiming its own address is no longer wrongly flagged as a fresh conflict. All alerts (conflict, offline, MAC/IP changed) now explain clearly what happened and what to check. Added HTTP/RTSP fingerprinting so plain IP cameras show real vendor/model/serial. Event Log and Inventory timestamps now show your local time. Dashboard shows a spinner while monitoring is starting.",
+  notes: "Fixed a critical IP conflict detection gap: a second device taking over another device's static IP (with no prior history either way) is now correctly flagged as a conflict instead of a silent MAC-changed notice. Fixed invisible white-on-white text in dropdown menus and the tray right-click menu. Fixed the PRO badge on the app icon being too small to see once Windows shrinks it to a real desktop-icon size.",
 };
 
 export async function GET() {

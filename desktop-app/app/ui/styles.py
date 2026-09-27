@@ -160,6 +160,51 @@ QLineEdit:focus, QComboBox:focus {
     border: 1px solid rgba(255, 255, 255, 0.55);
 }
 
+/* QComboBox's drop-down popup is a separate top-level QAbstractItemView
+   that Qt/Fusion paints with its native white list background — the
+   global "* { color: #ffffff }" rule above still applies to its item
+   text, so without this every combo box (severity filter, monitoring
+   interval, etc.) showed invisible white-on-white text until an item was
+   hovered and the highlight color gave it contrast. */
+QComboBox QAbstractItemView {
+    background-color: #141414;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    outline: none;
+    selection-background-color: rgba(255, 255, 255, 0.16);
+    selection-color: #ffffff;
+    padding: 4px;
+}
+QComboBox QAbstractItemView::item {
+    padding: 6px 10px;
+    min-height: 20px;
+}
+QComboBox QAbstractItemView::item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Same native-white-popup issue as the combo box dropdown above, for any
+   context menu (e.g. the system tray icon's right-click menu). */
+QMenu {
+    background-color: #141414;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 4px;
+}
+QMenu::item {
+    padding: 6px 20px;
+    border-radius: 6px;
+}
+QMenu::item:selected {
+    background-color: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+}
+QMenu::separator {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 4px 8px;
+}
+
 QPushButton#PrimaryButton {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 #ffffff, stop:1 #e2e2e2);

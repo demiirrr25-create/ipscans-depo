@@ -68,6 +68,25 @@ def test_mac_change_dhcp_reshuffle_low_confidence():
     print("PASS: mac_change_dhcp_reshuffle_low_confidence")
 
 
+def test_static_ip_squatter_is_flagged_as_conflict():
+    """Regression test for a real user report: a camera has a static IP
+    (192.168.1.100); a second device (a phone) is manually given that same
+    address. Both are simultaneously live on the network, but a single ARP
+    snapshot only ever shows one MAC at a time, and the live burst re-check
+    is mocked to find nothing (see module-level override above) — this
+    must still be classified as an IP conflict from history alone, since
+    there is no benign explanation (the camera's MAC hasn't reappeared
+    anywhere else) for its disappearance from this address.
+    """
+    db = make_db()
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:11:22:33")])  # camera
+    events = process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:99:88:77")])  # phone takes over
+    conflict_events = [e for e in events if e.type == EventType.IP_CONFLICT]
+    assert len(conflict_events) == 1, f"expected 1 conflict, got {events}"
+    assert conflict_events[0].confidence.value == "medium"
+    print("PASS: static_ip_squatter_is_flagged_as_conflict")
+
+
 def test_single_revert_is_not_a_conflict():
     """Regression test for the EXACT bug a real user reported: a device
     (e.g. a phone with a manually-set static IP) briefly takes over an
@@ -86,9 +105,14 @@ def test_single_revert_is_not_a_conflict():
     assert not any(e.type == EventType.IP_CONFLICT for e in revert_events), (
         f"reclaiming its own address must not be flagged as a NEW conflict, got {revert_events}"
     )
-    # The intrusion itself should still have been surfaced clearly (even if
-    # not asserted as a 100%-confirmed conflict without live confirmation).
-    assert any(e.type == EventType.MAC_CHANGED for e in intrusion_events)
+    # The intrusion itself (a brand-new MAC, with no benign explanation
+    # anywhere in history) must be reported as an actual conflict — just
+    # medium confidence, not asserted as 100%-confirmed without live
+    # confirmation. This is the exact real-world case of a second device
+    # being manually given a static IP already in use by another device.
+    intrusion_conflicts = [e for e in intrusion_events if e.type == EventType.IP_CONFLICT]
+    assert len(intrusion_conflicts) == 1, f"expected the intrusion to be flagged as a conflict, got {intrusion_events}"
+    assert intrusion_conflicts[0].confidence.value == "medium"
     print("PASS: single_revert_is_not_a_conflict")
 
 

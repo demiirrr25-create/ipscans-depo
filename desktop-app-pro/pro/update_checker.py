@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from pro.remote_api import RemoteAPIError, get_json
 
-CURRENT_VERSION = "1.2.0"
+CURRENT_VERSION = "1.2.1"
 
 
 @dataclass

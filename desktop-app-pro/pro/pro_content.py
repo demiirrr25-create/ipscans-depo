@@ -209,6 +209,11 @@ STRINGS: dict[str, dict[str, str]] = {
             "This will cause intermittent connectivity problems for both devices until one of them is moved to "
             "a different, unique address. Check each device's network settings (static IP / DHCP reservation)."
         ),
+        "msg_ip_conflict_possible": (
+            "{ip} just started responding from an unrecognized device (was {old_mac}, now {new_mac}) with no "
+            "record of the original device moving anywhere else. This looks like two devices are now sharing "
+            "the same address — check both devices' IP settings (static IP / DHCP reservation) to be sure."
+        ),
         "msg_device_offline": "{ip} has stopped responding and is now considered offline — it may be powered off, disconnected, or unreachable on the network.",
         "msg_device_online": "{ip} is responding again and is back online.",
     },
@@ -413,6 +418,12 @@ STRINGS: dict[str, dict[str, str]] = {
             "DOĞRULANDI: {ip} adresini iki farklı cihaz aynı anda kullanıyor — MAC {old_mac} ve MAC {new_mac}. "
             "Biri farklı, benzersiz bir adrese taşınana kadar her iki cihaz da aralıklı bağlantı sorunları "
             "yaşayacaktır. Her cihazın ağ ayarlarını (statik IP / DHCP rezervasyonu) kontrol edin."
+        ),
+        "msg_ip_conflict_possible": (
+            "{ip} az önce tanınmayan bir cihazdan yanıt vermeye başladı (önce {old_mac}, şimdi {new_mac}) ve "
+            "orijinal cihazın başka bir yere taşındığına dair hiçbir kayıt yok. Bu, aynı adresi artık iki cihazın "
+            "paylaşıyor olabileceğini gösteriyor — emin olmak için her iki cihazın da IP ayarlarını (statik IP / "
+            "DHCP rezervasyonu) kontrol edin."
         ),
         "msg_device_offline": "{ip} yanıt vermeyi durdurdu ve artık çevrimdışı kabul ediliyor — kapalı, bağlantısı kesilmiş veya ağda erişilemez olabilir.",
         "msg_device_online": "{ip} tekrar yanıt veriyor ve çevrimiçi duruma döndü.",

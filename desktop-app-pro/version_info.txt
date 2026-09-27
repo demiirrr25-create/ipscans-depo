@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 2, 0, 0),
-    prodvers=(1, 2, 0, 0),
+    filevers=(1, 2, 1, 0),
+    prodvers=(1, 2, 1, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -17,12 +17,12 @@ VSVersionInfo(
           [
             StringStruct(u'CompanyName', u'ipscans'),
             StringStruct(u'FileDescription', u'ipscans Network Health Pro'),
-            StringStruct(u'FileVersion', u'1.2.0.0'),
+            StringStruct(u'FileVersion', u'1.2.1.0'),
             StringStruct(u'InternalName', u'ipscans-network-health-pro'),
             StringStruct(u'LegalCopyright', u'\u00a9 ipscans'),
             StringStruct(u'OriginalFilename', u'ipscans-network-health-pro.exe'),
             StringStruct(u'ProductName', u'ipscans Network Health Pro'),
-            StringStruct(u'ProductVersion', u'1.2.0.0'),
+            StringStruct(u'ProductVersion', u'1.2.1.0'),
           ],
         )
       ]
