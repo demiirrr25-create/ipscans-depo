@@ -62,8 +62,24 @@ jobs:
             git rm --cached public/downloads/ipscans-network-scanner.zip
             Remove-Item "public\downloads\ipscans-network-scanner.zip"
           }
-          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt desktop app .exe [skip ci]"
-          git push
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            echo "No changes to commit"
+          } else {
+            git commit -m "chore: publish rebuilt desktop app .exe [skip ci]"
+            # The Pro-app workflow also watches desktop-app/** and can run
+            # concurrently on the same push, racing to push this branch —
+            # retry with a rebase onto whatever landed first instead of
+            # failing the whole job over a lost push race.
+            $pushed = $false
+            for ($i = 1; $i -le 5; $i++) {
+              git push
+              if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
+              git fetch origin main
+              git rebase origin/main
+            }
+            if (-not $pushed) { throw "git push failed after retries" }
+          }
 
 
       - uses: actions/upload-artifact@v4

@@ -67,8 +67,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/downloads/ipscans-network-health-pro.exe
-          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt Network Health Pro .exe [skip ci]"
-          git push
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            echo "No changes to commit"
+          } else {
+            git commit -m "chore: publish rebuilt Network Health Pro .exe [skip ci]"
+            # The free-app workflow also watches desktop-app/** (this Pro
+            # app reuses its source) and can run concurrently on the same
+            # push, racing to push this branch — retry with a rebase onto
+            # whatever landed first instead of failing the whole job over
+            # a lost push race.
+            $pushed = $false
+            for ($i = 1; $i -le 5; $i++) {
+              git push
+              if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
+              git fetch origin main
+              git rebase origin/main
+            }
+            if (-not $pushed) { throw "git push failed after retries" }
+          }
 
       - uses: actions/upload-artifact@v4
         with:
