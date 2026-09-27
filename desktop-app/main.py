@@ -73,6 +73,16 @@ def main() -> None:
     if selftest:
         window = MainWindow(DEFAULT_LANGUAGE)
         window.setWindowIcon(app_icon)
+        # .grab() forces a real paintEvent without needing show()/a visible
+        # window — this is what caught nothing before: paint-time bugs (e.g.
+        # a QConicalGradient center type mismatch) only surface once
+        # something actually gets painted, which a bare constructor call
+        # never triggers.
+        window.grab()
+        splash = WelcomeSplash()
+        splash.spinner.start()
+        splash.grab()
+        splash.spinner.stop()
         print("selftest: window created OK")
         sys.exit(0)
 

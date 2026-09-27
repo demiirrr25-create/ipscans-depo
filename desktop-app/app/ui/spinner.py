@@ -6,7 +6,7 @@ noticeably more modern than a flat static arc.
 """
 from __future__ import annotations
 
-from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtCore import QPointF, QTimer, Qt
 from PyQt6.QtGui import QBrush, QColor, QConicalGradient, QPainter, QPen
 from PyQt6.QtWidgets import QWidget
 
@@ -49,7 +49,9 @@ class Spinner(QWidget):
         # Comet trail: a conic gradient that fades from bright to transparent
         # around the ring, rotated by the current angle, instead of a flat
         # fixed-length arc — reads as a smoother, more modern loading motion.
-        gradient = QConicalGradient(rect.center(), -self._angle)
+        # QConicalGradient requires QPointF — QRect.center() returns a plain
+        # QPoint, which PyQt6 (unlike PyQt5) will not implicitly convert.
+        gradient = QConicalGradient(QPointF(rect.center()), -self._angle)
         gradient.setColorAt(0.0, QColor(255, 255, 255, 0))
         gradient.setColorAt(0.75, QColor(255, 255, 255, 90))
         gradient.setColorAt(0.97, QColor(255, 255, 255, 235))
