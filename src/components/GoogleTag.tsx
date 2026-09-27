@@ -52,11 +52,14 @@ export function GoogleTag() {
         </>
       )}
       {adsenseId && (
-        <Script
+        // Plain native <script async> (not next/script) so it's hoisted into
+        // <head> and rendered as a real, static <script> tag in the SSR'd
+        // HTML — required for AdSense's automated site-verification crawler,
+        // which only reads the raw HTML response and doesn't execute JS.
+        <script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
         />
       )}
     </>
