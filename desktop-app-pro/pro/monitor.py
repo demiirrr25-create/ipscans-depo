@@ -24,8 +24,10 @@ from app.core.scanner import ScanOptions, run_scan  # noqa: E402
 from pro.conflict_engine import identity_key_for, process_ping_result, process_scan_pass  # noqa: E402
 from pro.database import Database  # noqa: E402
 from pro.health_score import compute_health_score  # noqa: E402
+from pro.license import LicenseProvider  # noqa: E402
 from pro.models import Event, ScanPassResult  # noqa: E402
 from pro.ping_utils import LATENCY_HIGH_MS, ping_with_latency  # noqa: E402
+from pro.remote_api import RemoteAPIError, post_json  # noqa: E402
 
 DEFAULT_OFFLINE_THRESHOLD = 3  # consecutive failed polls (spec item 12)
 
@@ -38,11 +40,21 @@ class MonitorWorker(QThread):
     tick_finished = pyqtSignal()
     failed = pyqtSignal(str)
 
-    def __init__(self, db: Database, targets: list[str], interval_sec: int, parent=None) -> None:
+    def __init__(
+        self,
+        db: Database,
+        targets: list[str],
+        interval_sec: int,
+        site_name: str | None = None,
+        license_provider: LicenseProvider | None = None,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self._db = db
         self._targets = targets
         self._interval_sec = interval_sec
+        self._site_name = site_name
+        self._license_provider = license_provider
         self._stop_requested = False
         self._offline_threshold = DEFAULT_OFFLINE_THRESHOLD
 
@@ -116,7 +128,37 @@ class MonitorWorker(QThread):
         self.health_updated.emit(breakdown)
         for row in self._db.all_devices():
             self.device_updated.emit(row)
+        self._sync_site(breakdown)
         self.tick_finished.emit()
+
+    def _sync_site(self, breakdown) -> None:
+        """Multi-site sync (spec items 42-43) — best-effort, license-gated,
+        and run here (the background thread) so a slow/unreachable server
+        never stalls the UI (spec item 28).
+        """
+        if not self._site_name or not self._license_provider:
+            return
+        status = self._license_provider.get_status()
+        if not status.is_active or not status.has_feature("multi_site") or not status.email or not status.license_key:
+            return
+        try:
+            post_json(
+                "/site/sync",
+                {
+                    "email": status.email,
+                    "key": status.license_key,
+                    "site": {
+                        "name": self._site_name,
+                        "deviceCount": breakdown.total_devices,
+                        "onlineCount": breakdown.total_devices - breakdown.offline_devices,
+                        "offlineCount": breakdown.offline_devices,
+                        "conflictCount": breakdown.ip_conflicts,
+                        "healthScore": breakdown.score,
+                    },
+                },
+            )
+        except RemoteAPIError:
+            pass  # non-critical — next tick will retry
 
 
 def detect_default_targets() -> list[str]:

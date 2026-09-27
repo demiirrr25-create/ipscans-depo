@@ -13,7 +13,7 @@ from app.ui.resources import load_logo_pixmap
 from pro.conflict_engine import identity_key_for
 from pro.database import Database
 from pro.export import export_devices_csv
-from pro.license import MockLicenseProvider
+from pro.license import RemoteLicenseProvider
 from pro.models import HealthBreakdown
 from pro.monitor import MonitorWorker, detect_default_targets
 
@@ -31,7 +31,7 @@ class ProMainWindow(QWidget):
         super().__init__()
         self.lang = lang
         self.db = Database()
-        self.license_provider = MockLicenseProvider(self.db)
+        self.license_provider = RemoteLicenseProvider(self.db)
         self._monitor: MonitorWorker | None = None
 
         self.setObjectName("AppRoot")
@@ -88,7 +88,11 @@ class ProMainWindow(QWidget):
             return
         targets = detect_default_targets()
         interval = self.monitoring_tab.interval_seconds()
-        self._monitor = MonitorWorker(self.db, targets, interval)
+        self._monitor = MonitorWorker(
+            self.db, targets, interval,
+            site_name=self.monitoring_tab.site_name(),
+            license_provider=self.license_provider,
+        )
         self._monitor.event_created.connect(self._on_event_created)
         self._monitor.health_updated.connect(self.dashboard_tab.update_health)
         self._monitor.health_updated.connect(lambda _: self._refresh_inventory())

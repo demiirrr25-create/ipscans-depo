@@ -42,6 +42,10 @@ class MonitoringControlsWidget(QWidget):
         self.mode_combo.addItems(SCAN_MODES)
         form.addRow(QLabel("Scan Mode"), self.mode_combo)
 
+        self.site_name_edit = QLineEdit()
+        self.site_name_edit.setPlaceholderText("e.g. ABC Residence")
+        form.addRow(QLabel("Site Name"), self.site_name_edit)
+
         self.interval_combo = QComboBox()
         self.interval_combo.addItems([label for label, _ in INTERVAL_OPTIONS])
         self.interval_combo.currentIndexChanged.connect(self._on_interval_changed)
@@ -79,6 +83,9 @@ class MonitoringControlsWidget(QWidget):
             return max(5, int(self.custom_interval_edit.text().strip()))
         except ValueError:
             return 60
+
+    def site_name(self) -> str:
+        return self.site_name_edit.text().strip() or "Default Site"
 
     def set_running(self, running: bool) -> None:
         self.start_btn.setEnabled(not running)

@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS license (
     plan         TEXT NOT NULL DEFAULT 'FREE',
     status       TEXT NOT NULL DEFAULT 'INACTIVE',
     email        TEXT,
+    license_key  TEXT,
     activated_at TEXT,
     expires_at   TEXT
 );
@@ -307,13 +308,14 @@ class Database:
             cur.execute("SELECT * FROM license WHERE id=1")
             return cur.fetchone()
 
-    def save_license(self, plan: str, status: str, email: str | None, expires_at: str | None) -> None:
+    def save_license(self, plan: str, status: str, email: str | None, expires_at: str | None, license_key: str | None = None) -> None:
         with self.cursor() as cur:
             cur.execute(
-                """INSERT INTO license (id, plan, status, email, activated_at, expires_at)
-                   VALUES (1, ?, ?, ?, ?, ?)
+                """INSERT INTO license (id, plan, status, email, license_key, activated_at, expires_at)
+                   VALUES (1, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(id) DO UPDATE SET
                      plan=excluded.plan, status=excluded.status, email=excluded.email,
-                     activated_at=excluded.activated_at, expires_at=excluded.expires_at""",
-                (plan, status, email, now_iso(), expires_at),
+                     license_key=excluded.license_key, activated_at=excluded.activated_at,
+                     expires_at=excluded.expires_at""",
+                (plan, status, email, license_key, now_iso(), expires_at),
             )
