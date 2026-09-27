@@ -31,6 +31,7 @@ export function Header({
   ];
   const topLinks = [
     { href: `/${locale}`, label: dict.nav.home },
+    { href: `/${locale}/pro`, label: dict.nav.pro },
     { href: `/${locale}/shop`, label: dict.nav.shop },
     { href: `/${locale}/scan`, label: dict.nav.scan },
     { href: `/${locale}/blog`, label: dict.nav.blog },

@@ -1,0 +1,70 @@
+name: Build Windows desktop app (Pro)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop-app-pro/**"
+      - "desktop-app/**" # Pro reuses the free app's UI/scanner engine — rebuild on either change
+      - ".github/workflows/build-desktop-app-pro.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop-app-pro
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build one-file .exe
+        run: |
+          # --paths: lets PyInstaller's static analysis resolve and bundle
+          # `app.*` imports from the sibling free desktop-app project (this
+          # repo never copies that source into desktop-app-pro — see README).
+          # --noupx / --version-file: same Defender/SmartScreen-heuristic
+          # rationale as the free app's own build step.
+          pyinstaller --name ipscans-network-health-pro --onefile --windowed --noupx `
+            --paths ..\desktop-app `
+            --icon=..\desktop-app\assets\icon.ico `
+            --version-file=version_info.txt `
+            --add-data "..\desktop-app\assets;assets" `
+            main.py
+
+      - name: Smoke test the packaged .exe
+        run: |
+          .\dist\ipscans-network-health-pro.exe --selftest
+
+      - name: Publish built .exe to the website's download folder
+        run: |
+          New-Item -ItemType Directory -Force -Path "..\public\downloads" | Out-Null
+          Copy-Item -Path "dist\ipscans-network-health-pro.exe" -Destination "..\public\downloads\ipscans-network-health-pro.exe" -Force
+
+      - name: Commit updated .exe
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/ipscans-network-health-pro.exe
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt Network Health Pro .exe [skip ci]"
+          git push
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipscans-network-health-pro-windows
+          path: desktop-app-pro/dist/ipscans-network-health-pro.exe
+          if-no-files-found: error

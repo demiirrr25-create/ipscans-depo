@@ -20,6 +20,7 @@ const dictionaries = {
       speedTest: "Hız Testi",
       scan: "Ağ Tarama",
       appDownload: "Windows Uygulaması",
+      pro: "Network Health Pro",
       blog: "Blog",
       shop: "Mağaza",
     },
@@ -205,6 +206,52 @@ const dictionaries = {
       note: "Yaklaşık 47 MB. İndirdikten sonra çift tıklayıp çalıştır — Python kurulumu gerekmez. SmartScreen uyarısı verirse 'Daha fazla bilgi > Yine de çalıştır' de.",
       safe: "Yalnızca sahibi olduğun ağlarda kullan.",
     },
+    pro: {
+      title: "ipscans Network Health Pro",
+      subtitle:
+        "Site yönetimleri, oteller, fabrikalar ve CCTV firmaları için profesyonel IP çakışma önleme ve ağ sağlığı izleme yazılımı.",
+      badge: "Ticari sürüm • Abonelik tabanlı lisans",
+      button: "Windows için indir (.exe)",
+      note: "Aynı güvenilir tarama motorunun üzerine kurulu, ayrı bir ürün — mevcut ücretsiz IP Scanner'ı değiştirmez.",
+      mostPopular: "En çok tercih edilen",
+      plans: [
+        {
+          name: "FREE",
+          price: "Ücretsiz",
+          features: ["Tek seferlik ağ taraması", "IP/MAC/vendor tespiti", "Sınırsız cihaz görüntüleme"],
+        },
+        {
+          name: "PRO",
+          price: "Aylık abonelik",
+          features: [
+            "Sürekli izleme (continuous monitoring)",
+            "IP çakışma tespiti ve uyarılar",
+            "Network Health Score ve olay günlüğü",
+            "CSV/JSON dışa aktarma",
+          ],
+        },
+        {
+          name: "BUSINESS",
+          price: "Kurumsal fiyatlandırma",
+          features: [
+            "PRO'daki her şey",
+            "PDF/Excel raporlama",
+            "Gelişmiş bildirim kuralları",
+            "Öncelikli destek",
+          ],
+        },
+        {
+          name: "ENTERPRISE",
+          price: "Bize ulaşın",
+          features: [
+            "Çoklu lokasyon / merkezi yönetim",
+            "Teknisyen hesapları",
+            "Özel entegrasyonlar",
+            "Atanmış destek",
+          ],
+        },
+      ],
+    },
     blog: {
       title: "Blog",
       subtitle: "Ağ, güvenlik ve internet üzerine yazılar.",
@@ -248,6 +295,7 @@ const dictionaries = {
       speedTest: "Speed Test",
       scan: "Network Scan",
       appDownload: "Windows App",
+      pro: "Network Health Pro",
       blog: "Blog",
       shop: "Shop",
     },
@@ -430,6 +478,52 @@ const dictionaries = {
       note: "About 47 MB. Double-click to run after downloading — no Python install needed. If SmartScreen warns, choose 'More info > Run anyway'.",
       safe: "Only use on networks you own.",
     },
+    pro: {
+      title: "ipscans Network Health Pro",
+      subtitle:
+        "Professional IP conflict prevention and network health monitoring for property management, hotels, factories and CCTV integrators.",
+      badge: "Commercial edition • Subscription license",
+      button: "Download for Windows (.exe)",
+      note: "Built on the same trusted scanning engine, as a separate product — it doesn't replace the free IP Scanner.",
+      mostPopular: "Most popular",
+      plans: [
+        {
+          name: "FREE",
+          price: "Free",
+          features: ["One-off network scans", "IP/MAC/vendor detection", "Unlimited device viewing"],
+        },
+        {
+          name: "PRO",
+          price: "Monthly subscription",
+          features: [
+            "Continuous monitoring",
+            "IP conflict detection and alerts",
+            "Network Health Score and event log",
+            "CSV/JSON export",
+          ],
+        },
+        {
+          name: "BUSINESS",
+          price: "Business pricing",
+          features: [
+            "Everything in PRO",
+            "PDF/Excel reporting",
+            "Advanced notification rules",
+            "Priority support",
+          ],
+        },
+        {
+          name: "ENTERPRISE",
+          price: "Contact us",
+          features: [
+            "Multi-site / central management",
+            "Technician accounts",
+            "Custom integrations",
+            "Dedicated support",
+          ],
+        },
+      ],
+    },
     blog: {
       title: "Blog",
       subtitle: "Articles on networking, security and the internet.",
@@ -473,6 +567,7 @@ const dictionaries = {
       speedTest: "Geschwindigkeitstest",
       scan: "Netzwerkscan",
       appDownload: "Windows-App",
+      pro: "Network Health Pro",
       blog: "Blog",
       shop: "Shop",
     },
@@ -658,6 +753,52 @@ const dictionaries = {
       note: "Etwa 47 MB. Nach dem Download doppelklicken zum Ausführen — keine Python-Installation nötig. Bei SmartScreen-Warnung 'Weitere Informationen > Trotzdem ausführen' wählen.",
       safe: "Nur in Netzwerken verwenden, die dir gehören.",
     },
+    pro: {
+      title: "ipscans Network Health Pro",
+      subtitle:
+        "Professionelle IP-Konflikterkennung und Netzwerk-Gesundheitsüberwachung für Hausverwaltungen, Hotels, Fabriken und CCTV-Firmen.",
+      badge: "Kommerzielle Edition • Abonnement-Lizenz",
+      button: "Für Windows herunterladen (.exe)",
+      note: "Baut auf derselben bewährten Scan-Engine auf, als separates Produkt — ersetzt nicht den kostenlosen IP Scanner.",
+      mostPopular: "Am beliebtesten",
+      plans: [
+        {
+          name: "FREE",
+          price: "Kostenlos",
+          features: ["Einmalige Netzwerk-Scans", "IP/MAC/Hersteller-Erkennung", "Unbegrenzte Geräteansicht"],
+        },
+        {
+          name: "PRO",
+          price: "Monatliches Abo",
+          features: [
+            "Kontinuierliche Überwachung",
+            "IP-Konflikterkennung und Warnungen",
+            "Network Health Score und Ereignisprotokoll",
+            "CSV/JSON-Export",
+          ],
+        },
+        {
+          name: "BUSINESS",
+          price: "Business-Preise",
+          features: [
+            "Alles aus PRO",
+            "PDF/Excel-Berichte",
+            "Erweiterte Benachrichtigungsregeln",
+            "Priorisierter Support",
+          ],
+        },
+        {
+          name: "ENTERPRISE",
+          price: "Kontaktieren Sie uns",
+          features: [
+            "Multi-Standort-/Zentralverwaltung",
+            "Techniker-Konten",
+            "Individuelle Integrationen",
+            "Dedizierter Support",
+          ],
+        },
+      ],
+    },
     blog: {
       title: "Blog",
       subtitle: "Artikel über Netzwerke, Sicherheit und das Internet.",
@@ -701,6 +842,7 @@ const dictionaries = {
       speedTest: "Test de vitesse",
       scan: "Scan réseau",
       appDownload: "Application Windows",
+      pro: "Network Health Pro",
       blog: "Blog",
       shop: "Boutique",
     },
@@ -886,6 +1028,52 @@ const dictionaries = {
       note: "Environ 47 Mo. Double-cliquez pour exécuter après le téléchargement — aucune installation de Python requise. Si SmartScreen avertit, choisissez 'Plus d'infos > Exécuter quand même'.",
       safe: "À utiliser uniquement sur des réseaux que vous possédez.",
     },
+    pro: {
+      title: "ipscans Network Health Pro",
+      subtitle:
+        "Prévention professionnelle des conflits IP et surveillance de la santé réseau pour syndics, hôtels, usines et intégrateurs CCTV.",
+      badge: "Édition commerciale • Licence par abonnement",
+      button: "Télécharger pour Windows (.exe)",
+      note: "Basé sur le même moteur de scan fiable, en tant que produit séparé — ne remplace pas l'IP Scanner gratuit.",
+      mostPopular: "Le plus populaire",
+      plans: [
+        {
+          name: "FREE",
+          price: "Gratuit",
+          features: ["Scans réseau ponctuels", "Détection IP/MAC/fabricant", "Affichage illimité des appareils"],
+        },
+        {
+          name: "PRO",
+          price: "Abonnement mensuel",
+          features: [
+            "Surveillance continue",
+            "Détection des conflits IP et alertes",
+            "Score de santé réseau et journal d'événements",
+            "Export CSV/JSON",
+          ],
+        },
+        {
+          name: "BUSINESS",
+          price: "Tarif entreprise",
+          features: [
+            "Tout ce qui est dans PRO",
+            "Rapports PDF/Excel",
+            "Règles de notification avancées",
+            "Support prioritaire",
+          ],
+        },
+        {
+          name: "ENTERPRISE",
+          price: "Nous contacter",
+          features: [
+            "Gestion multi-sites / centralisée",
+            "Comptes techniciens",
+            "Intégrations personnalisées",
+            "Support dédié",
+          ],
+        },
+      ],
+    },
     blog: {
       title: "Blog",
       subtitle: "Articles sur les réseaux, la sécurité et internet.",
@@ -929,6 +1117,7 @@ const dictionaries = {
       speedTest: "Test de velocidad",
       scan: "Escaneo de red",
       appDownload: "Aplicación Windows",
+      pro: "Network Health Pro",
       blog: "Blog",
       shop: "Tienda",
     },
@@ -1113,6 +1302,52 @@ const dictionaries = {
       button: "Descargar para Windows (.exe)",
       note: "Unos 47 MB. Haz doble clic para ejecutar tras la descarga — no necesitas instalar Python. Si SmartScreen avisa, elige 'Más información > Ejecutar de todos modos'.",
       safe: "Úsalo solo en redes que poseas.",
+    },
+    pro: {
+      title: "ipscans Network Health Pro",
+      subtitle:
+        "Prevención profesional de conflictos de IP y monitoreo de salud de red para administración de propiedades, hoteles, fábricas e integradores CCTV.",
+      badge: "Edición comercial • Licencia por suscripción",
+      button: "Descargar para Windows (.exe)",
+      note: "Construido sobre el mismo motor de escaneo confiable, como producto independiente — no reemplaza al IP Scanner gratuito.",
+      mostPopular: "Más popular",
+      plans: [
+        {
+          name: "FREE",
+          price: "Gratis",
+          features: ["Escaneos de red puntuales", "Detección de IP/MAC/fabricante", "Visualización ilimitada de dispositivos"],
+        },
+        {
+          name: "PRO",
+          price: "Suscripción mensual",
+          features: [
+            "Monitoreo continuo",
+            "Detección de conflictos de IP y alertas",
+            "Puntuación de salud de red y registro de eventos",
+            "Exportación CSV/JSON",
+          ],
+        },
+        {
+          name: "BUSINESS",
+          price: "Precio empresarial",
+          features: [
+            "Todo lo de PRO",
+            "Informes PDF/Excel",
+            "Reglas de notificación avanzadas",
+            "Soporte prioritario",
+          ],
+        },
+        {
+          name: "ENTERPRISE",
+          price: "Contáctanos",
+          features: [
+            "Gestión multi-sede / centralizada",
+            "Cuentas de técnico",
+            "Integraciones personalizadas",
+            "Soporte dedicado",
+          ],
+        },
+      ],
     },
     blog: {
       title: "Blog",
