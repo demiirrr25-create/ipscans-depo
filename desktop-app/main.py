@@ -9,7 +9,12 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from app.i18n import DEFAULT_LANGUAGE, get_saved_language
 from app.ui.language_dialog import LanguageDialog
 from app.ui.main_window import MainWindow
-from app.ui.privacy_dialog import PrivacyTermsDialog, has_accepted_privacy_terms
+from app.ui.privacy_dialog import (
+    PrivacyPolicyDialog,
+    TermsOfUseDialog,
+    has_accepted_privacy,
+    has_accepted_terms,
+)
 from app.ui.resources import load_app_icon
 from app.ui.splash import WelcomeSplash
 from app.ui.styles import DARK_QSS
@@ -83,6 +88,9 @@ def main() -> None:
         splash.spinner.start()
         splash.grab()
         splash.spinner.stop()
+        LanguageDialog().grab()
+        TermsOfUseDialog(DEFAULT_LANGUAGE).grab()
+        PrivacyPolicyDialog(DEFAULT_LANGUAGE).grab()
         print("selftest: window created OK")
         sys.exit(0)
 
@@ -119,9 +127,11 @@ def _finish_startup_impl(app: QApplication, splash: WelcomeSplash | None, app_ic
         except Exception:
             _log("Splash close failed:\n" + traceback.format_exc())
 
-    # Each onboarding step degrades to a safe default instead of blocking the
-    # whole app if it throws — users getting no language/privacy prompt is
-    # far better than users getting no app at all.
+    # The language prompt degrades to a safe default instead of blocking the
+    # whole app if it throws — losing the language picker is far better than
+    # losing the app entirely. Terms/Privacy below are NOT best-effort: they
+    # are a mandatory legal gate, so a failure there quits instead of
+    # silently granting access.
     language = get_saved_language()
     if language is None:
         try:
@@ -136,15 +146,22 @@ def _finish_startup_impl(app: QApplication, splash: WelcomeSplash | None, app_ic
             language = DEFAULT_LANGUAGE
     language = language or DEFAULT_LANGUAGE
 
-    if not has_accepted_privacy_terms():
-        try:
-            dialog = PrivacyTermsDialog(language)
-            dialog.setWindowIcon(app_icon)
-            if dialog.exec() != PrivacyTermsDialog.DialogCode.Accepted:
-                app.quit()
-                return
-        except Exception:
-            _log("Privacy dialog failed, continuing without it:\n" + traceback.format_exc())
+    if not has_accepted_terms():
+        # Mandatory gate: any failure here must NOT grant access to the app,
+        # so unlike splash/language it is not "best-effort" — a broken
+        # dialog means we quit, not silently continue.
+        dialog = TermsOfUseDialog(language)
+        dialog.setWindowIcon(app_icon)
+        if dialog.exec() != TermsOfUseDialog.DialogCode.Accepted:
+            app.quit()
+            return
+
+    if not has_accepted_privacy():
+        dialog = PrivacyPolicyDialog(language)
+        dialog.setWindowIcon(app_icon)
+        if dialog.exec() != PrivacyPolicyDialog.DialogCode.Accepted:
+            app.quit()
+            return
 
     window = MainWindow(language)
     window.setWindowIcon(app_icon)

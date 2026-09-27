@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
-    QProgressBar,
     QPushButton,
     QTableView,
     QVBoxLayout,
@@ -166,16 +165,13 @@ class MainWindow(QWidget):
     def _build_status_bar(self) -> QHBoxLayout:
         layout = QHBoxLayout()
         self.status_label = QLabel(t(self.lang, "status_ready"), objectName="StatusLabel")
+        # A single circular spinner is the only progress indicator while a
+        # scan runs — it doubles for both the discovery and enrichment
+        # phases instead of switching to a separate percentage bar.
         self.spinner = Spinner(18)
         self.spinner.hide()
-        self.progress_bar = QProgressBar(objectName="ScanProgress")
-        self.progress_bar.setFixedWidth(160)
-        self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(0)
-        self.progress_bar.hide()
         layout.addWidget(self.status_label, stretch=1)
         layout.addWidget(self.spinner)
-        layout.addWidget(self.progress_bar)
         return layout
 
     # --------------------------------------------------------------- wiring
@@ -203,8 +199,6 @@ class MainWindow(QWidget):
             return
 
         self.model.clear()
-        self.progress_bar.setValue(0)
-        self.progress_bar.hide()
         self.spinner.start()
         self.status_label.setText(t(self.lang, "status_discovering", count=len(targets)))
         self.scan_btn.setEnabled(False)
@@ -232,31 +226,24 @@ class MainWindow(QWidget):
         self.model.add_device(device)
 
     def _on_phase_changed(self, phase: str) -> None:
-        # The comet-trail spinner keeps spinning across both phases (it
-        # doubles as the "a scan is running" indicator); only the
-        # percentage-based progress bar toggles once real progress exists.
-        if phase == "discovering":
-            self.progress_bar.hide()
-        elif phase == "enriching":
-            self.progress_bar.show()
+        # The comet-trail spinner keeps spinning across both phases — it
+        # is the only "a scan is running" indicator, so there's nothing to
+        # toggle here beyond the status text (set elsewhere).
+        pass
 
     def _on_progress(self, done: int, total: int) -> None:
-        percent = int((done / total) * 100) if total else 0
-        self.progress_bar.setValue(percent)
         self.status_label.setText(
             t(self.lang, "status_scanning", done=done, total=total, found=self.model.rowCount())
         )
 
     def _on_scan_finished(self) -> None:
         self.spinner.stop()
-        self.progress_bar.hide()
         self.scan_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.status_label.setText(t(self.lang, "status_done", count=self.model.rowCount()))
 
     def _on_scan_failed(self, message: str) -> None:
         self.spinner.stop()
-        self.progress_bar.hide()
         self.scan_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         error_title = t(self.lang, "status_error")

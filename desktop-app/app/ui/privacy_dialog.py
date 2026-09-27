@@ -1,7 +1,8 @@
-"""First-run privacy/terms gate: the user must read and accept before the
-main window appears. Shown right after the language picker so its text is
-already in the user's chosen language. Acceptance is remembered (QSettings)
-so it's only asked once per install, not on every launch.
+"""First-run legal gate: Terms of Use, then Privacy Policy, each its own
+dialog with its own checkbox + accept/decline, both required in order
+before the main window ever appears. Shown right after the language picker
+so the text is already in the user's chosen language. Each acceptance is
+remembered separately (QSettings) so returning users only see this once.
 """
 from __future__ import annotations
 
@@ -15,26 +16,51 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-from app.i18n import DEFAULT_LANGUAGE, get_privacy_body, t
+from app.i18n import DEFAULT_LANGUAGE, get_privacy_body, get_terms_body, t
 
 _ORG, _APP = "ipscans", "NetworkScanner"
-_SETTINGS_KEY = "privacy_terms_accepted_v1"
+_TERMS_KEY = "terms_accepted_v1"
+_PRIVACY_KEY = "privacy_accepted_v1"
+
+
+def has_accepted_terms() -> bool:
+    settings = QSettings(_ORG, _APP)
+    return bool(settings.value(_TERMS_KEY, False, type=bool))
+
+
+def has_accepted_privacy() -> bool:
+    settings = QSettings(_ORG, _APP)
+    return bool(settings.value(_PRIVACY_KEY, False, type=bool))
 
 
 def has_accepted_privacy_terms() -> bool:
+    """Back-compat combined check: both must have been accepted."""
+    return has_accepted_terms() and has_accepted_privacy()
+
+
+def _remember(key: str) -> None:
     settings = QSettings(_ORG, _APP)
-    return bool(settings.value(_SETTINGS_KEY, False, type=bool))
+    settings.setValue(key, True)
 
 
-def _remember_acceptance() -> None:
-    settings = QSettings(_ORG, _APP)
-    settings.setValue(_SETTINGS_KEY, True)
+class _AgreementDialog(QDialog):
+    """Shared layout for a single "read, check, accept/decline" screen."""
 
-
-class PrivacyTermsDialog(QDialog):
-    def __init__(self, lang: str = DEFAULT_LANGUAGE, parent=None) -> None:
+    def __init__(
+        self,
+        lang: str,
+        window_title_key: str,
+        heading_key: str,
+        checkbox_key: str,
+        decline_key: str,
+        accept_key: str,
+        body_html: str,
+        settings_key: str,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(t(lang, "privacy_window_title"))
+        self._settings_key = settings_key
+        self.setWindowTitle(t(lang, window_title_key))
         self.resize(560, 480)
         self.setModal(True)
 
@@ -42,24 +68,24 @@ class PrivacyTermsDialog(QDialog):
         layout.setContentsMargins(24, 24, 24, 20)
         layout.setSpacing(14)
 
-        heading = QLabel(t(lang, "privacy_heading"))
+        heading = QLabel(t(lang, heading_key))
         heading.setObjectName("TitleText")
         layout.addWidget(heading)
 
         text = QTextEdit()
         text.setReadOnly(True)
-        text.setHtml(get_privacy_body(lang))
+        text.setHtml(body_html)
         layout.addWidget(text, stretch=1)
 
-        self.agree_check = QCheckBox(t(lang, "privacy_checkbox"))
+        self.agree_check = QCheckBox(t(lang, checkbox_key))
         layout.addWidget(self.agree_check)
 
         buttons = QDialogButtonBox()
         self.decline_btn = buttons.addButton(
-            t(lang, "privacy_decline"), QDialogButtonBox.ButtonRole.RejectRole
+            t(lang, decline_key), QDialogButtonBox.ButtonRole.RejectRole
         )
         self.accept_btn = buttons.addButton(
-            t(lang, "privacy_accept"), QDialogButtonBox.ButtonRole.AcceptRole
+            t(lang, accept_key), QDialogButtonBox.ButtonRole.AcceptRole
         )
         self.accept_btn.setObjectName("PrimaryButton")
         self.decline_btn.setObjectName("GhostButton")
@@ -71,5 +97,40 @@ class PrivacyTermsDialog(QDialog):
         self.decline_btn.clicked.connect(self.reject)
 
     def _on_accept(self) -> None:
-        _remember_acceptance()
+        _remember(self._settings_key)
         self.accept()
+
+
+class TermsOfUseDialog(_AgreementDialog):
+    def __init__(self, lang: str = DEFAULT_LANGUAGE, parent=None) -> None:
+        super().__init__(
+            lang,
+            "terms_window_title",
+            "terms_heading",
+            "terms_checkbox",
+            "terms_decline",
+            "terms_accept",
+            get_terms_body(lang),
+            _TERMS_KEY,
+            parent,
+        )
+
+
+class PrivacyPolicyDialog(_AgreementDialog):
+    def __init__(self, lang: str = DEFAULT_LANGUAGE, parent=None) -> None:
+        super().__init__(
+            lang,
+            "privacy_window_title",
+            "privacy_heading",
+            "privacy_checkbox",
+            "privacy_decline",
+            "privacy_accept",
+            get_privacy_body(lang),
+            _PRIVACY_KEY,
+            parent,
+        )
+
+
+# Back-compat alias for any old import of the previous combined dialog name.
+PrivacyTermsDialog = PrivacyPolicyDialog
+

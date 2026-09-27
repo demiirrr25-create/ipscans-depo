@@ -5,8 +5,9 @@ tarama uygulaması. Normal, yeniden boyutlandırılabilir pencere; ARP/ping ile
 hızlı host keşfi + SNMP/WMI/UPnP ile derinlemesine cihaz bilgisi (Nmap
 opsiyonel, varsayılan kapalı). İlk açılışta akış şu şekildedir: animasyonlu
 karşılama ekranı → dil seçimi (6 dil: EN/TR/DE/FR/ES/RU) → seçilen dilde
-gizlilik bildirimi/kullanım şartları onayı → ana pencere. Dil seçimi ve
-onay bir daha sorulmaz.
+kullanım şartları onayı → gizlilik politikası onayı → ana pencere. Her iki
+sözleşme de ayrı ayrı ve sırayla kabul edilmeden ana pencereye erişilemez.
+Dil seçimi ve onaylar bir daha sorulmaz.
 
 ## Kurulum
 
