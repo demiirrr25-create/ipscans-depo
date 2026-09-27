@@ -18,13 +18,14 @@ from PyQt6.QtWidgets import (
 )
 
 from pro.pro_content import t
+from pro.timeutil import to_local_display
 
 # Column indices — named so the rest of the class (and callers) don't have
 # to track raw integers.
 (
-    COL_IP, COL_MAC, COL_NAME, COL_TAGS, COL_VENDOR, COL_MODEL,
+    COL_IP, COL_MAC, COL_NAME, COL_TAGS, COL_VENDOR, COL_MODEL, COL_SERIAL,
     COL_STATUS, COL_CRITICAL, COL_LATENCY, COL_LOSS, COL_LAST_SEEN,
-) = range(11)
+) = range(12)
 
 
 class _IPSortItem(QTableWidgetItem):
@@ -68,13 +69,14 @@ class InventoryWidget(QWidget):
         top_row.addWidget(self.export_csv_btn)
         outer.addLayout(top_row)
 
-        columns = [""] * 11
+        columns = [""] * 12
         columns[COL_IP] = t(lang, "col_ip")
         columns[COL_MAC] = t(lang, "col_mac")
         columns[COL_NAME] = t(lang, "col_name")
         columns[COL_TAGS] = t(lang, "col_tags")
         columns[COL_VENDOR] = t(lang, "col_vendor")
         columns[COL_MODEL] = t(lang, "col_model")
+        columns[COL_SERIAL] = t(lang, "col_serial")
         columns[COL_STATUS] = t(lang, "col_status")
         columns[COL_CRITICAL] = t(lang, "col_critical")
         columns[COL_LATENCY] = t(lang, "col_latency")
@@ -86,6 +88,18 @@ class InventoryWidget(QWidget):
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(
             COL_IP, QHeaderView.ResizeMode.ResizeToContents
+        )
+        # Vendor/Model are exactly what a user opens this tab to check
+        # (spec ask: "I want to fully see the manufacturer/model") — never
+        # let the default equal-width column layout truncate them.
+        self.table.horizontalHeader().setSectionResizeMode(
+            COL_VENDOR, QHeaderView.ResizeMode.ResizeToContents
+        )
+        self.table.horizontalHeader().setSectionResizeMode(
+            COL_MODEL, QHeaderView.ResizeMode.ResizeToContents
+        )
+        self.table.horizontalHeader().setSectionResizeMode(
+            COL_SERIAL, QHeaderView.ResizeMode.ResizeToContents
         )
         self.table.verticalHeader().setVisible(False)
         self.table.setSortingEnabled(True)
@@ -142,10 +156,11 @@ class InventoryWidget(QWidget):
                 COL_TAGS: device["tags"] or "",
                 COL_VENDOR: device["vendor"] or "Unknown",
                 COL_MODEL: device["model_info"] or "—",
+                COL_SERIAL: device["serial_number"] or "—",
                 COL_STATUS: status_display,
                 COL_LATENCY: f"{device['last_latency_ms']:.0f} ms" if device["last_latency_ms"] else "—",
                 COL_LOSS: f"{device['last_packet_loss_pct']:.0f}%" if device["last_packet_loss_pct"] is not None else "—",
-                COL_LAST_SEEN: device["last_seen"],
+                COL_LAST_SEEN: to_local_display(device["last_seen"]),
             }
             ip_item = _IPSortItem(device["ip"])
             ip_item.setFlags(ip_item.flags() & ~Qt.ItemFlag.ItemIsEditable)

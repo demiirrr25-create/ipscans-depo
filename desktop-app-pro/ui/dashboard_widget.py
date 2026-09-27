@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QFrame, QGridLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+
+from app.ui.spinner import Spinner
 
 from pro.models import HealthBreakdown
 from pro.pro_content import t
@@ -71,7 +73,28 @@ class DashboardWidget(QWidget):
         self.stop_monitoring_btn.setEnabled(False)
         outer.addWidget(self.start_monitoring_btn)
         outer.addWidget(self.stop_monitoring_btn)
+
+        # Starting monitoring does real work before the first result comes
+        # back (a permission check, then the first full network scan) —
+        # without any feedback that can look like the click did nothing.
+        status_row = QHBoxLayout()
+        self.starting_spinner = Spinner(size=16)
+        self.starting_spinner.hide()
+        self.starting_label = QLabel(t(lang, "monitoring_starting"), objectName="StatusLabel")
+        self.starting_label.hide()
+        status_row.addWidget(self.starting_spinner)
+        status_row.addWidget(self.starting_label)
+        status_row.addStretch(1)
+        outer.addLayout(status_row)
         outer.addStretch(1)
+
+    def show_starting(self) -> None:
+        self.starting_spinner.start()
+        self.starting_label.show()
+
+    def hide_starting(self) -> None:
+        self.starting_spinner.stop()
+        self.starting_label.hide()
 
     def update_health(self, breakdown: HealthBreakdown) -> None:
         self.health_value.setText(f"{breakdown.score}%")

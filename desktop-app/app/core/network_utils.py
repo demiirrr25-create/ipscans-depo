@@ -121,6 +121,44 @@ def _read_arp_table() -> dict[str, str]:
     return mac_by_ip
 
 
+def ping_once(ip: str) -> bool:
+    """Public wrapper for a single ping — used by the Pro app's real-time
+    conflict re-verification (a burst of several quick individual checks),
+    as opposed to `ping_sweep`'s one-shot concurrent sweep of many hosts.
+    """
+    return _ping_once(ip)
+
+
+def read_arp_entry(ip: str) -> str | None:
+    """Whatever MAC the OS's ARP cache currently associates with `ip`, if
+    any — a single read can only ever reflect ONE answer (the OS's own
+    cache has no concept of "two devices replied"), which is exactly why
+    a real conflict can only be caught by comparing several reads taken
+    moments apart (see pro/live_probe.py).
+    """
+    return _read_arp_table().get(ip)
+
+
+def clear_arp_entry(ip: str) -> None:
+    """Best-effort: asks the OS to drop its cached ARP entry for `ip` so the
+    next ping is forced to resolve the MAC fresh instead of reusing a
+    (possibly stale) cached reply. Silently does nothing if this process
+    lacks the privilege to do so (e.g. `arp -d` needs an elevated prompt on
+    Windows) — callers should treat this purely as an attempt to improve
+    the odds of a live re-check, never as something they depend on.
+    """
+    try:
+        subprocess.run(
+            ["arp", "-d", ip],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+            **_NO_WINDOW_KWARGS,
+        )
+    except OSError:
+        pass
+
+
 def ping_sweep(targets: list[str], max_workers: int = 128) -> list[str]:
     """Pings every target concurrently and returns the ones that answered."""
     alive: list[str] = []

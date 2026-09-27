@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 
 from pro.models import Event
 from pro.pro_content import t
+from pro.timeutil import to_local_display
 
 _SEVERITY_OBJECT_NAME = {
     "info": "SeverityInfo",
@@ -82,7 +83,7 @@ class EventLogWidget(QWidget):
         confidence = event.confidence.value if event.confidence and hasattr(event.confidence, "value") else (event.confidence or "—")
 
         values = [
-            event.ts, severity.upper(), event_type, event.ip or "—",
+            to_local_display(event.ts), severity.upper(), event_type, event.ip or "—",
             event.mac or "—", event.message, confidence,
         ]
         for col, value in enumerate(values):

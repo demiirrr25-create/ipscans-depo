@@ -27,6 +27,7 @@ None of this claims certainty — see the neutral message wording below.
 """
 from __future__ import annotations
 
+from pro import live_probe
 from pro.database import Database, now_iso
 from pro.device_classifier import build_model_info
 from pro.models import Confidence, Event, EventType, ScanPassResult, Severity
@@ -148,6 +149,23 @@ def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> li
                     message=t(lang, "msg_ip_conflict", ip=display, old_mac=prior_mac, new_mac=mac),
                 )
             )
+        elif confidence == Confidence.LOW:
+            # A benign explanation was found (this is the previous
+            # occupant peacefully returning, or the old MAC legitimately
+            # moved to a new address itself, e.g. via DHCP) — reassure
+            # instead of alarming; repeatedly crying "conflict!" for
+            # ordinary address handovers is exactly what erodes trust.
+            events.append(
+                Event(
+                    ts=ts,
+                    severity=Severity.INFO,
+                    type=EventType.MAC_CHANGED,
+                    ip=ip,
+                    mac=mac,
+                    confidence=confidence,
+                    message=t(lang, "msg_mac_changed_normal", ip=display, old_mac=prior_mac, new_mac=mac),
+                )
+            )
         else:
             events.append(
                 Event(
@@ -157,7 +175,7 @@ def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> li
                     ip=ip,
                     mac=mac,
                     confidence=confidence,
-                    message=t(lang, "msg_mac_changed", ip=display),
+                    message=t(lang, "msg_mac_changed", ip=display, old_mac=prior_mac, new_mac=mac),
                 )
             )
 
@@ -166,6 +184,7 @@ def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> li
 
     model_info = build_model_info(
         result.upnp_friendly_name, result.upnp_device_type, result.snmp_sys_descr, result.vendor,
+        http_banner=result.http_banner, rtsp_banner=result.rtsp_banner,
     )
     db.upsert_device(
         key, ip, mac, result.vendor, result.hostname, result.device_type, ts,
@@ -181,23 +200,54 @@ def _classify_mac_change(db: Database, ip: str, old_mac: str, new_mac: str) -> t
 
     Called before this pass's mac_history row is inserted, so `recent`
     reflects only prior state; `recent[0]` is always `old_mac` itself.
-    """
-    recent = db.recent_macs_for_ip(ip, limit=5)
-    recent_macs = [r["mac"].lower() for r in recent]
 
-    # The *new* MAC having already occupied this IP earlier (before old_mac
-    # took over) means the address is flapping between (at least) two
-    # devices — a real conflict signal, not a one-way transition.
-    if new_mac.lower() in recent_macs:
+    Correctness note (this exact bug was reported by a real user): a MAC
+    change must be judged by what is happening *right now*, not by "has
+    this MAC ever been seen at this IP before". A device that briefly gets
+    displaced (someone else takes its address for a few minutes) and then
+    comes straight back the moment the intruder leaves is NOT a fresh
+    conflict — it is the *end* of one (if anything). The previous version
+    of this function got that backwards: it treated "the new MAC already
+    occupied this IP earlier" as the strongest possible conflict signal,
+    which made the REVERT step (old device peacefully reclaiming its own
+    address) the one that screamed "HIGH CONFIDENCE CONFLICT", while the
+    actual intrusion moments earlier was waved through as a bland
+    MEDIUM "MAC changed". That is exactly backwards.
+    """
+    # Layer 1 — try to catch it live. A single ARP-cache read can only ever
+    # show one MAC per IP; a short burst of independent re-checks has a
+    # real chance of catching both devices if they are genuinely both
+    # answering right now. This is the only way to warn "at the moment it
+    # happens" instead of inferring it later from history.
+    burst_macs = live_probe.burst_check_macs(ip)
+    if len(burst_macs) >= 2:
         return Confidence.HIGH, True
+
+    recent = db.recent_macs_for_ip(ip, limit=5)
+    recent_macs = [r["mac"].lower() for r in recent]  # recent[0] == old_mac
+
+    # A -> B -> A: whatever briefly displaced this IP's usual occupant is
+    # gone again. This is a REVERT, not a new conflict — if the earlier
+    # A -> B change deserved an alert, it already got one when it happened.
+    if len(recent_macs) >= 2 and new_mac.lower() == recent_macs[1]:
+        # ...unless this is actually A -> B -> A -> B (a THIRD alternation
+        # visible in history): that is genuine repeated flapping — two
+        # devices actively racing for the address over time — not a
+        # one-off revert, and deserves the strongest signal.
+        if len(recent_macs) >= 3 and recent_macs[2] == old_mac.lower():
+            return Confidence.HIGH, True
+        return Confidence.LOW, False
 
     # The old occupant's MAC now legitimately living on a different IP is
     # the classic signature of a DHCP lease reshuffle: not a conflict.
     if db.last_ip_for_mac(old_mac) not in (None, ip):
         return Confidence.LOW, False
 
-    # Otherwise we genuinely don't know why the MAC changed — report it,
-    # but only as a MEDIUM-confidence MAC change, never as a hard conflict.
+    # A brand-new MAC neither ever seen at this IP nor accounted for
+    # elsewhere. We can't be certain both devices are live at this exact
+    # instant (the burst check above found nothing), but this IS the
+    # moment worth surfacing to the user — report it clearly rather than
+    # silently logging it as an ordinary MAC change.
     return Confidence.MEDIUM, False
 
 

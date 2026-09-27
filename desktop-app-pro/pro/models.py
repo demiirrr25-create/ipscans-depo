@@ -70,6 +70,12 @@ class ScanPassResult:
     upnp_device_type: str | None = None
     snmp_sys_descr: str | None = None
     serial_number: str | None = None
+    # Pro-only enrichment (see pro/device_fingerprint.py) — the free
+    # scanner doesn't fetch these; most consumer IP cameras/NVRs run
+    # neither UPnP nor SNMP, so this is often the only identifying text
+    # such a device ever offers.
+    http_banner: str | None = None
+    rtsp_banner: str | None = None
     ping: PingResult | None = None
 
 

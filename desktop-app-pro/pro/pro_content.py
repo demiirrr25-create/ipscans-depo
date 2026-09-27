@@ -79,6 +79,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "run_at_startup": "Run automatically when Windows starts",
         "monitoring_running": "Monitoring running...",
         "monitoring_stopped": "Monitoring stopped.",
+        "monitoring_starting": "Starting monitoring — running the first scan...",
 
         "filter_all": "All",
         "filter_critical": "Critical",
@@ -97,6 +98,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "col_name": "Name",
         "col_vendor": "Vendor",
         "col_model": "Model",
+        "col_serial": "Serial Number",
         "col_status": "Status",
         "col_latency": "Latency",
         "col_packet_loss": "Packet Loss",
@@ -191,15 +193,24 @@ STRINGS: dict[str, dict[str, str]] = {
         "notif_ip_changed": "IP Address Changed",
         "notif_mac_changed": "MAC Address Changed",
 
-        "msg_new_device": "New device detected: {ip}",
-        "msg_ip_changed": "IP address changed from {old_ip} to {new_ip}.",
-        "msg_mac_changed": "The MAC address associated with {ip} has changed.",
-        "msg_ip_conflict": (
-            "Possible IP conflict detected on {ip}: multiple MAC addresses "
-            "({old_mac}, {new_mac}) were associated with this IP during monitoring."
+        "msg_new_device": "A device that has never been seen on this network before just appeared: {ip}.",
+        "msg_ip_changed": "{old_ip} moved to a new address: {new_ip}. This is usually normal (e.g. a DHCP lease renewal).",
+        "msg_mac_changed": (
+            "{ip} just started responding from a different device than before (was {old_mac}, now {new_mac}). "
+            "If the original device is still powered on and connected, two devices may now be sharing this "
+            "address — check both devices' IP settings to be sure."
         ),
-        "msg_device_offline": "{ip} is not responding (offline).",
-        "msg_device_online": "{ip} is back online.",
+        "msg_mac_changed_normal": (
+            "{ip} is now answering from a different device than a moment ago (was {old_mac}, now {new_mac}), "
+            "but this matches a normal address handover (such as a DHCP lease being reassigned) — no action needed."
+        ),
+        "msg_ip_conflict": (
+            "CONFIRMED: two different devices are both using {ip} — MAC {old_mac} and MAC {new_mac}. "
+            "This will cause intermittent connectivity problems for both devices until one of them is moved to "
+            "a different, unique address. Check each device's network settings (static IP / DHCP reservation)."
+        ),
+        "msg_device_offline": "{ip} has stopped responding and is now considered offline — it may be powered off, disconnected, or unreachable on the network.",
+        "msg_device_online": "{ip} is responding again and is back online.",
     },
     "tr": {
         "lang_title": "ipscans Network Health Pro'ya Hoş Geldiniz",
@@ -270,6 +281,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "run_at_startup": "Windows açılışında otomatik çalıştır",
         "monitoring_running": "İzleme çalışıyor...",
         "monitoring_stopped": "İzleme durduruldu.",
+        "monitoring_starting": "İzleme başlatılıyor — ilk tarama çalıştırılıyor...",
 
         "filter_all": "Tümü",
         "filter_critical": "Kritik",
@@ -288,6 +300,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "col_name": "İsim",
         "col_vendor": "Üretici",
         "col_model": "Model",
+        "col_serial": "Seri Numarası",
         "col_status": "Durum",
         "col_latency": "Gecikme",
         "col_packet_loss": "Paket Kaybı",
@@ -384,15 +397,25 @@ STRINGS: dict[str, dict[str, str]] = {
         "notif_ip_changed": "IP Adresi Değişti",
         "notif_mac_changed": "MAC Adresi Değişti",
 
-        "msg_new_device": "Yeni cihaz tespit edildi: {ip}",
-        "msg_ip_changed": "IP adresi {old_ip} adresinden {new_ip} adresine değişti.",
-        "msg_mac_changed": "{ip} ile ilişkili MAC adresi değişti.",
-        "msg_ip_conflict": (
-            "{ip} üzerinde olası IP çakışması tespit edildi: izleme sırasında bu IP ile "
-            "birden fazla MAC adresi ({old_mac}, {new_mac}) ilişkilendirildi."
+        "msg_new_device": "Bu ağda daha önce hiç görülmemiş bir cihaz belirdi: {ip}.",
+        "msg_ip_changed": "{old_ip} yeni bir adrese taşındı: {new_ip}. Bu genellikle normaldir (ör. DHCP kirasının yenilenmesi).",
+        "msg_mac_changed": (
+            "{ip} artık öncekinden farklı bir cihazdan yanıt veriyor (önce {old_mac}, şimdi {new_mac}). "
+            "Eğer orijinal cihaz hâlâ açık ve bağlıysa, bu adresi şu anda iki cihaz paylaşıyor olabilir — "
+            "emin olmak için her iki cihazın da IP ayarlarını kontrol edin."
         ),
-        "msg_device_offline": "{ip} yanıt vermiyor (çevrimdışı).",
-        "msg_device_online": "{ip} tekrar çevrimiçi.",
+        "msg_mac_changed_normal": (
+            "{ip} az önce farklı bir cihazdan yanıt vermeye başladı (önce {old_mac}, şimdi {new_mac}), "
+            "ancak bu normal bir adres devri ile uyuşuyor (ör. DHCP kirasının yeniden atanması) — "
+            "herhangi bir işlem gerekmiyor."
+        ),
+        "msg_ip_conflict": (
+            "DOĞRULANDI: {ip} adresini iki farklı cihaz aynı anda kullanıyor — MAC {old_mac} ve MAC {new_mac}. "
+            "Biri farklı, benzersiz bir adrese taşınana kadar her iki cihaz da aralıklı bağlantı sorunları "
+            "yaşayacaktır. Her cihazın ağ ayarlarını (statik IP / DHCP rezervasyonu) kontrol edin."
+        ),
+        "msg_device_offline": "{ip} yanıt vermeyi durdurdu ve artık çevrimdışı kabul ediliyor — kapalı, bağlantısı kesilmiş veya ağda erişilemez olabilir.",
+        "msg_device_online": "{ip} tekrar yanıt veriyor ve çevrimiçi duruma döndü.",
     },
 }
 

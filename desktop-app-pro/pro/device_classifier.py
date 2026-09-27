@@ -105,10 +105,17 @@ def build_model_info(
     upnp_device_type: str | None,
     snmp_sys_descr: str | None,
     vendor: str | None,
+    http_banner: str | None = None,
+    rtsp_banner: str | None = None,
 ) -> str | None:
     """A single human-readable "what is this" string for the Inventory
     table — picks the best available signal rather than concatenating
     everything (most of these are redundant when present together).
+
+    UPnP/SNMP rank first (the device describing itself in a structured
+    way), but most consumer/pro IP cameras run neither — an HTTP/RTSP
+    banner (see pro/device_fingerprint.py) is often the ONLY identifying
+    text such a device ever offers, so it ranks above a bare vendor name.
     """
     if upnp_friendly_name:
         return upnp_friendly_name
@@ -116,4 +123,8 @@ def build_model_info(
         return snmp_sys_descr
     if upnp_device_type:
         return upnp_device_type
+    if http_banner:
+        return http_banner
+    if rtsp_banner:
+        return rtsp_banner
     return vendor or None

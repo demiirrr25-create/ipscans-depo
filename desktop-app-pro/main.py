@@ -50,6 +50,20 @@ def _pending_onboarding_steps() -> list[str]:
 def main() -> None:
     selftest = "--selftest" in sys.argv
 
+    # Windows groups/pins taskbar icons by "AppUserModelID", not by exe
+    # path — without setting our own, Windows can fall back to treating
+    # this process like a generic Python host and show a generic icon in
+    # the taskbar/pinned tile even though the .exe's own file icon (shown
+    # in Explorer) is correct. Best-effort and silently skipped on
+    # non-Windows / if the API isn't available.
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ipscans.NetworkHealthPro")
+        except Exception:
+            pass
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     app.setStyleSheet(DARK_QSS + PRO_EXTRA_QSS)

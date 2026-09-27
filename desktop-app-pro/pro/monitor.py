@@ -25,6 +25,7 @@ from app.core.scanner import ScanOptions, run_scan  # noqa: E402
 from pro.conflict_engine import process_ping_result, process_scan_pass  # noqa: E402
 from pro.database import Database, now_iso  # noqa: E402
 from pro.device_classifier import classify_device_type  # noqa: E402
+from pro import device_fingerprint  # noqa: E402
 from pro.health_score import compute_health_score  # noqa: E402
 from pro.license import LicenseProvider  # noqa: E402
 from pro.models import Event, ScanPassResult  # noqa: E402
@@ -91,12 +92,23 @@ class MonitorWorker(QThread):
                 upnp_device_type=device.upnp_device_type,
                 snmp_sys_descr=device.snmp_sys_descr,
             )
+            # Most consumer/pro IP cameras run neither UPnP nor SNMP — an
+            # HTTP/RTSP banner grab (Pro-only, the free scanner doesn't do
+            # this) is very often the only identifying text such a device
+            # ever offers. Only attempted when a relevant port is actually
+            # open, so this costs nothing for devices without a web UI/RTSP.
+            http_banner = None
+            rtsp_banner = None
+            if device.open_ports:
+                http_banner = device_fingerprint.http_banner(device.ip, device.open_ports)
+                rtsp_banner = device_fingerprint.rtsp_banner(device.ip, device.open_ports)
             scan_results.append(
                 ScanPassResult(
                     ip=device.ip, mac=device.mac, vendor=device.vendor, hostname=device.hostname,
                     device_type=device_type, open_ports=device.open_ports,
                     upnp_friendly_name=device.upnp_friendly_name, upnp_device_type=device.upnp_device_type,
                     snmp_sys_descr=device.snmp_sys_descr, serial_number=device.serial_number,
+                    http_banner=http_banner, rtsp_banner=rtsp_banner,
                 )
             )
 

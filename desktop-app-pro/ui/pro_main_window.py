@@ -221,12 +221,14 @@ class ProMainWindow(QWidget):
         self._monitor.event_created.connect(self._on_event_created)
         self._monitor.health_updated.connect(self.dashboard_tab.update_health)
         self._monitor.health_updated.connect(lambda _: self._refresh_inventory())
+        self._monitor.tick_finished.connect(self.dashboard_tab.hide_starting)
         self._monitor.failed.connect(self._on_monitor_failed)
         self._monitor.start()
         self.db.set_setting("monitoring_enabled", "1")
         self.monitoring_tab.set_running(True)
         self.dashboard_tab.start_monitoring_btn.setEnabled(False)
         self.dashboard_tab.stop_monitoring_btn.setEnabled(True)
+        self.dashboard_tab.show_starting()
         if self.tray is not None:
             self._tray_start_action.setEnabled(False)
             self._tray_stop_action.setEnabled(True)
@@ -239,6 +241,7 @@ class ProMainWindow(QWidget):
         self.monitoring_tab.set_running(False)
         self.dashboard_tab.start_monitoring_btn.setEnabled(True)
         self.dashboard_tab.stop_monitoring_btn.setEnabled(False)
+        self.dashboard_tab.hide_starting()
         if self.tray is not None:
             self._tray_start_action.setEnabled(True)
             self._tray_stop_action.setEnabled(False)

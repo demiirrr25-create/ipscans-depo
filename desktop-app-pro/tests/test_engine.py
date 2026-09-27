@@ -16,6 +16,16 @@ from pro.device_classifier import classify_device_type
 from pro.health_score import compute_health_score
 from pro.license import MockLicenseProvider, Plan
 from pro.models import EventType, ScanPassResult
+import pro.live_probe as live_probe
+
+# The real burst re-check shells out to `ping`/`arp` and sleeps between
+# attempts (see pro/live_probe.py) — fine in production, but it would make
+# every test that changes a MAC slow and dependent on this sandbox's
+# network behavior. Tests care about the deterministic, history-based
+# fallback classification by default; test_live_burst_confirms_conflict_
+# immediately below explicitly overrides this to prove the live-catch path
+# works, then restores it.
+live_probe.burst_check_macs = lambda ip, *a, **k: set()
 
 
 def make_db() -> Database:
@@ -58,19 +68,67 @@ def test_mac_change_dhcp_reshuffle_low_confidence():
     print("PASS: mac_change_dhcp_reshuffle_low_confidence")
 
 
-def test_ip_conflict_flapping_high_confidence():
-    """Two devices racing for the same IP: it alternates between two MACs
-    across consecutive polls with neither MAC ever appearing on another IP.
-    This SHOULD be flagged as a high-confidence conflict.
+def test_single_revert_is_not_a_conflict():
+    """Regression test for the EXACT bug a real user reported: a device
+    (e.g. a phone with a manually-set static IP) briefly takes over an
+    address already used by another device (a camera), then gives it back
+    (e.g. the phone's DHCP is re-enabled). The moment it gives it back —
+    the camera simply reclaiming its own long-standing address — must NOT
+    be reported as a fresh "IP conflict"; the previous engine got this
+    backwards and flagged the REVERT as the high-confidence conflict
+    instead of the actual intrusion.
     """
     db = make_db()
-    process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:11:22:33")])
-    process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:44:55:66")])
-    events = process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:11:22:33")])
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:11:22:33")])  # camera
+    intrusion_events = process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:44:55:66")])  # phone squats
+    revert_events = process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:11:22:33")])  # camera reclaims
+
+    assert not any(e.type == EventType.IP_CONFLICT for e in revert_events), (
+        f"reclaiming its own address must not be flagged as a NEW conflict, got {revert_events}"
+    )
+    # The intrusion itself should still have been surfaced clearly (even if
+    # not asserted as a 100%-confirmed conflict without live confirmation).
+    assert any(e.type == EventType.MAC_CHANGED for e in intrusion_events)
+    print("PASS: single_revert_is_not_a_conflict")
+
+
+def test_repeated_flapping_is_still_high_confidence():
+    """Genuine, repeated back-and-forth (A -> B -> A -> B) over time IS a
+    real conflict signal — two devices actively racing for the address —
+    as opposed to a single one-off revert.
+    """
+    db = make_db()
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:11:22:33")])  # A
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:44:55:66")])  # B
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:11:22:33")])  # A (a single revert alone)
+    events = process_scan_pass(db, [ScanPassResult(ip="192.168.1.50", mac="AA:BB:CC:44:55:66")])  # B again -> real flapping
     conflict_events = [e for e in events if e.type == EventType.IP_CONFLICT]
     assert len(conflict_events) == 1, f"expected 1 conflict, got {conflict_events}"
     assert conflict_events[0].confidence.value == "high"
-    print("PASS: ip_conflict_flapping_high_confidence")
+    print("PASS: repeated_flapping_is_still_high_confidence")
+
+
+def test_live_burst_confirms_conflict_immediately():
+    """When the real-time burst re-check (pro.live_probe) genuinely
+    observes two distinct MACs answering for the same IP, that is a
+    definitive live conflict and must be reported as HIGH confidence
+    immediately — on the very first pass that shows the MAC change, with
+    no history needed at all.
+    """
+    db = make_db()
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:11:22:33")])
+
+    original = live_probe.burst_check_macs
+    live_probe.burst_check_macs = lambda ip, *a, **k: {"aa:bb:cc:11:22:33", "aa:bb:cc:44:55:66"}
+    try:
+        events = process_scan_pass(db, [ScanPassResult(ip="192.168.1.100", mac="AA:BB:CC:44:55:66")])
+    finally:
+        live_probe.burst_check_macs = original
+
+    conflict_events = [e for e in events if e.type == EventType.IP_CONFLICT]
+    assert len(conflict_events) == 1, f"expected 1 immediate conflict, got {conflict_events}"
+    assert conflict_events[0].confidence.value == "high"
+    print("PASS: live_burst_confirms_conflict_immediately")
 
 
 def test_offline_threshold_and_recovery():
