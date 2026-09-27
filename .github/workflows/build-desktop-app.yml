@@ -30,33 +30,48 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build one-file .exe
+      - name: Build one-dir app
         run: |
-          pyinstaller --name ipscans-network-scanner --onefile --windowed `
+          # --onedir (not --onefile): a single self-extracting exe re-unpacks
+          # 40+ DLLs to a temp folder on *every* launch, which is both slow on
+          # first run and one of the most common patterns Windows
+          # Defender/SmartScreen heuristically flags/quarantines on unsigned
+          # binaries — the exact "downloads fine, double-click does nothing"
+          # symptom this is fixing. --onedir starts instantly and is far less
+          # likely to be silently deleted by antivirus after download.
+          pyinstaller --name ipscans-network-scanner --onedir --windowed `
             --icon=assets/icon.ico `
             --add-data "assets;assets" `
             main.py
 
-      - name: Smoke test the packaged .exe
+      - name: Smoke test the packaged app
         run: |
-          .\dist\ipscans-network-scanner.exe --selftest
+          .\dist\ipscans-network-scanner\ipscans-network-scanner.exe --selftest
 
-      - name: Publish built .exe to the website's download folder
+      - name: Zip the packaged app
         run: |
-          Copy-Item -Path "dist\ipscans-network-scanner.exe" -Destination "..\public\downloads\ipscans-network-scanner.exe" -Force
+          Compress-Archive -Path "dist\ipscans-network-scanner\*" -DestinationPath "dist\ipscans-network-scanner.zip" -Force
 
-      - name: Commit updated .exe
+      - name: Publish built app to the website's download folder
+        run: |
+          Copy-Item -Path "dist\ipscans-network-scanner.zip" -Destination "..\public\downloads\ipscans-network-scanner.zip" -Force
+
+      - name: Commit updated app archive
         working-directory: .
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/downloads/ipscans-network-scanner.exe
-          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt desktop app .exe [skip ci]"
+          git add public/downloads/ipscans-network-scanner.zip
+          if (Test-Path "public\downloads\ipscans-network-scanner.exe") {
+            git rm --cached public/downloads/ipscans-network-scanner.exe
+            Remove-Item "public\downloads\ipscans-network-scanner.exe"
+          }
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: publish rebuilt desktop app archive [skip ci]"
           git push
 
 
       - uses: actions/upload-artifact@v4
         with:
           name: ipscans-network-scanner-windows
-          path: desktop-app/dist/ipscans-network-scanner.exe
+          path: desktop-app/dist/ipscans-network-scanner.zip
           if-no-files-found: error

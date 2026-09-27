@@ -41,7 +41,7 @@ export default async function DownloadPage({
           </ul>
 
           <a
-            href="/downloads/ipscans-network-scanner.exe"
+            href="/downloads/ipscans-network-scanner.zip"
             download
             className="btn-primary mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
           >
