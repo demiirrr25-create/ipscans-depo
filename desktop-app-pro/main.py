@@ -19,13 +19,18 @@ sys.path.insert(0, str(_FREE_APP_ROOT))
 
 from PyQt6.QtWidgets import QApplication  # noqa: E402
 
-from app.i18n import DEFAULT_LANGUAGE, get_saved_language  # noqa: E402
-from app.ui.onboarding_wizard import OnboardingWizard  # noqa: E402
-from app.ui.privacy_dialog import has_accepted_privacy, has_accepted_terms  # noqa: E402
-from app.ui.resources import load_app_icon  # noqa: E402
 from app.ui.styles import DARK_QSS  # noqa: E402
 
+from pro.pro_content import DEFAULT_LANGUAGE  # noqa: E402
+from pro.pro_settings import (  # noqa: E402
+    get_saved_language,
+    has_accepted_privacy,
+    has_accepted_terms,
+    has_seen_welcome,
+)
 from ui.pro_main_window import ProMainWindow  # noqa: E402
+from ui.pro_onboarding_wizard import STEPS, ProOnboardingWizard  # noqa: E402
+from ui.pro_resources import load_pro_app_icon  # noqa: E402
 from ui.pro_styles import PRO_EXTRA_QSS  # noqa: E402
 
 
@@ -37,6 +42,8 @@ def _pending_onboarding_steps() -> list[str]:
         steps.append("terms")
     if not has_accepted_privacy():
         steps.append("privacy")
+    if not has_seen_welcome():
+        steps.append("welcome")
     return steps
 
 
@@ -46,7 +53,7 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     app.setStyleSheet(DARK_QSS + PRO_EXTRA_QSS)
-    app_icon = load_app_icon()
+    app_icon = load_pro_app_icon()
     app.setWindowIcon(app_icon)
 
     if selftest:
@@ -60,14 +67,21 @@ def main() -> None:
         for i in range(window.tabs.count()):
             window.tabs.setCurrentIndex(i)
             window.tabs.currentWidget().grab()
+
+        wizard = ProOnboardingWizard(STEPS, DEFAULT_LANGUAGE, app_icon)
+        for _ in wizard.steps:
+            wizard.grab()
+            if wizard.step_index < len(wizard.steps) - 1:
+                wizard.step_index += 1
+                wizard._refresh_step()
         print("selftest: pro window created OK")
         sys.exit(0)
 
     steps = _pending_onboarding_steps()
     language = get_saved_language() or DEFAULT_LANGUAGE
     if steps:
-        wizard = OnboardingWizard(steps, language, app_icon)
-        if wizard.exec() != OnboardingWizard.DialogCode.Accepted:
+        wizard = ProOnboardingWizard(steps, language, app_icon)
+        if wizard.exec() != ProOnboardingWizard.DialogCode.Accepted:
             sys.exit(0)
         language = get_saved_language() or DEFAULT_LANGUAGE
 

@@ -4,11 +4,10 @@ Pro screens as additional tabs sharing the same dark theme.
 """
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QMessageBox, QTabWidget, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMessageBox, QTabWidget, QVBoxLayout, QWidget
 
 from app.i18n import DEFAULT_LANGUAGE
 from app.ui.main_window import MainWindow
-from app.ui.resources import load_logo_pixmap
 
 from pro.conflict_engine import identity_key_for
 from pro.database import Database
@@ -24,6 +23,7 @@ from ui.inventory_widget import InventoryWidget
 from ui.license_panel import LicensePanel
 from ui.monitoring_controls import MonitoringControlsWidget
 from ui.notifications_bridge import notify_for_event
+from ui.pro_resources import load_pro_logo_pixmap
 
 
 class ProMainWindow(QWidget):
@@ -41,6 +41,9 @@ class ProMainWindow(QWidget):
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(20, 20, 20, 20)
+        outer.setSpacing(14)
+
+        outer.addWidget(self._build_header())
 
         self.tabs = QTabWidget()
         outer.addWidget(self.tabs)
@@ -72,6 +75,29 @@ class ProMainWindow(QWidget):
         self.dashboard_tab.stop_monitoring_btn.clicked.connect(self._stop_monitoring)
 
         self._refresh_inventory()
+
+    # -------------------------------------------------------------- header
+    def _build_header(self) -> QWidget:
+        bar = QFrame(objectName="TitleBar")
+        bar.setFixedHeight(60)
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(20, 0, 20, 0)
+        layout.setSpacing(12)
+
+        logo = QLabel()
+        logo.setPixmap(load_pro_logo_pixmap(32))
+        logo.setFixedSize(32, 32)
+        layout.addWidget(logo)
+
+        titles = QVBoxLayout()
+        titles.setSpacing(0)
+        title = QLabel("ipscans", objectName="TitleText")
+        subtitle = QLabel("Network Health Pro", objectName="SubtitleText")
+        titles.addWidget(title)
+        titles.addWidget(subtitle)
+        layout.addLayout(titles)
+        layout.addStretch(1)
+        return bar
 
     # ------------------------------------------------------------- actions
     def _start_monitoring(self) -> None:
