@@ -54,6 +54,7 @@ jobs:
 
       - name: Publish built app to the website's download folder
         run: |
+          New-Item -ItemType Directory -Force -Path "..\public\downloads" | Out-Null
           Copy-Item -Path "dist\ipscans-network-scanner.zip" -Destination "..\public\downloads\ipscans-network-scanner.zip" -Force
 
       - name: Commit updated app archive
