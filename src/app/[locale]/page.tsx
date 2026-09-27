@@ -60,6 +60,12 @@ export default async function HomePage({
               >
                 {dict.hero.ctaSecondary}
               </Link>
+              <Link
+                href={`/${locale}/download`}
+                className="btn-ghost rounded-xl px-6 py-3 font-semibold"
+              >
+                {dict.hero.ctaDownload}
+              </Link>
             </div>
           </Reveal>
 

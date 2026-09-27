@@ -30,6 +30,7 @@ const dictionaries = {
         "Tek bir yerden IP sorgulama, coğrafi konum, internet hız testi ve ağ araçlarına eriş. Ücretsiz ve kayıt gerektirmez.",
       ctaPrimary: "IP'mi Öğren",
       ctaSecondary: "Hız Testi Yap",
+      ctaDownload: "Windows Uygulamasını İndir",
       yourIp: "Senin IP adresin",
     },
     stats: {
@@ -257,6 +258,7 @@ const dictionaries = {
         "IP lookup, geolocation, internet speed test and network tools in one place. Free and no sign-up required.",
       ctaPrimary: "Find My IP",
       ctaSecondary: "Run Speed Test",
+      ctaDownload: "Download Windows App",
       yourIp: "Your IP address",
     },
     stats: {
@@ -481,6 +483,7 @@ const dictionaries = {
         "IP-Abfrage, Geolokalisierung, Geschwindigkeitstest und Netzwerktools an einem Ort. Kostenlos und ohne Registrierung.",
       ctaPrimary: "Meine IP finden",
       ctaSecondary: "Geschwindigkeitstest starten",
+      ctaDownload: "Windows-App herunterladen",
       yourIp: "Deine IP-Adresse",
     },
     stats: {
@@ -708,6 +711,7 @@ const dictionaries = {
         "Recherche IP, géolocalisation, test de vitesse et outils réseau en un seul endroit. Gratuit et sans inscription.",
       ctaPrimary: "Trouver mon IP",
       ctaSecondary: "Lancer le test de vitesse",
+      ctaDownload: "Télécharger l'application Windows",
       yourIp: "Votre adresse IP",
     },
     stats: {
@@ -935,6 +939,7 @@ const dictionaries = {
         "Búsqueda de IP, geolocalización, test de velocidad y herramientas de red en un solo lugar. Gratis y sin registro.",
       ctaPrimary: "Buscar mi IP",
       ctaSecondary: "Hacer test de velocidad",
+      ctaDownload: "Descargar la app de Windows",
       yourIp: "Tu dirección IP",
     },
     stats: {
