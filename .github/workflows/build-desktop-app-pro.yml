@@ -38,11 +38,18 @@ jobs:
           # repo never copies that source into desktop-app-pro — see README).
           # --noupx / --version-file: same Defender/SmartScreen-heuristic
           # rationale as the free app's own build step.
+          # --icon: the PRE-BAKED PRO-badged icon (assets/icon_pro.ico) —
+          # this is what Explorer/taskbar/"pin to desktop" actually shows,
+          # since that's read from the .exe's own Win32 resources, not the
+          # QIcon set at runtime. Both assets dirs are added so the runtime
+          # PNG fallback (ui/pro_resources.py) and the free app's own logo
+          # (used by the embedded Scanner tab) are both available frozen.
           pyinstaller --name ipscans-network-health-pro --onefile --windowed --noupx `
             --paths ..\desktop-app `
-            --icon=..\desktop-app\assets\icon.ico `
+            --icon=assets\icon_pro.ico `
             --version-file=version_info.txt `
             --add-data "..\desktop-app\assets;assets" `
+            --add-data "assets;assets" `
             main.py
 
       - name: Smoke test the packaged .exe

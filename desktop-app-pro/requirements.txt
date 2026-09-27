@@ -1,6 +1,5 @@
 # Everything the free desktop-app needs (imported via ../desktop-app), plus:
 -r ../desktop-app/requirements.txt
 
-# Windows toast notifications (spec item 25) — optional at runtime, guarded
-# by a try/except in pro/notifications.py so its absence never breaks a scan.
-win10toast>=0.9; sys_platform == "win32"
+# Notifications (spec item 25) use QSystemTrayIcon.showMessage(), part of
+# PyQt6 itself — no extra dependency needed.

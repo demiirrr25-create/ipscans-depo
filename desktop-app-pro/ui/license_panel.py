@@ -16,13 +16,15 @@ from PyQt6.QtWidgets import (
 )
 
 from pro.license import LicenseProvider
+from pro.pro_content import t
 from pro.update_checker import check_for_update
 
 
 class LicensePanel(QWidget):
-    def __init__(self, provider: LicenseProvider, parent: QWidget | None = None) -> None:
+    def __init__(self, provider: LicenseProvider, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._provider = provider
+        self.lang = lang
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
@@ -37,31 +39,26 @@ class LicensePanel(QWidget):
         self.status_label = QLabel("—")
         self.expires_label = QLabel("—")
         self.key_label = QLabel("—")
-        form.addRow(QLabel("Plan"), self.plan_label)
-        form.addRow(QLabel("Status"), self.status_label)
-        form.addRow(QLabel("Expires"), self.expires_label)
-        form.addRow(QLabel("License Key"), self.key_label)
+        form.addRow(QLabel(t(lang, "plan")), self.plan_label)
+        form.addRow(QLabel(t(lang, "status_label")), self.status_label)
+        form.addRow(QLabel(t(lang, "expires")), self.expires_label)
+        form.addRow(QLabel(t(lang, "license_key")), self.key_label)
 
         self.email_edit = QLineEdit()
-        self.email_edit.setPlaceholderText("you@company.com")
-        form.addRow(QLabel("Email"), self.email_edit)
+        self.email_edit.setPlaceholderText(t(lang, "email_placeholder"))
+        form.addRow(QLabel(t(lang, "email_label")), self.email_edit)
 
         outer.addWidget(card)
 
-        self.activate_btn = QPushButton("Start PRO Trial", objectName="PrimaryButton")
+        self.activate_btn = QPushButton(t(lang, "start_trial"), objectName="PrimaryButton")
         self.activate_btn.clicked.connect(self._on_activate)
         outer.addWidget(self.activate_btn)
 
-        self.check_update_btn = QPushButton("Check for Updates", objectName="GhostButton")
+        self.check_update_btn = QPushButton(t(lang, "check_updates"), objectName="GhostButton")
         self.check_update_btn.clicked.connect(self._on_check_update)
         outer.addWidget(self.check_update_btn)
 
-        self.note_label = QLabel(
-            "Enter your email and start a 30-day PRO trial (no payment yet — "
-            "Stripe billing is coming in a later update). Your license is "
-            "validated against ipscans.com and cached locally so the app "
-            "keeps working offline."
-        )
+        self.note_label = QLabel(t(lang, "license_note"))
         self.note_label.setObjectName("StatusLabel")
         self.note_label.setWordWrap(True)
         outer.addWidget(self.note_label)
@@ -85,10 +82,10 @@ class LicensePanel(QWidget):
     def _on_check_update(self) -> None:
         info = check_for_update()
         if info is None:
-            self.note_label.setText("You're on the latest version.")
+            self.note_label.setText(t(self.lang, "up_to_date"))
         else:
             self.note_label.setText(
-                f"Update available: v{info.version} — {info.notes}\nDownload: {info.download_url}"
+                t(self.lang, "update_available", version=info.version, notes=info.notes, url=info.download_url)
             )
 
     def _render(self, status) -> None:

@@ -47,6 +47,7 @@ class MonitorWorker(QThread):
         interval_sec: int,
         site_name: str | None = None,
         license_provider: LicenseProvider | None = None,
+        lang: str = "en",
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -55,6 +56,7 @@ class MonitorWorker(QThread):
         self._interval_sec = interval_sec
         self._site_name = site_name
         self._license_provider = license_provider
+        self._lang = lang
         self._stop_requested = False
         self._offline_threshold = DEFAULT_OFFLINE_THRESHOLD
 
@@ -91,7 +93,7 @@ class MonitorWorker(QThread):
             should_stop=lambda: self._stop_requested,
         )
 
-        events: list[Event] = process_scan_pass(self._db, scan_results)
+        events: list[Event] = process_scan_pass(self._db, scan_results, self._lang)
 
         high_latency = 0
         packet_losses: list[float] = []
@@ -102,7 +104,9 @@ class MonitorWorker(QThread):
             packet_losses.append(ping.packet_loss_pct)
             if ping.latency_ms is not None and ping.latency_ms >= LATENCY_HIGH_MS:
                 high_latency += 1
-            offline_event = process_ping_result(self._db, key, result.ip, ping.alive, self._offline_threshold)
+            offline_event = process_ping_result(
+                self._db, key, result.ip, ping.alive, self._offline_threshold, self._lang
+            )
             if offline_event:
                 events.append(offline_event)
                 self._db.add_event(offline_event)

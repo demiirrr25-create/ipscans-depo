@@ -40,6 +40,28 @@ python3 tests/test_engine.py                       # pure-Python engine tests
 QT_QPA_PLATFORM=offscreen python3 main.py --selftest  # boots every tab headlessly
 ```
 
+## Regenerating assets/icon_pro.ico
+
+`assets/icon_pro.ico` / `icon_pro.png` are committed, pre-baked (PRO-badged)
+copies of the free app's icon — regenerate them if that base icon ever
+changes (requires `pip install Pillow` in addition to the deps above):
+
+```bash
+QT_QPA_PLATFORM=offscreen python3 -c "
+from PyQt6.QtWidgets import QApplication; import sys
+app = QApplication(sys.argv)
+from ui.pro_resources import _with_pro_badge
+from app.ui.resources import load_app_icon
+from PIL import Image
+badged = _with_pro_badge(load_app_icon().pixmap(256, 256))
+badged.save('/tmp/_master.png')
+master = Image.open('/tmp/_master.png').convert('RGBA')
+master.save('assets/icon_pro.png')
+master.save('assets/icon_pro.ico', format='ICO',
+             sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])
+"
+```
+
 ## What's NOT built yet (see session memory for the full plan)
 
 Real license backend/payment, auto-update, multi-site/cloud management,

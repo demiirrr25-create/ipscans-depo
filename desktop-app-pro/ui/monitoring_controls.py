@@ -4,6 +4,7 @@ selection and start/stop, feeding the MonitorWorker owned by ProMainWindow.
 from __future__ import annotations
 
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QFrame,
@@ -15,20 +16,16 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-INTERVAL_OPTIONS = [
-    ("10 seconds", 10),
-    ("30 seconds", 30),
-    ("60 seconds", 60),
-    ("5 minutes", 300),
-    ("Custom...", None),
-]
+from pro import startup
+from pro.pro_content import t
 
-SCAN_MODES = ["Quick Scan", "Full Scan", "Health Scan", "Conflict Scan", "Continuous Monitoring"]
+INTERVAL_SECONDS = [10, 30, 60, 300, None]
 
 
 class MonitoringControlsWidget(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.lang = lang
         outer = QVBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
         outer.setSpacing(14)
@@ -39,44 +36,54 @@ class MonitoringControlsWidget(QWidget):
         form.setSpacing(10)
 
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems(SCAN_MODES)
-        form.addRow(QLabel("Scan Mode"), self.mode_combo)
+        self.mode_combo.addItems([
+            t(lang, "mode_quick"), t(lang, "mode_full"), t(lang, "mode_health"),
+            t(lang, "mode_conflict"), t(lang, "mode_continuous"),
+        ])
+        form.addRow(QLabel(t(lang, "scan_mode")), self.mode_combo)
 
         self.site_name_edit = QLineEdit()
-        self.site_name_edit.setPlaceholderText("e.g. ABC Residence")
-        form.addRow(QLabel("Site Name"), self.site_name_edit)
+        self.site_name_edit.setPlaceholderText(t(lang, "site_name_placeholder"))
+        form.addRow(QLabel(t(lang, "site_name")), self.site_name_edit)
 
         self.interval_combo = QComboBox()
-        self.interval_combo.addItems([label for label, _ in INTERVAL_OPTIONS])
+        self.interval_combo.addItems([
+            t(lang, "interval_10s"), t(lang, "interval_30s"), t(lang, "interval_60s"),
+            t(lang, "interval_5m"), t(lang, "interval_custom"),
+        ])
         self.interval_combo.currentIndexChanged.connect(self._on_interval_changed)
-        form.addRow(QLabel("Monitoring Interval"), self.interval_combo)
+        form.addRow(QLabel(t(lang, "monitoring_interval")), self.interval_combo)
 
         self.custom_interval_edit = QLineEdit()
-        self.custom_interval_edit.setPlaceholderText("Custom interval in seconds")
+        self.custom_interval_edit.setPlaceholderText(t(lang, "custom_interval_placeholder"))
         self.custom_interval_edit.setEnabled(False)
-        form.addRow(QLabel("Custom (sec)"), self.custom_interval_edit)
+        form.addRow(QLabel(t(lang, "custom_interval")), self.custom_interval_edit)
 
         outer.addWidget(card)
 
+        self.startup_checkbox = QCheckBox(t(lang, "run_at_startup"))
+        self.startup_checkbox.setChecked(startup.is_enabled())
+        self.startup_checkbox.toggled.connect(startup.set_enabled)
+        outer.addWidget(self.startup_checkbox)
+
         btn_row = QHBoxLayout()
-        self.start_btn = QPushButton("▶  Start Monitoring", objectName="PrimaryButton")
-        self.stop_btn = QPushButton("■  Stop", objectName="GhostButton")
+        self.start_btn = QPushButton(f"▶  {t(lang, 'start_monitoring')}", objectName="PrimaryButton")
+        self.stop_btn = QPushButton(f"■  {t(lang, 'stop_monitoring')}", objectName="GhostButton")
         self.stop_btn.setEnabled(False)
         btn_row.addWidget(self.start_btn)
         btn_row.addWidget(self.stop_btn)
         outer.addLayout(btn_row)
 
-        self.status_label = QLabel("Monitoring stopped.", objectName="StatusLabel")
+        self.status_label = QLabel(t(lang, "monitoring_stopped"), objectName="StatusLabel")
         outer.addWidget(self.status_label)
         outer.addStretch(1)
 
     def _on_interval_changed(self, index: int) -> None:
-        _, seconds = INTERVAL_OPTIONS[index]
-        self.custom_interval_edit.setEnabled(seconds is None)
+        self.custom_interval_edit.setEnabled(INTERVAL_SECONDS[index] is None)
 
     def interval_seconds(self) -> int:
         index = self.interval_combo.currentIndex()
-        _, seconds = INTERVAL_OPTIONS[index]
+        seconds = INTERVAL_SECONDS[index]
         if seconds is not None:
             return seconds
         try:
@@ -92,5 +99,5 @@ class MonitoringControlsWidget(QWidget):
         self.stop_btn.setEnabled(running)
         self.mode_combo.setEnabled(not running)
         self.interval_combo.setEnabled(not running)
-        self.custom_interval_edit.setEnabled(not running and self.interval_combo.currentIndex() == len(INTERVAL_OPTIONS) - 1)
-        self.status_label.setText("Monitoring running..." if running else "Monitoring stopped.")
+        self.custom_interval_edit.setEnabled(not running and self.interval_combo.currentIndex() == len(INTERVAL_SECONDS) - 1)
+        self.status_label.setText(t(self.lang, "monitoring_running") if running else t(self.lang, "monitoring_stopped"))

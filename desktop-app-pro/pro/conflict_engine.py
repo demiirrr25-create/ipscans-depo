@@ -29,13 +29,24 @@ from __future__ import annotations
 
 from pro.database import Database, now_iso
 from pro.models import Confidence, Event, EventType, ScanPassResult, Severity
+from pro.pro_content import DEFAULT_LANGUAGE, t
 
 
 def identity_key_for(mac: str | None, ip: str) -> str:
     return mac.lower() if mac else f"ip:{ip}"
 
 
-def process_scan_pass(db: Database, results: list[ScanPassResult]) -> list[Event]:
+def _friendly(row, ip: str) -> str:
+    """Devices the user has named (spec items 15-16) show that name next to
+    the IP in every message/alert, so a problem can be triaged at a glance
+    ("A Blok Kamera 1 (192.168.1.50)") instead of just a bare address.
+    """
+    if row and row["custom_name"]:
+        return f"{row['custom_name']} ({ip})"
+    return ip
+
+
+def process_scan_pass(db: Database, results: list[ScanPassResult], lang: str = DEFAULT_LANGUAGE) -> list[Event]:
     """Feeds one full scan pass through the conflict engine, updating the
     database and returning every Event generated (for the UI/notifications).
     """
@@ -43,12 +54,12 @@ def process_scan_pass(db: Database, results: list[ScanPassResult]) -> list[Event
     ts = now_iso()
 
     for result in results:
-        events.extend(_process_one(db, result, ts))
+        events.extend(_process_one(db, result, ts, lang))
 
     return events
 
 
-def _process_one(db: Database, result: ScanPassResult, ts: str) -> list[Event]:
+def _process_one(db: Database, result: ScanPassResult, ts: str, lang: str) -> list[Event]:
     events: list[Event] = []
     ip, mac = result.ip, result.mac
     key = identity_key_for(mac, ip)
@@ -68,10 +79,13 @@ def _process_one(db: Database, result: ScanPassResult, ts: str) -> list[Event]:
                 type=EventType.NEW_DEVICE,
                 ip=ip,
                 mac=mac,
-                message=f"New device detected: {ip}" + (f" ({mac})" if mac else ""),
+                message=t(lang, "msg_new_device", ip=ip) + (f" ({mac})" if mac else ""),
             )
         )
     elif existing_device["ip"] != ip:
+        name = existing_device["custom_name"]
+        old_display = f"{name} ({existing_device['ip']})" if name else existing_device["ip"]
+        new_display = f"{name} ({ip})" if name else ip
         events.append(
             Event(
                 ts=ts,
@@ -79,7 +93,7 @@ def _process_one(db: Database, result: ScanPassResult, ts: str) -> list[Event]:
                 type=EventType.IP_CHANGED,
                 ip=ip,
                 mac=mac,
-                message=f"IP address changed from {existing_device['ip']} to {ip}.",
+                message=t(lang, "msg_ip_changed", old_ip=old_display, new_ip=new_display),
             )
         )
         db.record_ip_change(key, ip, ts)
@@ -91,6 +105,7 @@ def _process_one(db: Database, result: ScanPassResult, ts: str) -> list[Event]:
     # when the branch above just recorded a brand-new device.
     if mac and prior_mac and mac.lower() != prior_mac.lower():
         confidence, is_conflict = _classify_mac_change(db, ip, old_mac=prior_mac, new_mac=mac)
+        display = _friendly(existing_device, ip)
         if is_conflict:
             events.append(
                 Event(
@@ -100,10 +115,7 @@ def _process_one(db: Database, result: ScanPassResult, ts: str) -> list[Event]:
                     ip=ip,
                     mac=mac,
                     confidence=confidence,
-                    message=(
-                        f"Possible IP conflict detected on {ip}: multiple MAC addresses "
-                        f"({prior_mac}, {mac}) were associated with this IP during monitoring."
-                    ),
+                    message=t(lang, "msg_ip_conflict", ip=display, old_mac=prior_mac, new_mac=mac),
                 )
             )
         else:
@@ -115,7 +127,7 @@ def _process_one(db: Database, result: ScanPassResult, ts: str) -> list[Event]:
                     ip=ip,
                     mac=mac,
                     confidence=confidence,
-                    message=f"The MAC address associated with {ip} has changed.",
+                    message=t(lang, "msg_mac_changed", ip=display),
                 )
             )
 
@@ -153,22 +165,26 @@ def _classify_mac_change(db: Database, ip: str, old_mac: str, new_mac: str) -> t
     return Confidence.MEDIUM, False
 
 
-def process_ping_result(db: Database, identity_key: str, ip: str, alive: bool, offline_threshold: int) -> Event | None:
+def process_ping_result(
+    db: Database, identity_key: str, ip: str, alive: bool, offline_threshold: int,
+    lang: str = DEFAULT_LANGUAGE,
+) -> Event | None:
     """Offline/back-online transition detection (spec item 12) — only fires
     on the threshold crossing, not on every failed poll.
     """
     ts = now_iso()
+    display = _friendly(db.get_device(identity_key), ip)
     if alive:
         if db.mark_back_online(identity_key):
             return Event(
                 ts=ts, severity=Severity.INFO, type=EventType.DEVICE_ONLINE,
-                ip=ip, message=f"{ip} is back online.",
+                ip=ip, message=t(lang, "msg_device_online", ip=display),
             )
         return None
 
     if db.mark_ping_failure(identity_key, offline_threshold):
         return Event(
             ts=ts, severity=Severity.WARNING, type=EventType.DEVICE_OFFLINE,
-            ip=ip, message=f"{ip} is not responding (offline).",
+            ip=ip, message=t(lang, "msg_device_offline", ip=display),
         )
     return None

@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
 )
 
 from pro.models import Event
+from pro.pro_content import t
 
 _SEVERITY_OBJECT_NAME = {
     "info": "SeverityInfo",
@@ -21,11 +22,11 @@ _SEVERITY_OBJECT_NAME = {
     "critical": "SeverityCritical",
 }
 
-COLUMNS = ["Time", "Severity", "Type", "IP", "MAC", "Message", "Confidence"]
+FILTER_VALUES = ["all", "critical", "warning", "info"]
 
 
 class EventLogWidget(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
@@ -33,14 +34,21 @@ class EventLogWidget(QWidget):
 
         filter_row = QHBoxLayout()
         self.filter_combo = QComboBox()
-        self.filter_combo.addItems(["All", "Critical", "Warning", "Info"])
-        self.filter_combo.currentTextChanged.connect(self._apply_filter)
+        self.filter_combo.addItems([
+            t(lang, "filter_all"), t(lang, "filter_critical"),
+            t(lang, "filter_warning"), t(lang, "filter_info"),
+        ])
+        self.filter_combo.currentIndexChanged.connect(self._apply_filter)
         filter_row.addWidget(self.filter_combo)
         filter_row.addStretch(1)
         outer.addLayout(filter_row)
 
-        self.table = QTableWidget(0, len(COLUMNS))
-        self.table.setHorizontalHeaderLabels(COLUMNS)
+        columns = [
+            t(lang, "col_time"), t(lang, "col_severity"), t(lang, "col_type"),
+            t(lang, "col_ip"), t(lang, "col_mac"), t(lang, "col_message"), t(lang, "col_confidence"),
+        ]
+        self.table = QTableWidget(0, len(columns))
+        self.table.setHorizontalHeaderLabels(columns)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.ResizeToContents
@@ -57,9 +65,9 @@ class EventLogWidget(QWidget):
             self._insert_row(0, event)
 
     def _passes_filter(self, event: Event) -> bool:
-        current = self.filter_combo.currentText()
+        current = FILTER_VALUES[self.filter_combo.currentIndex()]
         severity = event.severity.value if hasattr(event.severity, "value") else event.severity
-        return current == "All" or current.lower() == severity
+        return current == "all" or current == severity
 
     def _apply_filter(self) -> None:
         self.table.setRowCount(0)

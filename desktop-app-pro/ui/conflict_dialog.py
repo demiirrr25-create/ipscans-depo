@@ -8,34 +8,29 @@ from __future__ import annotations
 from PyQt6.QtWidgets import QMessageBox, QPushButton, QWidget
 
 from pro.models import Event
+from pro.pro_content import t
 
 
-def show_conflict_alert(parent: QWidget | None, event: Event) -> None:
+def show_conflict_alert(parent: QWidget | None, event: Event, lang: str = "en") -> None:
     box = QMessageBox(parent)
-    box.setWindowTitle("IP Conflict Detected")
+    box.setWindowTitle(t(lang, "conflict_title"))
     box.setIcon(QMessageBox.Icon.Warning)
-    box.setText(f"Possible IP conflict on {event.ip}")
+    box.setText(t(lang, "conflict_text", ip=event.ip))
     box.setInformativeText(
-        f"{event.message}\n\n"
-        "Possible cause: two network devices may be using the same IP address.\n\n"
-        "Recommended action:\n"
-        "1. Check the affected devices.\n"
-        "2. Verify DHCP reservations.\n"
-        "3. Check static IP configuration.\n"
-        "4. Assign unique IP addresses."
+        f"{event.message}\n\n{t(lang, 'conflict_cause')}\n\n{t(lang, 'conflict_action')}"
     )
     box.setStandardButtons(QMessageBox.StandardButton.Ok)
     box.exec()
 
 
-def show_new_device_alert(parent: QWidget | None, event: Event) -> str:
+def show_new_device_alert(parent: QWidget | None, event: Event, lang: str = "en") -> str:
     """Returns "trust", "ignore" or "" (dismissed) — spec item 17."""
     box = QMessageBox(parent)
-    box.setWindowTitle("New Device Detected")
+    box.setWindowTitle(t(lang, "new_device_title"))
     box.setIcon(QMessageBox.Icon.Information)
     box.setText(event.message)
-    trust_btn = QPushButton("Trust Device")
-    ignore_btn = QPushButton("Ignore")
+    trust_btn = QPushButton(t(lang, "trust_device"))
+    ignore_btn = QPushButton(t(lang, "ignore"))
     box.addButton(trust_btn, QMessageBox.ButtonRole.AcceptRole)
     box.addButton(ignore_btn, QMessageBox.ButtonRole.RejectRole)
     box.exec()

@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QFrame, QGridLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from pro.models import HealthBreakdown
+from pro.pro_content import t
 
 
 def _stat_card(value: str, label: str) -> QFrame:
@@ -23,7 +24,7 @@ def _stat_card(value: str, label: str) -> QFrame:
 
 
 class DashboardWidget(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
@@ -34,7 +35,7 @@ class DashboardWidget(QWidget):
         health_layout.setContentsMargins(24, 20, 24, 20)
         health_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.health_label = QLabel("NETWORK HEALTH", objectName="HealthScoreLabel")
+        self.health_label = QLabel(t(lang, "health_title"), objectName="HealthScoreLabel")
         self.health_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.health_value = QLabel("—", objectName="HealthScoreValue")
         self.health_value.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -51,13 +52,13 @@ class DashboardWidget(QWidget):
         grid.setSpacing(10)
         self.cards: dict[str, QFrame] = {}
         specs = [
-            ("devices", "Devices"),
-            ("online", "Online"),
-            ("offline", "Offline"),
-            ("conflicts", "IP Conflicts"),
-            ("high_latency", "High Latency"),
-            ("packet_loss", "Packet Loss"),
-            ("unknown", "Unknown Devices"),
+            ("devices", t(lang, "stat_devices")),
+            ("online", t(lang, "stat_online")),
+            ("offline", t(lang, "stat_offline")),
+            ("conflicts", t(lang, "stat_conflicts")),
+            ("high_latency", t(lang, "stat_high_latency")),
+            ("packet_loss", t(lang, "stat_packet_loss")),
+            ("unknown", t(lang, "stat_unknown")),
         ]
         for i, (key, label) in enumerate(specs):
             card = _stat_card("—", label)
@@ -65,8 +66,8 @@ class DashboardWidget(QWidget):
             grid.addWidget(card, i // 4, i % 4)
         outer.addLayout(grid)
 
-        self.start_monitoring_btn = QPushButton("▶  Start Monitoring", objectName="PrimaryButton")
-        self.stop_monitoring_btn = QPushButton("■  Stop", objectName="GhostButton")
+        self.start_monitoring_btn = QPushButton(f"▶  {t(lang, 'start_monitoring')}", objectName="PrimaryButton")
+        self.stop_monitoring_btn = QPushButton(f"■  {t(lang, 'stop_monitoring')}", objectName="GhostButton")
         self.stop_monitoring_btn.setEnabled(False)
         outer.addWidget(self.start_monitoring_btn)
         outer.addWidget(self.stop_monitoring_btn)

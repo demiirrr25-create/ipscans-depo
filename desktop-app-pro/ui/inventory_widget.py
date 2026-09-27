@@ -15,31 +15,34 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-COLUMNS = [
-    "IP", "MAC", "Name", "Vendor", "Status", "Latency", "Packet Loss", "Last Seen",
-]
+from pro.pro_content import t
 
 
 class InventoryWidget(QWidget):
     rename_requested = None  # set by owner to a callable(identity_key, name)
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.lang = lang
         outer = QVBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
         outer.setSpacing(10)
 
         top_row = QHBoxLayout()
         self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("Search by IP, MAC, hostname, vendor or name...")
+        self.search_edit.setPlaceholderText(t(lang, "search_placeholder_inventory"))
         self.search_edit.textChanged.connect(self._apply_filter)
-        self.export_csv_btn = QPushButton("Export CSV", objectName="GhostButton")
+        self.export_csv_btn = QPushButton(t(lang, "export_csv"), objectName="GhostButton")
         top_row.addWidget(self.search_edit, stretch=1)
         top_row.addWidget(self.export_csv_btn)
         outer.addLayout(top_row)
 
-        self.table = QTableWidget(0, len(COLUMNS))
-        self.table.setHorizontalHeaderLabels(COLUMNS)
+        columns = [
+            t(lang, "col_ip"), t(lang, "col_mac"), t(lang, "col_name"), t(lang, "col_vendor"),
+            t(lang, "col_status"), t(lang, "col_latency"), t(lang, "col_packet_loss"), t(lang, "col_last_seen"),
+        ]
+        self.table = QTableWidget(0, len(columns))
+        self.table.setHorizontalHeaderLabels(columns)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.ResizeToContents
@@ -72,9 +75,10 @@ class InventoryWidget(QWidget):
             self.table.insertRow(row)
             self._identity_keys.append(device["identity_key"])
             display_name = device["custom_name"] or device["hostname"] or "—"
+            status_display = t(self.lang, "status_online") if device["status"] == "online" else t(self.lang, "status_offline")
             values = [
                 device["ip"], device["mac"] or "—", display_name, device["vendor"] or "Unknown",
-                device["status"], f"{device['last_latency_ms']:.0f} ms" if device["last_latency_ms"] else "—",
+                status_display, f"{device['last_latency_ms']:.0f} ms" if device["last_latency_ms"] else "—",
                 f"{device['last_packet_loss_pct']:.0f}%" if device["last_packet_loss_pct"] is not None else "—",
                 device["last_seen"],
             ]
