@@ -4,10 +4,11 @@ PyQt6 tabanlı, ipscans.com ile aynı siyah/beyaz/gri temaya sahip masaüstü a�
 tarama uygulaması. Normal, yeniden boyutlandırılabilir pencere; ARP/ping ile
 hızlı host keşfi + SNMP/WMI/UPnP ile derinlemesine cihaz bilgisi (Nmap
 opsiyonel, varsayılan kapalı). İlk açılışta akış şu şekildedir: animasyonlu
-karşılama ekranı → dil seçimi (6 dil: EN/TR/DE/FR/ES/RU) → seçilen dilde
-kullanım şartları onayı → gizlilik politikası onayı → ana pencere. Her iki
-sözleşme de ayrı ayrı ve sırayla kabul edilmeden ana pencereye erişilemez.
-Dil seçimi ve onaylar bir daha sorulmaz.
+tek bir animasyonlu karşılama sihirbazı (`OnboardingWizard`): dil seçimi
+(6 dil: EN/TR/DE/FR/ES/RU) → kullanım şartları onayı → gizlilik politikası
+onayı → ana pencere. Her adım ayrı kaydedilir (yalnızca henüz
+tamamlanmamış adımlar gösterilir) ve sözleşmeler kabul edilmeden ana
+pencereye erişilemez.
 
 ## Kurulum
 
@@ -40,9 +41,10 @@ app/
   workers/
     scan_worker.py        QThread sarmalayıcı — arayüzü asla dondurmaz
   ui/
-    language_dialog.py    İlk açılışta gösterilen dil seçim ekranı
+    onboarding_wizard.py   Animasyonlu ilk açılış sihirbazı: dil + şartlar + gizlilik
+    privacy_dialog.py      Şartlar/gizlilik onay durumu (QSettings)
     styles.py             Karanlık QSS teması (modern segmented control dahil)
-    widgets.py             Cihaz tablo modeli, canlı filtre, hedef seçici
+    widgets.py             Cihaz tablo modeli, canlı filtre, hedef seçici, IP sıralama
     main_window.py         Ana pencere, çift tık -> tarayıcıda aç
   i18n.py                  Arayüz metinleri için çeviri tablosu (6 dil)
 ```

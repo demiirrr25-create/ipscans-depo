@@ -63,6 +63,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "privacy_checkbox": "I have read and agree to the Privacy Policy above.",
         "privacy_decline": "Decline and Exit",
         "privacy_accept": "I Agree",
+        "wizard_back": "Back",
     },
     "tr": {
         "app_title": "ipscans — Ağ Tarayıcı",
@@ -102,6 +103,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "privacy_checkbox": "Yukarıdaki Gizlilik Politikası'nı okudum ve kabul ediyorum.",
         "privacy_decline": "Reddet ve Çık",
         "privacy_accept": "Kabul Ediyorum",
+        "wizard_back": "Geri",
     },
     "de": {
         "app_title": "ipscans — Netzwerkscanner",
@@ -141,6 +143,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "privacy_checkbox": "Ich habe die obige Datenschutzrichtlinie gelesen und stimme zu.",
         "privacy_decline": "Ablehnen und beenden",
         "privacy_accept": "Ich stimme zu",
+        "wizard_back": "Zurück",
     },
     "fr": {
         "app_title": "ipscans — Scanner réseau",
@@ -180,6 +183,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "privacy_checkbox": "J'ai lu et j'accepte la politique de confidentialité ci-dessus.",
         "privacy_decline": "Refuser et quitter",
         "privacy_accept": "J'accepte",
+        "wizard_back": "Retour",
     },
     "es": {
         "app_title": "ipscans — Escáner de red",
@@ -219,6 +223,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "privacy_checkbox": "He leído y acepto la política de privacidad anterior.",
         "privacy_decline": "Rechazar y salir",
         "privacy_accept": "Acepto",
+        "wizard_back": "Atrás",
     },
     "ru": {
         "app_title": "ipscans — Сканер сети",
@@ -258,6 +263,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "privacy_checkbox": "Я прочитал(а) и принимаю указанную выше Политику конфиденциальности.",
         "privacy_decline": "Отклонить и выйти",
         "privacy_accept": "Принимаю",
+        "wizard_back": "Назад",
     },
 }
 

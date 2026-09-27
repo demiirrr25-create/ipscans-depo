@@ -78,10 +78,7 @@ QPushButton#SegmentButton:checked {
     color: #000000;
 }
 
-/* First-run language picker (LanguageDialog). */
-#LanguageDialog {
-    background-color: #0a0a0a;
-}
+/* Onboarding wizard's language-picker step (wizard itself uses #AppRoot). */
 QPushButton#LanguageOption {
     background: rgba(255, 255, 255, 0.05);
     color: #ffffff;
