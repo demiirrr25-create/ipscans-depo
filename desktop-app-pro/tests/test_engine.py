@@ -3,6 +3,7 @@ or plain `python tests/test_engine.py`. No Qt/display needed.
 """
 from __future__ import annotations
 
+import sqlite3
 import sys
 import tempfile
 from pathlib import Path
@@ -11,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from pro.conflict_engine import process_scan_pass, process_ping_result
 from pro.database import Database
+from pro.device_classifier import classify_device_type
 from pro.health_score import compute_health_score
 from pro.license import MockLicenseProvider, Plan
 from pro.models import EventType, ScanPassResult
@@ -112,6 +114,70 @@ def test_mock_license_activation():
     assert status.has_feature("continuous_monitoring")
     assert not status.has_feature("multi_site")
     print("PASS: mock_license_activation")
+
+
+def test_device_classifier():
+    assert classify_device_type([554], "Hikvision", None) == "IP Camera"
+    assert classify_device_type([37777], None, None) == "NVR"
+    assert classify_device_type([9100], None, None) == "Printer"
+    assert classify_device_type([3389, 445], None, None) == "Computer"
+    assert classify_device_type([], None, None) == "Unknown"
+    assert classify_device_type([80], None, "lobby-cam-01") == "IP Camera"
+    print("PASS: device_classifier")
+
+
+def test_database_migrates_old_schema_without_data_loss():
+    """Regression test: adding a column to SCHEMA does nothing for a DB file
+    that already exists on disk (CREATE TABLE IF NOT EXISTS is a no-op) —
+    Database._migrate() must ALTER TABLE the existing installs, preserving
+    their data, or every upgrade crashes with "no such column".
+    """
+    old_schema = """
+        CREATE TABLE devices (
+            identity_key TEXT PRIMARY KEY, ip TEXT NOT NULL, mac TEXT, vendor TEXT,
+            hostname TEXT, device_type TEXT DEFAULT 'Unknown', custom_name TEXT, notes TEXT,
+            first_seen TEXT NOT NULL, last_seen TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'online',
+            consecutive_failures INTEGER NOT NULL DEFAULT 0, last_latency_ms REAL, last_packet_loss_pct REAL
+        );
+        CREATE TABLE license (
+            id INTEGER PRIMARY KEY CHECK (id = 1), plan TEXT NOT NULL DEFAULT 'FREE',
+            status TEXT NOT NULL DEFAULT 'INACTIVE', email TEXT, activated_at TEXT, expires_at TEXT
+        );
+    """
+    tmp = Path(tempfile.mkdtemp()) / "old.db"
+    conn = sqlite3.connect(str(tmp))
+    conn.executescript(old_schema)
+    conn.execute(
+        "INSERT INTO devices (identity_key, ip, first_seen, last_seen) VALUES (?, ?, 't', 't')",
+        ("ip:1.2.3.4", "1.2.3.4"),
+    )
+    conn.execute("INSERT INTO license (id, plan, status, email) VALUES (1, 'PRO', 'TRIAL', 'old@example.com')")
+    conn.commit()
+    conn.close()
+
+    db = Database(tmp)
+    device = db.get_device("ip:1.2.3.4")
+    assert device["ip"] == "1.2.3.4"  # pre-existing data survived
+    assert device["tags"] is None and device["is_critical"] == 0  # new columns default cleanly
+    license_row = db.get_license()
+    assert license_row["email"] == "old@example.com" and license_row["license_key"] is None
+
+    db.set_tags("ip:1.2.3.4", "Camera,Block A")
+    db.set_critical("ip:1.2.3.4", True)
+    updated = db.get_device("ip:1.2.3.4")
+    assert updated["tags"] == "Camera,Block A" and updated["is_critical"] == 1
+    print("PASS: database_migrates_old_schema_without_data_loss")
+
+
+def test_critical_device_lower_offline_threshold():
+    db = make_db()
+    process_scan_pass(db, [ScanPassResult(ip="192.168.1.60", mac="AA:BB:CC:77:88:99")])
+    key = "aa:bb:cc:77:88:99"
+    db.set_critical(key, True)
+    # A critical device should fire DEVICE_OFFLINE after just 1 miss, not 3.
+    event = process_ping_result(db, key, "192.168.1.60", alive=False, offline_threshold=1)
+    assert event is not None and event.type == EventType.DEVICE_OFFLINE
+    print("PASS: critical_device_lower_offline_threshold")
 
 
 if __name__ == "__main__":

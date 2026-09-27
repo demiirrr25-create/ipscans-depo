@@ -62,6 +62,7 @@ class ScanPassResult:
     vendor: str | None = None
     hostname: str | None = None
     device_type: str = "Unknown"
+    open_ports: list[int] = field(default_factory=list)
     ping: PingResult | None = None
 
 

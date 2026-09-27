@@ -73,4 +73,51 @@ QLabel#SeverityCritical {
     color: #ff7a7a;
     font-weight: 600;
 }
+
+/* QTreeWidget (Topology tab) isn't covered by the free app's QTableView
+   rules, so without this it falls back to Qt's native white background. */
+QTreeView, QTreeWidget {
+    background: rgba(255, 255, 255, 0.02);
+    alternate-background-color: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    outline: none;
+    font-size: 12px;
+    padding: 6px;
+}
+QTreeView::item, QTreeWidget::item {
+    padding: 4px 6px;
+    border: none;
+}
+QTreeView::item:selected, QTreeWidget::item:selected {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+}
+QTreeView::branch, QTreeWidget::branch {
+    background: transparent;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+}
+QScrollBar::handle:horizontal {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 5px;
+    min-width: 24px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+QTimeEdit {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
 """

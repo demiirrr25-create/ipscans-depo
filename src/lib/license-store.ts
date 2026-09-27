@@ -1,4 +1,4 @@
-import { get, put } from "@vercel/blob";
+import { get, list, put } from "@vercel/blob";
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 
 /**
@@ -139,4 +139,17 @@ export async function upsertSite(email: string, site: SiteSummary): Promise<Site
   else sites.push(site);
   await writeJson(sitesPath(email), sites);
   return sites;
+}
+
+/**
+ * Every license record on file — used only by the weekly report cron
+ * (spec item 24), which is the one place that needs to enumerate accounts
+ * rather than look one up by email.
+ */
+export async function listAllLicenses(): Promise<LicenseRecord[]> {
+  const { blobs } = await list({ prefix: "licenses/" });
+  const records = await Promise.all(
+    blobs.map((blob) => readJson<LicenseRecord>(blob.pathname))
+  );
+  return records.filter((r): r is LicenseRecord => r !== null);
 }

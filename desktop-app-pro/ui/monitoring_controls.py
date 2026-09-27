@@ -3,6 +3,7 @@ selection and start/stop, feeding the MonitorWorker owned by ProMainWindow.
 """
 from __future__ import annotations
 
+from PyQt6.QtCore import QTime
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -12,6 +13,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QTimeEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -66,6 +68,24 @@ class MonitoringControlsWidget(QWidget):
         self.startup_checkbox.toggled.connect(startup.set_enabled)
         outer.addWidget(self.startup_checkbox)
 
+        quiet_card = QFrame(objectName="OptionsCard")
+        quiet_layout = QVBoxLayout(quiet_card)
+        quiet_layout.setContentsMargins(18, 16, 18, 16)
+        quiet_layout.setSpacing(8)
+        quiet_layout.addWidget(QLabel(t(lang, "quiet_hours"), objectName="SectionLabel"))
+        self.quiet_hours_checkbox = QCheckBox(t(lang, "quiet_hours_enable"))
+        quiet_layout.addWidget(self.quiet_hours_checkbox)
+        time_row = QHBoxLayout()
+        time_row.addWidget(QLabel(t(lang, "quiet_hours_from")))
+        self.quiet_from_edit = QTimeEdit(QTime(22, 0))
+        time_row.addWidget(self.quiet_from_edit)
+        time_row.addWidget(QLabel(t(lang, "quiet_hours_to")))
+        self.quiet_to_edit = QTimeEdit(QTime(7, 0))
+        time_row.addWidget(self.quiet_to_edit)
+        time_row.addStretch(1)
+        quiet_layout.addLayout(time_row)
+        outer.addWidget(quiet_card)
+
         btn_row = QHBoxLayout()
         self.start_btn = QPushButton(f"▶  {t(lang, 'start_monitoring')}", objectName="PrimaryButton")
         self.stop_btn = QPushButton(f"■  {t(lang, 'stop_monitoring')}", objectName="GhostButton")
@@ -93,6 +113,16 @@ class MonitoringControlsWidget(QWidget):
 
     def site_name(self) -> str:
         return self.site_name_edit.text().strip() or "Default Site"
+
+    def is_quiet_hours_now(self) -> bool:
+        if not self.quiet_hours_checkbox.isChecked():
+            return False
+        now = QTime.currentTime()
+        start = self.quiet_from_edit.time()
+        end = self.quiet_to_edit.time()
+        if start <= end:
+            return start <= now <= end
+        return now >= start or now <= end  # window spans midnight, e.g. 22:00-07:00
 
     def set_running(self, running: bool) -> None:
         self.start_btn.setEnabled(not running)

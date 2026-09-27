@@ -35,12 +35,22 @@ CREATE TABLE IF NOT EXISTS devices (
     device_type         TEXT DEFAULT 'Unknown',
     custom_name         TEXT,
     notes               TEXT,
+    tags                TEXT, -- comma-separated free-form labels, e.g. "Camera,Block A"
+    is_critical         INTEGER NOT NULL DEFAULT 0, -- lower offline threshold + priority alert
     first_seen          TEXT NOT NULL,
     last_seen           TEXT NOT NULL,
     status              TEXT NOT NULL DEFAULT 'online', -- online|offline|unknown
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
     last_latency_ms     REAL,
     last_packet_loss_pct REAL
+);
+
+CREATE TABLE IF NOT EXISTS metrics_history (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    identity_key TEXT NOT NULL,
+    ts           TEXT NOT NULL,
+    latency_ms   REAL,
+    packet_loss_pct REAL
 );
 
 CREATE TABLE IF NOT EXISTS ip_history (
@@ -105,6 +115,34 @@ class Database:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.executescript(SCHEMA)
         self._conn.commit()
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """`CREATE TABLE IF NOT EXISTS` only helps brand-new installs — an
+        existing user's on-disk DB keeps whatever columns it had when it was
+        first created. Every column added to an EXISTING table after that
+        must be migrated in explicitly here, or upgrading breaks with
+        "no such column" the moment that field is read (this bit a real
+        install already: `license_key` was added to `license` in Phase 2
+        without a migration, then `tags`/`is_critical` on `devices` in
+        Phase 5 actually surfaced the crash via a query naming the column).
+        """
+        migrations = {
+            "devices": [
+                ("tags", "TEXT"),
+                ("is_critical", "INTEGER NOT NULL DEFAULT 0"),
+            ],
+            "license": [
+                ("license_key", "TEXT"),
+            ],
+        }
+        with self.cursor() as cur:
+            for table, columns in migrations.items():
+                cur.execute(f"PRAGMA table_info({table})")
+                existing = {row["name"] for row in cur.fetchall()}
+                for column, decl in columns:
+                    if column not in existing:
+                        cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
 
     def close(self) -> None:
         self._conn.close()
@@ -160,6 +198,40 @@ class Database:
     def set_custom_name(self, identity_key: str, name: str) -> None:
         with self.cursor() as cur:
             cur.execute("UPDATE devices SET custom_name=? WHERE identity_key=?", (name, identity_key))
+
+    def set_tags(self, identity_key: str, tags: str) -> None:
+        with self.cursor() as cur:
+            cur.execute("UPDATE devices SET tags=? WHERE identity_key=?", (tags, identity_key))
+
+    def distinct_tags(self) -> list[str]:
+        """Every individual tag currently in use, across all devices —
+        powers the Inventory group filter (spec item 5's grouping idea).
+        """
+        tags: set[str] = set()
+        with self.cursor() as cur:
+            cur.execute("SELECT tags FROM devices WHERE tags IS NOT NULL AND tags != ''")
+            for row in cur.fetchall():
+                tags.update(t.strip() for t in row["tags"].split(",") if t.strip())
+        return sorted(tags)
+
+    def set_critical(self, identity_key: str, critical: bool) -> None:
+        with self.cursor() as cur:
+            cur.execute("UPDATE devices SET is_critical=? WHERE identity_key=?", (1 if critical else 0, identity_key))
+
+    def record_metric(self, identity_key: str, ts: str, latency_ms: float | None, packet_loss_pct: float) -> None:
+        with self.cursor() as cur:
+            cur.execute(
+                "INSERT INTO metrics_history (identity_key, ts, latency_ms, packet_loss_pct) VALUES (?, ?, ?, ?)",
+                (identity_key, ts, latency_ms, packet_loss_pct),
+            )
+
+    def metrics_for_device(self, identity_key: str, limit: int = 500) -> list[sqlite3.Row]:
+        with self.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM metrics_history WHERE identity_key=? ORDER BY id DESC LIMIT ?",
+                (identity_key, limit),
+            )
+            return list(reversed(cur.fetchall()))
 
     def set_notes(self, identity_key: str, notes: str) -> None:
         with self.cursor() as cur:

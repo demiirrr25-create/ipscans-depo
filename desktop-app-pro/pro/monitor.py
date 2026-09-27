@@ -22,7 +22,8 @@ from app.core import network_utils  # noqa: E402
 from app.core.scanner import ScanOptions, run_scan  # noqa: E402
 
 from pro.conflict_engine import identity_key_for, process_ping_result, process_scan_pass  # noqa: E402
-from pro.database import Database  # noqa: E402
+from pro.database import Database, now_iso  # noqa: E402
+from pro.device_classifier import classify_device_type  # noqa: E402
 from pro.health_score import compute_health_score  # noqa: E402
 from pro.license import LicenseProvider  # noqa: E402
 from pro.models import Event, ScanPassResult  # noqa: E402
@@ -30,6 +31,7 @@ from pro.ping_utils import LATENCY_HIGH_MS, ping_with_latency  # noqa: E402
 from pro.remote_api import RemoteAPIError, post_json  # noqa: E402
 
 DEFAULT_OFFLINE_THRESHOLD = 3  # consecutive failed polls (spec item 12)
+CRITICAL_OFFLINE_THRESHOLD = 1  # devices marked critical alert on the first miss
 
 
 class MonitorWorker(QThread):
@@ -82,8 +84,12 @@ class MonitorWorker(QThread):
         scan_results: list[ScanPassResult] = []
 
         def on_device_found(device) -> None:
+            device_type = classify_device_type(device.open_ports, device.vendor, device.hostname)
             scan_results.append(
-                ScanPassResult(ip=device.ip, mac=device.mac, vendor=device.vendor, hostname=device.hostname)
+                ScanPassResult(
+                    ip=device.ip, mac=device.mac, vendor=device.vendor, hostname=device.hostname,
+                    device_type=device_type, open_ports=device.open_ports,
+                )
             )
 
         run_scan(
@@ -97,15 +103,21 @@ class MonitorWorker(QThread):
 
         high_latency = 0
         packet_losses: list[float] = []
+        tick_ts = now_iso()
         for result in scan_results:
             key = identity_key_for(result.mac, result.ip)
             ping = ping_with_latency(result.ip, samples=2)
             self._db.set_ping_stats(key, ping.latency_ms, ping.packet_loss_pct)
+            self._db.record_metric(key, tick_ts, ping.latency_ms, ping.packet_loss_pct)
             packet_losses.append(ping.packet_loss_pct)
             if ping.latency_ms is not None and ping.latency_ms >= LATENCY_HIGH_MS:
                 high_latency += 1
+            device_row = self._db.get_device(key)
+            threshold = (
+                CRITICAL_OFFLINE_THRESHOLD if device_row and device_row["is_critical"] else self._offline_threshold
+            )
             offline_event = process_ping_result(
-                self._db, key, result.ip, ping.alive, self._offline_threshold, self._lang
+                self._db, key, result.ip, ping.alive, threshold, self._lang
             )
             if offline_event:
                 events.append(offline_event)

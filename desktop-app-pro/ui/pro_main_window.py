@@ -33,12 +33,15 @@ from pro.pro_content import DEFAULT_LANGUAGE, t
 
 from ui.conflict_dialog import show_conflict_alert, show_new_device_alert
 from ui.dashboard_widget import DashboardWidget
+from ui.device_history_dialog import DeviceHistoryDialog
 from ui.event_log_widget import EventLogWidget
 from ui.inventory_widget import InventoryWidget
 from ui.license_panel import LicensePanel
 from ui.monitoring_controls import MonitoringControlsWidget
+from ui.my_sites_widget import MySitesWidget
 from ui.notifications_bridge import notification_for_event
 from ui.pro_resources import load_pro_app_icon, load_pro_logo_pixmap
+from ui.topology_widget import TopologyWidget
 
 
 class ProMainWindow(QWidget):
@@ -79,8 +82,17 @@ class ProMainWindow(QWidget):
 
         self.inventory_tab = InventoryWidget(lang)
         self.inventory_tab.rename_requested = self._on_rename_requested
+        self.inventory_tab.tags_requested = self._on_tags_requested
+        self.inventory_tab.critical_toggled = self._on_critical_toggled
+        self.inventory_tab.history_requested = self._on_history_requested
         self.inventory_tab.export_csv_btn.clicked.connect(self._on_export_csv)
         self.tabs.addTab(self.inventory_tab, t(lang, "tab_inventory"))
+
+        self.topology_tab = TopologyWidget(lang)
+        self.tabs.addTab(self.topology_tab, t(lang, "tab_topology"))
+
+        self.my_sites_tab = MySitesWidget(self.license_provider, lang)
+        self.tabs.addTab(self.my_sites_tab, t(lang, "tab_my_sites"))
 
         self.license_tab = LicensePanel(self.license_provider, lang)
         self.tabs.addTab(self.license_tab, t(lang, "tab_license"))
@@ -247,7 +259,8 @@ class ProMainWindow(QWidget):
 
     def _on_event_created(self, event) -> None:
         self.event_log_tab.add_event(event)
-        if self.tray is not None:
+        quiet = self.monitoring_tab.is_quiet_hours_now()
+        if self.tray is not None and not quiet:
             popup = notification_for_event(event, self.lang)
             if popup:
                 title, message = popup
@@ -258,6 +271,8 @@ class ProMainWindow(QWidget):
                     else QSystemTrayIcon.MessageIcon.Information
                 )
                 self.tray.showMessage(title, message, icon, 8000)
+        if quiet:
+            return  # still logged above — quiet hours only suppresses popups (innovative idea #3)
         event_type = event.type.value if hasattr(event.type, "value") else event.type
         if event_type == "ip_conflict":
             show_conflict_alert(self, event, self.lang)
@@ -267,10 +282,25 @@ class ProMainWindow(QWidget):
     def _on_rename_requested(self, identity_key: str, name: str) -> None:
         self.db.set_custom_name(identity_key, name)
 
+    def _on_tags_requested(self, identity_key: str, tags: str) -> None:
+        self.db.set_tags(identity_key, tags)
+        self.inventory_tab.set_groups(self.db.distinct_tags())
+
+    def _on_critical_toggled(self, identity_key: str, critical: bool) -> None:
+        self.db.set_critical(identity_key, critical)
+
+    def _on_history_requested(self, identity_key: str, label: str) -> None:
+        rows = self.db.metrics_for_device(identity_key)
+        dialog = DeviceHistoryDialog(label, rows, self.lang, self)
+        dialog.exec()
+
     def _on_export_csv(self) -> None:
         path, _ = QFileDialog.getSaveFileName(self, t(self.lang, "export_csv"), "devices.csv", "CSV Files (*.csv)")
         if path:
             export_devices_csv(self.db.all_devices(), path)
 
     def _refresh_inventory(self) -> None:
-        self.inventory_tab.refresh(self.db.all_devices())
+        devices = self.db.all_devices()
+        self.inventory_tab.set_groups(self.db.distinct_tags())
+        self.inventory_tab.refresh(devices)
+        self.topology_tab.refresh(devices)
