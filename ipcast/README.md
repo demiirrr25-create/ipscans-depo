@@ -213,12 +213,17 @@ sandbox genuinely doesn't have, not just more time:
 - Phase 12's installer needs either a Windows machine or a CI runner to actually produce and test
   a `.exe` installer (Inno Setup doesn't run on Linux).
 
-**CI caught a real Windows-only bug already:** the first `windows-latest` CI run failed every TLS
-test with an unexplained handshake EOF, even though the identical code passed on `ubuntu-latest`.
-Cause: the self-signed certificates were missing the Key Usage / Enhanced Key Usage extensions
-that Windows' SChannel requires but Linux's OpenSSL-backed `SslStream` doesn't enforce. Fixed in
-`DeviceCertificateStore`/`TestCertificateFactory` - this is exactly the class of bug this CI setup
-exists to catch.
+**CI already caught a real, would-have-shipped-broken Windows-only bug:** every TLS-dependent test
+failed on `windows-latest` with an unexplained handshake EOF, while the identical code passed on
+`ubuntu-latest`. Root cause: `CertificateRequest.CreateSelfSigned()` produces a certificate backed
+by an *ephemeral* in-memory private key. Linux's OpenSSL-backed `SslStream` accepts that for a TLS
+server certificate; Windows' SChannel does not, and fails the handshake without a clear error.
+Fixed by round-tripping the generated certificate through a PKCS#12 export/import
+(`DeviceCertificateStore`/`TestCertificateFactory`), which forces a real, persistable key. Without
+this repo's `windows-latest` CI job, IPCast's TLS encryption would have silently never worked on
+an actual end-user's Windows machine despite passing every test in this Linux dev sandbox - exactly
+the class of bug this CI setup exists to catch. After the fix: **all 49 tests pass, and the
+self-contained `IPCast.exe` builds successfully, on a real Windows machine.**
 
 ## 6. Security notes
 
