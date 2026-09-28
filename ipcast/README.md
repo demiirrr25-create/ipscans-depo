@@ -28,20 +28,19 @@ certificate pinning) is **not implemented yet** — see the [Roadmap](#roadmap).
 ```
 ipcast/
 ├── IPCast.sln
+├── installer/
+│   └── IPCast.iss           Phase 12: Inno Setup script -> IPCast-Setup.exe.
 ├── src/
 │   ├── IPCast.Shared/        Cross-cutting types used by every other project (DeviceId, app paths).
 │   ├── IPCast.Security/      Secure ID + TLS certificate generation, persisted to disk.
 │   ├── IPCast.Network/       Phase 2/8/10: LAN discovery, TLS handshake, permissions, session loop, clipboard sync.
 │   ├── IPCast.FileTransfer/  Phase 7: chunked file send/receive over an established session.
 │   ├── IPCast.RemoteDesktop/ Phase 3: screen capture, JPEG encode/decode, input injection, session orchestration.
+│   ├── IPCast.Server/        Phase 4-6: standalone relay/rendezvous server (not deployed anywhere by default).
 │   └── IPCast.Client/        The Avalonia desktop app (what becomes IPCast.exe).
 └── tests/
     └── IPCast.Tests/         xUnit tests for every project above.
 ```
-
-Later phases add `IPCast.Server` (internet signaling/relay) as its own project, matching the
-layout originally requested — it isn't
-created yet because empty placeholder projects with no real code would just be clutter.
 
 ## 3. What actually works right now
 
@@ -124,9 +123,30 @@ created yet because empty placeholder projects with no real code would just be c
   confirmed the resulting history entry and updated "last connected" timestamp both survived an
   app restart.
 
+**Phase 4-6 (architecture only, not deployed) — relay/rendezvous server (`IPCast.Server`):**
+- **Real** relay: two clients each register "I am X, connect me to Y" with the server; once both
+  sides of a pair have registered, the server stops parsing anything and just pipes raw bytes
+  between them - a TURN-like fallback for when two devices aren't on the same LAN and can't reach
+  each other directly. Everything IPCast.Network already does (TLS, handshake, permissions) works
+  unmodified on top of that raw pipe.
+- Verified with real tests: two clients paired and exchanged raw bytes both directions through a
+  real relay instance over loopback, and a third "stranger" client registered for a *different*
+  pair to confirm pairing is scoped correctly, not first-come-first-served.
+- **Deliberately not deployed anywhere, on purpose - this is a cost decision, not a technical one.**
+  `IPCast.Server` is a runnable executable (`dotnet run --project src/IPCast.Server -- <port>`),
+  but running it as an always-on, publicly reachable service costs real, ongoing hosting and
+  bandwidth money that scales with usage. That's a decision for whoever operates it to make
+  deliberately, not something to provision silently. Until you (or whoever runs an instance)
+  decides to host one somewhere, connections only work between devices on the same LAN.
+- Not yet wired up: `IPCastConnector`/`IPCastHost` don't automatically fall back to a relay when
+  direct LAN discovery fails, and there's no STUN-based public-IP discovery for true P2P-over-
+  internet yet. The relay server and client are real and tested in isolation; end-to-end "connect
+  over the internet automatically" isn't wired into the Client UI yet.
+
 **Not implemented yet, and the UI says so instead of pretending:**
-- No internet (non-LAN) connections — discovery only works when both devices share a broadcast
-  domain; reaching a device on a different network needs a relay/signaling server (Phase 4-6).
+- No internet (non-LAN) connections from the Client's UI — discovery only works when both devices
+  share a broadcast domain; the relay server exists and is tested (above) but isn't deployed or
+  wired into the Connect flow yet.
 - Settings' general/display options and the Help section still show a plain, honest "coming in a
   later phase" message rather than dead or fake buttons.
 
@@ -134,9 +154,9 @@ Verified end-to-end in this environment (not just unit tests) by running two ind
 fully-isolated instances of the app side by side under separate virtual displays: instance A
 found instance B by ID alone, B's real accept dialog popped up showing the exact requested
 permissions, and after clicking Accept a live JPEG screen stream and clipboard sync both worked
-across the encrypted session. Also covered by 49 automated tests, including a real multi-chunk
-file transfer with SHA-256 verification and a full screen-share+input round trip over a real
-TLS-encrypted TCP session.
+across the encrypted session. Also covered by 51 automated tests, including a real multi-chunk
+file transfer with SHA-256 verification, a full screen-share+input round trip over a real
+TLS-encrypted TCP session, and a real bidirectional relay pairing/forwarding test.
 
 ## 4. How to build it yourself
 
@@ -198,9 +218,11 @@ Status of the 13 phases from the original spec:
 - [~] **Phase 3 (mostly done)** — Screen capture/streaming + input control: the pipeline (capture
       → JPEG encode → TLS transport → decode → render, and input forwarding) is real and tested;
       only the Win32 GDI/SendInput pieces are unverified outside CI (see below)
-- [ ] Phase 4 — Internet connections
-- [ ] Phase 5 — Signaling + NAT traversal
-- [ ] Phase 6 — Relay server
+- [~] **Phase 4-6 (relay architecture done, NOT deployed)** — `IPCast.Server` is a real,
+      tested TCP rendezvous/relay (pairs two clients by ID, then pipes raw bytes between them).
+      Deliberately not hosted anywhere: that's an ongoing cost decision, not a technical one - see
+      §5 below. STUN-based public-IP discovery and wiring the relay into the Client's Connect flow
+      as an automatic LAN-failed fallback are not done yet.
 - [x] **Phase 7** — File transfer (engine real and tested; no file-manager UI yet)
 - [x] **Phase 8** — Clipboard sync (text only; no on/off setting yet)
 - [x] **Phase 9** — Unattended access: PBKDF2 password hashing, rate-limited (5 attempts/5 min),
@@ -219,12 +241,15 @@ Status of the 13 phases from the original spec:
 
 **Why the remaining phases aren't "just build them faster":** several need resources this
 sandbox genuinely doesn't have, not just more time:
+- Phase 4-6's relay server code is done and tested, but making it an actual, always-available
+  "connect from anywhere" feature needs *someone* to run an instance of `IPCast.Server` somewhere
+  reachable from the internet, continuously. That has a real, ongoing cost (hosting, bandwidth)
+  that scales with how much it's used - not something to sign up for or provision on your behalf
+  without you explicitly choosing to and picking where.
 - Phase 3's `GdiScreenCapturer`/`SendInputInjector` are Win32-only APIs that cannot be executed on
   this Linux dev container - only this repo's `windows-latest` CI job
   (`.github/workflows/build-ipcast.yml`) can actually exercise them; a real human clicking through
   a real Windows machine is still the only way to verify the *experience* end to end.
-- Phase 4-6 need an actual deployed server (a domain/IP, TURN/relay hosting, ongoing cost) - that's
-  an infrastructure decision for you to make, not something to silently provision.
 
 **CI already caught a real, would-have-shipped-broken Windows-only bug:** every TLS-dependent test
 failed on `windows-latest` with an unexplained handshake EOF, while the identical code passed on

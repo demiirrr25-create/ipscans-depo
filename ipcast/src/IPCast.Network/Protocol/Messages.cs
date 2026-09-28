@@ -17,6 +17,8 @@ public enum MessageType
     MouseButton,
     MouseWheel,
     KeyEvent,
+    RelayRegister,
+    RelayReady,
 }
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>
@@ -66,3 +68,14 @@ public sealed record MouseWheelMessage(int Delta);
 
 /// <summary>Presses or releases a key, identified by its Windows virtual-key code (spec §6).</summary>
 public sealed record KeyEventMessage(int VirtualKeyCode, bool IsDown);
+
+/// <summary>
+/// Sent by each side to a relay server (spec §12/§6): "I am DeviceId, connect me to TargetDeviceId".
+/// Once both sides of a pair have registered, the relay stops looking at messages and just pipes
+/// raw bytes between the two connections - everything above this (TLS, the handshake, etc.) works
+/// unchanged on top of that raw pipe, same as a direct LAN connection.
+/// </summary>
+public sealed record RelayRegisterMessage(string DeviceId, string TargetDeviceId);
+
+/// <summary>Sent by the relay to both sides once they're paired and raw byte piping is about to begin.</summary>
+public sealed record RelayReadyMessage;

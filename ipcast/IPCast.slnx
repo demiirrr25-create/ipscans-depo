@@ -5,6 +5,7 @@
     <Project Path="src/IPCast.Network/IPCast.Network.csproj" />
     <Project Path="src/IPCast.RemoteDesktop/IPCast.RemoteDesktop.csproj" />
     <Project Path="src/IPCast.Security/IPCast.Security.csproj" />
+    <Project Path="src/IPCast.Server/IPCast.Server.csproj" />
     <Project Path="src/IPCast.Shared/IPCast.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">
