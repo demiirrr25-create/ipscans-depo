@@ -96,4 +96,3 @@ jobs:
           name: IPCast-Setup
           path: ipcast/publish/installer/IPCast-Setup.exe
           if-no-files-found: error
-          if-no-files-found: error
