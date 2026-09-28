@@ -114,11 +114,21 @@ created yet because empty placeholder projects with no real code would just be c
 - No video compression beyond per-frame JPEG yet (no H.264/delta-frame encoding, so bandwidth use
   is higher than a production remote-desktop tool) — that's Phase 13 (performance).
 
+**Phase 11 — history + favorites (`Persistence/ConnectionHistoryStore`, `Persistence/FavoriteDevicesStore`):**
+- **Real** Recent Connections: every outgoing attempt (connected/rejected/failed) and every
+  accepted incoming connection is persisted (last 50) with timestamp, direction, and status, with
+  a working "Clear History" button.
+- **Real** My Devices: save a name + ID, one-click Connect from the list, remove, and a genuinely
+  persisted "last connected" timestamp that updates on every successful connect.
+- Verified with real UI interaction in this sandbox: saved a favorite, connected through it,
+  confirmed the resulting history entry and updated "last connected" timestamp both survived an
+  app restart.
+
 **Not implemented yet, and the UI says so instead of pretending:**
 - No internet (non-LAN) connections — discovery only works when both devices share a broadcast
   domain; reaching a device on a different network needs a relay/signaling server (Phase 4-6).
-- The other sidebar sections (My Devices, Recent Connections, Help) still show a plain, honest
-  "coming in a later phase" message rather than dead or fake buttons.
+- Settings' general/display options and the Help section still show a plain, honest "coming in a
+  later phase" message rather than dead or fake buttons.
 
 Verified end-to-end in this environment (not just unit tests) by running two independent,
 fully-isolated instances of the app side by side under separate virtual displays: instance A
@@ -197,7 +207,9 @@ Status of the 13 phases from the original spec:
       bypasses the interactive Accept prompt entirely on a correct password
 - [~] **Phase 10 (partial)** — TLS transport encryption + rate limiting are real; certificate pinning, and audit
       logging are not done
-- [ ] Phase 11 — Settings, history, favorites
+- [x] **Phase 11** — Recent Connections history + My Devices/favorites, both persisted and with
+      real UI (no unattended-access-style "off by default" needed; Settings general/display
+      options still pending)
 - [ ] Phase 12 — Installer + portable EXE
 - [ ] Phase 13 — Performance optimization (adaptive quality/bitrate, delta-frame or hardware
       video encoding instead of per-frame JPEG)

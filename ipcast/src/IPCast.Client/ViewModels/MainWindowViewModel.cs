@@ -1,5 +1,7 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using IPCast.Client.Persistence;
 using IPCast.Network;
 using IPCast.RemoteDesktop;
 using IPCast.RemoteDesktop.Capture;
@@ -17,6 +19,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     private readonly DeviceId _localDeviceId;
     private readonly UnattendedAccessStore _unattendedAccessStore;
+    private readonly ConnectionHistoryStore _historyStore;
+    private readonly FavoriteDevicesStore _favoritesStore;
 
     [ObservableProperty]
     private string _remoteIdInput = string.Empty;
@@ -45,17 +49,37 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private string _unattendedAccessMessage = string.Empty;
 
-    public MainWindowViewModel() : this(new DeviceIdentityStore(), new DeviceCertificateStore(), new UnattendedAccessStore())
+    [ObservableProperty]
+    private string _newFavoriteName = string.Empty;
+
+    [ObservableProperty]
+    private string _newFavoriteIdInput = string.Empty;
+
+    [ObservableProperty]
+    private string _favoritesMessage = string.Empty;
+
+    public MainWindowViewModel()
+        : this(new DeviceIdentityStore(), new DeviceCertificateStore(), new UnattendedAccessStore(),
+              new ConnectionHistoryStore(), new FavoriteDevicesStore())
     {
     }
 
     public MainWindowViewModel(
-        DeviceIdentityStore identityStore, DeviceCertificateStore certificateStore, UnattendedAccessStore unattendedAccessStore)
+        DeviceIdentityStore identityStore,
+        DeviceCertificateStore certificateStore,
+        UnattendedAccessStore unattendedAccessStore,
+        ConnectionHistoryStore historyStore,
+        FavoriteDevicesStore favoritesStore)
     {
         _localDeviceId = identityStore.LoadOrCreate();
         _unattendedAccessStore = unattendedAccessStore;
+        _historyStore = historyStore;
+        _favoritesStore = favoritesStore;
         _selectedNavItem = NavItems[0];
         _isUnattendedAccessEnabled = unattendedAccessStore.GetStatus().Enabled;
+
+        ConnectionHistory = new ObservableCollection<ConnectionHistoryEntry>(historyStore.GetAll());
+        FavoriteDevices = new ObservableCollection<FavoriteDevice>(favoritesStore.GetAll());
 
         var discoveryPort = int.TryParse(Environment.GetEnvironmentVariable("IPCAST_DISCOVERY_PORT"), out var p)
             ? p
@@ -65,6 +89,12 @@ public partial class MainWindowViewModel : ObservableObject
             UnattendedAccessPolicy = new UnattendedAccessPolicy(unattendedAccessStore),
         };
     }
+
+    /// <summary>Persisted connection attempts, newest first (spec §19/§27).</summary>
+    public ObservableCollection<ConnectionHistoryEntry> ConnectionHistory { get; }
+
+    /// <summary>Persisted saved devices (spec §20).</summary>
+    public ObservableCollection<FavoriteDevice> FavoriteDevices { get; }
 
     /// <summary>Owns this device's incoming/outgoing LAN connections. The View wires up the incoming-request dialog and starts it.</summary>
     public IPCastService NetworkService { get; }
@@ -123,6 +153,9 @@ public partial class MainWindowViewModel : ObservableObject
             if (result.Success)
             {
                 AttachSession(result.Session!);
+                RecordHistory(remoteId, "Outgoing", "Connected");
+                _favoritesStore.NotifyConnected(remoteId.Raw);
+                RefreshFavoriteLastConnected(remoteId.Raw);
 
                 // Real handshake, TLS encryption, and permission negotiation, and - if ViewScreen
                 // was granted - a real screen-share/remote-control session (Phase 3) opens in its
@@ -132,10 +165,12 @@ public partial class MainWindowViewModel : ObservableObject
             }
             else if (result.Rejected)
             {
+                RecordHistory(remoteId, "Outgoing", "Rejected");
                 StatusMessage = $"{remoteId.Formatted} rejected the connection: {result.Error}";
             }
             else
             {
+                RecordHistory(remoteId, "Outgoing", "Failed");
                 StatusMessage = result.Error ?? "Couldn't connect.";
             }
         }
@@ -148,6 +183,70 @@ public partial class MainWindowViewModel : ObservableObject
     public void NotifyIdCopied()
     {
         StatusMessage = "ID copied to clipboard.";
+    }
+
+    private void RecordHistory(DeviceId remoteId, string direction, string status)
+    {
+        var entry = new ConnectionHistoryEntry(DateTimeOffset.UtcNow, remoteId.Formatted, direction, status);
+        _historyStore.Add(entry);
+        ConnectionHistory.Insert(0, entry);
+    }
+
+    [RelayCommand]
+    private void ClearHistory()
+    {
+        _historyStore.Clear();
+        ConnectionHistory.Clear();
+    }
+
+    [RelayCommand]
+    private void AddFavorite()
+    {
+        if (!DeviceId.TryParse(NewFavoriteIdInput, out var deviceId))
+        {
+            FavoritesMessage = "Enter a valid 9-digit IPCast ID.";
+            return;
+        }
+
+        var name = string.IsNullOrWhiteSpace(NewFavoriteName) ? deviceId.Formatted : NewFavoriteName.Trim();
+        _favoritesStore.Add(name, deviceId.Raw);
+
+        var existing = FavoriteDevices.FirstOrDefault(d => d.DeviceId == deviceId.Raw);
+        if (existing is not null)
+        {
+            FavoriteDevices.Remove(existing);
+        }
+
+        FavoriteDevices.Add(new FavoriteDevice(name, deviceId.Raw, LastConnectedUtc: null));
+        NewFavoriteName = string.Empty;
+        NewFavoriteIdInput = string.Empty;
+        FavoritesMessage = $"Saved {name}.";
+    }
+
+    [RelayCommand]
+    private void RemoveFavorite(FavoriteDevice favorite)
+    {
+        _favoritesStore.Remove(favorite.DeviceId);
+        FavoriteDevices.Remove(favorite);
+    }
+
+    [RelayCommand]
+    private async Task ConnectToFavoriteAsync(FavoriteDevice favorite)
+    {
+        RemoteIdInput = favorite.DeviceId;
+        SelectedNav = NavSection.Home;
+        SelectedNavItem = NavItems[0];
+        await ConnectAsync();
+    }
+
+    private void RefreshFavoriteLastConnected(string deviceId)
+    {
+        var existing = FavoriteDevices.FirstOrDefault(d => d.DeviceId == deviceId);
+        if (existing is not null)
+        {
+            var index = FavoriteDevices.IndexOf(existing);
+            FavoriteDevices[index] = existing with { LastConnectedUtc = DateTimeOffset.UtcNow };
+        }
     }
 
     [RelayCommand]
@@ -178,6 +277,7 @@ public partial class MainWindowViewModel : ObservableObject
     public void OnSessionEstablished(RemoteSession session)
     {
         AttachSession(session);
+        RecordHistory(session.RemoteDeviceId, "Incoming", "Connected");
         StatusMessage = $"{session.RemoteDeviceId.Formatted} connected over TLS. Clipboard sync is live.";
     }
 
