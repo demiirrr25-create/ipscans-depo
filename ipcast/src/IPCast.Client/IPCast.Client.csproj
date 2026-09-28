@@ -24,6 +24,7 @@
     <ProjectReference Include="..\IPCast.Shared\IPCast.Shared.csproj" />
     <ProjectReference Include="..\IPCast.Security\IPCast.Security.csproj" />
     <ProjectReference Include="..\IPCast.Network\IPCast.Network.csproj" />
+    <ProjectReference Include="..\IPCast.RemoteDesktop\IPCast.RemoteDesktop.csproj" />
   </ItemGroup>
 
 </Project>

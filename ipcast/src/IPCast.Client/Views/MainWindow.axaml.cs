@@ -31,6 +31,7 @@ public partial class MainWindow : Window
         vm.NetworkService.OnConnectionRequested = request => IncomingConnectionWindow.ShowAsync(this, request);
         vm.NetworkService.SessionEstablished += session => vm.OnSessionEstablished(session);
         vm.PeerClipboardTextReceived += OnPeerClipboardTextReceived;
+        vm.RemoteDesktopSessionReady += OnRemoteDesktopSessionReady;
         vm.NetworkService.Start();
         _clipboardPoll.Start();
     }
@@ -75,6 +76,11 @@ public partial class MainWindow : Window
             _lastSeenClipboardText = text;
             await Clipboard.SetTextAsync(text);
         });
+    }
+
+    private void OnRemoteDesktopSessionReady(IPCast.RemoteDesktop.RemoteDesktopSession desktop)
+    {
+        Dispatcher.UIThread.Post(() => new RemoteScreenWindow(desktop).Show());
     }
 
     private async void OnCopyIdClick(object? sender, RoutedEventArgs e)

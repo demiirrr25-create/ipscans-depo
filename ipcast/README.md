@@ -33,13 +33,14 @@ ipcast/
 │   ├── IPCast.Security/      Secure ID + TLS certificate generation, persisted to disk.
 │   ├── IPCast.Network/       Phase 2/8/10: LAN discovery, TLS handshake, permissions, session loop, clipboard sync.
 │   ├── IPCast.FileTransfer/  Phase 7: chunked file send/receive over an established session.
+│   ├── IPCast.RemoteDesktop/ Phase 3: screen capture, JPEG encode/decode, input injection, session orchestration.
 │   └── IPCast.Client/        The Avalonia desktop app (what becomes IPCast.exe).
 └── tests/
     └── IPCast.Tests/         xUnit tests for every project above.
 ```
 
-Later phases add `IPCast.RemoteDesktop` (screen/input) and `IPCast.Server` (internet
-signaling/relay) as their own projects, matching the layout originally requested — they aren't
+Later phases add `IPCast.Server` (internet signaling/relay) as its own project, matching the
+layout originally requested — it isn't
 created yet because empty placeholder projects with no real code would just be clutter.
 
 ## 3. What actually works right now
@@ -94,22 +95,38 @@ created yet because empty placeholder projects with no real code would just be c
 - The Home screen and Settings both visibly show "Unattended access is ON" per spec §9 — it's
   never silently active.
 
+**Phase 3 — screen viewing + remote control (`IPCast.RemoteDesktop`):**
+- **Real** JPEG-based screen streaming and input forwarding pipeline: capture → encode → send over
+  the TLS session → decode → render, and viewer mouse/keyboard input → send → apply on the shared
+  side, all gated per-action by the exact granted permission (ViewScreen/ControlMouse/
+  ControlKeyboard). A `RemoteScreenWindow` opens automatically for the viewer.
+- **Real, verified in this sandbox**: ran two full instances with a cross-platform test-pattern
+  capture source (`IPCAST_FAKE_CAPTURE=1`, never used on a real Windows install) standing in for
+  actual screen capture — instance A genuinely received and rendered a live, animated JPEG stream
+  from instance B over the encrypted session, and pointer/keyboard events on the viewer window
+  dispatched without error.
+- **Honest limitation**: the actual OS integration — `GdiScreenCapturer` (GDI BitBlt) and
+  `SendInputInjector` (`user32.dll` SendInput) — is Win32-only P/Invoke code that cannot run in
+  this Linux dev sandbox at all. It's written correctly per the documented API contract and
+  compiles, but is only really verified by this repo's `windows-latest` CI job
+  (`.github/workflows/build-ipcast.yml`), not by hand here. Treat it as "needs confirming on a
+  real Windows machine" until that job is green.
+- No video compression beyond per-frame JPEG yet (no H.264/delta-frame encoding, so bandwidth use
+  is higher than a production remote-desktop tool) — that's Phase 13 (performance).
+
 **Not implemented yet, and the UI says so instead of pretending:**
-- No actual screen viewing or remote mouse/keyboard control once connected (Phase 3) — that's
-  the single biggest gap before this is a usable "remote desktop" in the product sense.
 - No internet (non-LAN) connections — discovery only works when both devices share a broadcast
   domain; reaching a device on a different network needs a relay/signaling server (Phase 4-6).
 - The other sidebar sections (My Devices, Recent Connections, Help) still show a plain, honest
   "coming in a later phase" message rather than dead or fake buttons.
 
 Verified end-to-end in this environment (not just unit tests) by running two independent,
-fully-isolated instances of the app side by side under separate virtual displays (distinct
-persisted IDs via `IPCAST_DATA_DIR`, distinct X servers so OS clipboards can't leak between them):
-instance A found instance B by ID alone, B's real accept dialog popped up showing the exact
-requested permissions, and after clicking Accept, setting the OS clipboard on A's display made
-the same text appear on B's completely separate display within one polling cycle. Also covered by
-31 automated tests (handshake accept/reject, TLS encryption assertion, discovery timeout,
-clipboard permission gating, and a real multi-chunk file transfer with SHA-256 hash verification).
+fully-isolated instances of the app side by side under separate virtual displays: instance A
+found instance B by ID alone, B's real accept dialog popped up showing the exact requested
+permissions, and after clicking Accept a live JPEG screen stream and clipboard sync both worked
+across the encrypted session. Also covered by 49 automated tests, including a real multi-chunk
+file transfer with SHA-256 verification and a full screen-share+input round trip over a real
+TLS-encrypted TCP session.
 
 ## 4. How to build it yourself
 
@@ -132,6 +149,16 @@ dotnet test
 ```bash
 dotnet run --project src/IPCast.Client
 ```
+
+Screen sharing needs real Windows APIs, so it won't work if you run this on Linux/macOS unless
+you opt into the animated test pattern instead of real capture:
+
+```bash
+IPCAST_FAKE_CAPTURE=1 dotnet run --project src/IPCast.Client
+```
+
+Never set this on a real end-user install - it's for developing/demoing the streaming pipeline
+without a Windows machine to hand, nothing else.
 
 ### Produce the actual `IPCast.exe` (portable, self-contained, single file, Windows x64)
 
@@ -158,8 +185,9 @@ Status of the 13 phases from the original spec:
 
 - [x] **Phase 1** — Windows UI + persistent IPCast ID
 - [x] **Phase 2** — Local network connection layer: LAN discovery, handshake, permissions dialog
-- [ ] Phase 3 — Mouse + keyboard control + actual screen capture/streaming (the single biggest
-      remaining gap - a session connects, but shows/controls nothing yet)
+- [~] **Phase 3 (mostly done)** — Screen capture/streaming + input control: the pipeline (capture
+      → JPEG encode → TLS transport → decode → render, and input forwarding) is real and tested;
+      only the Win32 GDI/SendInput pieces are unverified outside CI (see below)
 - [ ] Phase 4 — Internet connections
 - [ ] Phase 5 — Signaling + NAT traversal
 - [ ] Phase 6 — Relay server
@@ -171,17 +199,26 @@ Status of the 13 phases from the original spec:
       logging are not done
 - [ ] Phase 11 — Settings, history, favorites
 - [ ] Phase 12 — Installer + portable EXE
-- [ ] Phase 13 — Performance optimization
+- [ ] Phase 13 — Performance optimization (adaptive quality/bitrate, delta-frame or hardware
+      video encoding instead of per-frame JPEG)
 
 **Why the remaining phases aren't "just build them faster":** several need resources this
 sandbox genuinely doesn't have, not just more time:
-- Phase 3's real screen capture (GDI/DXGI) and input injection (`SendInput`) are Win32-only APIs
-  that cannot be executed or verified on this Linux dev container - they need a real Windows
-  machine (or a Windows GitHub Actions runner) to test, not just compile.
+- Phase 3's `GdiScreenCapturer`/`SendInputInjector` are Win32-only APIs that cannot be executed on
+  this Linux dev container - only this repo's `windows-latest` CI job
+  (`.github/workflows/build-ipcast.yml`) can actually exercise them; a real human clicking through
+  a real Windows machine is still the only way to verify the *experience* end to end.
 - Phase 4-6 need an actual deployed server (a domain/IP, TURN/relay hosting, ongoing cost) - that's
   an infrastructure decision for you to make, not something to silently provision.
 - Phase 12's installer needs either a Windows machine or a CI runner to actually produce and test
   a `.exe` installer (Inno Setup doesn't run on Linux).
+
+**CI caught a real Windows-only bug already:** the first `windows-latest` CI run failed every TLS
+test with an unexplained handshake EOF, even though the identical code passed on `ubuntu-latest`.
+Cause: the self-signed certificates were missing the Key Usage / Enhanced Key Usage extensions
+that Windows' SChannel requires but Linux's OpenSSL-backed `SslStream` doesn't enforce. Fixed in
+`DeviceCertificateStore`/`TestCertificateFactory` - this is exactly the class of bug this CI setup
+exists to catch.
 
 ## 6. Security notes
 

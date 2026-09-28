@@ -3,6 +3,7 @@
     <Project Path="src/IPCast.Client/IPCast.Client.csproj" />
     <Project Path="src/IPCast.FileTransfer/IPCast.FileTransfer.csproj" />
     <Project Path="src/IPCast.Network/IPCast.Network.csproj" />
+    <Project Path="src/IPCast.RemoteDesktop/IPCast.RemoteDesktop.csproj" />
     <Project Path="src/IPCast.Security/IPCast.Security.csproj" />
     <Project Path="src/IPCast.Shared/IPCast.Shared.csproj" />
   </Folder>

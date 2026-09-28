@@ -1,6 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using IPCast.Network;
+using IPCast.RemoteDesktop;
+using IPCast.RemoteDesktop.Capture;
+using IPCast.RemoteDesktop.Input;
 using IPCast.Security;
 using IPCast.Shared;
 
@@ -68,9 +71,13 @@ public partial class MainWindowViewModel : ObservableObject
 
     private RemoteSession? _activeSession;
     private SessionMessageLoop? _activeSessionLoop;
+    private RemoteDesktopSession? _activeDesktop;
 
     /// <summary>Raised (off the UI thread) when the connected peer pushes clipboard text - the View applies it to the real OS clipboard.</summary>
     public event Action<string>? PeerClipboardTextReceived;
+
+    /// <summary>Raised when we're the viewer side of a screen-share session - the View opens the remote screen window for it.</summary>
+    public event Action<RemoteDesktopSession>? RemoteDesktopSessionReady;
 
     public IReadOnlyList<NavItem> NavItems { get; } =
     [
@@ -117,11 +124,11 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 AttachSession(result.Session!);
 
-                // Real handshake, TLS encryption, and permission negotiation - but no certificate
-                // pinning yet (an active man-in-the-middle isn't ruled out) and no actual screen/
-                // input control yet (Phase 3). Say exactly that instead of overclaiming.
-                StatusMessage = $"Connected to {remoteId.Formatted} on the local network over TLS. " +
-                                 "Clipboard sync is live; screen viewing and remote control aren't wired up yet.";
+                // Real handshake, TLS encryption, and permission negotiation, and - if ViewScreen
+                // was granted - a real screen-share/remote-control session (Phase 3) opens in its
+                // own window. Still no certificate pinning yet (an active man-in-the-middle isn't
+                // ruled out), so say exactly that instead of overclaiming "secure".
+                StatusMessage = $"Connected to {remoteId.Formatted} on the local network over TLS.";
             }
             else if (result.Rejected)
             {
@@ -183,6 +190,44 @@ public partial class MainWindowViewModel : ObservableObject
         loop.ClipboardTextReceived += text => PeerClipboardTextReceived?.Invoke(text);
         loop.Start();
         _activeSessionLoop = loop;
+
+        if (!session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
+        {
+            return;
+        }
+
+        var desktop = new RemoteDesktopSession(loop, session);
+        _activeDesktop = desktop;
+
+        if (session.IsInitiator)
+        {
+            // We pressed Connect: we're the viewer. The View opens a window and renders frames.
+            RemoteDesktopSessionReady?.Invoke(desktop);
+        }
+        else
+        {
+            // We accepted the incoming request and granted ViewScreen: share this screen.
+            var (capturer, injector) = CreateSharingBackend();
+            desktop.StartSharing(capturer, injector, frameInterval: TimeSpan.FromMilliseconds(200));
+        }
+    }
+
+    private static (IScreenCapturer Capturer, IInputInjector Injector) CreateSharingBackend()
+    {
+        // IPCAST_FAKE_CAPTURE exists purely so this pipeline can be developed/demoed on non-Windows
+        // (this dev sandbox included) - never set on a real end-user Windows install.
+        if (Environment.GetEnvironmentVariable("IPCAST_FAKE_CAPTURE") == "1")
+        {
+            return (new TestPatternScreenCapturer(), new RecordingInputInjector());
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException(
+                "Real screen sharing requires Windows. Set IPCAST_FAKE_CAPTURE=1 for local development on other platforms.");
+        }
+
+        return (new GdiScreenCapturer(), new SendInputInjector());
     }
 
     /// <summary>Pushes locally-copied clipboard text to the connected peer, if any (spec §8).</summary>

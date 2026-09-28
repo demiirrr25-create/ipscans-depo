@@ -12,6 +12,11 @@ public enum MessageType
     FileOffer,
     FileOfferResponse,
     FileChunk,
+    ScreenFrame,
+    MouseMove,
+    MouseButton,
+    MouseWheel,
+    KeyEvent,
 }
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>
@@ -42,3 +47,22 @@ public sealed record FileOfferResponseMessage(string TransferId, bool Accepted, 
 
 /// <summary>One chunk of file data. <see cref="Data"/> is JSON-encoded as base64 by System.Text.Json.</summary>
 public sealed record FileChunkMessage(string TransferId, long Offset, byte[] Data, bool IsLast);
+
+/// <summary>
+/// One encoded screen frame from the shared device to the viewer (spec §5). Coordinates for input
+/// messages below are normalized (0.0-1.0) against this frame's <see cref="Width"/>/<see cref="Height"/>,
+/// so the two sides' actual screen resolutions never need to match.
+/// </summary>
+public sealed record ScreenFrameMessage(int Width, int Height, string Codec, byte[] Data);
+
+/// <summary>Moves the remote mouse cursor to a normalized (0.0-1.0, 0.0-1.0) position (spec §6).</summary>
+public sealed record MouseMoveMessage(double NormalizedX, double NormalizedY);
+
+/// <summary>Presses or releases a mouse button (spec §4/§6). 0=left, 1=right, 2=middle.</summary>
+public sealed record MouseButtonMessage(int Button, bool IsDown);
+
+/// <summary>Scrolls the mouse wheel (spec §6). Positive = up/away from the user.</summary>
+public sealed record MouseWheelMessage(int Delta);
+
+/// <summary>Presses or releases a key, identified by its Windows virtual-key code (spec §6).</summary>
+public sealed record KeyEventMessage(int VirtualKeyCode, bool IsDown);

@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\IPCast.Security\IPCast.Security.csproj" />
     <ProjectReference Include="..\..\src\IPCast.Network\IPCast.Network.csproj" />
     <ProjectReference Include="..\..\src\IPCast.FileTransfer\IPCast.FileTransfer.csproj" />
+    <ProjectReference Include="..\..\src\IPCast.RemoteDesktop\IPCast.RemoteDesktop.csproj" />
   </ItemGroup>
 
 </Project>
