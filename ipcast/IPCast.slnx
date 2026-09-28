@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/IPCast.Client/IPCast.Client.csproj" />
+    <Project Path="src/IPCast.FileTransfer/IPCast.FileTransfer.csproj" />
+    <Project Path="src/IPCast.Network/IPCast.Network.csproj" />
+    <Project Path="src/IPCast.Security/IPCast.Security.csproj" />
+    <Project Path="src/IPCast.Shared/IPCast.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/IPCast.Tests/IPCast.Tests.csproj" />
+  </Folder>
+</Solution>
