@@ -59,3 +59,41 @@ jobs:
           name: IPCast-win-x64
           path: ipcast/publish/win-x64/IPCast.exe
           if-no-files-found: error
+
+      - name: Install Inno Setup
+        if: matrix.os == 'windows-latest'
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer (IPCast-Setup.exe)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          & $iscc installer\IPCast.iss
+
+      - name: Smoke test the installer (silent install, verify, uninstall)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $installDir = Join-Path $env:RUNNER_TEMP "IPCastInstallTest"
+          Start-Process -FilePath "publish\installer\IPCast-Setup.exe" `
+            -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" `
+            -Wait
+          if (-not (Test-Path (Join-Path $installDir "IPCast.exe"))) {
+            throw "Installer did not deploy IPCast.exe to $installDir"
+          }
+
+          $uninstaller = Join-Path $installDir "unins000.exe"
+          Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+          Start-Sleep -Seconds 2
+          if (Test-Path (Join-Path $installDir "IPCast.exe")) {
+            throw "Uninstaller did not remove IPCast.exe from $installDir"
+          }
+
+      - name: Upload installer artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: IPCast-Setup
+          path: ipcast/publish/installer/IPCast-Setup.exe
+          if-no-files-found: error
+          if-no-files-found: error

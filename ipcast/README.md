@@ -210,7 +210,10 @@ Status of the 13 phases from the original spec:
 - [x] **Phase 11** — Recent Connections history + My Devices/favorites, both persisted and with
       real UI (no unattended-access-style "off by default" needed; Settings general/display
       options still pending)
-- [ ] Phase 12 — Installer + portable EXE
+- [~] **Phase 12 (installer done, portable already existed)** — `installer/IPCast.iss` (Inno Setup)
+      builds `IPCast-Setup.exe`: Next/Install/Finish wizard, optional desktop shortcut, optional
+      "start with Windows", no admin rights required. The portable option from Phase 1 (the
+      self-contained single-file `IPCast.exe` itself) already needs no installer at all.
 - [ ] Phase 13 — Performance optimization (adaptive quality/bitrate, delta-frame or hardware
       video encoding instead of per-frame JPEG)
 
@@ -222,8 +225,6 @@ sandbox genuinely doesn't have, not just more time:
   a real Windows machine is still the only way to verify the *experience* end to end.
 - Phase 4-6 need an actual deployed server (a domain/IP, TURN/relay hosting, ongoing cost) - that's
   an infrastructure decision for you to make, not something to silently provision.
-- Phase 12's installer needs either a Windows machine or a CI runner to actually produce and test
-  a `.exe` installer (Inno Setup doesn't run on Linux).
 
 **CI already caught a real, would-have-shipped-broken Windows-only bug:** every TLS-dependent test
 failed on `windows-latest` with an unexplained handshake EOF, while the identical code passed on
