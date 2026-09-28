@@ -57,7 +57,14 @@ public sealed class DeviceCertificateStore
 
         var notBefore = DateTimeOffset.UtcNow.AddDays(-1);
         var notAfter = DateTimeOffset.UtcNow.AddYears(10);
-        return request.CreateSelfSigned(notBefore, notAfter);
+        var ephemeral = request.CreateSelfSigned(notBefore, notAfter);
+
+        // CreateSelfSigned's private key is ephemeral (in-memory only). Windows' SChannel refuses
+        // to use an ephemeral key as a TLS server certificate (fails AuthenticateAsServerAsync
+        // with an unexplained EOF - Linux's OpenSSL-backed SslStream doesn't care). Round-tripping
+        // through PKCS#12 forces a real, persistable key. Caught by this repo's windows-latest CI.
+        return X509CertificateLoader.LoadPkcs12(
+            ephemeral.Export(X509ContentType.Pfx), password: null, X509KeyStorageFlags.Exportable);
     }
 
     private void Save(X509Certificate2 certificate)
