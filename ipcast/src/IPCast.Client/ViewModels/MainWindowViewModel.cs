@@ -341,8 +341,12 @@ public partial class MainWindowViewModel : ObservableObject
 
         _fileReceiver = new FileReceiver(loop, session)
         {
-            OnFileOffered = offer => Task.FromResult(
-                FileOfferDecision.AcceptToDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)))
+            OnFileOffered = offer =>
+            {
+                var downloadDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var savePath = System.IO.Path.Combine(downloadDir, offer.FileName);
+                return Task.FromResult(FileOfferDecision.AcceptTo(savePath));
+            }
         };
         _fileReceiver.FileReceived += path => FileTransferMessage = $"Received file saved to: {path}";
 

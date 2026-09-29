@@ -22,6 +22,7 @@ export function Header({
   const toolsRef = useRef<HTMLDivElement>(null);
 
   const tools = [
+    { href: `/${locale}/ipcast`, label: dict.nav.ipcast },
     { href: toolPath("ipLookup", locale), label: dict.nav.ipLookup },
     { href: toolPath("dns", locale), label: dict.nav.dns },
     { href: toolPath("whois", locale), label: dict.nav.whois },
