@@ -41,8 +41,7 @@ export default async function IpCastPage({
           </ul>
 
           <a
-            href="/downloads/ipscans-ipcast.exe"
-            download
+            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-latest/IPCast.exe"
             className="btn-primary mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
