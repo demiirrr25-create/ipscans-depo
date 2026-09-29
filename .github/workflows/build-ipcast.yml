@@ -94,8 +94,20 @@ jobs:
           path: ipcast/publish/installer/IPCast-Setup.exe
           if-no-files-found: error
 
+  publish-download:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows executable
+        uses: actions/download-artifact@v4
+        with:
+          name: IPCast-win-x64
+          path: release
+
       - name: Publish IPCast Windows download
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'windows-latest'
         uses: actions/github-script@v7
         with:
           script: |
@@ -131,8 +143,7 @@ jobs:
             }
 
             const fs = require("fs");
-            const filePath = "ipcast/publish/win-x64/IPCast.exe";
-            const fileData = fs.readFileSync(filePath);
+            const fileData = fs.readFileSync("release/IPCast.exe");
             await github.rest.repos.uploadReleaseAsset({
               owner,
               repo,
