@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>IPCast.Security</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IPCast.Shared\IPCast.Shared.csproj" />
+    <ProjectReference Include="..\IPCast.Network\IPCast.Network.csproj" />
+  </ItemGroup>
+
+</Project>

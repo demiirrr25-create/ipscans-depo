@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\IPCast.Shared\IPCast.Shared.csproj" />
+    <ProjectReference Include="..\..\src\IPCast.Security\IPCast.Security.csproj" />
+    <ProjectReference Include="..\..\src\IPCast.Network\IPCast.Network.csproj" />
+    <ProjectReference Include="..\..\src\IPCast.FileTransfer\IPCast.FileTransfer.csproj" />
+    <ProjectReference Include="..\..\src\IPCast.RemoteDesktop\IPCast.RemoteDesktop.csproj" />
+    <ProjectReference Include="..\..\src\IPCast.Server\IPCast.Server.csproj" />
+  </ItemGroup>
+
+</Project>

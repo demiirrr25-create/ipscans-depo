@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>IPCast</AssemblyName>
+    <RootNamespace>IPCast.Client</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IPCast.Shared\IPCast.Shared.csproj" />
+    <ProjectReference Include="..\IPCast.Security\IPCast.Security.csproj" />
+    <ProjectReference Include="..\IPCast.Network\IPCast.Network.csproj" />
+    <ProjectReference Include="..\IPCast.RemoteDesktop\IPCast.RemoteDesktop.csproj" />
+    <ProjectReference Include="..\IPCast.FileTransfer\IPCast.FileTransfer.csproj" />
+  </ItemGroup>
+
+</Project>
