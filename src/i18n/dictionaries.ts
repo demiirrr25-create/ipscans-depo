@@ -20,6 +20,7 @@ const dictionaries = {
       speedTest: "Hız Testi",
       scan: "Ağ Tarama",
       appDownload: "Windows Uygulaması",
+      ipcast: "IPCast Remote Desktop",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Mağaza",
@@ -206,6 +207,23 @@ const dictionaries = {
       note: "Yaklaşık 47 MB. İndirdikten sonra çift tıklayıp çalıştır — Python kurulumu gerekmez. SmartScreen uyarısı verirse 'Daha fazla bilgi > Yine de çalıştır' de.",
       safe: "Yalnızca sahibi olduğun ağlarda kullan.",
     },
+    ipcast: {
+      title: "IPCast Uzaktan Masaüstü",
+      subtitle:
+        "TLS şifrelemeli, parolasız / katılımsız erişimli, pano ve dosya transferi destekleyen hızlı ve güvenli AnyDesk alternatifi masaüstü uygulaması.",
+      badge: "Ücretsiz • Yerel Ağ & Relay Desteği",
+      features: [
+        "AnyDesk benzeri 9 haneli ID ile tek tıkla doğrudan bağlantı",
+        "Uçtan uca TLS şifreleme ve ekran izleme/kontrol izin seçenekleri",
+        "Katılımsız erişim: Şifre belirleyerek onay beklemeden uzaktan erişin",
+        "Çift yönlü pano (kopyala/yapıştır) metin senkronizasyonu",
+        "Bölünmüş parça transferi ile yüksek hızlı dosya gönderimi ve alımı",
+        "Son bağlantılar geçmişi ve favori cihaz kaydetme",
+      ],
+      button: "IPCast İndir (.exe)",
+      note: "Yaklaşık 101 MB (Sisteminizde .NET kurulumu gerektirmeyen bağımsız EXE). Çift tıklayıp çalıştırın.",
+      safe: "Yalnızca yetkiniz olan cihazlara bağlanın.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -295,6 +313,7 @@ const dictionaries = {
       speedTest: "Speed Test",
       scan: "Network Scan",
       appDownload: "Windows App",
+      ipcast: "IPCast Remote Desktop",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Shop",
@@ -478,6 +497,23 @@ const dictionaries = {
       note: "About 47 MB. Double-click to run after downloading — no Python install needed. If SmartScreen warns, choose 'More info > Run anyway'.",
       safe: "Only use on networks you own.",
     },
+    ipcast: {
+      title: "IPCast Remote Desktop",
+      subtitle:
+        "A fast, secure, TLS-encrypted AnyDesk alternative with unattended access, clipboard sync, and file transfer.",
+      badge: "Free • LAN & Relay Server Support",
+      features: [
+        "Connect instantly using 9-digit Device IDs or direct IP address",
+        "End-to-end TLS encryption with granular screen & control permissions",
+        "Unattended Access: Connect automatically using a secure password",
+        "Bidirectional clipboard text synchronization",
+        "Chunked high-speed file send & receive",
+        "Recent connections history and favorite device saving",
+      ],
+      button: "Download IPCast (.exe)",
+      note: "About 101 MB (Standalone executable — no .NET installation needed). Double-click to run.",
+      safe: "Only connect to devices you own or have permission to access.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -567,6 +603,7 @@ const dictionaries = {
       speedTest: "Geschwindigkeitstest",
       scan: "Netzwerkscan",
       appDownload: "Windows-App",
+      ipcast: "IPCast Remote Desktop",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Shop",
@@ -753,6 +790,23 @@ const dictionaries = {
       note: "Etwa 47 MB. Nach dem Download doppelklicken zum Ausführen — keine Python-Installation nötig. Bei SmartScreen-Warnung 'Weitere Informationen > Trotzdem ausführen' wählen.",
       safe: "Nur in Netzwerken verwenden, die dir gehören.",
     },
+    ipcast: {
+      title: "IPCast Remote Desktop",
+      subtitle:
+        "Eine schnelle, sichere, TLS-verschlüsselte AnyDesk-Alternative mit unüberwachtem Zugriff, Zwischenablage-Synchro und Dateiübertragung.",
+      badge: "Kostenlos • LAN & Relay Server Unterstützung",
+      features: [
+        "Sofortige Verbindung über 9-stellige Geräte-ID oder direkte IP-Adresse",
+        "Ende-zu-Ende-TLS-Verschlüsselung mit detaillierten Bildschirm- & Steuerungsrechten",
+        "Unüberwachter Zugriff: Automatische Verbindung mit vergebenem Passwort",
+        "Bidirektionale Zwischenablagen-Textsynchronisation",
+        "Schneller Dateiversand & -empfang in Blöcken",
+        "Verlauf der letzten Verbindungen & Favoritenspeicherung",
+      ],
+      button: "IPCast Herunterladen (.exe)",
+      note: "Ca. 101 MB (Eigenständige EXE — keine .NET-Installation erforderlich).",
+      safe: "Verbinden Sie sich nur mit Geräten, für die Sie eine Berechtigung haben.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -842,6 +896,7 @@ const dictionaries = {
       speedTest: "Test de vitesse",
       scan: "Scan réseau",
       appDownload: "Application Windows",
+      ipcast: "IPCast Bureau à Distance",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Boutique",
@@ -1028,6 +1083,23 @@ const dictionaries = {
       note: "Environ 47 Mo. Double-cliquez pour exécuter après le téléchargement — aucune installation de Python requise. Si SmartScreen avertit, choisissez 'Plus d'infos > Exécuter quand même'.",
       safe: "À utiliser uniquement sur des réseaux que vous possédez.",
     },
+    ipcast: {
+      title: "IPCast Bureau à Distance",
+      subtitle:
+        "Une alternative AnyDesk rapide et sécurisée avec chiffrement TLS, accès non supervisé, synchro presse-papiers et transfert de fichiers.",
+      badge: "Gratuit • Support Réseau Local & Serveur Relais",
+      features: [
+        "Connexion instantanée par ID à 9 chiffres ou adresse IP directe",
+        "Chiffrement TLS de bout en bout avec autorisations d'écran et contrôle",
+        "Accès non supervisé : Connexion automatique via mot de passe",
+        "Synchronisation bidirectionnelle du presse-papiers",
+        "Envoi et réception rapides de fichiers par fragments",
+        "Historique des connexions récentes et enregistrement des favoris",
+      ],
+      button: "Télécharger IPCast (.exe)",
+      note: "Environ 101 Mo (Exécutable autonome — aucune installation .NET requise).",
+      safe: "Ne vous connectez qu'aux appareils autorisés.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -1117,6 +1189,7 @@ const dictionaries = {
       speedTest: "Test de velocidad",
       scan: "Escaneo de red",
       appDownload: "Aplicación Windows",
+      ipcast: "IPCast Escritorio Remoto",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Tienda",
@@ -1302,6 +1375,23 @@ const dictionaries = {
       button: "Descargar para Windows (.exe)",
       note: "Unos 47 MB. Haz doble clic para ejecutar tras la descarga — no necesitas instalar Python. Si SmartScreen avisa, elige 'Más información > Ejecutar de todos modos'.",
       safe: "Úsalo solo en redes que poseas.",
+    },
+    ipcast: {
+      title: "IPCast Escritorio Remoto",
+      subtitle:
+        "Una alternativa rápida y segura a AnyDesk con cifrado TLS, acceso desatendido, sincronización de portapapeles y transferencia de archivos.",
+      badge: "Gratis • Soporte para Red Local y Servidor Relay",
+      features: [
+        "Conexión instantánea mediante ID de 9 dígitos o dirección IP directa",
+        "Cifrado TLS de extremo a extremo con permisos detallados de pantalla y control",
+        "Acceso desatendido: Conéctate automáticamente con una contraseña",
+        "Sincronización bidireccional del texto del portapapeles",
+        "Envío y recepción rápida de archivos divididos en bloques",
+        "Historial de conexiones recientes y guardado de dispositivos favoritos",
+      ],
+      button: "Descargar IPCast (.exe)",
+      note: "Aproximadamente 101 MB (Ejecutable independiente — no requiere .NET).",
+      safe: "Conéctate solo a dispositivos autorizados.",
     },
     pro: {
       title: "ipscans Network Health Pro",

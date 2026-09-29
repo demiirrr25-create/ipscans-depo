@@ -1,0 +1,98 @@
+name: Build IPCast
+
+# Verifies the IPCast solution on both platforms it actually needs to work on: windows-latest is
+# the only place Phase 3's Win32-only screen capture/input injection code can be genuinely
+# exercised (this repo's other CI/dev work happens in a Linux devcontainer that can build but not
+# run that code). Deliberately does NOT publish/commit anything to public/downloads - IPCast isn't
+# feature-complete enough yet to ship to end users; see ipcast/README.md's roadmap.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ipcast/**"
+      - ".github/workflows/build-ipcast.yml"
+  pull_request:
+    paths:
+      - "ipcast/**"
+      - ".github/workflows/build-ipcast.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ipcast
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --logger "console;verbosity=normal"
+
+      - name: Publish self-contained win-x64 EXE
+        if: matrix.os == 'windows-latest'
+        run: >
+          dotnet publish src/IPCast.Client/IPCast.Client.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/win-x64
+
+      - name: Upload IPCast.exe artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: IPCast-win-x64
+          path: ipcast/publish/win-x64/IPCast.exe
+          if-no-files-found: error
+
+      - name: Install Inno Setup
+        if: matrix.os == 'windows-latest'
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer (IPCast-Setup.exe)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          & $iscc installer\IPCast.iss
+
+      - name: Smoke test the installer (silent install, verify, uninstall)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $installDir = Join-Path $env:RUNNER_TEMP "IPCastInstallTest"
+          Start-Process -FilePath "publish\installer\IPCast-Setup.exe" `
+            -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" `
+            -Wait
+          if (-not (Test-Path (Join-Path $installDir "IPCast.exe"))) {
+            throw "Installer did not deploy IPCast.exe to $installDir"
+          }
+
+          $uninstaller = Join-Path $installDir "unins000.exe"
+          Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+          Start-Sleep -Seconds 2
+          if (Test-Path (Join-Path $installDir "IPCast.exe")) {
+            throw "Uninstaller did not remove IPCast.exe from $installDir"
+          }
+
+      - name: Upload installer artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: IPCast-Setup
+          path: ipcast/publish/installer/IPCast-Setup.exe
+          if-no-files-found: error

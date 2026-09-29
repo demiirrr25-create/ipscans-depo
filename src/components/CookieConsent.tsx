@@ -43,7 +43,8 @@ export function CookieConsent({ dict }: { dict: Dictionary }) {
     if (stored === "granted" || stored === "denied") {
       applyConsent(stored);
     } else {
-      setVisible(true);
+      const timer = setTimeout(() => setVisible(true), 0);
+      return () => clearTimeout(timer);
     }
   }, []);
 

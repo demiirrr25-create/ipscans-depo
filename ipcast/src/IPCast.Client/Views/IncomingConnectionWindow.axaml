@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="IPCast.Client.Views.IncomingConnectionWindow"
+        Title="IPCast"
+        Width="380"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppBackgroundBrush}">
+    <StackPanel Margin="24" Spacing="14">
+        <TextBlock Text="Incoming connection request" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Name="RequesterText" TextWrapping="Wrap" FontSize="13"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+        <StackPanel Spacing="8" Margin="0,6,0,0">
+            <TextBlock Text="Allow:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <CheckBox Name="ViewScreenCheck" Content="View Screen" />
+            <CheckBox Name="ControlMouseCheck" Content="Control Mouse" />
+            <CheckBox Name="ControlKeyboardCheck" Content="Control Keyboard" />
+            <CheckBox Name="ClipboardCheck" Content="Clipboard" />
+            <CheckBox Name="FileTransferCheck" Content="File Transfer" />
+            <CheckBox Name="SystemInfoCheck" Content="System Information" />
+            <CheckBox Name="RemoteRestartCheck" Content="Remote Restart" />
+        </StackPanel>
+
+        <TextBlock Text="This connection is encrypted (TLS), but the other device's identity isn't verified against a trusted registry yet."
+                   FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+        <Grid ColumnDefinitions="*,*" Margin="0,10,0,0">
+            <Button Grid.Column="0" Content="Reject" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" Click="OnRejectClick" Margin="0,0,6,0" />
+            <Button Grid.Column="1" Content="Accept" Classes="primary" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" Click="OnAcceptClick" Margin="6,0,0,0" />
+        </Grid>
+    </StackPanel>
+</Window>
