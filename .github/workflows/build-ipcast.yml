@@ -1,10 +1,7 @@
 name: Build IPCast
 
-# Verifies the IPCast solution on both platforms it actually needs to work on: windows-latest is
-# the only place Phase 3's Win32-only screen capture/input injection code can be genuinely
-# exercised (this repo's other CI/dev work happens in a Linux devcontainer that can build but not
-# run that code). Deliberately does NOT publish/commit anything to public/downloads - IPCast isn't
-# feature-complete enough yet to ship to end users; see ipcast/README.md's roadmap.
+# Build and verify IPCast on Windows and Linux. On successful main-branch Windows builds,
+# publish the self-contained EXE as a GitHub prerelease asset for the website download button.
 
 on:
   push:
@@ -96,3 +93,54 @@ jobs:
           name: IPCast-Setup
           path: ipcast/publish/installer/IPCast-Setup.exe
           if-no-files-found: error
+
+      - name: Publish IPCast Windows download
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'windows-latest'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = "ipcast-latest";
+            let release;
+            try {
+              const result = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              release = result.data;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              const result = await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: tag,
+                target_commitish: "main",
+                name: "IPCast for Windows",
+                body: "Latest self-contained IPCast Windows x64 build.",
+                draft: false,
+                prerelease: true,
+                make_latest: "false",
+              });
+              release = result.data;
+            }
+
+            const previousAsset = release.assets.find((asset) => asset.name === "IPCast.exe");
+            if (previousAsset) {
+              await github.rest.repos.deleteReleaseAsset({
+                owner,
+                repo,
+                asset_id: previousAsset.id,
+              });
+            }
+
+            const fs = require("fs");
+            const filePath = "ipcast/publish/win-x64/IPCast.exe";
+            const fileData = fs.readFileSync(filePath);
+            await github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id: release.id,
+              name: "IPCast.exe",
+              data: fileData,
+              headers: {
+                "content-type": "application/octet-stream",
+                "content-length": fileData.length,
+              },
+            });
