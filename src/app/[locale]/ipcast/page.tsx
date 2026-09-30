@@ -12,11 +12,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 const connectionNotes = {
-  tr: "Windows 10/11 (64 bit) · 30.09.2026 deneme sürümü. İki cihazda da bu sürümü açın. Northflank relay yeni profillerde hazırdır. Mevcut profillerde Ayarlar bölümündeki relay adresini aşağıdaki adresle güncelleyin. İki ayrı fiziksel bilgisayarda kabul testi henüz tamamlanmadı.",
-  en: "Windows 10/11 (64-bit) · Preview dated 2026-09-30. Open this version on both devices. New profiles include the Northflank relay. For existing profiles, update the relay address in Settings to the address below. Acceptance testing on two separate physical computers is still pending.",
-  de: "Windows 10/11 (64 Bit) · Testversion vom 30.09.2026. Öffnen Sie diese Version auf beiden Geräten. Neue Profile nutzen den Northflank-Relay. Aktualisieren Sie bei vorhandenen Profilen die Relay-Adresse in den Einstellungen auf die folgende Adresse. Der Abnahmetest mit zwei physischen Computern steht noch aus.",
-  fr: "Windows 10/11 (64 bits) · Version de test du 30/09/2026. Ouvrez cette version sur les deux appareils. Les nouveaux profils incluent le relais Northflank. Pour les profils existants, remplacez l’adresse du relais dans les paramètres par celle ci-dessous. Le test de validation sur deux ordinateurs physiques reste à effectuer.",
-  es: "Windows 10/11 (64 bits) · Versión de prueba del 30/09/2026. Abre esta versión en ambos dispositivos. Los perfiles nuevos incluyen el relay Northflank. En perfiles existentes, actualiza la dirección del relay en Ajustes con la dirección siguiente. La prueba de aceptación en dos ordenadores físicos sigue pendiente.",
+  tr: "Windows 10/11 (64 bit) · 1.0.1 Preview 2. Relay otomatik olarak ayarlanır; adres veya relay kodu girmeniz gerekmez. Eski IPCast pencerelerini kapatıp iki bilgisayarda da bu sürümü açın. Karşı bilgisayarın 9 haneli cihaz kimliğini girin ve karşı tarafta bağlantıyı onaylayın. İlk bağlantıda sertifika parmak izini karşı cihazla doğrulayın. İki fiziksel bilgisayarda kabul testi henüz tamamlanmadı.",
+  en: "Windows 10/11 (64-bit) · 1.0.1 Preview 2. Relay is configured automatically; no relay address or setup code is needed. Close older IPCast windows and open this version on both computers. Enter the other computer’s 9-digit device ID and accept the connection there. Verify the certificate fingerprint with the other device on first connection. Acceptance testing on two physical computers is still pending.",
+  de: "Windows 10/11 (64 Bit) · 1.0.1 Preview 2. Der Relay wird automatisch eingerichtet; keine Relay-Adresse oder Einrichtungscodes erforderlich. Schließen Sie ältere IPCast-Fenster und öffnen Sie diese Version auf beiden Computern. Geben Sie die neunstellige Geräte-ID des anderen Computers ein und bestätigen Sie dort die Verbindung. Prüfen Sie beim ersten Verbinden den Zertifikatsfingerabdruck. Der Abnahmetest mit zwei physischen Computern steht noch aus.",
+  fr: "Windows 10/11 (64 bits) · 1.0.1 Preview 2. Le relais est configuré automatiquement, sans adresse ni code de configuration. Fermez les anciennes fenêtres IPCast et ouvrez cette version sur les deux ordinateurs. Saisissez l’identifiant à 9 chiffres de l’autre appareil et acceptez la connexion sur celui-ci. Vérifiez l’empreinte du certificat lors de la première connexion. La validation sur deux ordinateurs physiques reste à effectuer.",
+  es: "Windows 10/11 (64 bits) · 1.0.1 Preview 2. El relay se configura automáticamente; no requiere dirección ni código de configuración. Cierra las ventanas antiguas de IPCast y abre esta versión en ambos ordenadores. Introduce el identificador de 9 dígitos del otro dispositivo y acepta la conexión allí. Verifica la huella del certificado en la primera conexión. La prueba de aceptación en dos ordenadores físicos sigue pendiente.",
 };
 
 export default async function IpCastPage({
@@ -57,7 +57,7 @@ export default async function IpCastPage({
           </ul>
 
           <a
-            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-preview-2026-09-30/IPCast.exe"
+            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.0.1-preview.2/IPCast-1.0.1-preview.2.exe"
             aria-describedby="ipcast-release-notes"
             className="btn-primary mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
           >
@@ -71,7 +71,7 @@ export default async function IpCastPage({
 
           <div id="ipcast-release-notes" className="mt-5 rounded-xl border border-white/15 bg-white/5 p-4 text-sm leading-relaxed text-neutral-200">
             <p>{connectionNotes[locale]}</p>
-            <code className="mt-3 block break-all text-xs text-blue-200">wss://p01--ipcast-relay--d5n8c99gjxdn.code.run/relay</code>
+
           </div>
           <p className="mt-4 text-xs text-neutral-400">{t.note}</p>
           <p className="mt-2 text-xs text-neutral-400">{t.safe}</p>
