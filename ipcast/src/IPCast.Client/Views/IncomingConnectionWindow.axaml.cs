@@ -47,8 +47,6 @@ public partial class IncomingConnectionWindow : Window
         if (ControlKeyboardCheck.IsChecked == true) granted |= ConnectionPermissions.ControlKeyboard;
         if (ClipboardCheck.IsChecked == true) granted |= ConnectionPermissions.Clipboard;
         if (FileTransferCheck.IsChecked == true) granted |= ConnectionPermissions.FileTransfer;
-        if (SystemInfoCheck.IsChecked == true) granted |= ConnectionPermissions.SystemInformation;
-        if (RemoteRestartCheck.IsChecked == true) granted |= ConnectionPermissions.RemoteRestart;
 
         _result = new ConnectionDecision(true, granted);
         Close();

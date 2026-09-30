@@ -2,11 +2,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="IPCast.Client.Views.RemoteScreenWindow"
         Title="IPCast - Remote Screen"
+        Icon="/Assets/ipcast.ico"
         Width="900" Height="600"
         Background="{DynamicResource AppBackgroundBrush}">
     <Grid RowDefinitions="Auto,*">
         <TextBlock Grid.Row="0" Margin="12,8" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                    Text="Live view - click/type here to control the remote device (only if it granted control)." />
-        <Image Name="ScreenImage" Grid.Row="1" Stretch="Uniform" Focusable="True" />
+        <Image Name="ScreenImage" Grid.Row="1" Stretch="Uniform" Focusable="True" AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
     </Grid>
 </Window>
