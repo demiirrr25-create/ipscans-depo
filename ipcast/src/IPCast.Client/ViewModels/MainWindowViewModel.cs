@@ -433,7 +433,7 @@ public partial class MainWindowViewModel : ObservableObject
             // We accepted the incoming request and granted ViewScreen: share this screen.
             var (capturer, injector) = CreateSharingBackend();
             var profile = StreamingProfile.FromName(StreamingMode);
-            desktop.StartSharing(capturer, injector, TimeSpan.FromSeconds(1d / profile.FramesPerSecond), profile.Quality, profile.MaxDimension);
+            desktop.StartSharing(capturer, injector, TimeSpan.FromSeconds(1d / profile.FramesPerSecond), profile.Quality, profile.MaxDimension, profile.BytesPerSecond);
         }
         loop.Start();
     }

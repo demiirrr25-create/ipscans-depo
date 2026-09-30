@@ -5,6 +5,16 @@ namespace IPCast.Tests;
 
 public class FrameCodecTests
 {
+    [Fact]
+    public void LargeFrames_ArePacedToAvoidFloodingSlowRelayLinks()
+    {
+        var interval = TimeSpan.FromMilliseconds(50);
+        Assert.Equal(interval, StreamingProfile.FrameBudget(interval, 1000, 1024 * 1024));
+        var paced = StreamingProfile.FrameBudget(interval, 300000, 384 * 1024);
+        Assert.InRange(paced.TotalSeconds, 1, 1.1);
+        Assert.Equal(interval, StreamingProfile.FrameBudget(interval, 300000, 0));
+    }
+
     [Theory]
     [InlineData(1920, 1080, 1280, 1280, 720)]
     [InlineData(1080, 1920, 1280, 720, 1280)]
