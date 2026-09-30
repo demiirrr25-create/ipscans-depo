@@ -70,68 +70,151 @@ public sealed class IPCastHost : IAsyncDisposable
         }
     }
 
-    pr…5124 tokens truncated… int MaxMessageBytes = 16 * 1024 * 1024;
-    private static readonly ConditionalWeakTable<Stream, SemaphoreSlim> WriteLocks = new();
-
-    public static async Task WriteAsync(Stream stream, MessageType type, object payload, CancellationToken ct = default)
+    private async Task HandleIncomingAsync(TcpClient client, CancellationToken ct)
     {
-        var envelopeJson = JsonSerializer.SerializeToUtf8Bytes(new { type = (int)type, payload });
-        if (envelopeJson.Length > MaxMessageBytes)
-            throw new InvalidDataException($"Message exceeds the {MaxMessageBytes}-byte limit.");
-
-        var lengthPrefix = new byte[4];
-        BinaryPrimitives.WriteInt32BigEndian(lengthPrefix, envelopeJson.Length);
-
-        var gate = WriteLocks.GetValue(stream, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(ct).ConfigureAwait(false);
+        Stream stream;
         try
         {
-            await stream.WriteAsync(lengthPrefix, ct).ConfigureAwait(false);
-            await stream.WriteAsync(envelopeJson, ct).ConfigureAwait(false);
-            await stream.FlushAsync(ct).ConfigureAwait(false);
+            var sslStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false, TlsPolicy.AcceptAnyCertificate);
+            await sslStream.AuthenticateAsServerAsync(
+                new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _certificate,
+                    ClientCertificateRequired = false,
+                    EnabledSslProtocols = SslProtocols.None, // let the OS/runtime pick the best mutually-supported version (TLS 1.2/1.3)
+                },
+                ct).ConfigureAwait(false);
+            stream = sslStream;
         }
-        catch
+        catch (Exception)
         {
-            // A cancelled partial message cannot be resumed on a framed stream.
-            stream.Dispose();
-            throw;
-        }
-        finally { gate.Release(); }
-    }
-
-    public static async Task<(MessageType Type, JsonElement Payload)> ReadAsync(Stream stream, CancellationToken ct = default)
-    {
-        var lengthBuffer = new byte[4];
-        await ReadExactAsync(stream, lengthBuffer, ct).ConfigureAwait(false);
-        var length = BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
-
-        if (length <= 0 || length > MaxMessageBytes)
-        {
-            throw new InvalidDataException($"Refusing to read a message of {length} bytes.");
+            // TLS handshake failed (e.g. the peer isn't a real IPCast client): drop it silently.
+            client.Dispose();
+            return;
         }
 
-        var payloadBuffer = new byte[length];
-        await ReadExactAsync(stream, payloadBuffer, ct).ConfigureAwait(false);
-
-        using var doc = JsonDocument.Parse(payloadBuffer);
-        var root = doc.RootElement;
-        var type = (MessageType)root.GetProperty("type").GetInt32();
-        var payload = root.GetProperty("payload").Clone();
-        return (type, payload);
-    }
-
-    private static async Task ReadExactAsync(Stream stream, Memory<byte> buffer, CancellationToken ct)
-    {
-        var offset = 0;
-        while (offset < buffer.Length)
+        try
         {
-            var read = await stream.ReadAsync(buffer[offset..], ct).ConfigureAwait(false);
-            if (read == 0)
+            var (helloType, helloPayload) = await MessageStream.ReadAsync(stream, ct).ConfigureAwait(false);
+            if (helloType != MessageType.Hello)
             {
-                throw new EndOfStreamException("Remote endpoint closed the connection.");
+                client.Dispose();
+                return;
             }
 
-            offset += read;
+            var hello = helloPayload.Deserialize<HelloMessage>()!;
+            if (!DeviceId.TryParse(hello.DeviceId, out var remoteId))
+            {
+                client.Dispose();
+                return;
+            }
+
+            var (requestType, requestPayload) = await MessageStream.ReadAsync(stream, ct).ConfigureAwait(false);
+            if (requestType != MessageType.ConnectionRequest)
+            {
+                client.Dispose();
+                return;
+            }
+
+            var request = requestPayload.Deserialize<ConnectionRequestMessage>()!;
+
+            if (!string.IsNullOrEmpty(request.Password))
+            {
+                await HandleUnattendedAccessAttemptAsync(stream, client, remoteId, request.Password, ct).ConfigureAwait(false);
+                return;
+            }
+
+            var incoming = new IncomingConnectionRequest(remoteId, request.RequestedPermissions);
+
+            var handler = OnConnectionRequested;
+            var decision = handler is null
+                ? ConnectionDecision.Reject("No one is available to accept connections right now.")
+                : await handler(incoming).ConfigureAwait(false);
+
+            await MessageStream.WriteAsync(
+                stream,
+                MessageType.ConnectionDecision,
+                new ConnectionDecisionMessage(decision.Accepted, decision.GrantedPermissions, decision.Reason, LocalDeviceId?.Raw),
+                ct).ConfigureAwait(false);
+
+            if (!decision.Accepted)
+            {
+                client.Dispose();
+                return;
+            }
+
+            SessionEstablished?.Invoke(new RemoteSession(remoteId, client, stream, decision.GrantedPermissions, isInitiator: false));
         }
+        catch (Exception)
+        {
+            // Malformed handshake, disconnect mid-negotiation, etc: just drop this one connection.
+            client.Dispose();
+        }
+    }
+
+    private async Task HandleUnattendedAccessAttemptAsync(
+        Stream stream, TcpClient client, DeviceId remoteId, string password, CancellationToken ct)
+    {
+        try
+        {
+            var rateLimitKey = remoteId.Raw;
+            ConnectionDecision decision;
+
+            if (!_unattendedAccessRateLimiter.IsAllowed(rateLimitKey))
+            {
+                decision = ConnectionDecision.Reject("Too many attempts. Try again later.");
+            }
+            else
+            {
+                var granted = UnattendedAccessPolicy?.TryAuthenticate(password);
+                if (granted is null)
+                {
+                    _unattendedAccessRateLimiter.RecordFailedAttempt(rateLimitKey);
+                    decision = ConnectionDecision.Reject("Incorrect password.");
+                }
+                else
+                {
+                    decision = new ConnectionDecision(true, granted.Value);
+                }
+            }
+
+            await MessageStream.WriteAsync(
+                stream,
+                MessageType.ConnectionDecision,
+                new ConnectionDecisionMessage(decision.Accepted, decision.GrantedPermissions, decision.Reason, LocalDeviceId?.Raw),
+                ct).ConfigureAwait(false);
+
+            if (!decision.Accepted)
+            {
+                client.Dispose();
+                return;
+            }
+
+            SessionEstablished?.Invoke(new RemoteSession(remoteId, client, stream, decision.GrantedPermissions, isInitiator: false));
+        }
+        catch (Exception)
+        {
+            client.Dispose();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _cts.CancelAsync().ConfigureAwait(false);
+        _listener.Stop();
+
+        if (_acceptLoop is not null)
+        {
+            try
+            {
+                await _acceptLoop.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // Accept loop already swallows its own cancellation/shutdown exceptions.
+            }
+        }
+
+        _cts.Dispose();
     }
 }

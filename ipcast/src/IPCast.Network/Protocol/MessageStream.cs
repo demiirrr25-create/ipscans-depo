@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 
 namespace IPCast.Network.Protocol;
 
@@ -11,18 +12,33 @@ namespace IPCast.Network.Protocol;
 public static class MessageStream
 {
     // Guards against a malformed or hostile length prefix turning into an unbounded allocation.
-    private const int MaxMessageBytes = 1024 * 1024;
+    public const int MaxMessageBytes = 16 * 1024 * 1024;
+    private static readonly ConditionalWeakTable<Stream, SemaphoreSlim> WriteLocks = new();
 
     public static async Task WriteAsync(Stream stream, MessageType type, object payload, CancellationToken ct = default)
     {
         var envelopeJson = JsonSerializer.SerializeToUtf8Bytes(new { type = (int)type, payload });
+        if (envelopeJson.Length > MaxMessageBytes)
+            throw new InvalidDataException($"Message exceeds the {MaxMessageBytes}-byte limit.");
 
         var lengthPrefix = new byte[4];
         BinaryPrimitives.WriteInt32BigEndian(lengthPrefix, envelopeJson.Length);
 
-        await stream.WriteAsync(lengthPrefix, ct).ConfigureAwait(false);
-        await stream.WriteAsync(envelopeJson, ct).ConfigureAwait(false);
-        await stream.FlushAsync(ct).ConfigureAwait(false);
+        var gate = WriteLocks.GetValue(stream, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await stream.WriteAsync(lengthPrefix, ct).ConfigureAwait(false);
+            await stream.WriteAsync(envelopeJson, ct).ConfigureAwait(false);
+            await stream.FlushAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            // A cancelled partial message cannot be resumed on a framed stream.
+            stream.Dispose();
+            throw;
+        }
+        finally { gate.Release(); }
     }
 
     public static async Task<(MessageType Type, JsonElement Payload)> ReadAsync(Stream stream, CancellationToken ct = default)

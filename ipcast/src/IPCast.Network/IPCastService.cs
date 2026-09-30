@@ -17,6 +17,17 @@ public sealed class IPCastService : IAsyncDisposable
     private readonly IPCastHost _host;
     private readonly IPCastConnector _connector;
     private LanDiscoveryService? _discovery;
+    private CancellationTokenSource? _relayCts;
+    private Task? _relayListener;
+    private System.Net.IPEndPoint? _relayEndpoint;
+    private bool _started;
+    public int ListeningPort => _host.Port;
+    public event Action<string>? RelayStatusChanged;
+    public Func<string, string, Task<bool>>? VerifyPeerCertificateAsync
+    {
+        get => _connector.VerifyPeerCertificateAsync;
+        set => _connector.VerifyPeerCertificateAsync = value;
+    }
 
     public IPCastService(
         DeviceId localDeviceId,
@@ -25,7 +36,7 @@ public sealed class IPCastService : IAsyncDisposable
     {
         _localDeviceId = localDeviceId;
         _discoveryPort = discoveryPort;
-        _host = new IPCastHost(certificate, port: 0);
+        _host = new IPCastHost(certificate, port: 0) { LocalDeviceId = localDeviceId };
         _host.SessionEstablished += session => SessionEstablished?.Invoke(session);
         _connector = new IPCastConnector(localDeviceId);
 
@@ -37,7 +48,20 @@ public sealed class IPCastService : IAsyncDisposable
     }
 
     /// <summary>Optional relay server endpoint used for non-LAN / NAT-traversal connections.</summary>
-    public System.Net.IPEndPoint? RelayServerEndpoint { get; set; }
+    public System.Net.IPEndPoint? RelayServerEndpoint
+    {
+        get => _relayEndpoint;
+        set
+        {
+            _relayEndpoint = value;
+            _relayCts?.Cancel();
+            if (_started && value is not null)
+            {
+                _relayCts = new CancellationTokenSource();
+                _relayListener = ListenOnRelayAsync(value, _relayCts.Token);
+            }
+        }
+    }
 
     /// <summary>Must be set before <see cref="Start"/> to actually respond to incoming requests.</summary>
     public ConnectionRequestHandler? OnConnectionRequested
@@ -59,6 +83,8 @@ public sealed class IPCastService : IAsyncDisposable
     {
         _host.Start();
         _discovery = new LanDiscoveryService(_localDeviceId, _host.Port, _discoveryPort);
+        _started = true;
+        RelayServerEndpoint = _relayEndpoint;
     }
 
     public async Task<ConnectResult> ConnectAsync(
@@ -68,6 +94,9 @@ public sealed class IPCastService : IAsyncDisposable
         TimeSpan? discoveryTimeout = null,
         CancellationToken ct = default)
     {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(45));
+        ct = timeout.Token;
         if (string.IsNullOrWhiteSpace(targetInput))
         {
             return ConnectResult.Failed("Please enter a 9-digit IPCast ID or direct IP:port address.");
@@ -78,7 +107,7 @@ public sealed class IPCastService : IAsyncDisposable
             return await ConnectAsync(targetId, requestedPermissions, password, discoveryTimeout, ct).ConfigureAwait(false);
         }
 
-        if (TryParseEndpoint(targetInput, _host.Port > 0 ? _host.Port : 9876, out var directEndpoint) && directEndpoint is not null)
+        if (TryParseEndpoint(targetInput, 0, out var directEndpoint) && directEndpoint is not null)
         {
             var dummyTargetId = _localDeviceId; // direct IP connection
             return await _connector.ConnectAsync(directEndpoint, dummyTargetId, requestedPermissions, password, ct).ConfigureAwait(false);
@@ -128,32 +157,69 @@ public sealed class IPCastService : IAsyncDisposable
             "Couldn't find that ID on the local network. Configure a Relay Server in Settings or enter direct IP:port to connect across networks.");
     }
 
-    private static bool TryParseEndpoint(string input, int defaultPort, out System.Net.IPEndPoint? endpoint)
+    public static bool TryParseEndpoint(string input, int defaultPort, out System.Net.IPEndPoint? endpoint)
     {
         endpoint = null;
         if (string.IsNullOrWhiteSpace(input)) return false;
 
         input = input.Trim();
-        if (System.Net.IPEndPoint.TryParse(input, out endpoint)) return true;
-
+        if (System.Net.IPEndPoint.TryParse(input, out endpoint) && endpoint.Port > 0) return true;
         if (System.Net.IPAddress.TryParse(input, out var ip))
         {
+            if (defaultPort <= 0 || defaultPort > 65535) return false;
             endpoint = new System.Net.IPEndPoint(ip, defaultPort);
             return true;
         }
+        return System.Net.IPEndPoint.TryParse(input, out endpoint) && endpoint.Port > 0;
+    }
 
-        var parts = input.Split(':');
-        if (parts.Length == 2 && System.Net.IPAddress.TryParse(parts[0], out var hostIp) && int.TryParse(parts[1], out var port))
+    private async Task ListenOnRelayAsync(System.Net.IPEndPoint endpoint, CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
         {
-            endpoint = new System.Net.IPEndPoint(hostIp, port);
-            return true;
+            try
+            {
+                RelayStatusChanged?.Invoke($"Waiting for incoming connections via {endpoint}.");
+                var stream = await RelayClient.ListenAsync(endpoint, _localDeviceId.Raw, ct).ConfigureAwait(false);
+                _ = BridgeRelayAsync(stream, ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
+            catch (Exception ex)
+            {
+                RelayStatusChanged?.Invoke($"Relay unavailable: {ex.Message} Retrying...");
+                try { await Task.Delay(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+            }
         }
+    }
 
-        return false;
+    private async Task BridgeRelayAsync(Stream relayStream, CancellationToken ct)
+    {
+        using (relayStream)
+        using (var local = new System.Net.Sockets.TcpClient())
+        using (var lifetime = CancellationTokenSource.CreateLinkedTokenSource(ct))
+        {
+            try
+            {
+                await local.ConnectAsync(System.Net.IPAddress.Loopback, _host.Port, ct).ConfigureAwait(false);
+                var toHost = relayStream.CopyToAsync(local.GetStream(), lifetime.Token);
+                var fromHost = local.GetStream().CopyToAsync(relayStream, lifetime.Token);
+                await Task.WhenAny(toHost, fromHost).ConfigureAwait(false);
+                lifetime.Cancel();
+                local.Dispose();
+                relayStream.Dispose();
+                await Task.WhenAll(toHost, fromHost).ConfigureAwait(false);
+            }
+            catch (Exception) { /* TLS handshake and permission handling stay in IPCastHost. */ }
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
+        _started = false;
+        _relayCts?.Cancel();
+        if (_relayListener is not null) await _relayListener.ConfigureAwait(false);
+        _relayCts?.Dispose();
         _discovery?.Dispose();
         await _host.DisposeAsync().ConfigureAwait(false);
     }
