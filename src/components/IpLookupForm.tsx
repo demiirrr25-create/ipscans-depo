@@ -62,6 +62,7 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <label htmlFor="IpLookupForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -70,10 +71,16 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
         className="flex flex-col gap-3 sm:flex-row"
       >
         <input
+          id="IpLookupForm-input"
+          autoCapitalize="none"
+          spellCheck={false}
+          autoComplete="off"
+          aria-invalid={error}
+          aria-describedby={error ? "IpLookupForm-error" : undefined}
           value={ip}
           onChange={(e) => setIp(e.target.value)}
           placeholder={dict.placeholder}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-mono text-white outline-none focus:border-white/40"
+          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
         />
         <button
           type="submit"
@@ -85,6 +92,7 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
       </form>
 
       <button
+        disabled={loading}
         onClick={() => {
           setIp("");
           lookup("");
@@ -95,24 +103,25 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
       </button>
 
       {error && (
-        <p className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="IpLookupForm-error" role="alert" className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
           {dict.error}
         </p>
       )}
 
+      <div role="status" aria-live="polite" aria-busy={loading}>
       {result && (
         <div className="mt-6 overflow-hidden rounded-xl border border-white/10">
-          <table className="w-full text-sm">
+          <table className="w-full table-fixed text-sm">
             <tbody>
               {rows.map(([label, value]) => (
                 <tr
                   key={label}
                   className="border-b border-white/10 last:border-0"
                 >
-                  <td className="w-2/5 bg-white/5 px-4 py-3 font-medium text-neutral-400">
+                  <th scope="row" className="text-left w-2/5 bg-white/5 px-4 py-3 font-medium text-neutral-400">
                     {label}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-white">
+                  </th>
+                  <td className="break-all px-4 py-3 font-mono text-white">
                     {value ?? "—"}
                   </td>
                 </tr>
@@ -127,7 +136,7 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
           <p className="mb-2 text-sm text-neutral-400">{dict.mapLabel}</p>
           <div className="overflow-hidden rounded-xl border border-white/10">
             <iframe
-              title="map"
+              title={dict.mapLabel}
               className="h-72 w-full"
               loading="lazy"
               src={`https://www.openstreetmap.org/export/embed.html?bbox=${
@@ -139,6 +148,7 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
