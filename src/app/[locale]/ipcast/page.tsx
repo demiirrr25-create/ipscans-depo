@@ -12,11 +12,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 const connectionNotes = {
-  tr: "Windows 10/11 (64 bit). Yerel bağlantıda iki cihazda da IPCast açık olmalıdır. Farklı internet ağları arasında bağlantı için iki cihazda aynı çalışan relay sunucusunu yapılandırın. Henüz herkese açık bir IPCast relay hizmeti sunulmuyor.",
-  en: "Windows 10/11 (64-bit). Keep IPCast open on both devices. Connections across different networks require the same running relay server configured on both devices. A public IPCast relay service is not yet available.",
-  de: "Windows 10/11 (64 Bit). IPCast muss auf beiden Geräten geöffnet sein. Für verschiedene Netzwerke muss auf beiden Geräten derselbe laufende Relay-Server eingerichtet sein. Ein öffentlicher IPCast-Relay-Dienst ist noch nicht verfügbar.",
-  fr: "Windows 10/11 (64 bits). Ouvrez IPCast sur les deux appareils. Entre réseaux différents, configurez le même serveur relais actif sur les deux appareils. Aucun service relais public IPCast n’est encore disponible.",
-  es: "Windows 10/11 (64 bits). Mantén IPCast abierto en ambos dispositivos. Entre redes diferentes, configura el mismo servidor relay activo en ambos dispositivos. Todavía no hay un servicio relay público de IPCast.",
+  tr: "Windows 10/11 (64 bit) · 30.09.2026 deneme sürümü. İki cihazda da bu sürümü açın. Northflank relay yeni profillerde hazırdır. Mevcut profillerde Ayarlar bölümündeki relay adresini aşağıdaki adresle güncelleyin. İki ayrı fiziksel bilgisayarda kabul testi henüz tamamlanmadı.",
+  en: "Windows 10/11 (64-bit) · Preview dated 2026-09-30. Open this version on both devices. New profiles include the Northflank relay. For existing profiles, update the relay address in Settings to the address below. Acceptance testing on two separate physical computers is still pending.",
+  de: "Windows 10/11 (64 Bit) · Testversion vom 30.09.2026. Öffnen Sie diese Version auf beiden Geräten. Neue Profile nutzen den Northflank-Relay. Aktualisieren Sie bei vorhandenen Profilen die Relay-Adresse in den Einstellungen auf die folgende Adresse. Der Abnahmetest mit zwei physischen Computern steht noch aus.",
+  fr: "Windows 10/11 (64 bits) · Version de test du 30/09/2026. Ouvrez cette version sur les deux appareils. Les nouveaux profils incluent le relais Northflank. Pour les profils existants, remplacez l’adresse du relais dans les paramètres par celle ci-dessous. Le test de validation sur deux ordinateurs physiques reste à effectuer.",
+  es: "Windows 10/11 (64 bits) · Versión de prueba del 30/09/2026. Abre esta versión en ambos dispositivos. Los perfiles nuevos incluyen el relay Northflank. En perfiles existentes, actualiza la dirección del relay en Ajustes con la dirección siguiente. La prueba de aceptación en dos ordenadores físicos sigue pendiente.",
 };
 
 export default async function IpCastPage({
@@ -57,7 +57,8 @@ export default async function IpCastPage({
           </ul>
 
           <a
-            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-latest/IPCast.exe"
+            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-preview-2026-09-30/IPCast.exe"
+            aria-describedby="ipcast-release-notes"
             className="btn-primary mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -68,7 +69,10 @@ export default async function IpCastPage({
             {t.button}
           </a>
 
-          <p className="mt-5 rounded-xl border border-white/15 bg-white/5 p-4 text-sm leading-relaxed text-neutral-200">{connectionNotes[locale]}</p>
+          <div id="ipcast-release-notes" className="mt-5 rounded-xl border border-white/15 bg-white/5 p-4 text-sm leading-relaxed text-neutral-200">
+            <p>{connectionNotes[locale]}</p>
+            <code className="mt-3 block break-all text-xs text-blue-200">wss://p01--ipcast-relay--d5n8c99gjxdn.code.run/relay</code>
+          </div>
           <p className="mt-4 text-xs text-neutral-400">{t.note}</p>
           <p className="mt-2 text-xs text-neutral-400">{t.safe}</p>
         </div>
