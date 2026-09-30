@@ -5,6 +5,20 @@ namespace IPCast.Tests;
 
 public class FrameCodecTests
 {
+    [Theory]
+    [InlineData(1920, 1080, 1280, 1280, 720)]
+    [InlineData(1080, 1920, 1280, 720, 1280)]
+    [InlineData(640, 480, 1600, 640, 480)]
+    public void StreamingResize_PreservesAspectRatioAndDoesNotUpscale(int width, int height, int limit, int expectedWidth, int expectedHeight)
+    {
+        var frame = MakeGradientFrame(width, height);
+        var jpeg = FrameCodec.EncodeJpeg(frame, 60, limit);
+        var decoded = FrameCodec.DecodeJpeg(jpeg);
+        Assert.Equal(expectedWidth, decoded.Width);
+        Assert.Equal(expectedHeight, decoded.Height);
+        if (width > limit || height > limit) Assert.True(jpeg.Length < FrameCodec.EncodeJpeg(frame, 70).Length);
+    }
+
     [Fact]
     public void EncodeThenDecode_RoundTripsDimensions()
     {

@@ -86,6 +86,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isClipboardSyncEnabled = true;
+    public IReadOnlyList<string> StreamingModes { get; } = ["Balanced", "Speed", "Quality"];
+    [ObservableProperty] private string _streamingMode = "Balanced";
+    partial void OnStreamingModeChanged(string value) => SavePreferences();
 
     public MainWindowViewModel()
         : this(new DeviceIdentityStore(), new DeviceCertificateStore(), new UnattendedAccessStore(),
@@ -129,6 +132,7 @@ public partial class MainWindowViewModel : ObservableObject
         };
         var preferences = _preferencesStore.Load();
         _isClipboardSyncEnabled = preferences.ClipboardSync;
+        _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
         NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
         NetworkService.RelayStatusChanged += message => Dispatcher.UIThread.Post(() => RelayServerMessage = message);
     }
@@ -136,7 +140,7 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnIsClipboardSyncEnabledChanged(bool value) => SavePreferences();
     private void SavePreferences()
     {
-        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled)); }
+        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
     }
 
@@ -428,7 +432,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             // We accepted the incoming request and granted ViewScreen: share this screen.
             var (capturer, injector) = CreateSharingBackend();
-            desktop.StartSharing(capturer, injector, frameInterval: TimeSpan.FromMilliseconds(200));
+            var profile = StreamingProfile.FromName(StreamingMode);
+            desktop.StartSharing(capturer, injector, TimeSpan.FromSeconds(1d / profile.FramesPerSecond), profile.Quality, profile.MaxDimension);
         }
         loop.Start();
     }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Diagnostics;
 using IPCast.Network;
 using IPCast.Network.Protocol;
 
@@ -36,7 +37,7 @@ public sealed class RemoteDesktopSession : IDisposable
     public event Action<Exception>? Faulted;
 
     /// <summary>Starts capturing and streaming this device's screen to the peer, and applies input events the peer sends back.</summary>
-    public void StartSharing(IScreenCapturer capturer, IInputInjector injector, TimeSpan frameInterval, int jpegQuality = 70)
+    public void StartSharing(IScreenCapturer capturer, IInputInjector injector, TimeSpan frameInterval, int jpegQuality = 70, int maxDimension = 0)
     {
         if (!_session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
         {
@@ -47,20 +48,34 @@ public sealed class RemoteDesktopSession : IDisposable
         _sharingInjector = injector;
         _captureCts = new CancellationTokenSource();
         var token = _captureCts.Token;
-        _captureLoop = Task.Run(() => RunCaptureLoopAsync(capturer, frameInterval, jpegQuality, token));
+        _captureLoop = Task.Run(() => RunCaptureLoopAsync(capturer, frameInterval, jpegQuality, maxDimension, token));
     }
 
-    private async Task RunCaptureLoopAsync(IScreenCapturer capturer, TimeSpan frameInterval, int jpegQuality, CancellationToken ct)
+    private async Task RunCaptureLoopAsync(IScreenCapturer capturer, TimeSpan frameInterval, int jpegQuality, int maxDimension, CancellationToken ct)
     {
         try
         {
+            CapturedFrame? previous = null;
+            var lastSent = Stopwatch.StartNew();
             while (!ct.IsCancellationRequested)
             {
+                var started = Stopwatch.GetTimestamp();
                 var frame = capturer.CaptureFrame();
-                var jpeg = FrameCodec.EncodeJpeg(frame, jpegQuality);
-                await _loop.SendAsync(MessageType.ScreenFrame, new ScreenFrameMessage(frame.Width, frame.Height, "jpeg", jpeg), ct)
-                    .ConfigureAwait(false);
-                await Task.Delay(frameInterval, ct).ConfigureAwait(false);
+                // Do not encode/send an unchanged desktop repeatedly. A periodic full
+                // refresh retains compatibility with older clients and avoids drift.
+                if (previous is null || previous.Width != frame.Width || previous.Height != frame.Height ||
+                    !frame.Bgra.AsSpan().SequenceEqual(previous.Bgra) || lastSent.Elapsed >= TimeSpan.FromSeconds(1))
+                {
+                    var jpeg = FrameCodec.EncodeJpeg(frame, jpegQuality, maxDimension);
+                    var scale = maxDimension > 0 ? Math.Min(1d, (double)maxDimension / Math.Max(frame.Width, frame.Height)) : 1d;
+                    await _loop.SendAsync(MessageType.ScreenFrame, new ScreenFrameMessage(Math.Max(1, (int)(frame.Width * scale)), Math.Max(1, (int)(frame.Height * scale)), "jpeg", jpeg), ct).ConfigureAwait(false);
+                    lastSent.Restart();
+                }
+                previous = frame;
+                // Encoding and transport time count toward the frame budget. Awaiting
+                // each write prevents an unbounded outgoing frame queue.
+                var remaining = frameInterval - Stopwatch.GetElapsedTime(started);
+                if (remaining > TimeSpan.Zero) await Task.Delay(remaining, ct).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)

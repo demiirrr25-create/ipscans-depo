@@ -25,6 +25,36 @@ public class RemoteDesktopSessionTests : IAsyncDisposable
         ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse | ConnectionPermissions.ControlKeyboard;
 
     [Fact]
+    public async Task UnchangedDesktop_SkipsDuplicateFramesAndRefreshesPeriodically()
+    {
+        var (viewer, sharer, host) = await SessionTestHelper.EstablishSessionAsync(_hostId, _clientId, FullControl);
+        _host = host;
+        using (viewer) using (sharer)
+        {
+            await using var sendLoop = new SessionMessageLoop(sharer);
+            await using var receiveLoop = new SessionMessageLoop(viewer);
+            using var sender = new RemoteDesktopSession(sendLoop, sharer);
+            using var receiver = new RemoteDesktopSession(receiveLoop, viewer);
+            var frames = System.Threading.Channels.Channel.CreateUnbounded<CapturedFrame>();
+            receiver.FrameReceived += frame => frames.Writer.TryWrite(frame);
+            sendLoop.Start(); receiveLoop.Start();
+            sender.StartSharing(new StaticCapturer(), new RecordingInputInjector(), TimeSpan.FromMilliseconds(20), maxDimension: 80);
+            var first = await frames.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(80, first.Width);
+            await Task.Delay(250);
+            Assert.False(frames.Reader.TryRead(out _));
+            var refresh = await frames.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.Equal(first.Width, refresh.Width);
+        }
+    }
+
+    private sealed class StaticCapturer : IScreenCapturer
+    {
+        public CapturedFrame CaptureFrame() => new(160, 90, new byte[160 * 90 * 4]);
+        public void Dispose() { }
+    }
+
+    [Fact]
     public async Task ViewerReceivesFramesFromSharer()
     {
         var (initiatorSession, acceptorSession, host) = await SessionTestHelper.EstablishSessionAsync(_hostId, _clientId, FullControl);

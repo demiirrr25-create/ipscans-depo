@@ -19,6 +19,8 @@ public partial class RemoteScreenWindow : Window
     private readonly RemoteDesktopSession _desktop;
     private WriteableBitmap? _bitmap;
     private bool _closed;
+    private CapturedFrame? _pendingFrame;
+    private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly HashSet<int> _pressedKeys = [];
 
     public RemoteScreenWindow()
@@ -34,6 +36,8 @@ public partial class RemoteScreenWindow : Window
         InitializeComponent();
 
         _desktop.FrameReceived += OnFrameReceived;
+        _renderTimer.Tick += (_, _) => RenderLatestFrame();
+        _renderTimer.Start();
         _desktop.Closed += OnSessionClosed;
         ScreenImage.PointerMoved += OnPointerMoved;
         ScreenImage.PointerPressed += OnPointerPressed;
@@ -45,15 +49,17 @@ public partial class RemoteScreenWindow : Window
             foreach (var key in _pressedKeys.ToArray()) await SendSafely(() => _desktop.SendKeyEventAsync(key, false));
             _pressedKeys.Clear();
         };
-        Closed += (_, _) => { _closed = true; _desktop.FrameReceived -= OnFrameReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
+        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
     }
 
     private void OnSessionClosed() => Dispatcher.UIThread.Post(Close);
 
-    private void OnFrameReceived(CapturedFrame frame)
+    private void OnFrameReceived(CapturedFrame frame) => Interlocked.Exchange(ref _pendingFrame, frame);
+
+    private void RenderLatestFrame()
     {
-        Dispatcher.UIThread.Post(() =>
-        {
+            var frame = Interlocked.Exchange(ref _pendingFrame, null);
+            if (frame is null) return;
             if (_closed) return;
             if (_bitmap is null || _bitmap.PixelSize.Width != frame.Width || _bitmap.PixelSize.Height != frame.Height)
             {
@@ -78,7 +84,6 @@ public partial class RemoteScreenWindow : Window
             }
 
             ScreenImage.InvalidateVisual();
-        });
     }
 
     private async void OnPointerMoved(object? sender, PointerEventArgs e)
