@@ -3,7 +3,9 @@ using IPCast.Shared;
 
 namespace IPCast.Client.Persistence;
 
-public sealed record Preferences(string RelayAddress = "", bool ClipboardSync = true);
+public sealed record Preferences(
+    string RelayAddress = "wss://p01--ipcast-relay--d5n8c99gjxdn.code.run/relay",
+    bool ClipboardSync = true);
 
 public sealed class PreferencesStore
 {

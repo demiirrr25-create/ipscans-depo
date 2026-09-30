@@ -27,7 +27,7 @@ public class WebSocketRelayTests
     [Fact]
     public async Task WebSocketRelay_TlsClipboardLargeFrameFileAndReconnect()
     {
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         var ct = timeout.Token;
         await using var app = RelayWebHost.Create([], 0);
         await app.StartAsync(ct);
@@ -35,9 +35,11 @@ public class WebSocketRelayTests
         using var http = new HttpClient();
         Assert.Contains("ipcast-websocket-v1", await http.GetStringAsync(httpUrl + "/healthz", ct));
         Assert.Equal(HttpStatusCode.BadRequest, (await http.GetAsync(httpUrl + "/relay", ct)).StatusCode);
-        Assert.True(RelayAddress.TryParse(httpUrl.Replace("http:", "ws:") + "/relay", out var address));
-        var hostId = DeviceId.FromValidatedRaw("123456789");
-        var viewerId = DeviceId.FromValidatedRaw("987654321");
+        // Explicit opt-in exercises the same TLS/data path through an owned deployed relay.
+        var relayUrl = Environment.GetEnvironmentVariable("IPCAST_TEST_RELAY_URL") ?? httpUrl.Replace("http:", "ws:") + "/relay";
+        Assert.True(RelayAddress.TryParse(relayUrl, out var address));
+        var hostId = DeviceId.FromValidatedRaw(RandomNumberGenerator.GetInt32(100000000, 500000000).ToString());
+        var viewerId = DeviceId.FromValidatedRaw(RandomNumberGenerator.GetInt32(500000000, 999999999).ToString());
         using var certificate = TestCertificateFactory.CreateSelfSigned();
         using var udp = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
         var discoveryPort = ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
