@@ -82,10 +82,7 @@ public partial class MainWindowViewModel : ObservableObject
     private bool _isTransferringFile;
 
     [ObservableProperty]
-    private string _relayServerInput = string.Empty;
-
-    [ObservableProperty]
-    private string _relayServerMessage = string.Empty;
+    private string _relayServerMessage = "Connecting automatically to IPCast relay...";
 
     [ObservableProperty]
     private bool _isClipboardSyncEnabled = true;
@@ -132,15 +129,14 @@ public partial class MainWindowViewModel : ObservableObject
         };
         var preferences = _preferencesStore.Load();
         _isClipboardSyncEnabled = preferences.ClipboardSync;
-        _relayServerInput = Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER") ?? preferences.RelayAddress;
-        if (RelayAddress.TryParse(_relayServerInput, out var endpoint)) NetworkService.RelayServerAddress = endpoint;
+        NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
         NetworkService.RelayStatusChanged += message => Dispatcher.UIThread.Post(() => RelayServerMessage = message);
     }
 
     partial void OnIsClipboardSyncEnabledChanged(bool value) => SavePreferences();
     private void SavePreferences()
     {
-        try { _preferencesStore.Save(new Preferences(NetworkService.RelayServerAddress?.ToString() ?? "", IsClipboardSyncEnabled)); }
+        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
     }
 
@@ -288,38 +284,6 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand] private void CancelTransfer() => _transferCts?.Cancel();
-
-    [RelayCommand]
-    private void SaveRelayServer()
-    {
-        if (string.IsNullOrWhiteSpace(RelayServerInput))
-        {
-            NetworkService.RelayServerAddress = null;
-            SavePreferences();
-            RelayServerMessage = "Relay server disabled (local network mode).";
-            return;
-        }
-
-        if (RelayAddress.TryParse(RelayServerInput.Trim(), out var ep))
-        {
-            NetworkService.RelayServerAddress = ep;
-            SavePreferences();
-            RelayServerMessage = $"Relay server set to {ep}.";
-        }
-        else
-        {
-            RelayServerMessage = "Enter a secure relay URL (wss://host/relay) or IP:port.";
-        }
-    }
-
-    [RelayCommand]
-    private void ClearRelayServer()
-    {
-        NetworkService.RelayServerAddress = null;
-        RelayServerInput = string.Empty;
-        SavePreferences();
-        RelayServerMessage = "Relay server disabled.";
-    }
 
     public void NotifyIdCopied()
     {

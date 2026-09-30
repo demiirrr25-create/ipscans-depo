@@ -5,7 +5,7 @@
         xmlns:persistence="using:IPCast.Client.Persistence"
         x:Class="IPCast.Client.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="IPCast"
+        Title="IPCast 1.0.1 Preview 2 — Auto Relay"
         Width="960" Height="620"
         MinWidth="820" MinHeight="560"
         Background="{DynamicResource AppBackgroundBrush}">
@@ -38,7 +38,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="Version 1.0.0" FontSize="11"
+                <TextBlock DockPanel.Dock="Bottom" Text="1.0.1 Preview 2 · Auto Relay" FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}" Margin="4" />
             </DockPanel>
         </Border>
@@ -60,6 +60,7 @@
                         <Button Content="Copy ID" Classes="primary" HorizontalAlignment="Left"
                                 Click="OnCopyIdClick" />
                         <TextBlock Text="{Binding LocalConnectionInfo}" TextWrapping="Wrap" FontSize="12" />
+                        <TextBlock Text="{Binding RelayServerMessage}" TextWrapping="Wrap" FontSize="12" />
                         <Button Content="Disconnect" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
                         <TextBlock Text="Unattended access is ON — reachable with ID + password, no click needed"
                                    FontSize="11" Foreground="{DynamicResource AccentBrush}"
@@ -174,15 +175,10 @@
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="24">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="Network → Relay / Signal Server" FontSize="14" FontWeight="Bold"
+                            <TextBlock Text="Automatic internet connection" FontSize="14" FontWeight="Bold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Use a secure relay URL (wss://host/relay) to connect across different internet networks. Both devices must use the same relay."
+                            <TextBlock Text="IPCast relay is configured automatically. Open this version on both computers, enter the other computer's 9-digit ID and accept the connection on that computer. No relay address or setup code is needed."
                                        FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBox PlaceholderText="wss://your-relay-host/relay" Text="{Binding RelayServerInput}" />
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Save Relay Server" Classes="primary" Command="{Binding SaveRelayServerCommand}" />
-                                <Button Content="Clear" Command="{Binding ClearRelayServerCommand}" />
-                            </StackPanel>
                             <TextBlock Text="{Binding RelayServerMessage}" FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>
