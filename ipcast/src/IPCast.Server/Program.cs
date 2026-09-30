@@ -12,7 +12,8 @@ internal static class Program
 {
     private static async Task Main(string[] args)
     {
-        var port = args.Length > 0 && int.TryParse(args[0], out var p) ? p : 5000;
+        var port = args.Length > 0 && int.TryParse(args[0], out var p) ? p : 9876;
+        if (port is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(args), "Port must be between 1 and 65535.");
 
         await using var server = new RelayServer(port);
         server.Start();

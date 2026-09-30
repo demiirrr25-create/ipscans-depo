@@ -31,6 +31,7 @@ public sealed class SessionMessageLoop : IAsyncDisposable
 
     /// <summary>Raised when the receive loop stops because of an error (as opposed to a clean Bye/cancellation).</summary>
     public event Action<Exception>? Faulted;
+    public event Action? Ended;
 
     public void Start()
     {
@@ -47,14 +48,12 @@ public sealed class SessionMessageLoop : IAsyncDisposable
                 Dispatch(type, payload);
             }
         }
-        catch (Exception ex) when (ex is IOException or EndOfStreamException or InvalidDataException)
-        {
-            Faulted?.Invoke(ex);
-        }
         catch (OperationCanceledException)
         {
             // Normal shutdown via DisposeAsync.
         }
+        catch (Exception ex) { Faulted?.Invoke(ex); }
+        finally { Ended?.Invoke(); }
     }
 
     private void Dispatch(MessageType type, JsonElement payload)
@@ -86,7 +85,9 @@ public sealed class SessionMessageLoop : IAsyncDisposable
         MessageStream.WriteAsync(_session.Stream, type, payload, ct);
 
     public Task SendClipboardTextAsync(string text, CancellationToken ct = default) =>
-        SendAsync(MessageType.ClipboardText, new ClipboardTextMessage(text), ct);
+        _session.GrantedPermissions.HasFlag(ConnectionPermissions.Clipboard)
+            ? SendAsync(MessageType.ClipboardText, new ClipboardTextMessage(text), ct)
+            : Task.CompletedTask;
 
     public async ValueTask DisposeAsync()
     {

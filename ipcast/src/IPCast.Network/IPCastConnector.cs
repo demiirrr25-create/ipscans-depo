@@ -14,6 +14,7 @@ public sealed class IPCastConnector
     private const string AppVersion = "1.0.0-phase2";
 
     private readonly DeviceId _localDeviceId;
+    public Func<string, string, Task<bool>>? VerifyPeerCertificateAsync { get; set; }
 
     public IPCastConnector(DeviceId localDeviceId)
     {
@@ -37,7 +38,8 @@ public sealed class IPCastConnector
                 requestedPermissions,
                 password,
                 client: client,
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                trustKey: remoteDeviceId == _localDeviceId ? remoteEndpoint.ToString() : remoteDeviceId.Raw).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException
             or OperationCanceledException or System.Security.Authentication.AuthenticationException)
@@ -54,7 +56,8 @@ public sealed class IPCastConnector
         string? password = null,
         TcpClient? client = null,
         IDisposable? ownerToDispose = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? trustKey = null)
     {
         try
         {
@@ -67,6 +70,16 @@ public sealed class IPCastConnector
                 },
                 ct).ConfigureAwait(false);
             Stream stream = sslStream;
+
+            if (VerifyPeerCertificateAsync is { } verify)
+            {
+                var fingerprint = sslStream.RemoteCertificate?.GetCertHashString(System.Security.Cryptography.HashAlgorithmName.SHA256);
+                if (fingerprint is null || !await verify(trustKey ?? remoteDeviceId.Raw, fingerprint).WaitAsync(ct).ConfigureAwait(false))
+                {
+                    sslStream.Dispose(); client?.Dispose(); ownerToDispose?.Dispose();
+                    return ConnectResult.Reject("The remote certificate was not approved. Compare the fingerprint with the remote device before connecting.");
+                }
+            }
 
             await MessageStream.WriteAsync(stream, MessageType.Hello, new HelloMessage(_localDeviceId.Raw, AppVersion), ct)
                 .ConfigureAwait(false);
@@ -95,7 +108,7 @@ public sealed class IPCastConnector
             }
 
             var session = new RemoteSession(
-                remoteDeviceId,
+                DeviceId.TryParse(decision.HostDeviceId ?? "", out var hostId) ? hostId : remoteDeviceId,
                 client,
                 stream,
                 decision.GrantedPermissions,

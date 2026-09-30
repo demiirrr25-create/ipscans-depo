@@ -63,6 +63,9 @@ public sealed class GdiScreenCapturer : IScreenCapturer
                 biSizeImage = (uint)(width * height * 4),
             };
 
+            // GetDIBits requires that the bitmap is not selected into a DC.
+            NativeMethods.SelectObject(memoryDc, oldBitmap);
+
             var buffer = new byte[width * height * 4];
             var pinned = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             try

@@ -15,6 +15,13 @@ public static class RelayClient
     /// </summary>
     public static async Task<NetworkStream> ConnectViaRelayAsync(
         IPEndPoint relayEndpoint, string localDeviceId, string targetDeviceId, CancellationToken ct = default)
+        => await RegisterAsync(relayEndpoint, localDeviceId, targetDeviceId, MessageType.RelayRegister, ct);
+
+    public static Task<NetworkStream> ListenAsync(IPEndPoint endpoint, string deviceId, CancellationToken ct = default)
+        => RegisterAsync(endpoint, deviceId, "", MessageType.RelayListen, ct);
+
+    private static async Task<NetworkStream> RegisterAsync(
+        IPEndPoint relayEndpoint, string localDeviceId, string targetDeviceId, MessageType registrationType, CancellationToken ct)
     {
         var client = new TcpClient();
         try
@@ -23,7 +30,7 @@ public static class RelayClient
             var stream = client.GetStream();
 
             await MessageStream.WriteAsync(
-                stream, MessageType.RelayRegister, new RelayRegisterMessage(localDeviceId, targetDeviceId), ct)
+                stream, registrationType, new RelayRegisterMessage(localDeviceId, targetDeviceId), ct)
                 .ConfigureAwait(false);
 
             var (type, _) = await MessageStream.ReadAsync(stream, ct).ConfigureAwait(false);

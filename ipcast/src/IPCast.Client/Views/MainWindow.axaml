@@ -44,7 +44,8 @@
         </Border>
 
         <!-- Content -->
-        <Grid Grid.Column="1" Margin="36">
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="24">
 
             <!-- Home -->
             <StackPanel Spacing="20" MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top"
@@ -58,6 +59,8 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <Button Content="Copy ID" Classes="primary" HorizontalAlignment="Left"
                                 Click="OnCopyIdClick" />
+                        <TextBlock Text="{Binding LocalConnectionInfo}" TextWrapping="Wrap" FontSize="12" />
+                        <Button Content="Disconnect" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
                         <TextBlock Text="Unattended access is ON — reachable with ID + password, no click needed"
                                    FontSize="11" Foreground="{DynamicResource AccentBrush}"
                                    IsVisible="{Binding IsUnattendedAccessEnabled}" />
@@ -69,15 +72,28 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="Connect to Remote Device" FontSize="13"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBox PlaceholderText="Remote ID" Text="{Binding RemoteIdInput}" />
+                        <TextBox PlaceholderText="Remote ID or IP:port" Text="{Binding RemoteIdInput}" />
                         <TextBox PlaceholderText="Password (only for unattended access)" PasswordChar="*"
                                  Text="{Binding RemotePasswordInput}" />
                         <Button Content="CONNECT" Classes="primary" HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center" Command="{Binding ConnectCommand}" />
+                        <Button Content="Cancel connection" Command="{Binding CancelConnectCommand}" IsVisible="{Binding IsConnecting}" />
                         <TextBlock Text="{Binding StatusMessage}" FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="16" MaxWidth="520" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=FileTransfer}">
+                <TextBlock Text="File Transfer" FontSize="22" FontWeight="Bold" />
+                <TextBlock Text="Connect to a device with File Transfer permission. The receiver chooses where to save each file." TextWrapping="Wrap" />
+                <TextBox Text="{Binding SelectedFilePath}" PlaceholderText="Choose a file or enter its full path" />
+                <Button Content="Choose file…" Click="OnChooseFileClick" />
+                <Button Content="Send file" Classes="primary" Command="{Binding SendFileCommand}" IsEnabled="{Binding IsConnected}" />
+                <Button Content="Cancel transfer" Command="{Binding CancelTransferCommand}" IsVisible="{Binding IsTransferringFile}" />
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding FileTransferProgress}" />
+                <TextBlock Text="{Binding FileTransferMessage}" TextWrapping="Wrap" />
             </StackPanel>
 
             <!-- My Devices -->
@@ -173,6 +189,10 @@
                     </Border>
 
                     <!-- Unattended Access -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="This device's certificate fingerprint (SHA-256)" FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap" />
+                    </StackPanel>
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="24">
                         <StackPanel Spacing="12">
@@ -250,5 +270,6 @@
                 </StackPanel>
             </ScrollViewer>
         </Grid>
+        </ScrollViewer>
     </Grid>
 </Window>

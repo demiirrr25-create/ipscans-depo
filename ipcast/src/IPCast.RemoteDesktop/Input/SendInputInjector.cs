@@ -15,6 +15,7 @@ public sealed class SendInputInjector : IInputInjector
     private const uint INPUT_KEYBOARD = 1;
     private const uint MOUSEEVENTF_MOVE = 0x0001;
     private const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
+    private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
     private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
     private const uint MOUSEEVENTF_LEFTUP = 0x0004;
     private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
@@ -43,7 +44,7 @@ public sealed class SendInputInjector : IInputInjector
             type = INPUT_MOUSE,
             u = new NativeMethods.InputUnion
             {
-                mi = new NativeMethods.MOUSEINPUT { dx = x, dy = y, dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE },
+                mi = new NativeMethods.MOUSEINPUT { dx = x, dy = y, dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK },
             },
         });
     }
