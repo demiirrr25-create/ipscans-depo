@@ -35,6 +35,7 @@ export function DnsLookupForm({ dict }: { dict: Dictionary["dns"] }) {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <label htmlFor="DnsLookupForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -43,10 +44,17 @@ export function DnsLookupForm({ dict }: { dict: Dictionary["dns"] }) {
         className="flex flex-col gap-3 sm:flex-row"
       >
         <input
+          id="DnsLookupForm-input"
+          autoCapitalize="none"
+          spellCheck={false}
+          autoComplete="off"
+          required
+          aria-invalid={error}
+          aria-describedby={error ? "DnsLookupForm-error" : undefined}
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder={dict.placeholder}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-mono text-white outline-none focus:border-white/40"
+          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
         />
         <button
           type="submit"
@@ -58,11 +66,12 @@ export function DnsLookupForm({ dict }: { dict: Dictionary["dns"] }) {
       </form>
 
       {error && (
-        <p className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="DnsLookupForm-error" role="alert" className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
           {dict.error}
         </p>
       )}
 
+      <div role="status" aria-live="polite" aria-busy={loading}>
       {result && (
         <div className="mt-6 space-y-4">
           {TYPES.map((type) => (
@@ -95,6 +104,7 @@ export function DnsLookupForm({ dict }: { dict: Dictionary["dns"] }) {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -4,26 +4,27 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
+import { xhrUpload } from "@/lib/speed-upload";
 
 type Phase = "idle" | "ping" | "download" | "upload" | "done";
 
 const DOWN_URL = "https://speed.cloudflare.com/__down?bytes=";
-const UP_URL = "https://speed.cloudflare.com/__up";
 
 async function measurePing(samples = 8): Promise<{ ping: number; jitter: number }> {
   const times: number[] = [];
   for (let i = 0; i < samples; i++) {
     const start = performance.now();
     try {
-      await fetch(`${DOWN_URL}0&r=${start}`, { cache: "no-store" });
+      const response = await fetch(`${DOWN_URL}0&r=${start}`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+      if (!response.ok) continue;
       times.push(performance.now() - start);
     } catch {
       // ignore failed sample
     }
   }
-  if (times.length === 0) return { ping: 0, jitter: 0 };
-  times.sort((a, b) => a - b);
-  const ping = times[Math.floor(times.length / 2)];
+  if (times.length === 0) throw new Error("No ping samples");
+  const sorted = [...times].sort((a, b) => a - b);
+  const ping = sorted[Math.floor(sorted.length / 2)];
   let jitterSum = 0;
   for (let i = 1; i < times.length; i++)
     jitterSum += Math.abs(times[i] - times[i - 1]);
@@ -58,7 +59,8 @@ async function measureDownload(
           cache: "no-store",
           signal: controller.signal,
         });
-        const reader = res.body!.getReader();
+        if (!res.ok || !res.body) break;
+        const reader = res.body.getReader();
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -76,6 +78,7 @@ async function measureDownload(
 
   await Promise.all(Array.from({ length: parallel }, worker));
   clearTimeout(timer);
+  if (totalBytes === 0) throw new Error("No download data");
   const seconds = (performance.now() - start) / 1000;
   return (totalBytes * 8) / seconds / 1_000_000;
 }
@@ -83,29 +86,6 @@ async function measureDownload(
 // Uses XHR instead of fetch() because only XHR exposes upload progress
 // events — with fetch(), onProgress would only fire once per whole chunk,
 // which is what made the upload phase feel stuck/delayed before this fix.
-function xhrUpload(
-  payload: Uint8Array,
-  onBytes: (delta: number) => void
-): { promise: Promise<void>; abort: () => void } {
-  const xhr = new XMLHttpRequest();
-  let lastLoaded = 0;
-  const promise = new Promise<void>((resolve) => {
-    xhr.open("POST", UP_URL, true);
-    xhr.upload.onprogress = (e) => {
-      const loaded = e.loaded;
-      onBytes(loaded - lastLoaded);
-      lastLoaded = loaded;
-    };
-    xhr.upload.onloadend = () => {
-      onBytes(payload.byteLength - lastLoaded);
-    };
-    xhr.onloadend = () => resolve();
-    xhr.onerror = () => resolve();
-    xhr.onabort = () => resolve();
-    xhr.send(payload as unknown as XMLHttpRequestBodyInit);
-  });
-  return { promise, abort: () => xhr.abort() };
-}
 
 async function measureUpload(
   onProgress: (mbps: number) => void,
@@ -127,12 +107,14 @@ async function measureUpload(
         if (elapsed > 0) onProgress((totalBytes * 8) / elapsed / 1_000_000);
       });
       const timer = setTimeout(abort, Math.max(0, deadline - performance.now()));
-      await promise;
+      const succeeded = await promise;
       clearTimeout(timer);
+      if (!succeeded) break;
     }
   }
 
   await Promise.all(Array.from({ length: parallel }, worker));
+  if (totalBytes === 0) throw new Error("No upload data");
   const seconds = (performance.now() - start) / 1000;
   return (totalBytes * 8) / seconds / 1_000_000;
 }
@@ -169,14 +151,14 @@ function Gauge({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border p-6 text-center transition-all duration-300 ${
+      className={`relative min-w-0 overflow-hidden rounded-2xl border p-3 sm:p-6 text-center transition-all duration-300 ${
         active
           ? "border-white/30 bg-white/[0.06] shadow-[0_0_30px_-8px_var(--gauge-accent)]"
           : "border-white/10 bg-white/[0.02]"
       }`}
       style={{ "--gauge-accent": accent } as React.CSSProperties}
     >
-      <div className="text-xs uppercase tracking-wider text-neutral-500">
+      <div className="text-xs uppercase tracking-wider text-neutral-400">
         {label}
       </div>
       <div className="relative mx-auto mt-3 h-28 w-28">
@@ -205,7 +187,6 @@ function Gauge({
         </svg>
         <div
           className="absolute inset-0 grid place-items-center font-[family-name:var(--font-display)] text-2xl font-bold tabular-nums text-white"
-          aria-live="polite"
         >
           {display}
         </div>
@@ -227,14 +208,17 @@ export function SpeedTest({
   const [jitter, setJitter] = useState<number | null>(null);
   const [download, setDownload] = useState<number | null>(null);
   const [upload, setUpload] = useState<number | null>(null);
+  const [error, setError] = useState(false);
   const running = phase !== "idle" && phase !== "done";
 
   async function run() {
+    setError(false);
     setPing(null);
     setJitter(null);
     setDownload(null);
     setUpload(null);
 
+    try {
     setPhase("ping");
     const p = await measurePing();
     setPing(p.ping);
@@ -249,11 +233,15 @@ export function SpeedTest({
     setUpload(u);
 
     setPhase("done");
+    } catch {
+      setError(true);
+      setPhase("idle");
+    }
   }
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Gauge
           label={dict.download}
           value={download}
@@ -285,6 +273,16 @@ export function SpeedTest({
       </div>
 
       <div className="mt-8 text-center">
+        <p role="status" className="mb-3 text-sm text-neutral-300">
+          {running ? dict.running : phase === "done" ? `${dict.download}: ${download?.toFixed(1)} Mbps · ${dict.upload}: ${upload?.toFixed(1)} Mbps · ${dict.ping}: ${ping} ms` : ""}
+        </p>
+        {error && <p role="alert" className="mb-4 text-sm text-neutral-200">{{
+          tr: "Test tamamlanamadı. İnternet bağlantınızı kontrol edip yeniden deneyin.",
+          en: "The test could not finish. Check your connection and try again.",
+          de: "Der Test konnte nicht abgeschlossen werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+          fr: "Le test n’a pas abouti. Vérifiez votre connexion et réessayez.",
+          es: "No se pudo completar la prueba. Comprueba tu conexión e inténtalo de nuevo.",
+        }[locale]}</p>}
         <button
           onClick={run}
           disabled={running}

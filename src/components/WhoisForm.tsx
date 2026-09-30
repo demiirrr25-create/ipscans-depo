@@ -56,6 +56,7 @@ export function WhoisForm({ dict }: { dict: Dictionary["whois"] }) {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <label htmlFor="WhoisForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -64,10 +65,17 @@ export function WhoisForm({ dict }: { dict: Dictionary["whois"] }) {
         className="flex flex-col gap-3 sm:flex-row"
       >
         <input
+          id="WhoisForm-input"
+          autoCapitalize="none"
+          spellCheck={false}
+          autoComplete="off"
+          required
+          aria-invalid={error}
+          aria-describedby={error ? "WhoisForm-error" : undefined}
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder={dict.placeholder}
-          className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-white outline-none focus:border-white/40"
+          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
         />
         <button
           type="submit"
@@ -79,20 +87,21 @@ export function WhoisForm({ dict }: { dict: Dictionary["whois"] }) {
       </form>
 
       {error && (
-        <p className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="WhoisForm-error" role="alert" className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
           {dict.error}
         </p>
       )}
 
+      <div role="status" aria-live="polite" aria-busy={loading}>
       {result && (
         <div className="mt-6 overflow-hidden rounded-2xl glass">
-          <table className="w-full text-sm">
+          <table className="w-full table-fixed text-sm">
             <tbody>
               {rows.map(([label, value]) => (
                 <tr key={label} className="border-b border-white/5 last:border-0">
-                  <td className="w-2/5 px-4 py-3 font-medium text-neutral-400">
+                  <th scope="row" className="text-left w-2/5 px-4 py-3 font-medium text-neutral-400">
                     {label}
-                  </td>
+                  </th>
                   <td className="break-all px-4 py-3 font-mono text-white">
                     {value ?? "—"}
                   </td>
@@ -102,6 +111,7 @@ export function WhoisForm({ dict }: { dict: Dictionary["whois"] }) {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }

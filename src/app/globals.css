@@ -117,6 +117,12 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
   .animate-float,
   .animate-spin-slow {
     animation: none;
@@ -138,6 +144,12 @@ body {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+main { scroll-margin-top: 6rem; }
+input, select, textarea { min-width: 0; }
+@media (max-width: 639px) {
+  input, select, textarea { font-size: 16px; }
 }
 
 /* Typography for static blog HTML content (see src/content/posts.ts) */
