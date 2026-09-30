@@ -12,6 +12,14 @@ internal static class Program
 {
     private static async Task Main(string[] args)
     {
+        if (args.Contains("--web"))
+        {
+            var httpPort = int.TryParse(Environment.GetEnvironmentVariable("PORT"), out var configured) ? configured : 8080;
+            if (httpPort is < 1 or > 65535) throw new ArgumentOutOfRangeException("PORT");
+            await using var app = RelayWebHost.Create([], httpPort);
+            await app.RunAsync();
+            return;
+        }
         var port = args.Length > 0 && int.TryParse(args[0], out var p) ? p : 9876;
         if (port is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(args), "Port must be between 1 and 65535.");
 

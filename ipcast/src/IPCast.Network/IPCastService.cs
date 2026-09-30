@@ -19,7 +19,7 @@ public sealed class IPCastService : IAsyncDisposable
     private LanDiscoveryService? _discovery;
     private CancellationTokenSource? _relayCts;
     private Task? _relayListener;
-    private System.Net.IPEndPoint? _relayEndpoint;
+    private RelayAddress? _relayAddress;
     private bool _started;
     public int ListeningPort => _host.Port;
     public event Action<string>? RelayStatusChanged;
@@ -41,19 +41,25 @@ public sealed class IPCastService : IAsyncDisposable
         _connector = new IPCastConnector(localDeviceId);
 
         var relayEnv = Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER");
-        if (!string.IsNullOrWhiteSpace(relayEnv) && TryParseEndpoint(relayEnv, 9876, out var relayEp))
+        if (RelayAddress.TryParse(relayEnv, out var relayAddress))
         {
-            RelayServerEndpoint = relayEp;
+            RelayServerAddress = relayAddress;
         }
     }
 
     /// <summary>Optional relay server endpoint used for non-LAN / NAT-traversal connections.</summary>
     public System.Net.IPEndPoint? RelayServerEndpoint
     {
-        get => _relayEndpoint;
+        get => _relayAddress?.TcpEndpoint;
+        set => RelayServerAddress = value is null ? null : new RelayAddress(value, null);
+    }
+
+    public RelayAddress? RelayServerAddress
+    {
+        get => _relayAddress;
         set
         {
-            _relayEndpoint = value;
+            _relayAddress = value;
             _relayCts?.Cancel();
             if (_started && value is not null)
             {
@@ -84,7 +90,7 @@ public sealed class IPCastService : IAsyncDisposable
         _host.Start();
         _discovery = new LanDiscoveryService(_localDeviceId, _host.Port, _discoveryPort);
         _started = true;
-        RelayServerEndpoint = _relayEndpoint;
+        RelayServerAddress = _relayAddress;
     }
 
     public async Task<ConnectResult> ConnectAsync(
@@ -137,12 +143,12 @@ public sealed class IPCastService : IAsyncDisposable
             return await _connector.ConnectAsync(endpoint, targetId, requestedPermissions, password, ct).ConfigureAwait(false);
         }
 
-        if (RelayServerEndpoint is not null)
+        if (RelayServerAddress is { } relayAddress)
         {
             try
             {
                 var relayStream = await RelayClient.ConnectViaRelayAsync(
-                    RelayServerEndpoint, _localDeviceId.Raw, targetId.Raw, ct).ConfigureAwait(false);
+                    relayAddress, _localDeviceId.Raw, targetId.Raw, ct).ConfigureAwait(false);
 
                 return await _connector.ConnectAsync(
                     relayStream, targetId, requestedPermissions, password, ct: ct).ConfigureAwait(false);
@@ -173,7 +179,7 @@ public sealed class IPCastService : IAsyncDisposable
         return System.Net.IPEndPoint.TryParse(input, out endpoint) && endpoint.Port > 0;
     }
 
-    private async Task ListenOnRelayAsync(System.Net.IPEndPoint endpoint, CancellationToken ct)
+    private async Task ListenOnRelayAsync(RelayAddress endpoint, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {

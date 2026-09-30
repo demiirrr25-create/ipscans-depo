@@ -133,14 +133,14 @@ public partial class MainWindowViewModel : ObservableObject
         var preferences = _preferencesStore.Load();
         _isClipboardSyncEnabled = preferences.ClipboardSync;
         _relayServerInput = Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER") ?? preferences.RelayAddress;
-        if (IPCastService.TryParseEndpoint(_relayServerInput, 9876, out var endpoint)) NetworkService.RelayServerEndpoint = endpoint;
+        if (RelayAddress.TryParse(_relayServerInput, out var endpoint)) NetworkService.RelayServerAddress = endpoint;
         NetworkService.RelayStatusChanged += message => Dispatcher.UIThread.Post(() => RelayServerMessage = message);
     }
 
     partial void OnIsClipboardSyncEnabledChanged(bool value) => SavePreferences();
     private void SavePreferences()
     {
-        try { _preferencesStore.Save(new Preferences(NetworkService.RelayServerEndpoint?.ToString() ?? "", IsClipboardSyncEnabled)); }
+        try { _preferencesStore.Save(new Preferences(NetworkService.RelayServerAddress?.ToString() ?? "", IsClipboardSyncEnabled)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
     }
 
@@ -294,28 +294,28 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(RelayServerInput))
         {
-            NetworkService.RelayServerEndpoint = null;
+            NetworkService.RelayServerAddress = null;
             SavePreferences();
             RelayServerMessage = "Relay server disabled (local network mode).";
             return;
         }
 
-        if (IPCastService.TryParseEndpoint(RelayServerInput.Trim(), 9876, out var ep))
+        if (RelayAddress.TryParse(RelayServerInput.Trim(), out var ep))
         {
-            NetworkService.RelayServerEndpoint = ep;
+            NetworkService.RelayServerAddress = ep;
             SavePreferences();
             RelayServerMessage = $"Relay server set to {ep}.";
         }
         else
         {
-            RelayServerMessage = "Enter a valid endpoint, e.g. 192.168.1.10:9876.";
+            RelayServerMessage = "Enter a secure relay URL (wss://host/relay) or IP:port.";
         }
     }
 
     [RelayCommand]
     private void ClearRelayServer()
     {
-        NetworkService.RelayServerEndpoint = null;
+        NetworkService.RelayServerAddress = null;
         RelayServerInput = string.Empty;
         SavePreferences();
         RelayServerMessage = "Relay server disabled.";

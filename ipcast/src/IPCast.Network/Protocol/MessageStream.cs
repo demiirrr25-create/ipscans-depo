@@ -41,13 +41,13 @@ public static class MessageStream
         finally { gate.Release(); }
     }
 
-    public static async Task<(MessageType Type, JsonElement Payload)> ReadAsync(Stream stream, CancellationToken ct = default)
+    public static async Task<(MessageType Type, JsonElement Payload)> ReadAsync(Stream stream, CancellationToken ct = default, int maxMessageBytes = MaxMessageBytes)
     {
         var lengthBuffer = new byte[4];
         await ReadExactAsync(stream, lengthBuffer, ct).ConfigureAwait(false);
         var length = BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
 
-        if (length <= 0 || length > MaxMessageBytes)
+        if (length <= 0 || length > Math.Min(maxMessageBytes, MaxMessageBytes))
         {
             throw new InvalidDataException($"Refusing to read a message of {length} bytes.");
         }

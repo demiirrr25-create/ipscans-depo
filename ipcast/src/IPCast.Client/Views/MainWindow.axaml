@@ -176,9 +176,9 @@
                         <StackPanel Spacing="12">
                             <TextBlock Text="Network → Relay / Signal Server" FontSize="14" FontWeight="Bold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Configure a relay server (e.g. 192.168.1.10:9876) for connecting across different networks or symmetric NATs."
+                            <TextBlock Text="Use a secure relay URL (wss://host/relay) to connect across different internet networks. Both devices must use the same relay."
                                        FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBox PlaceholderText="Relay address (e.g. 192.168.1.10:9876)" Text="{Binding RelayServerInput}" />
+                            <TextBox PlaceholderText="wss://your-relay-host/relay" Text="{Binding RelayServerInput}" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button Content="Save Relay Server" Classes="primary" Command="{Binding SaveRelayServerCommand}" />
                                 <Button Content="Clear" Command="{Binding ClearRelayServerCommand}" />

@@ -29,9 +29,9 @@ public sealed class RelayServer : IAsyncDisposable
     private readonly Lock _lock = new();
     private Task? _acceptLoop;
 
-    public RelayServer(int port = 0)
+    public RelayServer(int port = 0, IPAddress? bindAddress = null)
     {
-        _listener = new TcpListener(IPAddress.Any, port);
+        _listener = new TcpListener(bindAddress ?? IPAddress.Any, port);
     }
 
     /// <summary>The bound TCP port - useful when constructed with port 0 (let the OS pick one).</summary>
@@ -74,7 +74,7 @@ public sealed class RelayServer : IAsyncDisposable
             var stream = client.GetStream();
             using var registrationTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             registrationTimeout.CancelAfter(TimeSpan.FromSeconds(10));
-            var (type, payload) = await MessageStream.ReadAsync(stream, registrationTimeout.Token).ConfigureAwait(false);
+            var (type, payload) = await MessageStream.ReadAsync(stream, registrationTimeout.Token, maxMessageBytes: 4096).ConfigureAwait(false);
             if (type is not (MessageType.RelayRegister or MessageType.RelayListen))
             {
                 client.Dispose();

@@ -7,5 +7,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /out .
 USER $APP_UID
-EXPOSE 9876/tcp
-ENTRYPOINT ["dotnet", "IPCast.Server.dll", "9876"]
+ENV PORT=8080
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "IPCast.Server.dll", "--web"]
