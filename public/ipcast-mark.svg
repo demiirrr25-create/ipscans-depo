@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <title>IPCast — connected screens</title>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#101D30"/>
+  <path d="M116 60H66a10 10 0 0 0-10 10v68a10 10 0 0 0 10 10h24" fill="none" stroke="#5EEAD4" stroke-width="20" stroke-linecap="round"/>
+  <path d="M140 196h50a10 10 0 0 0 10-10v-68a10 10 0 0 0-10-10h-24" fill="none" stroke="#8CBFFF" stroke-width="20" stroke-linecap="round"/>
+  <path d="m102 156 52-56m-32 0h32v32" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

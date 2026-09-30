@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
@@ -12,11 +13,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 const connectionNotes = {
-  tr: "Windows 10/11 (64 bit) · 1.0.1 Preview 2. Relay otomatik olarak ayarlanır; adres veya relay kodu girmeniz gerekmez. Eski IPCast pencerelerini kapatıp iki bilgisayarda da bu sürümü açın. Karşı bilgisayarın 9 haneli cihaz kimliğini girin ve karşı tarafta bağlantıyı onaylayın. İlk bağlantıda sertifika parmak izini karşı cihazla doğrulayın. İki fiziksel bilgisayarda kabul testi henüz tamamlanmadı.",
-  en: "Windows 10/11 (64-bit) · 1.0.1 Preview 2. Relay is configured automatically; no relay address or setup code is needed. Close older IPCast windows and open this version on both computers. Enter the other computer’s 9-digit device ID and accept the connection there. Verify the certificate fingerprint with the other device on first connection. Acceptance testing on two physical computers is still pending.",
-  de: "Windows 10/11 (64 Bit) · 1.0.1 Preview 2. Der Relay wird automatisch eingerichtet; keine Relay-Adresse oder Einrichtungscodes erforderlich. Schließen Sie ältere IPCast-Fenster und öffnen Sie diese Version auf beiden Computern. Geben Sie die neunstellige Geräte-ID des anderen Computers ein und bestätigen Sie dort die Verbindung. Prüfen Sie beim ersten Verbinden den Zertifikatsfingerabdruck. Der Abnahmetest mit zwei physischen Computern steht noch aus.",
-  fr: "Windows 10/11 (64 bits) · 1.0.1 Preview 2. Le relais est configuré automatiquement, sans adresse ni code de configuration. Fermez les anciennes fenêtres IPCast et ouvrez cette version sur les deux ordinateurs. Saisissez l’identifiant à 9 chiffres de l’autre appareil et acceptez la connexion sur celui-ci. Vérifiez l’empreinte du certificat lors de la première connexion. La validation sur deux ordinateurs physiques reste à effectuer.",
-  es: "Windows 10/11 (64 bits) · 1.0.1 Preview 2. El relay se configura automáticamente; no requiere dirección ni código de configuración. Cierra las ventanas antiguas de IPCast y abre esta versión en ambos ordenadores. Introduce el identificador de 9 dígitos del otro dispositivo y acepta la conexión allí. Verifica la huella del certificado en la primera conexión. La prueba de aceptación en dos ordenadores físicos sigue pendiente.",
+  tr: "Windows 10/11 (64 bit) · 1.1 Preview. Yeni logo ve daha okunaklı arayüz; dengeli, hız ve kalite modları; değişmeyen ekranlarda daha az veri aktarımı. Relay otomatik ayarlanır. İki bilgisayarda da yeni sürümü açın ve karşı cihazın 9 haneli kimliğiyle bağlanın. İlk bağlantıda sertifikayı doğrulayın ve karşı tarafta erişimi onaylayın. Yavaş ağlarda, ekranı paylaşılan bilgisayarda Settings → Display performance → Speed seçip yeniden bağlanın. Deneme sürümüdür; gerçek hız ağ ve cihazınıza bağlıdır.",
+  en: "Windows 10/11 (64-bit) · 1.1 Preview. New logo and clearer interface; Balanced, Speed and Quality modes; less traffic on unchanged screens. Relay is automatic. Open the new version on both computers and connect with the remote 9-digit ID. Verify the certificate on first connection and approve access on the other device. On slower networks, choose Settings → Display performance → Speed on the shared computer, then reconnect. Preview release; actual performance depends on your devices and network.",
+  de: "Windows 10/11 (64 Bit) · 1.1 Preview. Neues Logo, übersichtlichere Oberfläche, Balanced-, Speed- und Quality-Modi und weniger Daten bei unverändertem Bildschirm. Der Relay ist automatisch eingerichtet. Öffnen Sie die neue Version auf beiden Computern und verbinden Sie sich mit der neunstelligen Geräte-ID. Prüfen Sie das Zertifikat und bestätigen Sie den Zugriff. Bei langsamen Netzen wählen Sie am freigegebenen Computer Settings → Display performance → Speed und verbinden Sie sich erneut. Testversion; die Leistung hängt von Geräten und Netzwerk ab.",
+  fr: "Windows 10/11 (64 bits) · 1.1 Preview. Nouveau logo, interface plus lisible, modes Balanced, Speed et Quality, moins de données quand l’écran reste inchangé. Relais automatique. Ouvrez cette version sur les deux ordinateurs et utilisez l’identifiant à 9 chiffres. Vérifiez le certificat et acceptez l’accès sur l’autre appareil. Sur un réseau lent, choisissez Settings → Display performance → Speed sur l’ordinateur partagé, puis reconnectez-vous. Version de test ; les performances dépendent des appareils et du réseau.",
+  es: "Windows 10/11 (64 bits) · 1.1 Preview. Nuevo logo, interfaz más legible, modos Balanced, Speed y Quality y menos tráfico con pantallas sin cambios. Relay automático. Abre esta versión en ambos ordenadores y conecta con el identificador de 9 dígitos. Verifica el certificado y acepta el acceso en el otro dispositivo. En redes lentas, selecciona Settings → Display performance → Speed en el ordenador compartido y vuelve a conectar. Versión de prueba; el rendimiento depende del equipo y la red.",
 };
 
 export default async function IpCastPage({
@@ -33,6 +34,7 @@ export default async function IpCastPage({
     <PageShell title={t.title} subtitle={t.subtitle}>
       <div className="mx-auto max-w-xl">
         <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5 sm:p-8">
+          <Image src="/ipcast-mark.svg" alt="IPCast" width={72} height={72} className="mb-5" />
           <span className="inline-block rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-neutral-300">
             {t.badge}
           </span>
@@ -57,7 +59,7 @@ export default async function IpCastPage({
           </ul>
 
           <a
-            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.0.1-preview.2/IPCast-1.0.1-preview.2.exe"
+            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.1.0-preview.1/IPCast-1.1.0-preview.1.exe"
             aria-describedby="ipcast-release-notes"
             className="btn-primary mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
           >
