@@ -1,6 +1,6 @@
 # Relay deployment and acceptance
 
-The relay is a long-running raw TCP service. The Next.js/Vercel website deployment does not host it. No public relay has been provisioned by this change.
+The relay is a long-running service. The Next.js/Vercel website deployment does not host it. A limited Northflank WebSocket pilot is now deployed; see [NORTHFLANK.md](NORTHFLANK.md) for its address, Dockerfile, limits and verification. The raw TCP alternative below is for a separate Docker host.
 
 Build from the repository root on a Docker host:
 

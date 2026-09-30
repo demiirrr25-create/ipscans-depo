@@ -4,7 +4,7 @@
 
 The repair adds serialized message writes, larger bounded screen frames, corrected Windows key codes and virtual-desktop mouse mapping, working file-transfer controls with receiver confirmation, clipboard preference enforcement, disconnect/cancel controls, persistent preferences, certificate approval/pinning, and an inbound relay listener. Both endpoints must be updated together for the file-transfer completion protocol.
 
-See [deployment and real-device acceptance](deploy/README.md) for the runnable relay package, remaining limitations and checks still required. No public relay has been deployed. This is not a claim of AnyDesk feature parity. Build using `dotnet build IPCast.slnx`; run tests with `dotnet test IPCast.slnx`.
+See [Northflank WebSocket pilot](deploy/NORTHFLANK.md) for the deployed WSS endpoint and [real-device acceptance](deploy/README.md) for remaining checks. New profiles use the pilot relay by default. The deployed transport passed TLS, clipboard, synthetic frame, file-integrity and reconnect tests; two-physical-device screen/input acceptance is still pending. This is not a claim of AnyDesk feature parity. Build using `dotnet build IPCast.slnx`; run tests with `dotnet test IPCast.slnx`.
 
 A from-scratch, free, AnyDesk-style remote desktop app for Windows — original name, UI, code,
 and protocol design (no AnyDesk code, assets, or branding are used anywhere in this project).
