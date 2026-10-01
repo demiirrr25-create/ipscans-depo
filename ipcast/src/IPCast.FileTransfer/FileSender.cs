@@ -29,10 +29,17 @@ public sealed class FileSender
 
         var transferId = Guid.NewGuid().ToString("N");
         var fileInfo = new FileInfo(localFilePath);
-        var responseTcs = new TaskCompletionSource<FileOfferResponseMessage>();
+        var responseTcs = new TaskCompletionSource<FileOfferResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completeTcs = new TaskCompletionSource<FileTransferCompleteMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         void OnMessage(MessageType type, JsonElement payload)
         {
+            if (type == MessageType.FileTransferComplete)
+            {
+                var complete = payload.Deserialize<FileTransferCompleteMessage>();
+                if (complete?.TransferId == transferId) completeTcs.TrySetResult(complete);
+                return;
+            }
             if (type != MessageType.FileOfferResponse)
             {
                 return;
@@ -60,6 +67,11 @@ public sealed class FileSender
             await using var fileStream = File.OpenRead(localFilePath);
             var buffer = new byte[ChunkSizeBytes];
             long sent = 0;
+            if (fileInfo.Length == 0)
+            {
+                await loop.SendAsync(MessageType.FileChunk, new FileChunkMessage(transferId, 0, [], true), ct)
+                    .ConfigureAwait(false);
+            }
             int read;
             while ((read = await fileStream.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
             {
@@ -72,10 +84,17 @@ public sealed class FileSender
                 progress?.Report(new FileTransferProgress(sent, fileInfo.Length));
             }
 
-            return new FileTransferResult(true, null);
+            var confirmation = await completeTcs.Task.WaitAsync(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
+            return new FileTransferResult(confirmation.Success, confirmation.Error);
         }
         catch (Exception ex) when (ex is IOException or TimeoutException or OperationCanceledException)
         {
+            try
+            {
+                using var cancelTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                await loop.SendAsync(MessageType.FileTransferCancel, new FileTransferCancelMessage(transferId), cancelTimeout.Token);
+            }
+            catch (Exception) { /* Connection may already be closed. */ }
             return new FileTransferResult(false, ex.Message);
         }
         finally

@@ -5,13 +5,15 @@ using IPCast.Network.Protocol;
 namespace IPCast.FileTransfer;
 
 /// <summary>Receives files the peer offers over an already-established session (spec §7).</summary>
-public sealed class FileReceiver
+public sealed class FileReceiver : IDisposable
 {
     private readonly SessionMessageLoop _loop;
     private readonly RemoteSession _session;
     private FileStream? _activeFile;
     private long _activeExpectedSize;
     private string? _activeTransferId;
+    private int _offerPending;
+    private bool _disposed;
 
     public FileReceiver(SessionMessageLoop loop, RemoteSession session)
     {
@@ -41,18 +43,37 @@ public sealed class FileReceiver
                     break;
 
                 case MessageType.FileChunk:
-                    HandleChunk(payload.Deserialize<FileChunkMessage>()!);
+                    await HandleChunkAsync(payload.Deserialize<FileChunkMessage>()!).ConfigureAwait(false);
+                    break;
+                case MessageType.FileTransferCancel:
+                    if (payload.Deserialize<FileTransferCancelMessage>()?.TransferId == _activeTransferId)
+                    {
+                        _activeFile?.Dispose();
+                        _activeFile = null;
+                        _activeTransferId = null;
+                    }
                     break;
             }
         }
         catch (Exception ex)
         {
+            _activeFile?.Dispose();
+            _activeFile = null;
+            _activeTransferId = null;
             Faulted?.Invoke(ex);
         }
     }
 
     private async Task HandleOfferAsync(FileOfferMessage offer)
     {
+        if (offer.FileSizeBytes < 0 || _activeFile is not null || Interlocked.CompareExchange(ref _offerPending, 1, 0) != 0)
+        {
+            await _loop.SendAsync(MessageType.FileOfferResponse,
+                new FileOfferResponseMessage(offer.TransferId, false, "Invalid offer or another transfer is in progress."));
+            return;
+        }
+        try
+        {
         if (!_session.GrantedPermissions.HasFlag(ConnectionPermissions.FileTransfer))
         {
             await _loop.SendAsync(
@@ -67,6 +88,7 @@ public sealed class FileReceiver
             ? FileOfferDecision.Reject("No one is available to accept file transfers right now.")
             : await handler(new IncomingFileOffer(offer.TransferId, offer.FileName, offer.FileSizeBytes)).ConfigureAwait(false);
 
+        if (_disposed) return;
         if (!decision.Accept || decision.SavePath is null)
         {
             await _loop.SendAsync(
@@ -82,15 +104,20 @@ public sealed class FileReceiver
 
         await _loop.SendAsync(MessageType.FileOfferResponse, new FileOfferResponseMessage(offer.TransferId, true, null))
             .ConfigureAwait(false);
+        }
+        finally { Interlocked.Exchange(ref _offerPending, 0); }
     }
 
-    private void HandleChunk(FileChunkMessage chunk)
+    private async Task HandleChunkAsync(FileChunkMessage chunk)
     {
         if (_activeFile is null || chunk.TransferId != _activeTransferId)
         {
             return;
         }
 
+        if (chunk.Offset != _activeFile.Position || chunk.Data.LongLength > _activeExpectedSize - chunk.Offset
+            || (chunk.IsLast && chunk.Offset + chunk.Data.LongLength != _activeExpectedSize))
+            throw new InvalidDataException("File chunk offset or size does not match the accepted offer.");
         _activeFile.Write(chunk.Data, 0, chunk.Data.Length);
         ProgressChanged?.Invoke(new FileTransferProgress(chunk.Offset + chunk.Data.Length, _activeExpectedSize));
 
@@ -101,6 +128,15 @@ public sealed class FileReceiver
             _activeFile = null;
             _activeTransferId = null;
             FileReceived?.Invoke(path);
+            await _loop.SendAsync(MessageType.FileTransferComplete, new FileTransferCompleteMessage(chunk.TransferId, true)).ConfigureAwait(false);
         }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _loop.MessageReceived -= OnMessageReceived;
+        _activeFile?.Dispose();
+        _activeFile = null;
     }
 }

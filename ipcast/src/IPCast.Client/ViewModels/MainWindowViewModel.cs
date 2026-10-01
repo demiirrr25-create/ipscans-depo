@@ -9,14 +9,28 @@ using IPCast.RemoteDesktop.Capture;
 using IPCast.RemoteDesktop.Input;
 using IPCast.Security;
 using IPCast.Shared;
+using Avalonia.Threading;
+using Microsoft.Win32;
 
 namespace IPCast.Client.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
+    private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string StartupRegistryValue = "IPCast";
+
     private const ConnectionPermissions DefaultRequestedPermissions =
         ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse |
-        ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard;
+        ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer;
+
+    private readonly PreferencesStore _preferencesStore = new();
+    private CancellationTokenSource? _connectCts;
+    private CancellationTokenSource? _transferCts;
+    [ObservableProperty] private bool _isConnected;
+    [ObservableProperty] private string _localConnectionInfo = "Starting local listener...";
+    public FileOfferHandler? OnFileOffered { get; set; }
+    public Func<string, string, string?, Task<bool>>? OnTrustRequested { get; set; }
+    public string CertificateFingerprint { get; }
 
     private readonly DeviceId _localDeviceId;
     private readonly UnattendedAccessStore _unattendedAccessStore;
@@ -72,13 +86,26 @@ public partial class MainWindowViewModel : ObservableObject
     private bool _isTransferringFile;
 
     [ObservableProperty]
-    private string _relayServerInput = string.Empty;
-
-    [ObservableProperty]
-    private string _relayServerMessage = string.Empty;
+    private string _relayServerMessage = "Connecting automatically to IPCast relay...";
 
     [ObservableProperty]
     private bool _isClipboardSyncEnabled = true;
+    private bool _launchAtStartup;
+    public bool LaunchAtStartup
+    {
+        get => _launchAtStartup;
+        set
+        {
+            if (SetProperty(ref _launchAtStartup, value))
+            {
+                UpdateLaunchAtStartup(value);
+            }
+        }
+    }
+    public IReadOnlyList<string> StreamingModes { get; } = ["Balanced", "Speed", "Quality"];
+    [ObservableProperty] private string _streamingMode = "Balanced";
+    partial void OnStreamingModeChanged(string value) => SavePreferences();
+    public bool IsLaunchAtStartupSupported => OperatingSystem.IsWindows();
 
     public MainWindowViewModel()
         : this(new DeviceIdentityStore(), new DeviceCertificateStore(), new UnattendedAccessStore(),
@@ -106,10 +133,92 @@ public partial class MainWindowViewModel : ObservableObject
         var discoveryPort = int.TryParse(Environment.GetEnvironmentVariable("IPCAST_DISCOVERY_PORT"), out var p)
             ? p
             : LanDiscoveryService.DefaultDiscoveryPort;
-        NetworkService = new IPCastService(_localDeviceId, certificateStore.LoadOrCreate(), discoveryPort)
+        var certificate = certificateStore.LoadOrCreate();
+        CertificateFingerprint = certificate.GetCertHashString(System.Security.Cryptography.HashAlgorithmName.SHA256);
+        NetworkService = new IPCastService(_localDeviceId, certificate, discoveryPort)
         {
             UnattendedAccessPolicy = new UnattendedAccessPolicy(unattendedAccessStore),
         };
+        var trustedDevices = new TrustedDevicesStore();
+        NetworkService.VerifyPeerCertificateAsync = async (device, fingerprint) => {
+            var saved = trustedDevices.GetFingerprint(device);
+            if (string.Equals(saved, fingerprint, StringComparison.Ordinal)) return true;
+            if (OnTrustRequested is null || !await OnTrustRequested(device, fingerprint, saved)) return false;
+            trustedDevices.Remember(device, fingerprint);
+            return true;
+        };
+        var preferences = _preferencesStore.Load();
+        _isClipboardSyncEnabled = preferences.ClipboardSync;
+        _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
+        _launchAtStartup = OperatingSystem.IsWindows() && preferences.LaunchAtStartup && IsRegisteredForStartup();
+        NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
+        NetworkService.RelayStatusChanged += message => Dispatcher.UIThread.Post(() => RelayServerMessage = message);
+    }
+
+    partial void OnIsClipboardSyncEnabledChanged(bool value) => SavePreferences();
+    private void SavePreferences()
+    {
+        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode, LaunchAtStartup: LaunchAtStartup)); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
+    }
+
+    private static bool IsRegisteredForStartup()
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey);
+            return !string.IsNullOrWhiteSpace(key?.GetValue(StartupRegistryValue) as string);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return false;
+        }
+    }
+
+    private void UpdateLaunchAtStartup(bool enabled)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            _launchAtStartup = false;
+            OnPropertyChanged(nameof(LaunchAtStartup));
+            return;
+        }
+
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(StartupRegistryKey)
+                ?? throw new IOException("The Windows startup registry key could not be opened.");
+            if (enabled)
+            {
+                var processPath = Environment.ProcessPath
+                    ?? throw new InvalidOperationException("The IPCast executable path could not be determined.");
+                var command = $"\"{processPath}\"";
+                if (Path.GetFileNameWithoutExtension(processPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                {
+                    var entryAssemblyName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+                    if (!string.IsNullOrWhiteSpace(entryAssemblyName))
+                    {
+                        var entryAssemblyPath = Path.Combine(AppContext.BaseDirectory, entryAssemblyName + ".dll");
+                        command += $" \"{entryAssemblyPath}\"";
+                    }
+                }
+
+                key.SetValue(StartupRegistryValue, command);
+            }
+            else
+            {
+                key.DeleteValue(StartupRegistryValue, throwOnMissingValue: false);
+            }
+
+            SavePreferences();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or InvalidOperationException)
+        {
+            _launchAtStartup = !enabled;
+            OnPropertyChanged(nameof(LaunchAtStartup));
+            StatusMessage = $"Couldn't update Windows startup: {ex.Message}";
+        }
     }
 
     /// <summary>Persisted connection attempts, newest first (spec §19/§27).</summary>
@@ -163,10 +272,13 @@ public partial class MainWindowViewModel : ObservableObject
         StatusMessage = "Connecting to remote device...";
         try
         {
+            await DisconnectAsync();
+            _connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
             var result = await NetworkService.ConnectAsync(
                 RemoteIdInput.Trim(),
                 DefaultRequestedPermissions,
-                password: string.IsNullOrEmpty(RemotePasswordInput) ? null : RemotePasswordInput);
+                password: string.IsNullOrEmpty(RemotePasswordInput) ? null : RemotePasswordInput,
+                ct: _connectCts.Token);
 
             if (result.Success)
             {
@@ -195,40 +307,64 @@ public partial class MainWindowViewModel : ObservableObject
                 StatusMessage = result.Error ?? "Couldn't connect.";
             }
         }
+        catch (Exception ex) { StatusMessage = $"Connection failed: {ex.Message}"; }
         finally
         {
+            _connectCts?.Dispose();
+            _connectCts = null;
+            RemotePasswordInput = string.Empty;
             IsConnecting = false;
         }
     }
 
-    [RelayCommand]
-    private void SaveRelayServer()
-    {
-        if (string.IsNullOrWhiteSpace(RelayServerInput))
-        {
-            NetworkService.RelayServerEndpoint = null;
-            RelayServerMessage = "Relay server disabled (local network mode).";
-            return;
-        }
-
-        if (System.Net.IPEndPoint.TryParse(RelayServerInput.Trim(), out var ep))
-        {
-            NetworkService.RelayServerEndpoint = ep;
-            RelayServerMessage = $"Relay server set to {ep}.";
-        }
-        else
-        {
-            RelayServerMessage = "Enter a valid endpoint, e.g. 192.168.1.10:9876.";
-        }
-    }
+    [RelayCommand] private void CancelConnect() => _connectCts?.Cancel();
 
     [RelayCommand]
-    private void ClearRelayServer()
+    private async Task DisconnectAsync()
     {
-        NetworkService.RelayServerEndpoint = null;
-        RelayServerInput = string.Empty;
-        RelayServerMessage = "Relay server disabled.";
+        _transferCts?.Cancel();
+        _activeDesktop?.Dispose();
+        _activeDesktop = null;
+        var loop = _activeSessionLoop;
+        _activeSessionLoop = null;
+        _activeSession?.Dispose();
+        _activeSession = null;
+        if (loop is not null) await loop.DisposeAsync();
+        _fileReceiver?.Dispose();
+        _fileReceiver = null;
+        IsConnected = false;
     }
+
+    public async Task ShutdownAsync()
+    {
+        _connectCts?.Cancel();
+        await DisconnectAsync();
+        await NetworkService.DisposeAsync();
+    }
+
+    public Task DisconnectDesktopAsync(RemoteDesktopSession desktop) =>
+        ReferenceEquals(_activeDesktop, desktop) ? DisconnectAsync() : Task.CompletedTask;
+
+    [RelayCommand]
+    private async Task SendFileAsync()
+    {
+        if (_activeSession is null || _activeSessionLoop is null)
+        { FileTransferMessage = "Connect to a device first."; return; }
+        IsTransferringFile = true;
+        _transferCts = new CancellationTokenSource();
+        try
+        {
+            FileTransferProgress = 0;
+            FileTransferMessage = "Waiting for the receiving device to accept the file...";
+            var progress = new Progress<IPCast.FileTransfer.FileTransferProgress>(p => FileTransferProgress = p.FractionComplete * 100);
+            var result = await new FileSender().SendFileAsync(_activeSessionLoop, _activeSession, SelectedFilePath, progress, _transferCts.Token);
+            FileTransferMessage = result.Success ? "File sent." : $"File transfer failed: {result.Error}";
+        }
+        catch (Exception ex) { FileTransferMessage = $"File transfer failed: {ex.Message}"; }
+        finally { IsTransferringFile = false; _transferCts.Dispose(); _transferCts = null; }
+    }
+
+    [RelayCommand] private void CancelTransfer() => _transferCts?.Cancel();
 
     public void NotifyIdCopied()
     {
@@ -326,6 +462,7 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Called by the View when the host side accepts an incoming connection (spec §21 Accept flow).</summary>
     public void OnSessionEstablished(RemoteSession session)
     {
+        if (_activeSession is not null) { session.Dispose(); return; }
         AttachSession(session);
         RecordHistory(session.RemoteDeviceId, "Incoming", "Connected");
         StatusMessage = $"{session.RemoteDeviceId.Formatted} connected over TLS. Clipboard sync is live.";
@@ -336,30 +473,32 @@ public partial class MainWindowViewModel : ObservableObject
     private void AttachSession(RemoteSession session)
     {
         _activeSession = session;
+        IsConnected = true;
         var loop = new SessionMessageLoop(session);
-        loop.ClipboardTextReceived += text => PeerClipboardTextReceived?.Invoke(text);
+        loop.ClipboardTextReceived += text => { if (IsClipboardSyncEnabled) PeerClipboardTextReceived?.Invoke(text); };
+        loop.Faulted += ex => Dispatcher.UIThread.Post(() => StatusMessage = $"Connection ended: {ex.Message}");
+        loop.Ended += () => Dispatcher.UIThread.Post(async () => {
+            if (ReferenceEquals(_activeSessionLoop, loop)) { await DisconnectAsync(); StatusMessage = "Disconnected."; }
+        });
 
         _fileReceiver = new FileReceiver(loop, session)
         {
-            OnFileOffered = offer =>
-            {
-                var downloadDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                var savePath = System.IO.Path.Combine(downloadDir, offer.FileName);
-                return Task.FromResult(FileOfferDecision.AcceptTo(savePath));
-            }
+            OnFileOffered = offer => OnFileOffered?.Invoke(offer) ?? Task.FromResult(FileOfferDecision.Reject("No file receiver is available."))
         };
-        _fileReceiver.FileReceived += path => FileTransferMessage = $"Received file saved to: {path}";
+        _fileReceiver.FileReceived += path => Dispatcher.UIThread.Post(() => FileTransferMessage = $"Received file saved to: {path}");
+        _fileReceiver.Faulted += ex => Dispatcher.UIThread.Post(() => FileTransferMessage = $"Receive failed: {ex.Message}");
 
-        loop.Start();
         _activeSessionLoop = loop;
 
         if (!session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
         {
+            loop.Start();
             return;
         }
 
         var desktop = new RemoteDesktopSession(loop, session);
         _activeDesktop = desktop;
+        desktop.Faulted += ex => Dispatcher.UIThread.Post(async () => { await DisconnectAsync(); StatusMessage = $"Screen sharing stopped: {ex.Message}"; });
 
         if (session.IsInitiator)
         {
@@ -370,8 +509,10 @@ public partial class MainWindowViewModel : ObservableObject
         {
             // We accepted the incoming request and granted ViewScreen: share this screen.
             var (capturer, injector) = CreateSharingBackend();
-            desktop.StartSharing(capturer, injector, frameInterval: TimeSpan.FromMilliseconds(200));
+            var profile = StreamingProfile.FromName(StreamingMode);
+            desktop.StartSharing(capturer, injector, TimeSpan.FromSeconds(1d / profile.FramesPerSecond), profile.Quality, profile.MaxDimension, profile.BytesPerSecond);
         }
+        loop.Start();
     }
 
     private static (IScreenCapturer Capturer, IInputInjector Injector) CreateSharingBackend()
@@ -394,5 +535,5 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Pushes locally-copied clipboard text to the connected peer, if any (spec §8).</summary>
     public Task PushLocalClipboardTextAsync(string text) =>
-        _activeSessionLoop?.SendClipboardTextAsync(text) ?? Task.CompletedTask;
+        IsClipboardSyncEnabled ? (_activeSessionLoop?.SendClipboardTextAsync(text) ?? Task.CompletedTask) : Task.CompletedTask;
 }

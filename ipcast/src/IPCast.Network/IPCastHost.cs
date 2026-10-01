@@ -30,6 +30,7 @@ public sealed class IPCastHost : IAsyncDisposable
 
     /// <summary>The bound TCP port - useful when constructed with port 0 (let the OS pick one).</summary>
     public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
+    public DeviceId? LocalDeviceId { get; init; }
 
     /// <summary>Must be set before <see cref="Start"/> for incoming connections to ever be accepted.</summary>
     public ConnectionRequestHandler? OnConnectionRequested { get; set; }
@@ -133,7 +134,7 @@ public sealed class IPCastHost : IAsyncDisposable
             await MessageStream.WriteAsync(
                 stream,
                 MessageType.ConnectionDecision,
-                new ConnectionDecisionMessage(decision.Accepted, decision.GrantedPermissions, decision.Reason),
+                new ConnectionDecisionMessage(decision.Accepted, decision.GrantedPermissions, decision.Reason, LocalDeviceId?.Raw),
                 ct).ConfigureAwait(false);
 
             if (!decision.Accepted)
@@ -180,7 +181,7 @@ public sealed class IPCastHost : IAsyncDisposable
             await MessageStream.WriteAsync(
                 stream,
                 MessageType.ConnectionDecision,
-                new ConnectionDecisionMessage(decision.Accepted, decision.GrantedPermissions, decision.Reason),
+                new ConnectionDecisionMessage(decision.Accepted, decision.GrantedPermissions, decision.Reason, LocalDeviceId?.Raw),
                 ct).ConfigureAwait(false);
 
             if (!decision.Accepted)
