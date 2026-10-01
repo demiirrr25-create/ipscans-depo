@@ -258,7 +258,18 @@ public partial class MainWindowViewModel : ObservableObject
         IsConnected = false;
     }
 
-    public async Task ShutdownAsync()
+    private readonly object _shutdownGate = new();
+    private Task? _shutdownTask;
+
+    public Task ShutdownAsync()
+    {
+        lock (_shutdownGate)
+        {
+            return _shutdownTask ??= ShutdownCoreAsync();
+        }
+    }
+
+    private async Task ShutdownCoreAsync()
     {
         _connectCts?.Cancel();
         await DisconnectAsync();
