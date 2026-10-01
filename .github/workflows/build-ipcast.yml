@@ -49,6 +49,33 @@ jobs:
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish/win-x64
 
+      - name: Smoke test IPCast window startup and shutdown
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $env:IPCAST_DATA_DIR = Join-Path $env:RUNNER_TEMP "IPCastSmoke"
+          $env:IPCAST_RELAY_SERVER = "ws://127.0.0.1:1/relay"
+          $process = Start-Process -FilePath "publish\win-x64\IPCast.exe" -PassThru
+          try {
+            $null = $process.WaitForInputIdle(15000)
+            $process.Refresh()
+            if ($process.HasExited -or $process.MainWindowHandle -eq [IntPtr]::Zero) {
+              throw "IPCast did not create its main window."
+            }
+          }
+          finally {
+            if (-not $process.HasExited) {
+              $null = $process.CloseMainWindow()
+              if (-not $process.WaitForExit(5000)) {
+                Stop-Process -Id $process.Id -Force
+                throw "IPCast did not shut down after its main window closed."
+              }
+            }
+            if (Test-Path $env:IPCAST_DATA_DIR) {
+              Remove-Item -Path $env:IPCAST_DATA_DIR -Recurse -Force
+            }
+          }
+
       - name: Upload IPCast.exe artifact
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
