@@ -62,14 +62,19 @@ jobs:
             if ($process.HasExited -or $process.MainWindowHandle -eq [IntPtr]::Zero) {
               throw "IPCast did not create its main window."
             }
+            Write-Host "IPCast main window opened: $($process.MainWindowTitle) (handle $($process.MainWindowHandle))."
           }
           finally {
             if (-not $process.HasExited) {
-              $null = $process.CloseMainWindow()
+              $closeSent = $process.CloseMainWindow()
+              Write-Host "CloseMainWindow returned: $closeSent."
               if (-not $process.WaitForExit(20000)) {
+                $process.Refresh()
+                Write-Host "Process still running: title='$($process.MainWindowTitle)', handle=$($process.MainWindowHandle), responding=$($process.Responding)."
                 Stop-Process -Id $process.Id -Force
                 throw "IPCast did not shut down after its main window closed."
               }
+              Write-Host "IPCast exited with code $($process.ExitCode)."
             }
             if (Test-Path $env:IPCAST_DATA_DIR) {
               Remove-Item -Path $env:IPCAST_DATA_DIR -Recurse -Force
