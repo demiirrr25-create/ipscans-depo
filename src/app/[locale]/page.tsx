@@ -4,6 +4,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { LiveIp } from "@/components/LiveIp";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { Reveal } from "@/components/Reveal";
+import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
 
@@ -49,13 +50,13 @@ export default async function HomePage({
           <Reveal index={3}>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href={toolPath("ipLookup", locale)}
+                href="#applications"
                 className="btn-primary rounded-xl px-6 py-3 font-semibold"
               >
                 {dict.hero.ctaPrimary}
               </Link>
               <Link
-                href={toolPath("speedTest", locale)}
+                href={`/${locale}/ipcast`}
                 className="btn-ghost rounded-xl px-6 py-3 font-semibold"
               >
                 {dict.hero.ctaSecondary}
@@ -122,6 +123,8 @@ export default async function HomePage({
           ))}
         </div>
       </section>
+
+      <ApplicationsSection locale={locale} />
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 pb-24">

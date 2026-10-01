@@ -25,7 +25,7 @@ export default function sitemap({
   id: number;
 }): MetadataRoute.Sitemap {
   const locale = locales[id];
-  const staticPaths = ["", "/scan", "/download", "/pro", "/blog", "/shop", "/privacy", "/terms"];
+  const staticPaths = ["", "/scan", "/download", "/download/ipcast", "/ipcast", "/pro", "/blog", "/shop", "/privacy", "/terms"];
   const entries: MetadataRoute.Sitemap = [];
 
   for (const path of staticPaths) {

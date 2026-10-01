@@ -26,12 +26,12 @@ const dictionaries = {
     },
     hero: {
       badge: "Ağ araçları platformu",
-      title: "IP adresini tanı, ağını test et",
+      title: "Ağ Araçları. Tek Platform.",
       subtitle:
-        "Tek bir yerden IP sorgulama, coğrafi konum, internet hız testi ve ağ araçlarına eriş. Ücretsiz ve kayıt gerektirmez.",
-      ctaPrimary: "IP'mi Öğren",
-      ctaSecondary: "Hız Testi Yap",
-      ctaDownload: "Windows Uygulamasını İndir",
+        "IP analizi, ağ keşfi ve uzaktan erişim araçlarını tek bir platformda bul.",
+      ctaPrimary: "Uygulamaları Keşfet",
+      ctaSecondary: "IPCast'i Keşfet",
+      ctaDownload: "IP Scanner'ı İndir",
       yourIp: "Senin IP adresin",
     },
     stats: {
@@ -301,12 +301,12 @@ const dictionaries = {
     },
     hero: {
       badge: "Network tools platform",
-      title: "Know your IP, test your network",
+      title: "Network Tools. One Platform.",
       subtitle:
-        "IP lookup, geolocation, internet speed test and network tools in one place. Free and no sign-up required.",
-      ctaPrimary: "Find My IP",
-      ctaSecondary: "Run Speed Test",
-      ctaDownload: "Download Windows App",
+        "IP analysis, network discovery and remote-access tools, brought together in one platform.",
+      ctaPrimary: "Explore Applications",
+      ctaSecondary: "Explore IPCast",
+      ctaDownload: "Download IP Scanner",
       yourIp: "Your IP address",
     },
     stats: {
@@ -573,12 +573,12 @@ const dictionaries = {
     },
     hero: {
       badge: "Netzwerktool-Plattform",
-      title: "Kenne deine IP, teste dein Netzwerk",
+      title: "Netzwerktools. Eine Plattform.",
       subtitle:
-        "IP-Abfrage, Geolokalisierung, Geschwindigkeitstest und Netzwerktools an einem Ort. Kostenlos und ohne Registrierung.",
-      ctaPrimary: "Meine IP finden",
-      ctaSecondary: "Geschwindigkeitstest starten",
-      ctaDownload: "Windows-App herunterladen",
+        "IP-Analyse, Netzwerkerkennung und Fernzugriffswerkzeuge auf einer Plattform.",
+      ctaPrimary: "Anwendungen entdecken",
+      ctaSecondary: "IPCast entdecken",
+      ctaDownload: "IP Scanner herunterladen",
       yourIp: "Deine IP-Adresse",
     },
     stats: {
@@ -848,12 +848,12 @@ const dictionaries = {
     },
     hero: {
       badge: "Plateforme d'outils réseau",
-      title: "Connaissez votre IP, testez votre réseau",
+      title: "Outils réseau. Une plateforme.",
       subtitle:
-        "Recherche IP, géolocalisation, test de vitesse et outils réseau en un seul endroit. Gratuit et sans inscription.",
-      ctaPrimary: "Trouver mon IP",
-      ctaSecondary: "Lancer le test de vitesse",
-      ctaDownload: "Télécharger l'application Windows",
+        "Analyse IP, découverte réseau et outils d’accès à distance réunis sur une plateforme.",
+      ctaPrimary: "Découvrir les applications",
+      ctaSecondary: "Découvrir IPCast",
+      ctaDownload: "Télécharger IP Scanner",
       yourIp: "Votre adresse IP",
     },
     stats: {
@@ -1123,12 +1123,12 @@ const dictionaries = {
     },
     hero: {
       badge: "Plataforma de herramientas de red",
-      title: "Conoce tu IP, prueba tu red",
+      title: "Herramientas de red. Una plataforma.",
       subtitle:
-        "Búsqueda de IP, geolocalización, test de velocidad y herramientas de red en un solo lugar. Gratis y sin registro.",
-      ctaPrimary: "Buscar mi IP",
-      ctaSecondary: "Hacer test de velocidad",
-      ctaDownload: "Descargar la app de Windows",
+        "Análisis IP, descubrimiento de redes y acceso remoto reunidos en una sola plataforma.",
+      ctaPrimary: "Explorar aplicaciones",
+      ctaSecondary: "Descubrir IPCast",
+      ctaDownload: "Descargar IP Scanner",
       yourIp: "Tu dirección IP",
     },
     stats: {
