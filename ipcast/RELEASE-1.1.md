@@ -1,5 +1,11 @@
 # IPCast 1.1 Preview
 
+## Preview 2
+
+- A full-screen button is available in the remote screen window. F11 toggles it, and Escape exits it.
+- Closing the main window is safe if shutdown is requested more than once.
+- The release remains a preview until a two-computer field acceptance test confirms screen, input and network behavior.
+
 Automatic relay remains enabled for every client profile. Close older instances and update both computers. The device owner still approves access and the viewer verifies device trust.
 
 ## Performance
