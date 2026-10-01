@@ -13,7 +13,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const product = getDictionary(locale).ipcast;
-  return { title: `${product.title} ${ipcastRelease.version}`, description: product.subtitle, alternates: { canonical: `/${locale}/download/ipcast` } };
+  return {
+    title: `${product.title} ${ipcastRelease.version}`,
+    description: product.subtitle,
+    alternates: { canonical: `/${locale}/download/ipcast` },
+    openGraph: { title: `${product.title} ${ipcastRelease.version} — IPScans`, description: product.subtitle, url: `https://ipscans.com/${locale}/download/ipcast` },
+  };
 }
 
 export default async function IPCastDownloadPage({ params }: Props) {

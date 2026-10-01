@@ -12,7 +12,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const t = getDictionary(locale).ipcast;
-  return { title: t.title, description: t.subtitle, alternates: { canonical: `/${locale}/ipcast` } };
+  return {
+    title: t.title,
+    description: t.subtitle,
+    alternates: { canonical: `/${locale}/ipcast` },
+    openGraph: { title: `${t.title} — IPScans`, description: t.subtitle, url: `https://ipscans.com/${locale}/ipcast` },
+  };
 }
 
 const connectionNotes = {

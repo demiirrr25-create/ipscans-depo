@@ -204,7 +204,7 @@ const dictionaries = {
         "Sadeleştirilmiş, tek tıkla başlayan tarama ekranı",
       ],
       button: "Windows için indir (.exe)",
-      note: "Yaklaşık 47 MB. İndirdikten sonra çift tıklayıp çalıştır — Python kurulumu gerekmez. SmartScreen uyarısı verirse 'Daha fazla bilgi > Yine de çalıştır' de.",
+      note: "Yaklaşık 47 MB. Python kurulumu gerekmez. Windows güvenlik uyarısı görürseniz dosyanın kaynağını doğrulayın.",
       safe: "Yalnızca sahibi olduğun ağlarda kullan.",
     },
     ipcast: {
@@ -494,7 +494,7 @@ const dictionaries = {
         "Streamlined, one-click scan screen",
       ],
       button: "Download for Windows (.exe)",
-      note: "About 47 MB. Double-click to run after downloading — no Python install needed. If SmartScreen warns, choose 'More info > Run anyway'.",
+      note: "About 47 MB. No Python install needed. If Windows shows a security warning, verify the file source before running it.",
       safe: "Only use on networks you own.",
     },
     ipcast: {
@@ -787,7 +787,7 @@ const dictionaries = {
         "Vereinfachter Scan-Bildschirm mit einem Klick zum Start",
       ],
       button: "Für Windows herunterladen (.exe)",
-      note: "Etwa 47 MB. Nach dem Download doppelklicken zum Ausführen — keine Python-Installation nötig. Bei SmartScreen-Warnung 'Weitere Informationen > Trotzdem ausführen' wählen.",
+      note: "Etwa 47 MB. Keine Python-Installation nötig. Prüfen Sie bei einer Windows-Sicherheitswarnung zuerst die Herkunft der Datei.",
       safe: "Nur in Netzwerken verwenden, die dir gehören.",
     },
     ipcast: {
@@ -1080,7 +1080,7 @@ const dictionaries = {
         "Écran de scan simplifié, prêt à démarrer en un clic",
       ],
       button: "Télécharger pour Windows (.exe)",
-      note: "Environ 47 Mo. Double-cliquez pour exécuter après le téléchargement — aucune installation de Python requise. Si SmartScreen avertit, choisissez 'Plus d'infos > Exécuter quand même'.",
+      note: "Environ 47 Mo. Aucune installation de Python requise. Si Windows affiche un avertissement, vérifiez la provenance du fichier.",
       safe: "À utiliser uniquement sur des réseaux que vous possédez.",
     },
     ipcast: {
@@ -1373,7 +1373,7 @@ const dictionaries = {
         "Pantalla de escaneo simplificada, lista en un clic",
       ],
       button: "Descargar para Windows (.exe)",
-      note: "Unos 47 MB. Haz doble clic para ejecutar tras la descarga — no necesitas instalar Python. Si SmartScreen avisa, elige 'Más información > Ejecutar de todos modos'.",
+      note: "Unos 47 MB. No necesitas instalar Python. Si Windows muestra una alerta de seguridad, verifica el origen del archivo.",
       safe: "Úsalo solo en redes que poseas.",
     },
     ipcast: {
