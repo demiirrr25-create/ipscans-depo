@@ -20,6 +20,7 @@ const dictionaries = {
       speedTest: "Hız Testi",
       scan: "Ağ Tarama",
       appDownload: "Windows Uygulaması",
+      ipcast: "IPCast Remote Desktop",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Mağaza",
@@ -206,6 +207,23 @@ const dictionaries = {
       note: "Yaklaşık 47 MB. İndirdikten sonra çift tıklayıp çalıştır — Python kurulumu gerekmez. SmartScreen uyarısı verirse 'Daha fazla bilgi > Yine de çalıştır' de.",
       safe: "Yalnızca sahibi olduğun ağlarda kullan.",
     },
+    ipcast: {
+      title: "IPCast Uzaktan Masaüstü",
+      subtitle:
+        "Windows bilgisayarlara uzaktan bağlanın, ekranı görüntüleyin veya kontrol edin. Bağlantınızı TLS şifrelemesiyle koruyun; pano ve dosya aktarımını aynı uygulamada kullanın.",
+      badge: "Ücretsiz • Yerel ağ ve Relay bağlantısı",
+      features: [
+        "9 haneli cihaz kodu veya doğrudan IP adresiyle bağlantı kurun",
+        "Ekran görüntüleme ve kontrol izinlerini bağlantı sırasında yönetin",
+        "İsteğe bağlı katılımsız erişimi parola belirleyerek yapılandırın",
+        "Bağlı cihazlar arasında metin kopyalayıp yapıştırın",
+        "Dosyaları parçalara ayırarak gönderin ve alın",
+        "Son bağlantılarınıza ve favori cihazlarınıza kolayca dönün",
+      ],
+      button: "IPCast'i İndir (.exe)",
+      note: "Yaklaşık 101 MB. Tek dosyalı Windows uygulamasıdır; ayrıca .NET kurmanız gerekmez.",
+      safe: "Yalnızca size ait veya erişim izniniz bulunan cihazlara bağlanın.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -295,6 +313,7 @@ const dictionaries = {
       speedTest: "Speed Test",
       scan: "Network Scan",
       appDownload: "Windows App",
+      ipcast: "IPCast Remote Desktop",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Shop",
@@ -478,6 +497,23 @@ const dictionaries = {
       note: "About 47 MB. Double-click to run after downloading — no Python install needed. If SmartScreen warns, choose 'More info > Run anyway'.",
       safe: "Only use on networks you own.",
     },
+    ipcast: {
+      title: "IPCast Remote Desktop",
+      subtitle:
+        "Connect to Windows computers remotely to view or control their screens. Protect connections with TLS encryption and use clipboard and file transfer in one app.",
+      badge: "Free • LAN and relay connections",
+      features: [
+        "Connect with a 9-digit device code or a direct IP address",
+        "Choose screen viewing and control permissions for each connection",
+        "Optionally configure unattended access with a password",
+        "Copy and paste text between connected devices",
+        "Send and receive files in chunks",
+        "Return to recent connections and favorite devices",
+      ],
+      button: "Download IPCast (.exe)",
+      note: "About 101 MB. This is a single-file Windows app; a separate .NET installation is not required.",
+      safe: "Connect only to devices you own or are authorized to access.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -567,6 +603,7 @@ const dictionaries = {
       speedTest: "Geschwindigkeitstest",
       scan: "Netzwerkscan",
       appDownload: "Windows-App",
+      ipcast: "IPCast Remote Desktop",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Shop",
@@ -753,6 +790,23 @@ const dictionaries = {
       note: "Etwa 47 MB. Nach dem Download doppelklicken zum Ausführen — keine Python-Installation nötig. Bei SmartScreen-Warnung 'Weitere Informationen > Trotzdem ausführen' wählen.",
       safe: "Nur in Netzwerken verwenden, die dir gehören.",
     },
+    ipcast: {
+      title: "IPCast Remote Desktop",
+      subtitle:
+        "Verbinden Sie sich aus der Ferne mit Windows-Computern, um deren Bildschirm anzusehen oder zu steuern. TLS-Verschlüsselung schützt die Verbindung; Zwischenablage und Dateiübertragung sind integriert.",
+      badge: "Kostenlos • Verbindungen im lokalen Netzwerk und über Relay",
+      features: [
+        "Verbindung per 9-stelligem Gerätecode oder direkter IP-Adresse",
+        "Bildschirmansicht und Steuerungsrechte pro Verbindung festlegen",
+        "Optionalen unbeaufsichtigten Zugriff mit einem Passwort einrichten",
+        "Text zwischen verbundenen Geräten kopieren und einfügen",
+        "Dateien in Teilen senden und empfangen",
+        "Letzte Verbindungen und Favoritengeräte schnell wiederfinden",
+      ],
+      button: "IPCast herunterladen (.exe)",
+      note: "Etwa 101 MB. Eine einzelne Windows-Datei; eine separate .NET-Installation ist nicht erforderlich.",
+      safe: "Verbinden Sie sich nur mit eigenen Geräten oder Geräten, auf die Sie zugreifen dürfen.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -842,6 +896,7 @@ const dictionaries = {
       speedTest: "Test de vitesse",
       scan: "Scan réseau",
       appDownload: "Application Windows",
+      ipcast: "IPCast Bureau à Distance",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Boutique",
@@ -1028,6 +1083,23 @@ const dictionaries = {
       note: "Environ 47 Mo. Double-cliquez pour exécuter après le téléchargement — aucune installation de Python requise. Si SmartScreen avertit, choisissez 'Plus d'infos > Exécuter quand même'.",
       safe: "À utiliser uniquement sur des réseaux que vous possédez.",
     },
+    ipcast: {
+      title: "IPCast Bureau à distance",
+      subtitle:
+        "Connectez-vous à distance à des ordinateurs Windows pour afficher ou contrôler leur écran. Le chiffrement TLS protège la connexion ; le presse-papiers et le transfert de fichiers sont intégrés.",
+      badge: "Gratuit • Connexions réseau local et relais",
+      features: [
+        "Connectez-vous avec un code appareil à 9 chiffres ou une adresse IP directe",
+        "Choisissez les autorisations d’affichage et de contrôle pour chaque connexion",
+        "Configurez, si besoin, un accès sans présence devant l’appareil avec un mot de passe",
+        "Copiez et collez du texte entre les appareils connectés",
+        "Envoyez et recevez des fichiers par blocs",
+        "Retrouvez rapidement les connexions récentes et les appareils favoris",
+      ],
+      button: "Télécharger IPCast (.exe)",
+      note: "Environ 101 Mo. Application Windows en un seul fichier ; aucune installation .NET séparée n’est nécessaire.",
+      safe: "Connectez-vous uniquement à vos appareils ou à ceux auxquels vous êtes autorisé à accéder.",
+    },
     pro: {
       title: "ipscans Network Health Pro",
       subtitle:
@@ -1117,6 +1189,7 @@ const dictionaries = {
       speedTest: "Test de velocidad",
       scan: "Escaneo de red",
       appDownload: "Aplicación Windows",
+      ipcast: "IPCast Escritorio Remoto",
       pro: "Network Health Pro",
       blog: "Blog",
       shop: "Tienda",
@@ -1302,6 +1375,23 @@ const dictionaries = {
       button: "Descargar para Windows (.exe)",
       note: "Unos 47 MB. Haz doble clic para ejecutar tras la descarga — no necesitas instalar Python. Si SmartScreen avisa, elige 'Más información > Ejecutar de todos modos'.",
       safe: "Úsalo solo en redes que poseas.",
+    },
+    ipcast: {
+      title: "IPCast Escritorio remoto",
+      subtitle:
+        "Conéctate a equipos Windows a distancia para ver o controlar su pantalla. El cifrado TLS protege la conexión e incluye portapapeles y transferencia de archivos.",
+      badge: "Gratis • Conexiones de red local y relay",
+      features: [
+        "Conéctate mediante un código de dispositivo de 9 dígitos o una dirección IP directa",
+        "Elige los permisos de visualización y control para cada conexión",
+        "Configura opcionalmente el acceso desatendido con una contraseña",
+        "Copia y pega texto entre los dispositivos conectados",
+        "Envía y recibe archivos divididos en bloques",
+        "Vuelve fácilmente a las conexiones recientes y dispositivos favoritos",
+      ],
+      button: "Descargar IPCast (.exe)",
+      note: "Aproximadamente 101 MB. Es una aplicación de Windows en un solo archivo; no requiere instalar .NET por separado.",
+      safe: "Conéctate solo a dispositivos propios o a los que tengas autorización para acceder.",
     },
     pro: {
       title: "ipscans Network Health Pro",

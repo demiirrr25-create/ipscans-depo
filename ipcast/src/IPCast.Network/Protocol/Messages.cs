@@ -70,16 +70,12 @@ public sealed record MouseWheelMessage(int Delta);
 public sealed record KeyEventMessage(int VirtualKeyCode, bool IsDown);
 
 /// <summary>
-/// Sent by each side to a relay server (spec §12/§6). Two ways to use it: give a specific
-/// <see cref="TargetDeviceId"/> to request a connection to that exact device ("connect me to
-/// Y"), or leave it null to register as reachable by anyone ("I am X, waiting for whoever asks
-/// for me" - how a host makes itself reachable over the internet without knowing who'll connect
-/// in advance, mirroring how LAN discovery works). Once two sides are paired, the relay stops
-/// looking at messages and just pipes raw bytes between the two connections - everything above
-/// this (TLS, the handshake, etc.) works unchanged on top of that raw pipe, same as a direct LAN
-/// connection.
+/// Sent by each side to a relay server (spec §12/§6): "I am DeviceId, connect me to TargetDeviceId".
+/// Once both sides of a pair have registered, the relay stops looking at messages and just pipes
+/// raw bytes between the two connections - everything above this (TLS, the handshake, etc.) works
+/// unchanged on top of that raw pipe, same as a direct LAN connection.
 /// </summary>
-public sealed record RelayRegisterMessage(string DeviceId, string? TargetDeviceId);
+public sealed record RelayRegisterMessage(string DeviceId, string TargetDeviceId);
 
 /// <summary>Sent by the relay to both sides once they're paired and raw byte piping is about to begin.</summary>
 public sealed record RelayReadyMessage;

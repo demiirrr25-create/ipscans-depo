@@ -28,7 +28,7 @@
 
                 <ListBox DockPanel.Dock="Top"
                          ItemsSource="{Binding NavItems}"
-                         SelectedItem="{Binding SelectedNavItem, Mode=TwoWay}"
+                         SelectedItem="{Binding SelectedNavItem}"
                          Background="Transparent"
                          BorderThickness="0">
                     <ListBox.ItemTemplate>
@@ -38,7 +38,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionDisplay}" FontSize="11"
+                <TextBlock DockPanel.Dock="Bottom" Text="Version 1.0.0" FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}" Margin="4" />
             </DockPanel>
         </Border>
@@ -150,63 +150,35 @@
             </StackPanel>
 
             <!-- Settings -->
-            <ScrollViewer IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
-                <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top">
-                    <TextBlock Text="Settings" FontSize="24" FontWeight="Bold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                          IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
+                <StackPanel Spacing="20" MaxWidth="520" HorizontalAlignment="Left" VerticalAlignment="Top">
 
+                    <!-- Relay Server Settings -->
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="20">
+                            BorderThickness="1" CornerRadius="10" Padding="24">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="General" FontSize="15" FontWeight="SemiBold"
+                            <TextBlock Text="Network → Relay / Signal Server" FontSize="14" FontWeight="Bold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <CheckBox Content="Start IPCast when Windows starts"
-                                      IsChecked="{Binding LaunchAtStartup}"
-                                      IsEnabled="{Binding IsLaunchAtStartupSupported}" />
-                            <TextBlock Text="Available on Windows. This setting is stored for your Windows user only."
-                                       FontSize="12" TextWrapping="Wrap"
+                            <TextBlock Text="Configure a relay server (e.g. 192.168.1.10:9876) for connecting across different networks or symmetric NATs."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBox PlaceholderText="Relay address (e.g. 192.168.1.10:9876)" Text="{Binding RelayServerInput}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Save Relay Server" Classes="primary" Command="{Binding SaveRelayServerCommand}" />
+                                <Button Content="Clear" Command="{Binding ClearRelayServerCommand}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding RelayServerMessage}" FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>
                     </Border>
 
+                    <!-- Unattended Access -->
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="20">
+                            BorderThickness="1" CornerRadius="10" Padding="24">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="Display" FontSize="15" FontWeight="SemiBold"
+                            <TextBlock Text="Security → Unattended Access" FontSize="14" FontWeight="Bold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Quality" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <ComboBox ItemsSource="{Binding QualityOptions}" SelectedItem="{Binding SelectedQuality}" />
-                            <TextBlock Text="Frame rate" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <ComboBox ItemsSource="{Binding FrameRateOptions}" SelectedItem="{Binding SelectedFrameRate}">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="persistence:FrameRateOption">
-                                        <TextBlock Text="{Binding Label}" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            <TextBlock Text="Auto uses a balanced 15 FPS and medium JPEG quality. These choices apply when this device shares its screen."
-                                       FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="20">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Connection" FontSize="15" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="IPCast currently discovers and connects to devices on the same local network. Internet relay connections are not configured."
-                                       FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="20">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Security" FontSize="15" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Unattended access lets other devices connect using this device's ID and a password, without an approval click."
+                            <TextBlock Text="Let authorized devices connect to this computer using its ID and a password, bypassing the interactive Accept prompt."
                                        FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
 
                             <TextBlock Text="Status: ON" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
@@ -226,44 +198,57 @@
 
                             <TextBlock Text="{Binding UnattendedAccessMessage}" FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="TLS encrypts the session. Certificate pinning is not implemented yet, so active man-in-the-middle attacks are not ruled out."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>
                     </Border>
 
+                    <!-- Clipboard Sync Option -->
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="20">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="File Transfer" FontSize="15" FontWeight="SemiBold"
+                            BorderThickness="1" CornerRadius="10" Padding="24">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Preferences → Clipboard Sync" FontSize="14" FontWeight="Bold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Transfers are protected by the session's file-transfer permission. File selection and transfer controls are not yet available in this build."
-                                       FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <CheckBox Content="Enable automatic bidirectional clipboard sync during connected sessions"
+                                      IsChecked="{Binding IsClipboardSyncEnabled}" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
                     </Border>
-
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="20">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="About" FontSize="15" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="IPCast · Remote Desktop &amp; Support"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="{Binding AppVersion}" FontFamily="{DynamicResource MonoFontFamily}"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="{Binding SettingsMessage}" FontSize="12" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
             </ScrollViewer>
 
             <!-- Help -->
-            <TextBlock MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       Text="Help — documentation will be added in a future update."
-                       IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Help}" />
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                          IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Help}">
+                <StackPanel Spacing="20" MaxWidth="520" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="10" Padding="24">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="IPCast Help &amp; Documentation" FontSize="18" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="IPCast is a high-performance, secure AnyDesk-style remote desktop and file transfer application."
+                                       FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                            <TextBlock Text="1. How to Connect" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Text="To connect to a remote device, ask for its 9-digit IPCast ID (found on their Home screen). Enter the ID in 'Connect to Remote Device' and click CONNECT. You can also connect directly by typing an IP address and port (e.g. 192.168.1.50:9876)."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                            <TextBlock Text="2. Permissions &amp; Security" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Text="When an incoming connection arrives, an interactive permission dialog appears. The local user can grant or deny specific capabilities: View Screen, Control Mouse, Control Keyboard, Clipboard Sync, and File Transfer."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                            <TextBlock Text="3. Unattended Access" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Text="To manage remote devices without manual approval, go to Settings -> Security and set an Unattended Access password. Anyone with your 9-digit ID and password will connect instantly."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                            <TextBlock Text="4. Encryption &amp; Privacy" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Text="All connections are encrypted end-to-end using TLS. No third-party servers see your screen or data."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>

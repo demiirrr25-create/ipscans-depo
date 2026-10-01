@@ -42,6 +42,7 @@ export function PortCheckForm({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <label htmlFor="PortCheckForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -50,10 +51,17 @@ export function PortCheckForm({
         className="flex flex-col gap-3 sm:flex-row"
       >
         <input
+          id="PortCheckForm-input"
+          autoCapitalize="none"
+          spellCheck={false}
+          autoComplete="off"
+          required
+          aria-invalid={error}
+          aria-describedby={error ? "PortCheckForm-error" : undefined}
           value={host}
           onChange={(e) => setHost(e.target.value)}
           placeholder={dict.placeholder}
-          className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-white outline-none focus:border-white/40"
+          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
         />
         <button
           type="submit"
@@ -67,11 +75,12 @@ export function PortCheckForm({
       <p className="mt-3 text-xs text-neutral-400">{dict.disclaimer}</p>
 
       {error && (
-        <p className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="PortCheckForm-error" role="alert" className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
           {dict.error}
         </p>
       )}
 
+      <div role="status" aria-live="polite" aria-busy={loading}>
       {result && (
         <div className="mt-6">
           <p className="mb-3 text-sm text-neutral-400">
@@ -123,6 +132,7 @@ export function PortCheckForm({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

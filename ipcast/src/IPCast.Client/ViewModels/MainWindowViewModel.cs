@@ -2,13 +2,13 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using IPCast.Client.Persistence;
+using IPCast.FileTransfer;
 using IPCast.Network;
 using IPCast.RemoteDesktop;
 using IPCast.RemoteDesktop.Capture;
 using IPCast.RemoteDesktop.Input;
 using IPCast.Security;
 using IPCast.Shared;
-using Microsoft.Win32;
 
 namespace IPCast.Client.ViewModels;
 
@@ -22,11 +22,6 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly UnattendedAccessStore _unattendedAccessStore;
     private readonly ConnectionHistoryStore _historyStore;
     private readonly FavoriteDevicesStore _favoritesStore;
-    private readonly IPCastSettingsStore _settingsStore;
-    private IPCastSettings _settings = IPCastSettings.Default;
-
-    private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string StartupRegistryValue = "IPCast";
 
     [ObservableProperty]
     private string _remoteIdInput = string.Empty;
@@ -65,20 +60,29 @@ public partial class MainWindowViewModel : ObservableObject
     private string _favoritesMessage = string.Empty;
 
     [ObservableProperty]
-    private StreamQuality _selectedQuality = StreamQuality.Auto;
+    private string _selectedFilePath = string.Empty;
 
     [ObservableProperty]
-    private FrameRateOption _selectedFrameRate = FrameRateOption.All[0];
+    private string _fileTransferMessage = string.Empty;
 
     [ObservableProperty]
-    private bool _launchAtStartup;
+    private double _fileTransferProgress;
 
     [ObservableProperty]
-    private string _settingsMessage = string.Empty;
+    private bool _isTransferringFile;
+
+    [ObservableProperty]
+    private string _relayServerInput = string.Empty;
+
+    [ObservableProperty]
+    private string _relayServerMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool _isClipboardSyncEnabled = true;
 
     public MainWindowViewModel()
         : this(new DeviceIdentityStore(), new DeviceCertificateStore(), new UnattendedAccessStore(),
-              new ConnectionHistoryStore(), new FavoriteDevicesStore(), new IPCastSettingsStore())
+              new ConnectionHistoryStore(), new FavoriteDevicesStore())
     {
     }
 
@@ -88,29 +92,13 @@ public partial class MainWindowViewModel : ObservableObject
         UnattendedAccessStore unattendedAccessStore,
         ConnectionHistoryStore historyStore,
         FavoriteDevicesStore favoritesStore)
-        : this(identityStore, certificateStore, unattendedAccessStore, historyStore, favoritesStore, new IPCastSettingsStore())
-    {
-    }
-
-    public MainWindowViewModel(
-        DeviceIdentityStore identityStore,
-        DeviceCertificateStore certificateStore,
-        UnattendedAccessStore unattendedAccessStore,
-        ConnectionHistoryStore historyStore,
-        FavoriteDevicesStore favoritesStore,
-        IPCastSettingsStore settingsStore)
     {
         _localDeviceId = identityStore.LoadOrCreate();
         _unattendedAccessStore = unattendedAccessStore;
         _historyStore = historyStore;
         _favoritesStore = favoritesStore;
-        _settingsStore = settingsStore;
         _selectedNavItem = NavItems[0];
         _isUnattendedAccessEnabled = unattendedAccessStore.GetStatus().Enabled;
-        _settings = settingsStore.Load();
-        _selectedQuality = _settings.Quality;
-        _selectedFrameRate = FrameRateOption.All.First(option => option.FramesPerSecond == _settings.FramesPerSecond);
-        _launchAtStartup = IsRegisteredForStartup();
 
         ConnectionHistory = new ObservableCollection<ConnectionHistoryEntry>(historyStore.GetAll());
         FavoriteDevices = new ObservableCollection<FavoriteDevice>(favoritesStore.GetAll());
@@ -146,24 +134,15 @@ public partial class MainWindowViewModel : ObservableObject
     public IReadOnlyList<NavItem> NavItems { get; } =
     [
         new NavItem(NavSection.Home, "Home"),
+        new NavItem(NavSection.FileTransfer, "File Transfer"),
         new NavItem(NavSection.MyDevices, "My Devices"),
         new NavItem(NavSection.RecentConnections, "Recent Connections"),
         new NavItem(NavSection.Settings, "Settings"),
         new NavItem(NavSection.Help, "Help"),
     ];
 
-    public IReadOnlyList<StreamQuality> QualityOptions { get; } = Enum.GetValues<StreamQuality>();
-
-    public IReadOnlyList<FrameRateOption> FrameRateOptions => FrameRateOption.All;
-
-    public bool IsLaunchAtStartupSupported => OperatingSystem.IsWindows();
-
     /// <summary>The grouped-by-3 display form of this device's persistent IPCast ID, e.g. "847 293 615".</summary>
     public string DeviceIdFormatted => _localDeviceId.Formatted;
-
-    public string AppVersion => typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.1";
-
-    public string VersionDisplay => $"Version {AppVersion}";
 
     partial void OnSelectedNavItemChanged(NavItem value)
     {
@@ -171,139 +150,48 @@ public partial class MainWindowViewModel : ObservableObject
         StatusMessage = string.Empty;
     }
 
-    partial void OnSelectedQualityChanged(StreamQuality value)
-    {
-        _settings = _settings with { Quality = value };
-        SaveSettings();
-    }
-
-    partial void OnSelectedFrameRateChanged(FrameRateOption value)
-    {
-        _settings = _settings with { FramesPerSecond = value.FramesPerSecond };
-        SaveSettings();
-    }
-
-    partial void OnLaunchAtStartupChanged(bool value)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            SettingsMessage = "Windows startup is available on Windows only.";
-            _launchAtStartup = false;
-            OnPropertyChanged(nameof(LaunchAtStartup));
-            return;
-        }
-
-        try
-        {
-            using var key = Registry.CurrentUser.CreateSubKey(StartupRegistryKey)
-                ?? throw new IOException("The Windows startup registry key could not be opened.");
-            if (value)
-            {
-                var processPath = Environment.ProcessPath
-                    ?? throw new InvalidOperationException("The IPCast executable path could not be determined.");
-                var command = $"\"{processPath}\"";
-                if (Path.GetFileNameWithoutExtension(processPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
-                {
-                    var entryAssemblyName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
-                    if (!string.IsNullOrWhiteSpace(entryAssemblyName))
-                    {
-                        var entryAssemblyPath = Path.Combine(AppContext.BaseDirectory, entryAssemblyName + ".dll");
-                        command += $" \"{entryAssemblyPath}\"";
-                    }
-                }
-
-                key.SetValue(StartupRegistryValue, command);
-            }
-            else
-            {
-                key.DeleteValue(StartupRegistryValue, throwOnMissingValue: false);
-            }
-
-            SettingsMessage = value ? "IPCast will start when you sign in to Windows." : "Windows startup is disabled.";
-        }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or InvalidOperationException)
-        {
-            _launchAtStartup = !value;
-            OnPropertyChanged(nameof(LaunchAtStartup));
-            SettingsMessage = "Couldn't update the Windows startup setting.";
-        }
-    }
-
-    private void SaveSettings()
-    {
-        try
-        {
-            _settingsStore.Save(_settings);
-            SettingsMessage = "Display settings saved.";
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            SettingsMessage = "Couldn't save display settings.";
-        }
-    }
-
-    private static bool IsRegisteredForStartup()
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            return false;
-        }
-
-        try
-        {
-            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey);
-            return key?.GetValue(StartupRegistryValue) is string value && !string.IsNullOrWhiteSpace(value);
-        }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
-        {
-            return false;
-        }
-    }
-
     [RelayCommand]
     private async Task ConnectAsync()
     {
-        if (!DeviceId.TryParse(RemoteIdInput, out var remoteId))
+        if (string.IsNullOrWhiteSpace(RemoteIdInput))
         {
-            StatusMessage = "Enter a valid 9-digit IPCast ID.";
-            return;
-        }
-
-        if (remoteId == _localDeviceId)
-        {
-            StatusMessage = "You can't connect to your own device.";
+            StatusMessage = "Enter a valid 9-digit IPCast ID or direct IP:port address.";
             return;
         }
 
         IsConnecting = true;
-        StatusMessage = "Looking for that ID on the local network...";
+        StatusMessage = "Connecting to remote device...";
         try
         {
             var result = await NetworkService.ConnectAsync(
-                remoteId,
+                RemoteIdInput.Trim(),
                 DefaultRequestedPermissions,
                 password: string.IsNullOrEmpty(RemotePasswordInput) ? null : RemotePasswordInput);
+
             if (result.Success)
             {
                 AttachSession(result.Session!);
-                RecordHistory(remoteId, "Outgoing", "Connected");
-                _favoritesStore.NotifyConnected(remoteId.Raw);
-                RefreshFavoriteLastConnected(remoteId.Raw);
+                var remoteDisplay = result.Session!.RemoteDeviceId.Formatted;
+                RecordHistory(result.Session!.RemoteDeviceId, "Outgoing", "Connected");
+                _favoritesStore.NotifyConnected(result.Session!.RemoteDeviceId.Raw);
+                RefreshFavoriteLastConnected(result.Session!.RemoteDeviceId.Raw);
 
-                // Real handshake, TLS encryption, and permission negotiation, and - if ViewScreen
-                // was granted - a real screen-share/remote-control session (Phase 3) opens in its
-                // own window. Still no certificate pinning yet (an active man-in-the-middle isn't
-                // ruled out), so say exactly that instead of overclaiming "secure".
-                StatusMessage = $"Connected to {remoteId.Formatted} on the local network over TLS.";
+                StatusMessage = $"Connected to {remoteDisplay} over TLS.";
             }
             else if (result.Rejected)
             {
-                RecordHistory(remoteId, "Outgoing", "Rejected");
-                StatusMessage = $"{remoteId.Formatted} rejected the connection: {result.Error}";
+                if (DeviceId.TryParse(RemoteIdInput, out var targetId))
+                {
+                    RecordHistory(targetId, "Outgoing", "Rejected");
+                }
+                StatusMessage = $"Connection rejected: {result.Error}";
             }
             else
             {
-                RecordHistory(remoteId, "Outgoing", "Failed");
+                if (DeviceId.TryParse(RemoteIdInput, out var targetId))
+                {
+                    RecordHistory(targetId, "Outgoing", "Failed");
+                }
                 StatusMessage = result.Error ?? "Couldn't connect.";
             }
         }
@@ -311,6 +199,35 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsConnecting = false;
         }
+    }
+
+    [RelayCommand]
+    private void SaveRelayServer()
+    {
+        if (string.IsNullOrWhiteSpace(RelayServerInput))
+        {
+            NetworkService.RelayServerEndpoint = null;
+            RelayServerMessage = "Relay server disabled (local network mode).";
+            return;
+        }
+
+        if (System.Net.IPEndPoint.TryParse(RelayServerInput.Trim(), out var ep))
+        {
+            NetworkService.RelayServerEndpoint = ep;
+            RelayServerMessage = $"Relay server set to {ep}.";
+        }
+        else
+        {
+            RelayServerMessage = "Enter a valid endpoint, e.g. 192.168.1.10:9876.";
+        }
+    }
+
+    [RelayCommand]
+    private void ClearRelayServer()
+    {
+        NetworkService.RelayServerEndpoint = null;
+        RelayServerInput = string.Empty;
+        RelayServerMessage = "Relay server disabled.";
     }
 
     public void NotifyIdCopied()
@@ -414,13 +331,25 @@ public partial class MainWindowViewModel : ObservableObject
         StatusMessage = $"{session.RemoteDeviceId.Formatted} connected over TLS. Clipboard sync is live.";
     }
 
+    private FileReceiver? _fileReceiver;
+
     private void AttachSession(RemoteSession session)
     {
-        // Phase 8 keeps this to one active session at a time; a real session manager (multiple
-        // simultaneous connections, explicit disconnect) is a later refinement, not this phase's goal.
         _activeSession = session;
         var loop = new SessionMessageLoop(session);
         loop.ClipboardTextReceived += text => PeerClipboardTextReceived?.Invoke(text);
+
+        _fileReceiver = new FileReceiver(loop, session)
+        {
+            OnFileOffered = offer =>
+            {
+                var downloadDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var savePath = System.IO.Path.Combine(downloadDir, offer.FileName);
+                return Task.FromResult(FileOfferDecision.AcceptTo(savePath));
+            }
+        };
+        _fileReceiver.FileReceived += path => FileTransferMessage = $"Received file saved to: {path}";
+
         loop.Start();
         _activeSessionLoop = loop;
 
@@ -441,16 +370,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             // We accepted the incoming request and granted ViewScreen: share this screen.
             var (capturer, injector) = CreateSharingBackend();
-            var settings = _settingsStore.Load();
-            var framesPerSecond = settings.FramesPerSecond == 0 ? 15 : settings.FramesPerSecond;
-            var jpegQuality = settings.Quality switch
-            {
-                StreamQuality.Low => 40,
-                StreamQuality.Medium or StreamQuality.Auto => 65,
-                StreamQuality.High => 85,
-                _ => 65,
-            };
-            desktop.StartSharing(capturer, injector, TimeSpan.FromSeconds(1d / framesPerSecond), jpegQuality);
+            desktop.StartSharing(capturer, injector, frameInterval: TimeSpan.FromMilliseconds(200));
         }
     }
 

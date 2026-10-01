@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\IPCast.Client\IPCast.Client.csproj" />
     <ProjectReference Include="..\..\src\IPCast.Shared\IPCast.Shared.csproj" />
     <ProjectReference Include="..\..\src\IPCast.Security\IPCast.Security.csproj" />
     <ProjectReference Include="..\..\src\IPCast.Network\IPCast.Network.csproj" />

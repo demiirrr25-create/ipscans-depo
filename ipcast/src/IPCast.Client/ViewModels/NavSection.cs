@@ -4,6 +4,7 @@ namespace IPCast.Client.ViewModels;
 public enum NavSection
 {
     Home,
+    FileTransfer,
     MyDevices,
     RecentConnections,
     Settings,

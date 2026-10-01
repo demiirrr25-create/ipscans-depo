@@ -3,11 +3,6 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
-    <Product>IPCast Remote Desktop &amp; Support</Product>
-    <Company>IPScans</Company>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>IPCast</AssemblyName>
@@ -30,6 +25,7 @@
     <ProjectReference Include="..\IPCast.Security\IPCast.Security.csproj" />
     <ProjectReference Include="..\IPCast.Network\IPCast.Network.csproj" />
     <ProjectReference Include="..\IPCast.RemoteDesktop\IPCast.RemoteDesktop.csproj" />
+    <ProjectReference Include="..\IPCast.FileTransfer\IPCast.FileTransfer.csproj" />
   </ItemGroup>
 
 </Project>

@@ -59,8 +59,12 @@ export function CookieConsent({ dict }: { dict: Dictionary }) {
   );
 
   useEffect(() => {
-    if (consent === "granted" || consent === "denied") {
-      applyConsent(consent);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "granted" || stored === "denied") {
+      applyConsent(stored);
+    } else {
+      const timer = setTimeout(() => setVisible(true), 0);
+      return () => clearTimeout(timer);
     }
   }, [consent]);
 

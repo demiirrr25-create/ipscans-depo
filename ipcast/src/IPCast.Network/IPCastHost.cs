@@ -69,34 +69,6 @@ public sealed class IPCastHost : IAsyncDisposable
         }
     }
 
-    /// <summary>
-    /// Keeps this host reachable via a relay server (spec §12-13) the same way it's reachable on
-    /// the LAN: registers as "listening for anyone" under <paramref name="localDeviceId"/>, and
-    /// after each paired connection is handled, registers again so the next caller can still reach
-    /// it. Runs until <paramref name="ct"/> (or disposing this host) cancels it. Only useful if a
-    /// relay server has actually been configured/deployed somewhere - see README.
-    /// </summary>
-    public async Task ListenViaRelayAsync(IPEndPoint relayEndpoint, DeviceId localDeviceId, CancellationToken ct = default)
-    {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts.Token);
-        while (!linked.IsCancellationRequested)
-        {
-            TcpClient client;
-            try
-            {
-                (client, _) = await RelayClient
-                    .ConnectViaRelayAsync(relayEndpoint, localDeviceId.Raw, targetDeviceId: null, linked.Token)
-                    .ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is SocketException or IOException or OperationCanceledException)
-            {
-                return;
-            }
-
-            _ = HandleIncomingAsync(client, linked.Token);
-        }
-    }
-
     private async Task HandleIncomingAsync(TcpClient client, CancellationToken ct)
     {
         Stream stream;

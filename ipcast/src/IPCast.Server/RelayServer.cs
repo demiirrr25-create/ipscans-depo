@@ -7,19 +7,12 @@ namespace IPCast.Server;
 
 /// <summary>
 /// A minimal TCP rendezvous/relay server (spec §12-13 relay architecture, spec §6/§13 NAT
-/// traversal fallback). Two ways a connection gets paired:
-///  1. Specific mutual pair: both sides register naming each other ("I am X, connect me to Y" /
-///     "I am Y, connect me to X") - for two parties who both know each other's ID and connect
-///     around the same time.
-///  2. Listen-for-anyone: a host registers with no target ("I am X, waiting for whoever asks for
-///     me") and stays connected - mirrors how LAN discovery lets anyone with the right ID reach a
-///     listening device without prior arrangement (this is what makes internet-based unattended
-///     access possible). Whoever later asks for X specifically gets paired with it immediately.
-/// Once paired, the server stops parsing messages entirely and just pipes raw bytes bidirectionally
-/// between the two connections - a TURN-like fallback for when direct P2P isn't reachable
-/// (symmetric NAT, restrictive firewalls). Everything IPCast.Network already does (TLS, the
-/// handshake, permissions) runs unmodified on top of that raw pipe, exactly as it does over a
-/// direct LAN TCP connection.
+/// traversal fallback): two clients each announce "I am X, connect me to Y" over a small
+/// registration message; once both sides of a pair have registered, the server stops parsing
+/// messages entirely and just pipes raw bytes bidirectionally between their two connections - a
+/// TURN-like fallback for when direct P2P isn't reachable (symmetric NAT, restrictive firewalls).
+/// Everything IPCast.Network already does (TLS, the handshake, permissions) runs unmodified on
+/// top of that raw pipe, exactly as it does over a direct LAN TCP connection.
 ///
 /// Deliberately NOT deployed anywhere by default. Running this as an always-on, publicly
 /// reachable service has real, ongoing hosting and bandwidth costs that scale with usage - that's
@@ -29,13 +22,7 @@ public sealed class RelayServer : IAsyncDisposable
 {
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _cts = new();
-
-    // DeviceId -> client registered with no target, waiting to be asked for by anyone.
-    private readonly Dictionary<string, TcpClient> _listening = [];
-
-    // Sorted-pair-key -> client waiting for a specific mutual pair (neither side listening-for-anyone).
-    private readonly Dictionary<string, TcpClient> _pendingPairs = [];
-
+    private readonly Dictionary<string, TcpClient> _waiting = [];
     private readonly Lock _lock = new();
     private Task? _acceptLoop;
 
@@ -90,36 +77,23 @@ public sealed class RelayServer : IAsyncDisposable
                 return;
             }
 
+            var pairKey = MakePairKey(register.DeviceId, register.TargetDeviceId);
+
             TcpClient? peer = null;
             lock (_lock)
             {
-                if (register.TargetDeviceId is null)
+                if (_waiting.Remove(pairKey, out var waitingClient))
                 {
-                    // Listen-for-anyone: just wait. A later specific request for this DeviceId will find it here.
-                    _listening[register.DeviceId] = client;
-                }
-                else if (_listening.Remove(register.TargetDeviceId, out var listeningPeer))
-                {
-                    // The target was already listening for anyone - pair immediately.
-                    peer = listeningPeer;
+                    peer = waitingClient;
                 }
                 else
                 {
-                    var pairKey = MakePairKey(register.DeviceId, register.TargetDeviceId);
-                    if (_pendingPairs.Remove(pairKey, out var waitingPeer))
-                    {
-                        peer = waitingPeer;
-                    }
-                    else
-                    {
-                        _pendingPairs[pairKey] = client;
-                    }
+                    _waiting[pairKey] = client;
                 }
             }
 
-            // No peer yet: leave this connection open and waiting - a later registration (either a
-            // specific request naming this DeviceId, or the matching half of a pending pair) will
-            // find it in _listening/_pendingPairs and drive the handshake/piping from there.
+            // No peer yet: leave this connection open and waiting - HandleClientAsync for the
+            // other side will find it in _waiting and drive the handshake/piping from there.
             if (peer is null)
             {
                 return;
