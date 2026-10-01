@@ -1,12 +1,13 @@
 import type { Locale } from "@/i18n/config";
 
 export const ipcastRelease = {
-  version: "1.0.1",
+  version: "1.1.0-preview.1",
   platform: "Windows 10/11 · x64",
-  executable: "IPCast.exe",
-  published: false,
-  fileSize: null as string | null,
-  sha256: null as string | null,
+  executable: "IPCast-1.1.0-preview.1.exe",
+  downloadUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.1.0-preview.1/IPCast-1.1.0-preview.1.exe",
+  published: true,
+  fileSize: "105,807,246 bytes (100.9 MiB)",
+  sha256: "8639aa6cc80a21abc0dbc4f1302bbb3cfca0831f1203da3aceecdedce0ddb0da",
 };
 
 export const ipcastCopy: Record<Locale, {
@@ -51,7 +52,7 @@ export const ipcastCopy: Record<Locale, {
     pending: "Windows smoke testi bekleniyor",
     downloadTitle: "IPCast indirmesi",
     downloadSubtitle: "Güncel Windows sürüm bilgileri.",
-    availability: "İndirme, gerçek Windows makinesinde açılış ve bağlantı akışı doğrulandıktan sonra yayımlanacak. Bu sayfada eski veya farklı bir ürünün EXE dosyası sunulmaz.",
+    availability: "Bu Windows önizleme sürümü yayımdadır. İlk bağlantıda sertifikayı doğrulayın ve yalnızca yetkili olduğunuz cihazlara bağlanın.",
   },
   en: {
     title: "IPCast",
@@ -76,7 +77,7 @@ export const ipcastCopy: Record<Locale, {
     pending: "Awaiting Windows smoke tests",
     downloadTitle: "IPCast download",
     downloadSubtitle: "Current Windows release details.",
-    availability: "The download will be published after startup and connection flows are verified on a real Windows machine. This page will not serve an older or unrelated EXE.",
+    availability: "This Windows preview is published. Verify the certificate on first connection and connect only to devices you are authorized to access.",
   },
   de: {
     title: "IPCast",
@@ -101,7 +102,7 @@ export const ipcastCopy: Record<Locale, {
     pending: "Windows-Smoke-Tests stehen aus",
     downloadTitle: "IPCast-Download",
     downloadSubtitle: "Aktuelle Informationen zur Windows-Version.",
-    availability: "Der Download wird veröffentlicht, sobald Start- und Verbindungsabläufe auf einem echten Windows-Gerät geprüft wurden. Diese Seite bietet keine ältere oder andere EXE-Datei an.",
+    availability: "Diese Windows-Vorschauversion ist veröffentlicht. Prüfen Sie das Zertifikat bei der ersten Verbindung und verbinden Sie sich nur mit autorisierten Geräten.",
   },
   fr: {
     title: "IPCast",
@@ -126,7 +127,7 @@ export const ipcastCopy: Record<Locale, {
     pending: "Tests Windows en attente",
     downloadTitle: "Téléchargement IPCast",
     downloadSubtitle: "Informations sur la version Windows actuelle.",
-    availability: "Le téléchargement sera publié après vérification du démarrage et des connexions sur un vrai appareil Windows. Cette page ne distribuera pas un ancien EXE ou un autre produit.",
+    availability: "Cette préversion Windows est publiée. Vérifiez le certificat lors de la première connexion et n’accédez qu’aux appareils autorisés.",
   },
   es: {
     title: "IPCast",
@@ -151,6 +152,6 @@ export const ipcastCopy: Record<Locale, {
     pending: "Pruebas de Windows pendientes",
     downloadTitle: "Descarga de IPCast",
     downloadSubtitle: "Detalles de la versión actual para Windows.",
-    availability: "La descarga se publicará después de verificar el inicio y la conexión en un equipo Windows real. Esta página no ofrecerá un EXE antiguo ni de otro producto.",
+    availability: "Esta versión preliminar para Windows ya está publicada. Verifica el certificado en la primera conexión y accede solo a dispositivos autorizados.",
   },
 };

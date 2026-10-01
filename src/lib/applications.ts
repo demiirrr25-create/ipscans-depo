@@ -15,6 +15,7 @@ export type Application = {
   platform: string;
   detailPath: string;
   downloadPath?: string;
+  localizedDownload?: boolean;
   downloadAvailable: boolean;
   copy: Record<Locale, LocalizedApplicationCopy>;
 };
@@ -28,13 +29,14 @@ export const applications: Application[] = [
     platform: ipcastRelease.platform,
     detailPath: "/ipcast",
     downloadPath: "/download/ipcast",
+    localizedDownload: true,
     downloadAvailable: ipcastRelease.published,
     copy: {
-      tr: { description: "Yerel ağda uzak masaüstü ve kullanıcı onaylı destek.", status: "Windows paketi doğrulanıyor", action: "Ürün bilgisi" },
-      en: { description: "Remote desktop and user-approved support on your local network.", status: "Windows package under validation", action: "Product details" },
-      de: { description: "Remotedesktop und nutzerbestätigter Support im lokalen Netzwerk.", status: "Windows-Paket wird geprüft", action: "Produktdetails" },
-      fr: { description: "Bureau à distance et assistance approuvée sur votre réseau local.", status: "Validation du package Windows", action: "Détails du produit" },
-      es: { description: "Escritorio remoto y soporte aprobado en tu red local.", status: "Paquete de Windows en validación", action: "Detalles del producto" },
+      tr: { description: "Otomatik relay, ekran paylaşımı ve kullanıcı onaylı uzaktan destek.", status: "Önizleme indirilebilir", action: "İndir" },
+      en: { description: "Automatic relay, screen sharing and user-approved remote support.", status: "Preview available", action: "Download" },
+      de: { description: "Automatischer Relay, Bildschirmfreigabe und nutzerbestätigter Fernsupport.", status: "Vorschau verfügbar", action: "Herunterladen" },
+      fr: { description: "Relais automatique, partage d’écran et assistance à distance approuvée.", status: "Préversion disponible", action: "Télécharger" },
+      es: { description: "Relay automático, pantalla compartida y asistencia remota aprobada.", status: "Versión preliminar disponible", action: "Descargar" },
     },
   },
   {

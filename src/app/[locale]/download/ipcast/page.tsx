@@ -75,13 +75,13 @@ export default async function IPCastDownloadPage({
       <div className="mt-8 border-l-2 border-white/50 pl-4">
         <p className="text-sm leading-6 text-neutral-300">{copy.availability}</p>
       </div>
-      <button
-        type="button"
-        disabled={!ipcastRelease.published}
-        className="mt-8 min-h-12 cursor-not-allowed border border-white/15 bg-white/[0.04] px-5 font-semibold text-neutral-500 disabled:opacity-100"
+      <a
+        href={ipcastRelease.downloadUrl}
+        aria-label={`${copy.download}: ${ipcastRelease.version}`}
+        className="mt-8 inline-flex min-h-12 items-center border border-white/30 bg-white px-5 font-semibold text-black transition hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
       >
         {copy.download}
-      </button>
+      </a>
     </main>
   );
 }

@@ -26,8 +26,10 @@ export function ApplicationsSection({ locale }: { locale: Locale }) {
         <ul className="mt-10 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {applications.map((application) => {
             const item = application.copy[locale];
-            const href = application.downloadAvailable
-              ? application.downloadPath!
+            const href = application.downloadAvailable && application.downloadPath
+              ? application.localizedDownload
+                ? `/${locale}${application.downloadPath}`
+                : application.downloadPath
               : `/${locale}${application.detailPath}`;
 
             return (
