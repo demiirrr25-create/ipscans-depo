@@ -2,6 +2,8 @@ import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { notFound } from "next/navigation";
+import { ipcastRelease } from "@/content/applications";
+import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 
 export default async function DownloadPage({
   params,
@@ -49,8 +51,7 @@ export default async function DownloadPage({
 
           <div className="mt-8">
             <a
-              href="/downloads/ipscans-ipcast.exe"
-              download
+              href={ipcastRelease.url}
               className="btn-primary flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -60,6 +61,8 @@ export default async function DownloadPage({
               </svg>
               {ipcast.button}
             </a>
+
+            <IPCastReleaseDetails locale={locale} />
 
             <p className="mt-4 text-xs text-neutral-500">{ipcast.note}</p>
             <p className="mt-2 text-xs text-neutral-400">{ipcast.safe}</p>

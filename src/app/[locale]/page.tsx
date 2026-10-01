@@ -6,6 +6,8 @@ import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { Reveal } from "@/components/Reveal";
 import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
+import { ApplicationsSection } from "@/components/ApplicationsSection";
+import { platformCopy } from "@/content/applications";
 
 export default async function HomePage({
   params,
@@ -15,6 +17,7 @@ export default async function HomePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
+  const platform = platformCopy[locale];
 
   return (
     <div>
@@ -30,41 +33,35 @@ export default async function HomePage({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
               </span>
-              {dict.hero.badge}
+              {platform.eyebrow}
             </span>
           </Reveal>
 
           <Reveal index={1}>
             <h1 className="mx-auto mt-6 max-w-4xl font-[family-name:var(--font-display)] text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
-              <span className="text-gradient text-depth">{dict.hero.title}</span>
+              <span className="text-gradient text-depth">{platform.title}</span>
             </h1>
           </Reveal>
 
           <Reveal index={2}>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-neutral-400">
-              {dict.hero.subtitle}
+              {platform.subtitle}
             </p>
           </Reveal>
 
           <Reveal index={3}>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href={toolPath("ipLookup", locale)}
+              <a
+                href="#applications"
                 className="btn-primary rounded-xl px-6 py-3 font-semibold"
               >
-                {dict.hero.ctaPrimary}
-              </Link>
+                {platform.explore}
+              </a>
               <Link
-                href={toolPath("speedTest", locale)}
+                href={`/${locale}/download/ipcast`}
                 className="btn-ghost rounded-xl px-6 py-3 font-semibold"
               >
-                {dict.hero.ctaSecondary}
-              </Link>
-              <Link
-                href={`/${locale}/download`}
-                className="btn-ghost rounded-xl px-6 py-3 font-semibold"
-              >
-                {dict.hero.ctaDownload}
+                {platform.download}
               </Link>
             </div>
           </Reveal>
@@ -92,6 +89,8 @@ export default async function HomePage({
           ))}
         </div>
       </section>
+
+      <ApplicationsSection locale={locale} />
 
       {/* Features */}
       <section className="mx-auto max-w-6xl px-4 py-20">

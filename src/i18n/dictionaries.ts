@@ -6,9 +6,9 @@ const dictionaries = {
       skipToContent: "İçeriğe geç",
     },
     meta: {
-      title: "ipscans — IP Sorgulama, Ağ Tarama ve Hız Testi",
+      title: "IPScans — Ağ Araçları ve Uzaktan Erişim Platformu",
       description:
-        "IP adresi sorgulama, coğrafi konum tespiti, internet hız testi ve ağ araçları. Hızlı, ücretsiz ve gizliliğe saygılı.",
+        "IPCast uzak masaüstü, IP Scanner, ağ analizi ve IP yönetimi araçlarını tek platformda keşfedin.",
     },
     nav: {
       home: "Ana Sayfa",
@@ -299,9 +299,9 @@ const dictionaries = {
       skipToContent: "Skip to content",
     },
     meta: {
-      title: "ipscans — IP Lookup, Network Scanning & Speed Test",
+      title: "IPScans — Network Tools and Remote Access",
       description:
-        "IP address lookup, geolocation, internet speed test and network tools. Fast, free and privacy-friendly.",
+        "Explore IPCast remote desktop, IP Scanner, network analysis and IP management tools on one platform.",
     },
     nav: {
       home: "Home",
@@ -589,9 +589,9 @@ const dictionaries = {
       skipToContent: "Zum Inhalt springen",
     },
     meta: {
-      title: "ipscans — IP-Abfrage, Netzwerkscan & Geschwindigkeitstest",
+      title: "IPScans — Netzwerktools und Fernzugriff",
       description:
-        "IP-Adressabfrage, Geolokalisierung, Internet-Geschwindigkeitstest und Netzwerktools. Schnell, kostenlos und datenschutzfreundlich.",
+        "IPCast Fernzugriff, IP Scanner, Netzwerkanalyse und IP-Verwaltung auf einer Plattform.",
     },
     nav: {
       home: "Startseite",
@@ -882,9 +882,9 @@ const dictionaries = {
       skipToContent: "Aller au contenu",
     },
     meta: {
-      title: "ipscans — Recherche IP, scan réseau et test de vitesse",
+      title: "IPScans — Outils réseau et accès à distance",
       description:
-        "Recherche d'adresse IP, géolocalisation, test de vitesse internet et outils réseau. Rapide, gratuit et respectueux de la vie privée.",
+        "Découvrez IPCast, IP Scanner, l'analyse réseau et la gestion des IP sur une seule plateforme.",
     },
     nav: {
       home: "Accueil",
@@ -1175,9 +1175,9 @@ const dictionaries = {
       skipToContent: "Ir al contenido",
     },
     meta: {
-      title: "ipscans — Búsqueda de IP, escaneo de red y test de velocidad",
+      title: "IPScans — Herramientas de red y acceso remoto",
       description:
-        "Búsqueda de dirección IP, geolocalización, test de velocidad de internet y herramientas de red. Rápido, gratuito y respetuoso con la privacidad.",
+        "Descubre IPCast, IP Scanner, análisis de red y gestión de IP en una sola plataforma.",
     },
     nav: {
       home: "Inicio",

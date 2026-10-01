@@ -4,6 +4,9 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
+import { ipcastRelease } from "@/content/applications";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -59,7 +62,7 @@ export default async function IpCastPage({
           </ul>
 
           <a
-            href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.1.0-preview.1/IPCast-1.1.0-preview.1.exe"
+            href={ipcastRelease.url}
             aria-describedby="ipcast-release-notes"
             className="btn-primary mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
           >
@@ -70,6 +73,11 @@ export default async function IpCastPage({
             </svg>
             {t.button}
           </a>
+
+          <IPCastReleaseDetails locale={locale} />
+          <Link href={`/${locale}/download/ipcast`} className="mt-3 inline-block text-sm text-neutral-300 underline underline-offset-4 hover:text-white">
+            {ipcastRelease.fileName}
+          </Link>
 
           <div id="ipcast-release-notes" className="mt-5 rounded-xl border border-white/15 bg-white/5 p-4 text-sm leading-relaxed text-neutral-200">
             <p>{connectionNotes[locale]}</p>
