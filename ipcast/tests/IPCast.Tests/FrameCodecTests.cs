@@ -6,6 +6,30 @@ namespace IPCast.Tests;
 public class FrameCodecTests
 {
     [Fact]
+    public void LargeFrames_ArePacedToAvoidFloodingSlowRelayLinks()
+    {
+        var interval = TimeSpan.FromMilliseconds(50);
+        Assert.Equal(interval, StreamingProfile.FrameBudget(interval, 1000, 1024 * 1024));
+        var paced = StreamingProfile.FrameBudget(interval, 300000, 384 * 1024);
+        Assert.InRange(paced.TotalSeconds, 1, 1.1);
+        Assert.Equal(interval, StreamingProfile.FrameBudget(interval, 300000, 0));
+    }
+
+    [Theory]
+    [InlineData(1920, 1080, 1280, 1280, 720)]
+    [InlineData(1080, 1920, 1280, 720, 1280)]
+    [InlineData(640, 480, 1600, 640, 480)]
+    public void StreamingResize_PreservesAspectRatioAndDoesNotUpscale(int width, int height, int limit, int expectedWidth, int expectedHeight)
+    {
+        var frame = MakeGradientFrame(width, height);
+        var jpeg = FrameCodec.EncodeJpeg(frame, 60, limit);
+        var decoded = FrameCodec.DecodeJpeg(jpeg);
+        Assert.Equal(expectedWidth, decoded.Width);
+        Assert.Equal(expectedHeight, decoded.Height);
+        if (width > limit || height > limit) Assert.True(jpeg.Length < FrameCodec.EncodeJpeg(frame, 70).Length);
+    }
+
+    [Fact]
     public void EncodeThenDecode_RoundTripsDimensions()
     {
         var frame = MakeSolidColorFrame(64, 48, r: 200, g: 30, b: 30);

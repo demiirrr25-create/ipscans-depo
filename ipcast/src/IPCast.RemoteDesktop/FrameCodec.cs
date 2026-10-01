@@ -14,12 +14,14 @@ namespace IPCast.RemoteDesktop;
 /// </summary>
 public static class FrameCodec
 {
-    public static byte[] EncodeJpeg(CapturedFrame frame, int quality = 70)
+    public static byte[] EncodeJpeg(CapturedFrame frame, int quality = 70, int maxDimension = 0)
     {
         var info = new SKImageInfo(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Opaque);
         using var bitmap = new SKBitmap(info);
         Marshal.Copy(frame.Bgra, 0, bitmap.GetPixels(), frame.Bgra.Length);
-        using var image = SKImage.FromBitmap(bitmap);
+        var scale = maxDimension > 0 ? Math.Min(1d, (double)maxDimension / Math.Max(frame.Width, frame.Height)) : 1d;
+        using var resized = scale < 1 ? bitmap.Resize(new SKImageInfo(Math.Max(1, (int)(frame.Width * scale)), Math.Max(1, (int)(frame.Height * scale)), SKColorType.Bgra8888, SKAlphaType.Opaque), new SKSamplingOptions(SKFilterMode.Linear)) : null;
+        using var image = SKImage.FromBitmap(resized ?? bitmap);
         using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
         return data.ToArray();
     }

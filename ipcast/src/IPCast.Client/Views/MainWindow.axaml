@@ -5,8 +5,9 @@
         xmlns:persistence="using:IPCast.Client.Persistence"
         x:Class="IPCast.Client.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="IPCast"
-        Width="960" Height="620"
+        Title="IPCast 1.1 Preview — Connected workspace"
+        Icon="/Assets/ipcast.ico"
+        Width="1080" Height="760"
         MinWidth="820" MinHeight="560"
         Background="{DynamicResource AppBackgroundBrush}">
 
@@ -20,9 +21,10 @@
         <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}" Padding="20">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="4,0,4,28">
+                    <Image Source="/Assets/ipcast-mark.png" Width="56" Height="56" HorizontalAlignment="Left" Margin="0,0,0,12" AutomationProperties.Name="IPCast logo" />
                     <TextBlock Text="IPCast" FontSize="22" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="Remote Desktop" FontSize="12"
+                    <TextBlock Text="CONNECTED WORKSPACE" FontSize="10"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
 
@@ -38,26 +40,35 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="Version 1.0.0" FontSize="11"
+                <TextBlock DockPanel.Dock="Bottom" Text="1.1 Preview · Auto Relay" FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}" Margin="4" />
             </DockPanel>
         </Border>
 
         <!-- Content -->
-        <Grid Grid.Column="1" Margin="36">
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="24">
 
             <!-- Home -->
-            <StackPanel Spacing="20" MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top"
+            <StackPanel Spacing="20" MaxWidth="680" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Home}">
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Your workspace. Anywhere." FontSize="28" FontWeight="Bold" TextWrapping="Wrap" />
+                    <TextBlock Text="Connect by device ID. Your internet connection is configured automatically." Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                </StackPanel>
 
                 <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                         BorderThickness="1" CornerRadius="10" Padding="24">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Your ID" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="THIS DEVICE" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
                         <TextBlock Text="{Binding DeviceIdFormatted}" FontSize="30" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <Button Content="Copy ID" Classes="primary" HorizontalAlignment="Left"
                                 Click="OnCopyIdClick" />
+                        <TextBlock Text="{Binding LocalConnectionInfo}" TextWrapping="Wrap" FontSize="12" />
+                        <TextBlock Text="{Binding RelayServerMessage}" TextWrapping="Wrap" FontSize="12" />
+                        <Button Content="Disconnect" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
                         <TextBlock Text="Unattended access is ON — reachable with ID + password, no click needed"
                                    FontSize="11" Foreground="{DynamicResource AccentBrush}"
                                    IsVisible="{Binding IsUnattendedAccessEnabled}" />
@@ -69,15 +80,31 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="Connect to Remote Device" FontSize="13"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBox PlaceholderText="Remote ID" Text="{Binding RemoteIdInput}" />
+                        <TextBlock Text="Remote device ID" FontWeight="SemiBold" />
+                        <TextBox PlaceholderText="123 456 789" Text="{Binding RemoteIdInput}" AutomationProperties.Name="Remote device ID or IP address and port" />
+                        <TextBlock Text="Password (optional, unattended access only)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                         <TextBox PlaceholderText="Password (only for unattended access)" PasswordChar="*"
+                                 AutomationProperties.Name="Unattended access password, optional"
                                  Text="{Binding RemotePasswordInput}" />
-                        <Button Content="CONNECT" Classes="primary" HorizontalAlignment="Stretch"
+                        <Button Content="Connect to device →" Classes="primary" HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center" Command="{Binding ConnectCommand}" />
+                        <Button Content="Cancel connection" Command="{Binding CancelConnectCommand}" IsVisible="{Binding IsConnecting}" />
                         <TextBlock Text="{Binding StatusMessage}" FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="16" MaxWidth="520" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=FileTransfer}">
+                <TextBlock Text="File Transfer" FontSize="22" FontWeight="Bold" />
+                <TextBlock Text="Connect to a device with File Transfer permission. The receiver chooses where to save each file." TextWrapping="Wrap" />
+                <TextBox Text="{Binding SelectedFilePath}" PlaceholderText="Choose a file or enter its full path" />
+                <Button Content="Choose file…" Click="OnChooseFileClick" />
+                <Button Content="Send file" Classes="primary" Command="{Binding SendFileCommand}" IsEnabled="{Binding IsConnected}" />
+                <Button Content="Cancel transfer" Command="{Binding CancelTransferCommand}" IsVisible="{Binding IsTransferringFile}" />
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding FileTransferProgress}" />
+                <TextBlock Text="{Binding FileTransferMessage}" TextWrapping="Wrap" />
             </StackPanel>
 
             <!-- My Devices -->
@@ -154,25 +181,32 @@
                           IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
                 <StackPanel Spacing="20" MaxWidth="520" HorizontalAlignment="Left" VerticalAlignment="Top">
 
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="24">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Display performance" FontSize="18" FontWeight="Bold" />
+                            <TextBlock Text="Choose on the computer being shared. Applies to the next connection. Balanced: everyday work. Speed: slower networks. Quality: sharper text." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <ComboBox ItemsSource="{Binding StreamingModes}" SelectedItem="{Binding StreamingMode}" MinHeight="44" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen sharing performance" />
+                        </StackPanel>
+                    </Border>
+
                     <!-- Relay Server Settings -->
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="24">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="Network → Relay / Signal Server" FontSize="14" FontWeight="Bold"
+                            <TextBlock Text="Automatic internet connection" FontSize="14" FontWeight="Bold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Configure a relay server (e.g. 192.168.1.10:9876) for connecting across different networks or symmetric NATs."
+                            <TextBlock Text="IPCast relay is configured automatically. Open this version on both computers, enter the other computer's 9-digit ID and accept the connection on that computer. No relay address or setup code is needed."
                                        FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBox PlaceholderText="Relay address (e.g. 192.168.1.10:9876)" Text="{Binding RelayServerInput}" />
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Save Relay Server" Classes="primary" Command="{Binding SaveRelayServerCommand}" />
-                                <Button Content="Clear" Command="{Binding ClearRelayServerCommand}" />
-                            </StackPanel>
                             <TextBlock Text="{Binding RelayServerMessage}" FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>
                     </Border>
 
                     <!-- Unattended Access -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="This device's certificate fingerprint (SHA-256)" FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap" />
+                    </StackPanel>
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="24">
                         <StackPanel Spacing="12">
@@ -250,5 +284,6 @@
                 </StackPanel>
             </ScrollViewer>
         </Grid>
+        </ScrollViewer>
     </Grid>
 </Window>

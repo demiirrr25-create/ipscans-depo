@@ -18,6 +18,10 @@ public partial class RemoteScreenWindow : Window
 {
     private readonly RemoteDesktopSession _desktop;
     private WriteableBitmap? _bitmap;
+    private bool _closed;
+    private CapturedFrame? _pendingFrame;
+    private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private readonly HashSet<int> _pressedKeys = [];
 
     public RemoteScreenWindow()
     {
@@ -32,21 +36,34 @@ public partial class RemoteScreenWindow : Window
         InitializeComponent();
 
         _desktop.FrameReceived += OnFrameReceived;
+        _renderTimer.Tick += (_, _) => RenderLatestFrame();
+        _renderTimer.Start();
+        _desktop.Closed += OnSessionClosed;
         ScreenImage.PointerMoved += OnPointerMoved;
         ScreenImage.PointerPressed += OnPointerPressed;
         ScreenImage.PointerReleased += OnPointerReleased;
         ScreenImage.PointerWheelChanged += OnPointerWheelChanged;
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
-        Closed += (_, _) => _desktop.FrameReceived -= OnFrameReceived;
+        Deactivated += async (_, _) => {
+            foreach (var key in _pressedKeys.ToArray()) await SendSafely(() => _desktop.SendKeyEventAsync(key, false));
+            _pressedKeys.Clear();
+        };
+        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
     }
 
-    private void OnFrameReceived(CapturedFrame frame)
+    private void OnSessionClosed() => Dispatcher.UIThread.Post(Close);
+
+    private void OnFrameReceived(CapturedFrame frame) => Interlocked.Exchange(ref _pendingFrame, frame);
+
+    private void RenderLatestFrame()
     {
-        Dispatcher.UIThread.Post(() =>
-        {
+            var frame = Interlocked.Exchange(ref _pendingFrame, null);
+            if (frame is null) return;
+            if (_closed) return;
             if (_bitmap is null || _bitmap.PixelSize.Width != frame.Width || _bitmap.PixelSize.Height != frame.Height)
             {
+                _bitmap?.Dispose();
                 _bitmap = new WriteableBitmap(
                     new PixelSize(frame.Width, frame.Height), new Avalonia.Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
                 ScreenImage.Source = _bitmap;
@@ -67,7 +84,6 @@ public partial class RemoteScreenWindow : Window
             }
 
             ScreenImage.InvalidateVisual();
-        });
     }
 
     private async void OnPointerMoved(object? sender, PointerEventArgs e)
@@ -79,8 +95,14 @@ public partial class RemoteScreenWindow : Window
         }
 
         var pos = e.GetPosition(ScreenImage);
-        await _desktop.SendMouseMoveAsync(
-            Math.Clamp(pos.X / bounds.Width, 0, 1), Math.Clamp(pos.Y / bounds.Height, 0, 1));
+        if (_bitmap is null) return;
+        var scale = Math.Min(bounds.Width / _bitmap.PixelSize.Width, bounds.Height / _bitmap.PixelSize.Height);
+        var width = _bitmap.PixelSize.Width * scale;
+        var height = _bitmap.PixelSize.Height * scale;
+        var x = (pos.X - (bounds.Width - width) / 2) / width;
+        var y = (pos.Y - (bounds.Height - height) / 2) / height;
+        if (x < 0 || x > 1 || y < 0 || y > 1) return;
+        await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
     }
 
     private async void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -95,7 +117,10 @@ public partial class RemoteScreenWindow : Window
 
         if (button >= 0)
         {
-            await _desktop.SendMouseButtonAsync(button, isDown: true);
+            ScreenImage.Focus();
+            e.Pointer.Capture(ScreenImage);
+            await SendSafely(() => _desktop.SendMouseButtonAsync(button, isDown: true));
+            e.Handled = true;
         }
     }
 
@@ -111,21 +136,42 @@ public partial class RemoteScreenWindow : Window
 
         if (button >= 0)
         {
-            await _desktop.SendMouseButtonAsync(button, isDown: false);
+            await SendSafely(() => _desktop.SendMouseButtonAsync(button, isDown: false));
+            e.Pointer.Capture(null);
+            e.Handled = true;
         }
     }
 
     private async void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e) =>
-        await _desktop.SendMouseWheelAsync((int)(e.Delta.Y * 120));
+        await SendSafely(() => _desktop.SendMouseWheelAsync((int)(e.Delta.Y * 120)));
 
-    private async void OnKeyDown(object? sender, KeyEventArgs e) =>
-        await _desktop.SendKeyEventAsync(AvaloniaKeyToVirtualKey(e.Key), isDown: true);
+    private async void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        var key = AvaloniaKeyToVirtualKey(e.Key);
+        if (key == 0) return;
+        _pressedKeys.Add(key);
+        await SendSafely(() => _desktop.SendKeyEventAsync(key, isDown: true));
+        e.Handled = true;
+    }
 
-    private async void OnKeyUp(object? sender, KeyEventArgs e) =>
-        await _desktop.SendKeyEventAsync(AvaloniaKeyToVirtualKey(e.Key), isDown: false);
+    private async void OnKeyUp(object? sender, KeyEventArgs e)
+    {
+        var key = AvaloniaKeyToVirtualKey(e.Key);
+        if (key == 0) return;
+        _pressedKeys.Remove(key);
+        await SendSafely(() => _desktop.SendKeyEventAsync(key, isDown: false));
+        e.Handled = true;
+    }
+
+    private async Task SendSafely(Func<Task> send)
+    {
+        if (_closed) return;
+        try { await send(); }
+        catch (Exception) { Title = "IPCast — connection closed"; }
+    }
 
     // Avalonia's Key enum numeric values are aligned with Win32 virtual-key codes for the common
     // alphanumeric/function keys, but this hasn't been exhaustively verified against every key on
     // a real Windows machine - flagged the same way as the rest of Phase 3's Windows-only pieces.
-    private static int AvaloniaKeyToVirtualKey(Key key) => (int)key;
+    private static int AvaloniaKeyToVirtualKey(Key key) => Avalonia.Win32.Input.KeyInterop.VirtualKeyFromKey(key);
 }

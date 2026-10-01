@@ -20,8 +20,8 @@
             <CheckBox Name="ControlKeyboardCheck" Content="Control Keyboard" />
             <CheckBox Name="ClipboardCheck" Content="Clipboard" />
             <CheckBox Name="FileTransferCheck" Content="File Transfer" />
-            <CheckBox Name="SystemInfoCheck" Content="System Information" />
-            <CheckBox Name="RemoteRestartCheck" Content="Remote Restart" />
+            <CheckBox Name="SystemInfoCheck" Content="System Information" IsVisible="False" IsEnabled="False" />
+            <CheckBox Name="RemoteRestartCheck" Content="Remote Restart" IsVisible="False" IsEnabled="False" />
         </StackPanel>
 
         <TextBlock Text="This connection is encrypted (TLS), but the other device's identity isn't verified against a trusted registry yet."

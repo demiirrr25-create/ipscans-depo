@@ -19,6 +19,9 @@ public enum MessageType
     KeyEvent,
     RelayRegister,
     RelayReady,
+    RelayListen,
+    FileTransferComplete,
+    FileTransferCancel,
 }
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>
@@ -28,7 +31,7 @@ public sealed record HelloMessage(string DeviceId, string AppVersion);
 public sealed record ConnectionRequestMessage(string FromDeviceId, ConnectionPermissions RequestedPermissions, string? Password = null);
 
 /// <summary>The remote user's answer to a ConnectionRequestMessage.</summary>
-public sealed record ConnectionDecisionMessage(bool Accepted, ConnectionPermissions GrantedPermissions, string? Reason);
+public sealed record ConnectionDecisionMessage(bool Accepted, ConnectionPermissions GrantedPermissions, string? Reason, string? HostDeviceId = null);
 
 /// <summary>Round-trip latency probe (spec §14: "Ping: 24 ms").</summary>
 public sealed record PingMessage(long Sequence, DateTimeOffset SentAtUtc);
@@ -49,6 +52,8 @@ public sealed record FileOfferResponseMessage(string TransferId, bool Accepted, 
 
 /// <summary>One chunk of file data. <see cref="Data"/> is JSON-encoded as base64 by System.Text.Json.</summary>
 public sealed record FileChunkMessage(string TransferId, long Offset, byte[] Data, bool IsLast);
+public sealed record FileTransferCompleteMessage(string TransferId, bool Success, string? Error = null);
+public sealed record FileTransferCancelMessage(string TransferId);
 
 /// <summary>
 /// One encoded screen frame from the shared device to the viewer (spec §5). Coordinates for input
