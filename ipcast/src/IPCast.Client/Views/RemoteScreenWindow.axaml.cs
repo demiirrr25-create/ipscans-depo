@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.Interactivity;
 using IPCast.RemoteDesktop;
 
 namespace IPCast.Client.Views;
@@ -22,6 +23,7 @@ public partial class RemoteScreenWindow : Window
     private CapturedFrame? _pendingFrame;
     private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly HashSet<int> _pressedKeys = [];
+    private bool _suppressEscapeKeyUp;
 
     public RemoteScreenWindow()
     {
@@ -147,6 +149,13 @@ public partial class RemoteScreenWindow : Window
 
     private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.F11 || (e.Key == Key.Escape && WindowState == WindowState.FullScreen))
+        {
+            _suppressEscapeKeyUp = e.Key == Key.Escape;
+            ToggleFullScreen();
+            e.Handled = true;
+            return;
+        }
         var key = AvaloniaKeyToVirtualKey(e.Key);
         if (key == 0) return;
         _pressedKeys.Add(key);
@@ -156,11 +165,25 @@ public partial class RemoteScreenWindow : Window
 
     private async void OnKeyUp(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.F11 || e.Key == Key.Escape && _suppressEscapeKeyUp)
+        {
+            if (e.Key == Key.Escape) _suppressEscapeKeyUp = false;
+            e.Handled = true;
+            return;
+        }
         var key = AvaloniaKeyToVirtualKey(e.Key);
         if (key == 0) return;
         _pressedKeys.Remove(key);
         await SendSafely(() => _desktop.SendKeyEventAsync(key, isDown: false));
         e.Handled = true;
+    }
+
+    private void OnToggleFullScreenClick(object? sender, RoutedEventArgs e) => ToggleFullScreen();
+
+    private void ToggleFullScreen()
+    {
+        WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen;
+        FullScreenButton.Content = WindowState == WindowState.FullScreen ? "Exit full screen" : "Full screen";
     }
 
     private async Task SendSafely(Func<Task> send)
