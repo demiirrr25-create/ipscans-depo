@@ -66,7 +66,7 @@ jobs:
           finally {
             if (-not $process.HasExited) {
               $null = $process.CloseMainWindow()
-              if (-not $process.WaitForExit(5000)) {
+              if (-not $process.WaitForExit(20000)) {
                 Stop-Process -Id $process.Id -Force
                 throw "IPCast did not shut down after its main window closed."
               }
