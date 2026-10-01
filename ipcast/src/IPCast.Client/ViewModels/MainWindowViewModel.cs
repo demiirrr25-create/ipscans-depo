@@ -8,6 +8,7 @@ using IPCast.RemoteDesktop.Capture;
 using IPCast.RemoteDesktop.Input;
 using IPCast.Security;
 using IPCast.Shared;
+using Microsoft.Win32;
 
 namespace IPCast.Client.ViewModels;
 
@@ -21,6 +22,11 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly UnattendedAccessStore _unattendedAccessStore;
     private readonly ConnectionHistoryStore _historyStore;
     private readonly FavoriteDevicesStore _favoritesStore;
+    private readonly IPCastSettingsStore _settingsStore;
+    private IPCastSettings _settings = IPCastSettings.Default;
+
+    private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string StartupRegistryValue = "IPCast";
 
     [ObservableProperty]
     private string _remoteIdInput = string.Empty;
@@ -58,9 +64,21 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private string _favoritesMessage = string.Empty;
 
+    [ObservableProperty]
+    private StreamQuality _selectedQuality = StreamQuality.Auto;
+
+    [ObservableProperty]
+    private FrameRateOption _selectedFrameRate = FrameRateOption.All[0];
+
+    [ObservableProperty]
+    private bool _launchAtStartup;
+
+    [ObservableProperty]
+    private string _settingsMessage = string.Empty;
+
     public MainWindowViewModel()
         : this(new DeviceIdentityStore(), new DeviceCertificateStore(), new UnattendedAccessStore(),
-              new ConnectionHistoryStore(), new FavoriteDevicesStore())
+              new ConnectionHistoryStore(), new FavoriteDevicesStore(), new IPCastSettingsStore())
     {
     }
 
@@ -70,13 +88,29 @@ public partial class MainWindowViewModel : ObservableObject
         UnattendedAccessStore unattendedAccessStore,
         ConnectionHistoryStore historyStore,
         FavoriteDevicesStore favoritesStore)
+        : this(identityStore, certificateStore, unattendedAccessStore, historyStore, favoritesStore, new IPCastSettingsStore())
+    {
+    }
+
+    public MainWindowViewModel(
+        DeviceIdentityStore identityStore,
+        DeviceCertificateStore certificateStore,
+        UnattendedAccessStore unattendedAccessStore,
+        ConnectionHistoryStore historyStore,
+        FavoriteDevicesStore favoritesStore,
+        IPCastSettingsStore settingsStore)
     {
         _localDeviceId = identityStore.LoadOrCreate();
         _unattendedAccessStore = unattendedAccessStore;
         _historyStore = historyStore;
         _favoritesStore = favoritesStore;
+        _settingsStore = settingsStore;
         _selectedNavItem = NavItems[0];
         _isUnattendedAccessEnabled = unattendedAccessStore.GetStatus().Enabled;
+        _settings = settingsStore.Load();
+        _selectedQuality = _settings.Quality;
+        _selectedFrameRate = FrameRateOption.All.First(option => option.FramesPerSecond == _settings.FramesPerSecond);
+        _launchAtStartup = IsRegisteredForStartup();
 
         ConnectionHistory = new ObservableCollection<ConnectionHistoryEntry>(historyStore.GetAll());
         FavoriteDevices = new ObservableCollection<FavoriteDevice>(favoritesStore.GetAll());
@@ -118,13 +152,112 @@ public partial class MainWindowViewModel : ObservableObject
         new NavItem(NavSection.Help, "Help"),
     ];
 
+    public IReadOnlyList<StreamQuality> QualityOptions { get; } = Enum.GetValues<StreamQuality>();
+
+    public IReadOnlyList<FrameRateOption> FrameRateOptions => FrameRateOption.All;
+
+    public bool IsLaunchAtStartupSupported => OperatingSystem.IsWindows();
+
     /// <summary>The grouped-by-3 display form of this device's persistent IPCast ID, e.g. "847 293 615".</summary>
     public string DeviceIdFormatted => _localDeviceId.Formatted;
+
+    public string AppVersion => typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.1";
+
+    public string VersionDisplay => $"Version {AppVersion}";
 
     partial void OnSelectedNavItemChanged(NavItem value)
     {
         SelectedNav = value.Section;
         StatusMessage = string.Empty;
+    }
+
+    partial void OnSelectedQualityChanged(StreamQuality value)
+    {
+        _settings = _settings with { Quality = value };
+        SaveSettings();
+    }
+
+    partial void OnSelectedFrameRateChanged(FrameRateOption value)
+    {
+        _settings = _settings with { FramesPerSecond = value.FramesPerSecond };
+        SaveSettings();
+    }
+
+    partial void OnLaunchAtStartupChanged(bool value)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            SettingsMessage = "Windows startup is available on Windows only.";
+            _launchAtStartup = false;
+            OnPropertyChanged(nameof(LaunchAtStartup));
+            return;
+        }
+
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(StartupRegistryKey)
+                ?? throw new IOException("The Windows startup registry key could not be opened.");
+            if (value)
+            {
+                var processPath = Environment.ProcessPath
+                    ?? throw new InvalidOperationException("The IPCast executable path could not be determined.");
+                var command = $"\"{processPath}\"";
+                if (Path.GetFileNameWithoutExtension(processPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                {
+                    var entryAssemblyName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+                    if (!string.IsNullOrWhiteSpace(entryAssemblyName))
+                    {
+                        var entryAssemblyPath = Path.Combine(AppContext.BaseDirectory, entryAssemblyName + ".dll");
+                        command += $" \"{entryAssemblyPath}\"";
+                    }
+                }
+
+                key.SetValue(StartupRegistryValue, command);
+            }
+            else
+            {
+                key.DeleteValue(StartupRegistryValue, throwOnMissingValue: false);
+            }
+
+            SettingsMessage = value ? "IPCast will start when you sign in to Windows." : "Windows startup is disabled.";
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or InvalidOperationException)
+        {
+            _launchAtStartup = !value;
+            OnPropertyChanged(nameof(LaunchAtStartup));
+            SettingsMessage = "Couldn't update the Windows startup setting.";
+        }
+    }
+
+    private void SaveSettings()
+    {
+        try
+        {
+            _settingsStore.Save(_settings);
+            SettingsMessage = "Display settings saved.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SettingsMessage = "Couldn't save display settings.";
+        }
+    }
+
+    private static bool IsRegisteredForStartup()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return false;
+        }
+
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey);
+            return key?.GetValue(StartupRegistryValue) is string value && !string.IsNullOrWhiteSpace(value);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            return false;
+        }
     }
 
     [RelayCommand]
@@ -308,7 +441,16 @@ public partial class MainWindowViewModel : ObservableObject
         {
             // We accepted the incoming request and granted ViewScreen: share this screen.
             var (capturer, injector) = CreateSharingBackend();
-            desktop.StartSharing(capturer, injector, frameInterval: TimeSpan.FromMilliseconds(200));
+            var settings = _settingsStore.Load();
+            var framesPerSecond = settings.FramesPerSecond == 0 ? 15 : settings.FramesPerSecond;
+            var jpegQuality = settings.Quality switch
+            {
+                StreamQuality.Low => 40,
+                StreamQuality.Medium or StreamQuality.Auto => 65,
+                StreamQuality.High => 85,
+                _ => 65,
+            };
+            desktop.StartSharing(capturer, injector, TimeSpan.FromSeconds(1d / framesPerSecond), jpegQuality);
         }
     }
 

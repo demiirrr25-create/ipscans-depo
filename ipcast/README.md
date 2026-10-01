@@ -147,14 +147,18 @@ ipcast/
 - No internet (non-LAN) connections from the Client's UI — discovery only works when both devices
   share a broadcast domain; the relay server exists and is tested (above) but isn't deployed or
   wired into the Connect flow yet.
-- Settings' general/display options and the Help section still show a plain, honest "coming in a
-  later phase" message rather than dead or fake buttons.
+- File selection, a transfer manager, and transfer history are not exposed in the Client UI yet;
+  the underlying file-transfer engine remains permission-gated and covered by tests.
+- Settings persist a selected JPEG quality and fixed FPS target. `Auto` currently means medium
+  JPEG quality at 15 FPS; network-aware adaptive quality/FPS is not implemented yet.
+- Windows startup registration is available in Settings on Windows only. The Help section still
+  awaits documentation.
 
 Verified end-to-end in this environment (not just unit tests) by running two independent,
 fully-isolated instances of the app side by side under separate virtual displays: instance A
 found instance B by ID alone, B's real accept dialog popped up showing the exact requested
 permissions, and after clicking Accept a live JPEG screen stream and clipboard sync both worked
-across the encrypted session. Also covered by 51 automated tests, including a real multi-chunk
+across the encrypted session. Also covered by 54 automated tests, including a real multi-chunk
 file transfer with SHA-256 verification, a full screen-share+input round trip over a real
 TLS-encrypted TCP session, and a real bidirectional relay pairing/forwarding test.
 
@@ -236,8 +240,9 @@ Status of the 13 phases from the original spec:
       builds `IPCast-Setup.exe`: Next/Install/Finish wizard, optional desktop shortcut, optional
       "start with Windows", no admin rights required. The portable option from Phase 1 (the
       self-contained single-file `IPCast.exe` itself) already needs no installer at all.
-- [ ] Phase 13 — Performance optimization (adaptive quality/bitrate, delta-frame or hardware
-      video encoding instead of per-frame JPEG)
+- [~] Phase 13 — User-selectable JPEG quality and fixed FPS target are available; network-aware
+  adaptive quality/bitrate, delta-frame or hardware video encoding instead of per-frame JPEG
+  remain future work.
 
 **Why the remaining phases aren't "just build them faster":** several need resources this
 sandbox genuinely doesn't have, not just more time:

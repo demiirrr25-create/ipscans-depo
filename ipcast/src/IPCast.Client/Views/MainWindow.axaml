@@ -28,7 +28,7 @@
 
                 <ListBox DockPanel.Dock="Top"
                          ItemsSource="{Binding NavItems}"
-                         SelectedItem="{Binding SelectedNavItem}"
+                         SelectedItem="{Binding SelectedNavItem, Mode=TwoWay}"
                          Background="Transparent"
                          BorderThickness="0">
                     <ListBox.ItemTemplate>
@@ -38,7 +38,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="Version 1.0.0" FontSize="11"
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionDisplay}" FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}" Margin="4" />
             </DockPanel>
         </Border>
@@ -150,39 +150,114 @@
             </StackPanel>
 
             <!-- Settings -->
-            <StackPanel Spacing="20" MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top"
-                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
-                <TextBlock Text="Settings — general, display and other options are coming in a later phase (Phase 22 of the roadmap)."
-                           Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+            <ScrollViewer IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
+                <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <TextBlock Text="Settings" FontSize="24" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
 
-                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1" CornerRadius="10" Padding="24">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Security → Unattended Access" FontSize="13"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="Let other devices connect to this computer using its ID and a password, without anyone here clicking Accept."
-                                   FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="General" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <CheckBox Content="Start IPCast when Windows starts"
+                                      IsChecked="{Binding LaunchAtStartup}"
+                                      IsEnabled="{Binding IsLaunchAtStartupSupported}" />
+                            <TextBlock Text="Available on Windows. This setting is stored for your Windows user only."
+                                       FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
 
-                        <TextBlock Text="Status: ON" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
-                                   IsVisible="{Binding IsUnattendedAccessEnabled}" />
-                        <TextBlock Text="Status: OFF" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"
-                                   IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Display" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Quality" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <ComboBox ItemsSource="{Binding QualityOptions}" SelectedItem="{Binding SelectedQuality}" />
+                            <TextBlock Text="Frame rate" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <ComboBox ItemsSource="{Binding FrameRateOptions}" SelectedItem="{Binding SelectedFrameRate}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="persistence:FrameRateOption">
+                                        <TextBlock Text="{Binding Label}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBlock Text="Auto uses a balanced 15 FPS and medium JPEG quality. These choices apply when this device shares its screen."
+                                       FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
 
-                        <TextBox PlaceholderText="New password (min. 8 characters)" PasswordChar="*"
-                                 Text="{Binding UnattendedAccessPasswordInput}"
-                                 IsVisible="{Binding !IsUnattendedAccessEnabled}" />
-                        <Button Content="Enable Unattended Access" Classes="primary" HorizontalAlignment="Left"
-                                Command="{Binding EnableUnattendedAccessCommand}"
-                                IsVisible="{Binding !IsUnattendedAccessEnabled}" />
-                        <Button Content="Disable Unattended Access" HorizontalAlignment="Left"
-                                Command="{Binding DisableUnattendedAccessCommand}"
-                                IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Connection" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="IPCast currently discovers and connects to devices on the same local network. Internet relay connections are not configured."
+                                       FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
 
-                        <TextBlock Text="{Binding UnattendedAccessMessage}" FontSize="12" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Security" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Unattended access lets other devices connect using this device's ID and a password, without an approval click."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                            <TextBlock Text="Status: ON" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
+                                       IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                            <TextBlock Text="Status: OFF" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+
+                            <TextBox PlaceholderText="New password (min. 8 characters)" PasswordChar="*"
+                                     Text="{Binding UnattendedAccessPasswordInput}"
+                                     IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+                            <Button Content="Enable Unattended Access" Classes="primary" HorizontalAlignment="Left"
+                                    Command="{Binding EnableUnattendedAccessCommand}"
+                                    IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+                            <Button Content="Disable Unattended Access" HorizontalAlignment="Left"
+                                    Command="{Binding DisableUnattendedAccessCommand}"
+                                    IsVisible="{Binding IsUnattendedAccessEnabled}" />
+
+                            <TextBlock Text="{Binding UnattendedAccessMessage}" FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="TLS encrypts the session. Certificate pinning is not implemented yet, so active man-in-the-middle attacks are not ruled out."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="File Transfer" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Transfers are protected by the session's file-transfer permission. File selection and transfer controls are not yet available in this build."
+                                       FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="About" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="IPCast · Remote Desktop &amp; Support"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding AppVersion}" FontFamily="{DynamicResource MonoFontFamily}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="{Binding SettingsMessage}" FontSize="12" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+            </ScrollViewer>
 
             <!-- Help -->
             <TextBlock MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap"
