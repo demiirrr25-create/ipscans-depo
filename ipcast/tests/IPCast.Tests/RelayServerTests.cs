@@ -1,4 +1,5 @@
 using System.Net;
+using IPCast.Network;
 using IPCast.Server;
 using Xunit;
 
@@ -27,8 +28,10 @@ public class RelayServerTests : IAsyncDisposable
         var bTask = RelayClient.ConnectViaRelayAsync(relayEndpoint, "222222222", "111111111");
 
         await Task.WhenAll(aTask, bTask).WaitAsync(TimeSpan.FromSeconds(5));
-        using var streamA = await aTask;
-        using var streamB = await bTask;
+        using var clientA = (await aTask).Client;
+        using var clientB = (await bTask).Client;
+        var streamA = clientA.GetStream();
+        var streamB = clientB.GetStream();
 
         var messageFromA = "hello from A"u8.ToArray();
         await streamA.WriteAsync(messageFromA);
@@ -72,8 +75,10 @@ public class RelayServerTests : IAsyncDisposable
         var bTask = RelayClient.ConnectViaRelayAsync(relayEndpoint, "444444444", "333333333");
 
         await Task.WhenAll(aTask, bTask).WaitAsync(TimeSpan.FromSeconds(5));
-        using var streamA = await aTask;
-        using var streamB = await bTask;
+        using var clientA = (await aTask).Client;
+        using var clientB = (await bTask).Client;
+        var streamA = clientA.GetStream();
+        var streamB = clientB.GetStream();
 
         var payload = "only for the right pair"u8.ToArray();
         await streamA.WriteAsync(payload);
