@@ -151,7 +151,10 @@ public partial class MainWindowViewModel : ObservableObject
         _isClipboardSyncEnabled = preferences.ClipboardSync;
         _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
         _launchAtStartup = OperatingSystem.IsWindows() && preferences.LaunchAtStartup && IsRegisteredForStartup();
-        NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER")))
+        {
+            NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
+        }
         NetworkService.RelayStatusChanged += message => Dispatcher.UIThread.Post(() => RelayServerMessage = message);
     }
 
