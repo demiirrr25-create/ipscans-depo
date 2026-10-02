@@ -5,8 +5,8 @@ type Localized = Record<Locale, string>;
 export const ipcastRelease = {
   version: "2.0.0",
   platform: "Windows 10/11 · x64",
-  bytes: 105811342,
-  sha256: "a86a675ae742d1c7979b653c0cdc34164c0f836c5216b4c4552a198c72330675",
+  bytes: 105814199,
+  sha256: "a3d3ed21c473aea1c7f10db6ec23826d2347f34d5c579392dd98020351d59836",
   fileName: "IPCast-2.0.0.exe",
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/v2.0.0/IPCast-2.0.0.exe",
 } as const;
