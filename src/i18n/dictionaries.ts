@@ -211,7 +211,7 @@ const dictionaries = {
       title: "IPCast Uzaktan Masaüstü",
       subtitle:
         "Windows bilgisayarlara uzaktan bağlanın, ekranı görüntüleyin veya kontrol edin. Bağlantınızı TLS şifrelemesiyle koruyun; pano ve dosya aktarımını aynı uygulamada kullanın.",
-      badge: "Ücretsiz • 2.0.0 Kurumsal Monokrom Sürüm",
+      badge: "Ücretsiz • 2.1.0 Kurumsal Monokrom Sürüm",
       features: [
         "9 haneli cihaz kodu veya doğrudan IP adresiyle bağlantı kurun",
         "Ekran görüntüleme ve kontrol izinlerini bağlantı sırasında yönetin",
@@ -221,7 +221,7 @@ const dictionaries = {
         "Son bağlantılarınıza ve favori cihazlarınıza kolayca dönün",
       ],
       button: "IPCast'i İndir (.exe)",
-      note: "Yaklaşık 105.8 MB (v2.0.0). Tek dosyalı Windows uygulamasıdır; ayrıca .NET kurmanız gerekmez.",
+      note: "Yaklaşık 105.8 MB (v2.1.0). Tek dosyalı Windows uygulamasıdır; ayrıca .NET kurmanız gerekmez.",
       safe: "Yalnızca size ait veya erişim izniniz bulunan cihazlara bağlanın.",
     },
     pro: {
@@ -501,7 +501,7 @@ const dictionaries = {
       title: "IPCast Remote Desktop",
       subtitle:
         "Connect to Windows computers remotely to view or control their screens. Protect connections with TLS encryption and use clipboard and file transfer in one app.",
-      badge: "Free • 2.0.0 Enterprise Monochrome Edition",
+      badge: "Free • 2.1.0 Enterprise Monochrome Edition",
       features: [
         "Connect with a 9-digit device code or a direct IP address",
         "Choose screen viewing and control permissions for each connection",
@@ -511,7 +511,7 @@ const dictionaries = {
         "Return to recent connections and favorite devices",
       ],
       button: "Download IPCast (.exe)",
-      note: "About 105.8 MB (v2.0.0). This is a single-file Windows app; a separate .NET installation is not required.",
+      note: "About 105.8 MB (v2.1.0). This is a single-file Windows app; a separate .NET installation is not required.",
       safe: "Connect only to devices you own or are authorized to access.",
     },
     pro: {
@@ -794,7 +794,7 @@ const dictionaries = {
       title: "IPCast Remote Desktop",
       subtitle:
         "Verbinden Sie sich aus der Ferne mit Windows-Computern, um deren Bildschirm anzusehen oder zu steuern. TLS-Verschlüsselung schützt die Verbindung; Zwischenablage und Dateiübertragung sind integriert.",
-      badge: "Kostenlos • 2.0.0 Enterprise Monochrome Edition",
+      badge: "Kostenlos • 2.1.0 Enterprise Monochrome Edition",
       features: [
         "Verbindung per 9-stelligem Gerätecode oder direkter IP-Adresse",
         "Bildschirmansicht und Steuerungsrechte pro Verbindung festlegen",
@@ -804,7 +804,7 @@ const dictionaries = {
         "Letzte Verbindungen und Favoritengeräte schnell wiederfinden",
       ],
       button: "IPCast herunterladen (.exe)",
-      note: "Etwa 105.8 MB (v2.0.0). Eine einzelne Windows-Datei; eine separate .NET-Installation ist nicht erforderlich.",
+      note: "Etwa 105.8 MB (v2.1.0). Eine einzelne Windows-Datei; eine separate .NET-Installation ist nicht erforderlich.",
       safe: "Verbinden Sie sich nur mit eigenen Geräten oder Geräten, auf die Sie zugreifen dürfen.",
     },
     pro: {
@@ -1087,7 +1087,7 @@ const dictionaries = {
       title: "IPCast Bureau à distance",
       subtitle:
         "Connectez-vous à distance à des ordinateurs Windows pour afficher ou contrôler leur écran. Le chiffrement TLS protège la connexion ; le presse-papiers et le transfert de fichiers sont intégrés.",
-      badge: "Gratuit • 2.0.0 Édition Monochrome Entreprise",
+      badge: "Gratuit • 2.1.0 Édition Monochrome Entreprise",
       features: [
         "Connectez-vous avec un code appareil à 9 chiffres ou une adresse IP directe",
         "Choisissez les autorisations d’affichage et de contrôle pour chaque connexion",
@@ -1097,7 +1097,7 @@ const dictionaries = {
         "Retrouvez rapidement les connexions récentes et les appareils favoris",
       ],
       button: "Télécharger IPCast (.exe)",
-      note: "Environ 105.8 Mo (v2.0.0). Application Windows en un seul fichier ; aucune installation .NET séparée n’est nécessaire.",
+      note: "Environ 105.8 Mo (v2.1.0). Application Windows en un seul fichier ; aucune installation .NET séparée n’est nécessaire.",
       safe: "Connectez-vous uniquement à vos appareils ou à ceux auxquels vous êtes autorisé à accéder.",
     },
     pro: {
@@ -1380,7 +1380,7 @@ const dictionaries = {
       title: "IPCast Escritorio remoto",
       subtitle:
         "Conéctate a equipos Windows a distancia para ver o controlar su pantalla. El cifrado TLS protege la conexión e incluye portapapeles y transferencia de archivos.",
-      badge: "Gratis • 2.0.0 Edición Monocromática Empresarial",
+      badge: "Gratis • 2.1.0 Edición Monocromática Empresarial",
       features: [
         "Conéctate mediante un código de dispositivo de 9 dígitos o una dirección IP directa",
         "Elige los permisos de visualización y control para cada conexión",
@@ -1390,7 +1390,7 @@ const dictionaries = {
         "Vuelve fácilmente a las conexiones recientes y dispositivos favoritos",
       ],
       button: "Descargar IPCast (.exe)",
-      note: "Aproximadamente 105.8 MB (v2.0.0). Es una aplicación de Windows en un solo archivo; no requiere instalar .NET por separado.",
+      note: "Aproximadamente 105.8 MB (v2.1.0). Es una aplicación de Windows en un solo archivo; no requiere instalar .NET por separado.",
       safe: "Conéctate solo a dispositivos propios o a los que tengas autorización para acceder.",
     },
     pro: {
