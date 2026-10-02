@@ -3,12 +3,12 @@ import type { Locale } from "@/i18n/config";
 type Localized = Record<Locale, string>;
 
 export const ipcastRelease = {
-  version: "1.1.0-preview.1",
+  version: "1.1.0-preview.3",
   platform: "Windows 10/11 · x64",
-  bytes: 105807246,
-  sha256: "8639aa6cc80a21abc0dbc4f1302bbb3cfca0831f1203da3aceecdedce0ddb0da",
-  fileName: "IPCast-1.1.0-preview.1.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.1.0-preview.1/IPCast-1.1.0-preview.1.exe",
+  bytes: 105811342,
+  sha256: "a86a675ae742d1c7979b653c0cdc34164c0f836c5216b4c4552a198c72330675",
+  fileName: "IPCast-1.1.0-preview.3.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.1.0-preview.3/IPCast-1.1.0-preview.3.exe",
 } as const;
 
 export const platformCopy: Record<Locale, {
@@ -35,7 +35,7 @@ export const platformCopy: Record<Locale, {
 };
 
 export type Application = {
-  id: "ipcast" | "scanner";
+  id: "ipcast" | "scanner" | "health-pro";
   name: string;
   description: Localized;
   icon: string;
@@ -65,5 +65,15 @@ export const applications: readonly Application[] = [
     platform: "Windows · x64",
     detailPath: "/download",
     downloadUrl: "/downloads/ipscans-network-scanner.exe",
+  },
+  {
+    id: "health-pro",
+    name: "Network Health Pro",
+    description: { tr: "Ağ izleme ve IP çakışma tespiti", en: "Network monitoring and IP conflict detection", de: "Netzwerküberwachung und IP-Konflikterkennung", fr: "Surveillance réseau et détection des conflits IP", es: "Supervisión de red y detección de conflictos IP" },
+    icon: "/scanner-mark.svg",
+    version: "1.2.1",
+    platform: "Windows · x64",
+    detailPath: "/pro",
+    downloadUrl: "/downloads/ipscans-network-health-pro.exe",
   },
 ];

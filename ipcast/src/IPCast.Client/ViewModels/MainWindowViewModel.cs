@@ -10,11 +10,15 @@ using IPCast.RemoteDesktop.Input;
 using IPCast.Security;
 using IPCast.Shared;
 using Avalonia.Threading;
+using Microsoft.Win32;
 
 namespace IPCast.Client.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
+    private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string StartupRegistryValue = "IPCast";
+
     private const ConnectionPermissions DefaultRequestedPermissions =
         ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse |
         ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer;
@@ -86,9 +90,22 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isClipboardSyncEnabled = true;
+    private bool _launchAtStartup;
+    public bool LaunchAtStartup
+    {
+        get => _launchAtStartup;
+        set
+        {
+            if (SetProperty(ref _launchAtStartup, value))
+            {
+                UpdateLaunchAtStartup(value);
+            }
+        }
+    }
     public IReadOnlyList<string> StreamingModes { get; } = ["Balanced", "Speed", "Quality"];
     [ObservableProperty] private string _streamingMode = "Balanced";
     partial void OnStreamingModeChanged(string value) => SavePreferences();
+    public bool IsLaunchAtStartupSupported => OperatingSystem.IsWindows();
 
     public MainWindowViewModel()
         : this(new DeviceIdentityStore(), new DeviceCertificateStore(), new UnattendedAccessStore(),
@@ -133,15 +150,78 @@ public partial class MainWindowViewModel : ObservableObject
         var preferences = _preferencesStore.Load();
         _isClipboardSyncEnabled = preferences.ClipboardSync;
         _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
-        NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
+        _launchAtStartup = IsRegisteredForStartup();
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER")))
+        {
+            NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
+        }
         NetworkService.RelayStatusChanged += message => Dispatcher.UIThread.Post(() => RelayServerMessage = message);
     }
 
     partial void OnIsClipboardSyncEnabledChanged(bool value) => SavePreferences();
     private void SavePreferences()
     {
-        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode)); }
+        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode, LaunchAtStartup: LaunchAtStartup)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
+    }
+
+    private static bool IsRegisteredForStartup()
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey);
+            return !string.IsNullOrWhiteSpace(key?.GetValue(StartupRegistryValue) as string);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return false;
+        }
+    }
+
+    private void UpdateLaunchAtStartup(bool enabled)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            _launchAtStartup = false;
+            OnPropertyChanged(nameof(LaunchAtStartup));
+            return;
+        }
+
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(StartupRegistryKey)
+                ?? throw new IOException("The Windows startup registry key could not be opened.");
+            if (enabled)
+            {
+                var processPath = Environment.ProcessPath
+                    ?? throw new InvalidOperationException("The IPCast executable path could not be determined.");
+                var command = $"\"{processPath}\"";
+                if (Path.GetFileNameWithoutExtension(processPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                {
+                    var entryAssemblyName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+                    if (!string.IsNullOrWhiteSpace(entryAssemblyName))
+                    {
+                        var entryAssemblyPath = Path.Combine(AppContext.BaseDirectory, entryAssemblyName + ".dll");
+                        command += $" \"{entryAssemblyPath}\"";
+                    }
+                }
+
+                key.SetValue(StartupRegistryValue, command);
+            }
+            else
+            {
+                key.DeleteValue(StartupRegistryValue, throwOnMissingValue: false);
+            }
+
+            SavePreferences();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or InvalidOperationException)
+        {
+            _launchAtStartup = !enabled;
+            OnPropertyChanged(nameof(LaunchAtStartup));
+            StatusMessage = $"Couldn't update Windows startup: {ex.Message}";
+        }
     }
 
     /// <summary>Persisted connection attempts, newest first (spec §19/§27).</summary>

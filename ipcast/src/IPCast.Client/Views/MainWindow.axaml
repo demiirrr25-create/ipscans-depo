@@ -183,6 +183,17 @@
 
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="24">
                         <StackPanel Spacing="12">
+                            <TextBlock Text="General" FontSize="18" FontWeight="Bold" />
+                            <CheckBox Content="Start IPCast when I sign in to Windows"
+                                      IsChecked="{Binding LaunchAtStartup}"
+                                      IsEnabled="{Binding IsLaunchAtStartupSupported}" />
+                            <TextBlock Text="Per-user startup setting. No administrator permission is required."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="24">
+                        <StackPanel Spacing="12">
                             <TextBlock Text="Display performance" FontSize="18" FontWeight="Bold" />
                             <TextBlock Text="Choose on the computer being shared. Applies to the next connection. Balanced: everyday work. Speed: slower networks. Quality: sharper text." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <ComboBox ItemsSource="{Binding StreamingModes}" SelectedItem="{Binding StreamingMode}" MinHeight="44" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen sharing performance" />

@@ -24,6 +24,8 @@ public class IPCastHandshakeTests : IAsyncDisposable
     public async Task ConnectAsync_SucceedsWhenHostAccepts()
     {
         _host = new IPCastHost(TestCertificateFactory.CreateSelfSigned(), port: 0);
+        var accepted = new TaskCompletionSource<RemoteSession>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _host.SessionEstablished += session => accepted.TrySetResult(session);
         _host.OnConnectionRequested = _ => Task.FromResult(
             new ConnectionDecision(true, ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse));
         _host.Start();
@@ -34,7 +36,8 @@ public class IPCastHandshakeTests : IAsyncDisposable
             _hostId,
             ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse | ConnectionPermissions.FileTransfer);
 
-        Assert.True(result.Success);
+        Assert.True(result.Success, result.Error);
+        using var hostSession = await accepted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.NotNull(result.Session);
         Assert.Equal(ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse, result.Session!.GrantedPermissions);
         var sslStream = Assert.IsType<SslStream>(result.Session.Stream);

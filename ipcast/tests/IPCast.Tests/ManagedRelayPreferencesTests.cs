@@ -23,12 +23,33 @@ public class ManagedRelayPreferencesTests
             var store = new PreferencesStore(directory);
             var prefs = store.Load();
             Assert.Equal(Preferences.DefaultRelayAddress, prefs.RelayAddress);
+            Assert.False(prefs.LaunchAtStartup);
             Assert.True(RelayAddress.TryParse(prefs.RelayAddress, out var relay));
             Assert.Equal("wss", relay!.WebSocketUri!.Scheme);
             if (json?.Contains("false") == true) Assert.False(prefs.ClipboardSync);
             store.Save(prefs with { RelayAddress = "", ClipboardSync = false });
             Assert.Equal(Preferences.DefaultRelayAddress, store.Load().RelayAddress);
             Assert.False(store.Load().ClipboardSync);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
+    public void StartupPreferenceRoundTripsWithoutChangingOtherPreferences()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "IPCastPrefs_" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var store = new PreferencesStore(directory);
+            store.Save(new Preferences(ClipboardSync: false, StreamingMode: "Speed", LaunchAtStartup: true));
+
+            var loaded = store.Load();
+
+            Assert.True(loaded.LaunchAtStartup);
+            Assert.False(loaded.ClipboardSync);
+            Assert.Equal("Speed", loaded.StreamingMode);
+            Assert.Equal(Preferences.DefaultRelayAddress, loaded.RelayAddress);
         }
         finally { Directory.Delete(directory, true); }
     }

@@ -56,7 +56,7 @@ public class UnattendedAccessTests : IAsyncDisposable
             new IPEndPoint(IPAddress.Loopback, host.Port), _hostId, ConnectionPermissions.None,
             password: "correct horse battery staple");
 
-        Assert.True(result.Success);
+        Assert.True(result.Success, result.Error);
         Assert.True(result.Session!.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen));
         result.Session.Dispose();
     }

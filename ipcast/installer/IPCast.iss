@@ -8,7 +8,7 @@
 ; optional desktop shortcut, and optional "start with Windows".
 
 #define MyAppName "IPCast"
-#define MyAppVersion "1.1.0-preview.2"
+#define MyAppVersion "1.1.0-preview.3"
 #define MyAppPublisher "IPCast"
 #define MyAppExeName "IPCast.exe"
 #define MyPublishDir "..\publish\win-x64"

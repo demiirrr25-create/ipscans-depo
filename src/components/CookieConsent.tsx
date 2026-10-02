@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 
 const STORAGE_KEY = "ipscans-consent";
+const CONSENT_CHANGE_EVENT = "ipscans-consent-change";
 
 type ConsentState = "granted" | "denied";
+type ConsentSnapshot = ConsentState | "unset";
 
 declare global {
   interface Window {
@@ -29,6 +31,20 @@ function applyConsent(state: ConsentState) {
   });
 }
 
+function subscribeToConsent(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(CONSENT_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(CONSENT_CHANGE_EVENT, onChange);
+  };
+}
+
+function getConsentSnapshot(): ConsentSnapshot {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === "granted" || stored === "denied" ? stored : "unset";
+}
+
 /**
  * Minimal cookie/consent banner wired to Google Consent Mode v2. Ads and
  * analytics scripts (see GoogleTag) start with consent denied by default;
@@ -36,25 +52,25 @@ function applyConsent(state: ConsentState) {
  * personalized ads/analytics run for EEA/UK/CH visitors.
  */
 export function CookieConsent({ dict }: { dict: Dictionary }) {
-  const [visible, setVisible] = useState(false);
+  const consent = useSyncExternalStore(
+    subscribeToConsent,
+    getConsentSnapshot,
+    () => "loading",
+  );
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "granted" || stored === "denied") {
-      applyConsent(stored);
-    } else {
-      const timer = setTimeout(() => setVisible(true), 0);
-      return () => clearTimeout(timer);
+    if (consent === "granted" || consent === "denied") {
+      applyConsent(consent);
     }
-  }, []);
+  }, [consent]);
 
   function choose(state: ConsentState) {
     localStorage.setItem(STORAGE_KEY, state);
     applyConsent(state);
-    setVisible(false);
+    window.dispatchEvent(new Event(CONSENT_CHANGE_EVENT));
   }
 
-  if (!visible) return null;
+  if (consent !== "unset") return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/95 px-4 py-4 backdrop-blur">

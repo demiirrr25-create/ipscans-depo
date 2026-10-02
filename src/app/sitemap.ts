@@ -19,12 +19,12 @@ export function generateSitemaps() {
   return locales.map((_, id) => ({ id }));
 }
 
-export default function sitemap({
+export default async function sitemap({
   id,
 }: {
-  id: number;
-}): MetadataRoute.Sitemap {
-  const locale = locales[id];
+  id: Promise<string>;
+}): Promise<MetadataRoute.Sitemap> {
+  const locale = locales[Number(await id)];
   const staticPaths = ["", "/scan", "/download", "/download/ipcast", "/ipcast", "/pro", "/blog", "/shop", "/privacy", "/terms"];
   const entries: MetadataRoute.Sitemap = [];
 

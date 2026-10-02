@@ -4,9 +4,9 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { LiveIp } from "@/components/LiveIp";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { Reveal } from "@/components/Reveal";
+import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
-import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { platformCopy } from "@/content/applications";
 
 export default async function HomePage({
