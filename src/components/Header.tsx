@@ -8,6 +8,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
 import { toolPath } from "@/lib/tool-routes";
+import { platformCopy } from "@/content/applications";
 
 export function Header({
   locale,
@@ -34,6 +35,7 @@ export function Header({
   ];
   const topLinks = [
     { href: `/${locale}`, label: dict.nav.home },
+    { href: `/${locale}#applications`, label: platformCopy[locale].applications },
     { href: `/${locale}/ipcast`, label: dict.nav.ipcast },
     { href: `/${locale}/pro`, label: dict.nav.pro },
     { href: `/${locale}/shop`, label: dict.nav.shop },

@@ -6,9 +6,9 @@ const dictionaries = {
       skipToContent: "İçeriğe geç",
     },
     meta: {
-      title: "ipscans — IP Sorgulama, Ağ Tarama ve Hız Testi",
+      title: "IPScans — Ağ Araçları ve Uzaktan Erişim Platformu",
       description:
-        "IP adresi sorgulama, coğrafi konum tespiti, internet hız testi ve ağ araçları. Hızlı, ücretsiz ve gizliliğe saygılı.",
+        "IPCast uzak masaüstü, IP Scanner, ağ analizi ve IP yönetimi araçlarını tek platformda keşfedin.",
     },
     nav: {
       home: "Ana Sayfa",
@@ -204,7 +204,7 @@ const dictionaries = {
         "Sadeleştirilmiş, tek tıkla başlayan tarama ekranı",
       ],
       button: "Windows için indir (.exe)",
-      note: "Yaklaşık 47 MB. İndirdikten sonra çift tıklayıp çalıştır — Python kurulumu gerekmez. SmartScreen uyarısı verirse 'Daha fazla bilgi > Yine de çalıştır' de.",
+      note: "Yaklaşık 47 MB. Python kurulumu gerekmez. Windows güvenlik uyarısı görürseniz dosyanın kaynağını doğrulayın.",
       safe: "Yalnızca sahibi olduğun ağlarda kullan.",
     },
     ipcast: {
@@ -299,9 +299,9 @@ const dictionaries = {
       skipToContent: "Skip to content",
     },
     meta: {
-      title: "ipscans — IP Lookup, Network Scanning & Speed Test",
+      title: "IPScans — Network Tools and Remote Access",
       description:
-        "IP address lookup, geolocation, internet speed test and network tools. Fast, free and privacy-friendly.",
+        "Explore IPCast remote desktop, IP Scanner, network analysis and IP management tools on one platform.",
     },
     nav: {
       home: "Home",
@@ -494,7 +494,7 @@ const dictionaries = {
         "Streamlined, one-click scan screen",
       ],
       button: "Download for Windows (.exe)",
-      note: "About 47 MB. Double-click to run after downloading — no Python install needed. If SmartScreen warns, choose 'More info > Run anyway'.",
+      note: "About 47 MB. No Python install needed. If Windows shows a security warning, verify the file source before running it.",
       safe: "Only use on networks you own.",
     },
     ipcast: {
@@ -589,9 +589,9 @@ const dictionaries = {
       skipToContent: "Zum Inhalt springen",
     },
     meta: {
-      title: "ipscans — IP-Abfrage, Netzwerkscan & Geschwindigkeitstest",
+      title: "IPScans — Netzwerktools und Fernzugriff",
       description:
-        "IP-Adressabfrage, Geolokalisierung, Internet-Geschwindigkeitstest und Netzwerktools. Schnell, kostenlos und datenschutzfreundlich.",
+        "IPCast Fernzugriff, IP Scanner, Netzwerkanalyse und IP-Verwaltung auf einer Plattform.",
     },
     nav: {
       home: "Startseite",
@@ -787,7 +787,7 @@ const dictionaries = {
         "Vereinfachter Scan-Bildschirm mit einem Klick zum Start",
       ],
       button: "Für Windows herunterladen (.exe)",
-      note: "Etwa 47 MB. Nach dem Download doppelklicken zum Ausführen — keine Python-Installation nötig. Bei SmartScreen-Warnung 'Weitere Informationen > Trotzdem ausführen' wählen.",
+      note: "Etwa 47 MB. Keine Python-Installation nötig. Prüfen Sie bei einer Windows-Sicherheitswarnung zuerst die Herkunft der Datei.",
       safe: "Nur in Netzwerken verwenden, die dir gehören.",
     },
     ipcast: {
@@ -882,9 +882,9 @@ const dictionaries = {
       skipToContent: "Aller au contenu",
     },
     meta: {
-      title: "ipscans — Recherche IP, scan réseau et test de vitesse",
+      title: "IPScans — Outils réseau et accès à distance",
       description:
-        "Recherche d'adresse IP, géolocalisation, test de vitesse internet et outils réseau. Rapide, gratuit et respectueux de la vie privée.",
+        "Découvrez IPCast, IP Scanner, l'analyse réseau et la gestion des IP sur une seule plateforme.",
     },
     nav: {
       home: "Accueil",
@@ -1080,7 +1080,7 @@ const dictionaries = {
         "Écran de scan simplifié, prêt à démarrer en un clic",
       ],
       button: "Télécharger pour Windows (.exe)",
-      note: "Environ 47 Mo. Double-cliquez pour exécuter après le téléchargement — aucune installation de Python requise. Si SmartScreen avertit, choisissez 'Plus d'infos > Exécuter quand même'.",
+      note: "Environ 47 Mo. Aucune installation de Python requise. Si Windows affiche un avertissement, vérifiez la provenance du fichier.",
       safe: "À utiliser uniquement sur des réseaux que vous possédez.",
     },
     ipcast: {
@@ -1175,9 +1175,9 @@ const dictionaries = {
       skipToContent: "Ir al contenido",
     },
     meta: {
-      title: "ipscans — Búsqueda de IP, escaneo de red y test de velocidad",
+      title: "IPScans — Herramientas de red y acceso remoto",
       description:
-        "Búsqueda de dirección IP, geolocalización, test de velocidad de internet y herramientas de red. Rápido, gratuito y respetuoso con la privacidad.",
+        "Descubre IPCast, IP Scanner, análisis de red y gestión de IP en una sola plataforma.",
     },
     nav: {
       home: "Inicio",
@@ -1373,7 +1373,7 @@ const dictionaries = {
         "Pantalla de escaneo simplificada, lista en un clic",
       ],
       button: "Descargar para Windows (.exe)",
-      note: "Unos 47 MB. Haz doble clic para ejecutar tras la descarga — no necesitas instalar Python. Si SmartScreen avisa, elige 'Más información > Ejecutar de todos modos'.",
+      note: "Unos 47 MB. No necesitas instalar Python. Si Windows muestra una alerta de seguridad, verifica el origen del archivo.",
       safe: "Úsalo solo en redes que poseas.",
     },
     ipcast: {

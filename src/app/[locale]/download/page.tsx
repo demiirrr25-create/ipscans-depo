@@ -2,6 +2,21 @@ import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { notFound } from "next/navigation";
+import { ipcastRelease, platformCopy } from "@/content/applications";
+import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const copy = platformCopy[locale];
+  return {
+    title: copy.applications,
+    description: copy.applicationsIntro,
+    alternates: { canonical: `/${locale}/download` },
+    openGraph: { title: `${copy.applications} — IPScans`, description: copy.applicationsIntro, url: `https://ipscans.com/${locale}/download` },
+  };
+}
 
 export default async function DownloadPage({
   params,
@@ -15,7 +30,7 @@ export default async function DownloadPage({
   const ipcast = dict.ipcast;
 
   return (
-    <PageShell title={t.title} subtitle={t.subtitle}>
+    <PageShell title={platformCopy[locale].applications} subtitle={platformCopy[locale].applicationsIntro}>
       <div className="mx-auto max-w-5xl grid gap-8 md:grid-cols-2">
         {/* IPCast Remote Desktop Card */}
         <div className="rounded-3xl border border-blue-500/30 bg-blue-500/[0.03] p-8 flex flex-col justify-between">
@@ -49,8 +64,7 @@ export default async function DownloadPage({
 
           <div className="mt-8">
             <a
-              href="/downloads/ipscans-ipcast.exe"
-              download
+              href={ipcastRelease.url}
               className="btn-primary flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -60,6 +74,8 @@ export default async function DownloadPage({
               </svg>
               {ipcast.button}
             </a>
+
+            <IPCastReleaseDetails locale={locale} />
 
             <p className="mt-4 text-xs text-neutral-500">{ipcast.note}</p>
             <p className="mt-2 text-xs text-neutral-400">{ipcast.safe}</p>
@@ -73,7 +89,7 @@ export default async function DownloadPage({
               {t.badge}
             </span>
 
-            <h3 className="mt-4 text-xl font-bold text-white">{t.title}</h3>
+            <h3 className="mt-4 text-xl font-bold text-white">IP Scanner</h3>
 
             <ul className="mt-6 space-y-3">
               {t.features.map((f) => (

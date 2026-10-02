@@ -1,87 +1,43 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { isLocale, locales } from "@/i18n/config";
-import { ipcastCopy, ipcastRelease } from "@/lib/ipcast-release";
+import { isLocale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+import { platformCopy, ipcastRelease } from "@/content/applications";
+import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
+import { PageShell } from "@/components/PageShell";
 
-const BASE_URL = "https://ipscans.com";
+type Props = { params: Promise<{ locale: string }> };
 
-export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const copy = ipcastCopy[locale];
-  const title = `${copy.downloadTitle} — IPCast`;
-
+  const product = getDictionary(locale).ipcast;
   return {
-    title,
-    description: copy.downloadSubtitle,
-    alternates: {
-      canonical: `/${locale}/download/ipcast`,
-      languages: Object.fromEntries(locales.map((item) => [item, `/${item}/download/ipcast`])),
-    },
-    openGraph: {
-      type: "website",
-      siteName: "IPScans",
-      title,
-      description: copy.downloadSubtitle,
-      url: `${BASE_URL}/${locale}/download/ipcast`,
-    },
-    twitter: { card: "summary", title, description: copy.downloadSubtitle },
+    title: `${product.title} ${ipcastRelease.version}`,
+    description: product.subtitle,
+    alternates: { canonical: `/${locale}/download/ipcast` },
+    openGraph: { title: `${product.title} ${ipcastRelease.version} — IPScans`, description: product.subtitle, url: `https://ipscans.com/${locale}/download/ipcast` },
   };
 }
 
-export default async function IPCastDownloadPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function IPCastDownloadPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const copy = ipcastCopy[locale];
+  const product = getDictionary(locale).ipcast;
+  const copy = platformCopy[locale];
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-16 sm:py-24">
-      <Link href={`/${locale}/ipcast`} className="text-sm text-neutral-400 underline underline-offset-4 hover:text-white">
-        IPCast
-      </Link>
-      <h1 className="mt-5 font-[family-name:var(--font-display)] text-4xl font-bold text-white">
-        {copy.downloadTitle}
-      </h1>
-      <p className="mt-3 max-w-2xl text-neutral-400">{copy.downloadSubtitle}</p>
-
-      <dl className="mt-10 grid gap-x-8 border-y border-white/10 sm:grid-cols-2">
-        {[
-          [copy.versionLabel, ipcastRelease.version],
-          [copy.platformLabel, ipcastRelease.platform],
-          [copy.fileLabel, ipcastRelease.executable],
-          [copy.sizeLabel, ipcastRelease.fileSize ?? copy.pending],
-          [copy.checksumLabel, ipcastRelease.sha256 ?? copy.pending],
-        ].map(([label, value]) => (
-          <div key={label} className="border-b border-white/10 py-4 last:border-b-0">
-            <dt className="text-xs text-neutral-500">{label}</dt>
-            <dd className="mt-1 break-all font-mono text-sm text-white">{value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <div className="mt-8 border-l-2 border-white/50 pl-4">
-        <p className="text-sm leading-6 text-neutral-300">{copy.availability}</p>
+    <PageShell title={product.title} subtitle={product.subtitle}>
+      <div className="mx-auto max-w-xl rounded-3xl border border-white/15 bg-neutral-900/70 p-6 sm:p-8">
+        <Image src="/ipcast-mark.svg" alt="" width={72} height={72} />
+        <p className="mt-4 text-sm text-neutral-300">{copy.preview} · {ipcastRelease.platform}</p>
+        <IPCastReleaseDetails locale={locale} />
+        <a href={ipcastRelease.url} className="btn-primary mt-7 flex min-h-12 items-center justify-center rounded-xl px-6 font-semibold">
+          {product.button}
+        </a>
+        <p className="mt-4 text-xs text-neutral-400">{product.safe}</p>
       </div>
-      <a
-        href={ipcastRelease.downloadUrl}
-        aria-label={`${copy.download}: ${ipcastRelease.version}`}
-        className="mt-8 inline-flex min-h-12 items-center border border-white/30 bg-white px-5 font-semibold text-black transition hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-      >
-        {copy.download}
-      </a>
-    </main>
+    </PageShell>
   );
 }

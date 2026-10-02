@@ -150,7 +150,7 @@ public partial class MainWindowViewModel : ObservableObject
         var preferences = _preferencesStore.Load();
         _isClipboardSyncEnabled = preferences.ClipboardSync;
         _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
-        _launchAtStartup = OperatingSystem.IsWindows() && preferences.LaunchAtStartup && IsRegisteredForStartup();
+        _launchAtStartup = IsRegisteredForStartup();
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER")))
         {
             NetworkService.RelayServerAddress = new RelayAddress(null, new Uri(Preferences.DefaultRelayAddress));
@@ -338,7 +338,18 @@ public partial class MainWindowViewModel : ObservableObject
         IsConnected = false;
     }
 
-    public async Task ShutdownAsync()
+    private readonly object _shutdownGate = new();
+    private Task? _shutdownTask;
+
+    public Task ShutdownAsync()
+    {
+        lock (_shutdownGate)
+        {
+            return _shutdownTask ??= ShutdownCoreAsync();
+        }
+    }
+
+    private async Task ShutdownCoreAsync()
     {
         _connectCts?.Cancel();
         await DisconnectAsync();
