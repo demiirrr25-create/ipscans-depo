@@ -157,24 +157,38 @@ public sealed class IPCastHost : IAsyncDisposable
     {
         try
         {
-            var rateLimitKey = remoteId.Raw;
+            var remoteAddress = (client.Client.RemoteEndPoint as IPEndPoint)?.Address;
+            var normalizedAddress = remoteAddress?.IsIPv4MappedToIPv6 == true
+                ? remoteAddress.MapToIPv4()
+                : remoteAddress;
+            var rateLimitKey = normalizedAddress?.ToString()
+                ?? client.Client.RemoteEndPoint?.ToString()
+                ?? "unknown";
             ConnectionDecision decision;
 
-            if (!_unattendedAccessRateLimiter.IsAllowed(rateLimitKey))
+            if (!_unattendedAccessRateLimiter.TryBeginAttempt(rateLimitKey))
             {
                 decision = ConnectionDecision.Reject("Too many attempts. Try again later.");
             }
             else
             {
-                var granted = UnattendedAccessPolicy?.TryAuthenticate(password);
-                if (granted is null)
+                var failed = true;
+                try
                 {
-                    _unattendedAccessRateLimiter.RecordFailedAttempt(rateLimitKey);
-                    decision = ConnectionDecision.Reject("Incorrect password.");
+                    var granted = UnattendedAccessPolicy?.TryAuthenticate(password);
+                    if (granted is null)
+                    {
+                        decision = ConnectionDecision.Reject("Incorrect password.");
+                    }
+                    else
+                    {
+                        failed = false;
+                        decision = new ConnectionDecision(true, granted.Value);
+                    }
                 }
-                else
+                finally
                 {
-                    decision = new ConnectionDecision(true, granted.Value);
+                    _unattendedAccessRateLimiter.CompleteAttempt(rateLimitKey, failed);
                 }
             }
 

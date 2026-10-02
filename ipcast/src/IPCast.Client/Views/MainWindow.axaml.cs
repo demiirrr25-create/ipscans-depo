@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -141,5 +142,19 @@ public partial class MainWindow : Window
 
         await Clipboard.SetTextAsync(vm.DeviceIdFormatted);
         vm.NotifyIdCopied();
+    }
+
+    private void OnRemoteIdKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || DataContext is not MainWindowViewModel vm)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (vm.ConnectCommand.CanExecute(null))
+        {
+            vm.ConnectCommand.Execute(null);
+        }
     }
 }
