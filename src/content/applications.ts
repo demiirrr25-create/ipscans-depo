@@ -3,12 +3,12 @@ import type { Locale } from "@/i18n/config";
 type Localized = Record<Locale, string>;
 
 export const ipcastRelease = {
-  version: "1.1.0-preview.3",
+  version: "2.0.0",
   platform: "Windows 10/11 · x64",
   bytes: 105811342,
   sha256: "a86a675ae742d1c7979b653c0cdc34164c0f836c5216b4c4552a198c72330675",
-  fileName: "IPCast-1.1.0-preview.3.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/v1.1.0-preview.3/IPCast-1.1.0-preview.3.exe",
+  fileName: "IPCast-2.0.0.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/v2.0.0/IPCast-2.0.0.exe",
 } as const;
 
 export const platformCopy: Record<Locale, {
