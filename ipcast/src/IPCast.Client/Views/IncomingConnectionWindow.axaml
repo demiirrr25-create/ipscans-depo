@@ -1,37 +1,50 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="IPCast.Client.Views.IncomingConnectionWindow"
-        Title="IPCast"
-        Width="380"
+        Title="IPCast — Incoming connection"
+        Icon="/Assets/ipcast.ico"
+        Width="440"
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppBackgroundBrush}">
-    <StackPanel Margin="24" Spacing="14">
-        <TextBlock Text="Incoming connection request" FontSize="16" FontWeight="Bold"
-                   Foreground="{DynamicResource TextPrimaryBrush}" />
-        <TextBlock Name="RequesterText" TextWrapping="Wrap" FontSize="13"
-                   Foreground="{DynamicResource TextSecondaryBrush}" />
+    <StackPanel Margin="28" Spacing="18">
 
-        <StackPanel Spacing="8" Margin="0,6,0,0">
-            <TextBlock Text="Allow:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-            <CheckBox Name="ViewScreenCheck" Content="View Screen" />
-            <CheckBox Name="ControlMouseCheck" Content="Control Mouse" />
-            <CheckBox Name="ControlKeyboardCheck" Content="Control Keyboard" />
-            <CheckBox Name="ClipboardCheck" Content="Clipboard" />
-            <CheckBox Name="FileTransferCheck" Content="File Transfer" />
-            <CheckBox Name="SystemInfoCheck" Content="System Information" IsVisible="False" IsEnabled="False" />
-            <CheckBox Name="RemoteRestartCheck" Content="Remote Restart" IsVisible="False" IsEnabled="False" />
+        <StackPanel Spacing="4">
+            <TextBlock Text="INCOMING CONNECTION" Classes="eyebrow" />
+            <TextBlock Text="A device wants to connect" FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
-        <TextBlock Text="This connection is encrypted (TLS), but the other device's identity isn't verified against a trusted registry yet."
-                   FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+        <Border Classes="device" Padding="16">
+            <StackPanel Spacing="6">
+                <TextBlock Name="DeviceIdText" FontSize="24" FontWeight="Bold" FontFamily="Consolas, monospace"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Name="RequestTimeText" Classes="hint" />
+            </StackPanel>
+        </Border>
 
-        <Grid ColumnDefinitions="*,*" Margin="0,10,0,0">
-            <Button Grid.Column="0" Content="Reject" HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center" Click="OnRejectClick" Margin="0,0,6,0" />
+        <StackPanel Spacing="8">
+            <TextBlock Text="ALLOW ONLY WHAT YOU WANT" Classes="eyebrow" />
+            <CheckBox Name="ViewScreenCheck" Content="View screen" />
+            <CheckBox Name="ControlMouseCheck" Content="Control mouse" />
+            <CheckBox Name="ControlKeyboardCheck" Content="Control keyboard" />
+            <CheckBox Name="ClipboardCheck" Content="Clipboard sync" />
+            <CheckBox Name="FileTransferCheck" Content="File transfer" />
+            <CheckBox Name="SystemInfoCheck" Content="System information" IsVisible="False" IsEnabled="False" />
+            <CheckBox Name="RemoteRestartCheck" Content="Remote restart" IsVisible="False" IsEnabled="False" />
+        </StackPanel>
+
+        <Border Background="{DynamicResource SubtleFillBrush}" CornerRadius="8" Padding="12">
+            <TextBlock Text="This connection is encrypted with TLS. New device certificates must still be verified by fingerprint before they are trusted."
+                       Classes="hint" />
+        </Border>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Button Grid.Column="0" Content="Deny" Classes="danger" HorizontalAlignment="Stretch"
+                    MinHeight="46" Click="OnRejectClick" />
             <Button Grid.Column="1" Content="Accept" Classes="primary" HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center" Click="OnAcceptClick" Margin="6,0,0,0" />
+                    MinHeight="46" Click="OnAcceptClick" />
         </Grid>
     </StackPanel>
 </Window>

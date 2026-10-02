@@ -4,6 +4,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using IPCast.Client.ViewModels;
+using IPCast.Client.Persistence;
 using Avalonia.Platform.Storage;
 using IPCast.FileTransfer;
 
@@ -156,5 +157,82 @@ public partial class MainWindow : Window
         {
             vm.ConnectCommand.Execute(null);
         }
+    }
+
+    private static FavoriteDevice? FavoriteFrom(object? sender) =>
+        (sender as Control)?.DataContext as FavoriteDevice;
+
+    private void OnFavoriteContextConnect(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm && FavoriteFrom(sender) is { } device
+            && vm.ConnectToFavoriteCommand.CanExecute(device))
+        {
+            vm.ConnectToFavoriteCommand.Execute(device);
+        }
+    }
+
+    private void OnFavoriteContextRemove(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm && FavoriteFrom(sender) is { } device
+            && vm.RemoveFavoriteCommand.CanExecute(device))
+        {
+            vm.RemoveFavoriteCommand.Execute(device);
+        }
+    }
+
+    private async void OnFavoriteContextRename(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm || FavoriteFrom(sender) is not { } device)
+        {
+            return;
+        }
+
+        var newName = await PromptForNameAsync(device.Name);
+        if (!string.IsNullOrWhiteSpace(newName))
+        {
+            vm.RenameFavorite(device, newName);
+        }
+    }
+
+    private async Task<string?> PromptForNameAsync(string currentName)
+    {
+        var input = new TextBox { Text = currentName, PlaceholderText = "Device name", MinWidth = 320 };
+        var dialog = new Window
+        {
+            Title = "Rename device",
+            Width = 400,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = this.FindResource("AppBackgroundBrush") as Avalonia.Media.IBrush,
+        };
+
+        string? result = null;
+        var save = new Button { Content = "Save", Classes = { "primary" }, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        var cancel = new Button { Content = "Cancel", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        save.Click += (_, _) => { result = input.Text; dialog.Close(); };
+        cancel.Click += (_, _) => dialog.Close();
+        input.KeyDown += (_, args) => { if (args.Key == Key.Enter) { result = input.Text; dialog.Close(); } };
+
+        var buttons = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 10 };
+        Grid.SetColumn(cancel, 0);
+        Grid.SetColumn(save, 1);
+        buttons.Children.Add(cancel);
+        buttons.Children.Add(save);
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(24),
+            Spacing = 16,
+            Children =
+            {
+                new TextBlock { Text = "Enter a new name for this device.", Foreground = this.FindResource("TextSecondaryBrush") as Avalonia.Media.IBrush },
+                input,
+                buttons,
+            },
+        };
+
+        await dialog.ShowDialog(this);
+        return result;
     }
 }

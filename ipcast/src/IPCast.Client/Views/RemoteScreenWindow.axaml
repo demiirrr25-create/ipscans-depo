@@ -1,18 +1,42 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="IPCast.Client.Views.RemoteScreenWindow"
-        Title="IPCast - Remote Screen"
+        Title="IPCast — Remote Screen"
         Icon="/Assets/ipcast.ico"
-        Width="900" Height="600"
-        Background="{DynamicResource AppBackgroundBrush}">
-    <Grid RowDefinitions="Auto,*">
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="12,8" ColumnSpacing="12">
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="12" TextWrapping="Wrap"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       Text="Live view - click/type here to control the remote device (only if it granted control)." />
-            <Button Grid.Column="1" Name="FullScreenButton" Content="Full screen" MinHeight="40"
-                    Click="OnToggleFullScreenClick" AutomationProperties.Name="Toggle full screen" />
+        Width="1000" Height="660"
+        Background="#000000">
+    <Grid>
+        <Grid RowDefinitions="Auto,*">
+            <!-- Collapsible session toolbar (spec §5) -->
+            <Border Name="Toolbar" Grid.Row="0" Background="{DynamicResource SidebarBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Ellipse Width="8" Height="8" Fill="{DynamicResource StatusOnlineBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="IPCast" FontWeight="Bold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" TextWrapping="NoWrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Text="Live view — click or type here to control (only if the remote device granted it)." />
+                    <Button Grid.Column="2" Classes="toolbar" Content="Hide bar" Click="OnToggleToolbarClick"
+                            ToolTip.Tip="Hide the toolbar for a cleaner view" AutomationProperties.Name="Hide toolbar" />
+                    <Button Grid.Column="3" Name="FullScreenButton" Classes="toolbar" Content="Full screen"
+                            Click="OnToggleFullScreenClick" ToolTip.Tip="Toggle full screen (F11)"
+                            AutomationProperties.Name="Toggle full screen" />
+                    <Button Grid.Column="4" Classes="danger" Content="Disconnect" MinHeight="34" Padding="14,6"
+                            Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
+                </Grid>
+            </Border>
+
+            <Image Name="ScreenImage" Grid.Row="1" Stretch="Uniform" Focusable="True"
+                   AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
         </Grid>
-        <Image Name="ScreenImage" Grid.Row="1" Stretch="Uniform" Focusable="True" AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
+
+        <!-- Floating affordance to restore a hidden toolbar -->
+        <Button Name="ShowToolbarButton" Classes="toolbar" Content="▾ Show toolbar"
+                VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,6,0,0"
+                Background="{DynamicResource CardBrushElevated}" IsVisible="False"
+                Click="OnToggleToolbarClick" AutomationProperties.Name="Show toolbar" />
     </Grid>
 </Window>

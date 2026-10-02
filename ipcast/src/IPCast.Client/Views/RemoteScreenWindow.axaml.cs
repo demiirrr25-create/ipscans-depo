@@ -180,6 +180,15 @@ public partial class RemoteScreenWindow : Window
 
     private void OnToggleFullScreenClick(object? sender, RoutedEventArgs e) => ToggleFullScreen();
 
+    private void OnDisconnectClick(object? sender, RoutedEventArgs e) => Close();
+
+    private void OnToggleToolbarClick(object? sender, RoutedEventArgs e)
+    {
+        var show = !Toolbar.IsVisible;
+        Toolbar.IsVisible = show;
+        ShowToolbarButton.IsVisible = !show;
+    }
+
     private void ToggleFullScreen()
     {
         WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen;

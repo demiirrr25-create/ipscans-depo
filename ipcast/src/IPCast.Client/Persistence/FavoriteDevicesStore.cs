@@ -56,6 +56,14 @@ public sealed class FavoriteDevicesStore
 
     public void Remove(string deviceId) => Save(GetAll().Where(d => d.DeviceId != deviceId).ToList());
 
+    public void Rename(string deviceId, string newName)
+    {
+        var entries = GetAll()
+            .Select(d => d.DeviceId == deviceId ? d with { Name = newName } : d)
+            .ToList();
+        Save(entries);
+    }
+
     public void NotifyConnected(string deviceId)
     {
         var entries = GetAll()

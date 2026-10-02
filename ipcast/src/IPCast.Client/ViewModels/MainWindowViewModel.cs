@@ -90,6 +90,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isClipboardSyncEnabled = true;
+
+    [ObservableProperty]
+    private string _settingsQuery = string.Empty;
     private bool _launchAtStartup;
     public bool LaunchAtStartup
     {
@@ -261,6 +264,76 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>The grouped-by-3 display form of this device's persistent IPCast ID, e.g. "847 293 615".</summary>
     public string DeviceIdFormatted => _localDeviceId.Formatted;
+
+    // ---- Live dashboard status (spec §2) ----
+
+    partial void OnIsConnectedChanged(bool value) => OnPropertyChanged(nameof(DeviceStatusText));
+    partial void OnIsConnectingChanged(bool value) => OnPropertyChanged(nameof(DeviceStatusText));
+
+    /// <summary>Human status shown under the IPCast ID card — never fakes remote presence.</summary>
+    public string DeviceStatusText => IsConnecting
+        ? "Connecting…"
+        : IsConnected ? "Secure session active" : "Ready for secure connections";
+
+    // ---- Live remote-ID validation (spec §2) ----
+
+    partial void OnRemoteIdInputChanged(string value)
+    {
+        OnPropertyChanged(nameof(RemoteIdValidationMessage));
+        OnPropertyChanged(nameof(HasRemoteIdValidationMessage));
+    }
+
+    public bool HasRemoteIdValidationMessage => !string.IsNullOrEmpty(RemoteIdValidationMessage);
+
+    /// <summary>Inline hint shown while typing a remote ID; empty when the input is valid or blank.</summary>
+    public string RemoteIdValidationMessage
+    {
+        get
+        {
+            var value = RemoteIdInput?.Trim() ?? string.Empty;
+            if (value.Length == 0) return string.Empty;
+            if (DeviceId.TryParse(value, out _)) return string.Empty;
+            if (IPCastService.TryParseEndpoint(value, defaultPort: 0, out _)) return string.Empty;
+
+            var digits = value.Count(char.IsDigit);
+            if (!value.Contains(':') && digits > 0 && digits < 9)
+            {
+                return $"Keep typing — {digits}/9 digits.";
+            }
+
+            return "Enter a 9-digit IPCast ID or an IP:port address.";
+        }
+    }
+
+    // ---- Settings search (spec §26) ----
+
+    partial void OnSettingsQueryChanged(string value)
+    {
+        OnPropertyChanged(nameof(ShowGeneralSettings));
+        OnPropertyChanged(nameof(ShowDisplaySettings));
+        OnPropertyChanged(nameof(ShowConnectionSettings));
+        OnPropertyChanged(nameof(ShowUnattendedSettings));
+        OnPropertyChanged(nameof(ShowClipboardSettings));
+        OnPropertyChanged(nameof(ShowSecuritySettings));
+        OnPropertyChanged(nameof(HasVisibleSettings));
+    }
+
+    private bool SettingMatches(params string[] keywords)
+    {
+        var query = SettingsQuery?.Trim();
+        if (string.IsNullOrEmpty(query)) return true;
+        return keywords.Any(k => k.Contains(query, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool ShowGeneralSettings => SettingMatches("general", "startup", "windows", "launch", "sign in", "boot");
+    public bool ShowDisplaySettings => SettingMatches("display", "performance", "quality", "speed", "balanced", "screen", "fps", "resolution");
+    public bool ShowConnectionSettings => SettingMatches("connection", "relay", "internet", "network", "automatic", "server");
+    public bool ShowUnattendedSettings => SettingMatches("unattended", "access", "password", "security", "remote", "login");
+    public bool ShowClipboardSettings => SettingMatches("clipboard", "sync", "copy", "paste", "preferences");
+    public bool ShowSecuritySettings => SettingMatches("security", "certificate", "fingerprint", "encryption", "tls", "identity", "trust");
+
+    public bool HasVisibleSettings => ShowGeneralSettings || ShowDisplaySettings || ShowConnectionSettings
+        || ShowUnattendedSettings || ShowClipboardSettings || ShowSecuritySettings;
 
     partial void OnSelectedNavItemChanged(NavItem value)
     {
@@ -444,6 +517,24 @@ public partial class MainWindowViewModel : ObservableObject
     {
         _favoritesStore.Remove(favorite.DeviceId);
         FavoriteDevices.Remove(favorite);
+        RefreshDashboardFavoriteDevices();
+    }
+
+    /// <summary>Renames a saved device in-place (spec §3 context menu → Rename).</summary>
+    public void RenameFavorite(FavoriteDevice favorite, string newName)
+    {
+        newName = newName?.Trim() ?? string.Empty;
+        if (newName.Length == 0 || newName == favorite.Name) return;
+
+        _favoritesStore.Rename(favorite.DeviceId, newName);
+        ReplaceFavorite(favorite, favorite with { Name = newName });
+        FavoritesMessage = $"Renamed to {newName}.";
+    }
+
+    private void ReplaceFavorite(FavoriteDevice existing, FavoriteDevice updated)
+    {
+        var index = FavoriteDevices.IndexOf(existing);
+        if (index >= 0) FavoriteDevices[index] = updated;
         RefreshDashboardFavoriteDevices();
     }
 

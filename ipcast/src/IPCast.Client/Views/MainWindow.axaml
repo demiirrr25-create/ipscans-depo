@@ -7,32 +7,35 @@
         x:DataType="vm:MainWindowViewModel"
         Title="IPCast — Secure Remote Access"
         Icon="/Assets/ipcast.ico"
-        Width="1080" Height="760"
-        MinWidth="820" MinHeight="560"
+        Width="1120" Height="780"
+        MinWidth="860" MinHeight="580"
         Background="{DynamicResource AppBackgroundBrush}">
 
     <Window.Resources>
         <conv:EnumEqualsConverter x:Key="EnumEquals" />
     </Window.Resources>
 
-    <Grid ColumnDefinitions="220,*">
+    <Grid ColumnDefinitions="248,*">
 
-        <!-- Sidebar -->
-        <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}" Padding="20">
+        <!-- ============ Sidebar ============ -->
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0" Padding="18">
             <DockPanel LastChildFill="False">
-                <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="4,0,4,28">
-                    <Image Source="/Assets/ipcast-mark.png" Width="56" Height="56" HorizontalAlignment="Left" Margin="0,0,0,12" AutomationProperties.Name="IPCast logo" />
-                    <TextBlock Text="IPCast" FontSize="22" FontWeight="Bold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="SECURE REMOTE ACCESS" FontSize="10"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="6,2,6,26">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Image Source="/Assets/ipcast-mark.png" Width="38" Height="38"
+                               VerticalAlignment="Center" AutomationProperties.Name="IPCast logo" />
+                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="IPCast" FontSize="20" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="SECURE REMOTE ACCESS" Classes="eyebrow" FontSize="9" />
+                        </StackPanel>
+                    </StackPanel>
                 </StackPanel>
 
-                <ListBox DockPanel.Dock="Top"
+                <ListBox DockPanel.Dock="Top" Classes="nav"
                          ItemsSource="{Binding NavItems}"
-                         SelectedItem="{Binding SelectedNavItem}"
-                         Background="Transparent"
-                         BorderThickness="0">
+                         SelectedItem="{Binding SelectedNavItem}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:NavItem">
                             <TextBlock Text="{Binding Label}" FontSize="14" />
@@ -40,91 +43,136 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="1.1 Preview · Auto Relay" FontSize="11"
-                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="4" />
+                <Border DockPanel.Dock="Bottom" Classes="device" Padding="12" Margin="2,0,2,6">
+                    <StackPanel Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                     Fill="{DynamicResource StatusOnlineBrush}" />
+                            <TextBlock Text="{Binding DeviceStatusText}" FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="Unattended access ON" FontSize="10"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                        <TextBlock Text="v1.1 Preview · Auto Relay" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                    </StackPanel>
+                </Border>
             </DockPanel>
         </Border>
 
-        <!-- Content -->
+        <!-- ============ Content ============ -->
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="24">
+        <Grid Margin="32,28">
 
-            <!-- Home -->
-            <StackPanel Spacing="20" MaxWidth="760" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+            <!-- ======== Home ======== -->
+            <StackPanel Spacing="18" MaxWidth="880" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Home}">
 
-                <StackPanel Spacing="6" Margin="0,4,0,4">
-                    <TextBlock Text="Remote access, made simple." FontSize="28" FontWeight="Bold" TextWrapping="Wrap" />
+                <StackPanel Spacing="6" Margin="0,0,0,2">
+                    <TextBlock Text="Remote access, made simple." Classes="display" TextWrapping="Wrap" />
                     <TextBlock Text="Share your ID to receive a connection, or enter another device's ID to connect."
-                               Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                               Classes="hint" />
                 </StackPanel>
 
-                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1" CornerRadius="12" Padding="24">
-                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="8">
-                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="YOUR IPCast ID" FontSize="11"
-                                   FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding DeviceIdFormatted}" FontSize="34"
-                                   FontWeight="Bold"
+                <!-- Your IPCast ID -->
+                <Border Classes="card">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="10">
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="YOUR IPCAST ID" Classes="eyebrow" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding DeviceIdFormatted}"
+                                   FontSize="38" FontWeight="Bold" FontFamily="Consolas, monospace"
                                    Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                         <Button Grid.Row="1" Grid.Column="1" Content="Copy ID" HorizontalAlignment="Right"
-                                Click="OnCopyIdClick" AutomationProperties.Name="Copy your IPCast ID" />
-                        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8"
-                                    Margin="0,4,0,0">
-                            <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding LocalConnectionInfo}" TextWrapping="Wrap" FontSize="12"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                VerticalAlignment="Center" Click="OnCopyIdClick"
+                                ToolTip.Tip="Copy your IPCast ID to the clipboard"
+                                AutomationProperties.Name="Copy your IPCast ID" />
+                        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8">
+                            <Ellipse Width="9" Height="9" Fill="{DynamicResource StatusOnlineBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding DeviceStatusText}" FontSize="13"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                         </StackPanel>
-                        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding RelayServerMessage}"
-                                   TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Spacing="8" Margin="0,4,0,0">
-                            <Button Content="Disconnect" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
-                            <TextBlock Text="Unattended access is ON — reachable with ID + password, no click needed"
-                                       FontSize="11" Foreground="{DynamicResource AccentBrush}"
-                                       IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Spacing="8">
+                            <TextBlock Text="{Binding LocalConnectionInfo}" Classes="hint" />
+                            <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
+                            <Button Content="Disconnect current session" Classes="danger" HorizontalAlignment="Left"
+                                    Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
                         </StackPanel>
                     </Grid>
                 </Border>
 
-                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1" CornerRadius="12" Padding="24">
+                <!-- Connect to a device -->
+                <Border Classes="card">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="CONNECT TO A DEVICE" FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="CONNECT TO A DEVICE" Classes="eyebrow" />
                         <TextBlock Text="Remote IPCast ID" FontWeight="SemiBold" />
-                        <TextBox Name="RemoteIdTextBox" PlaceholderText="123 456 789" Text="{Binding RemoteIdInput}"
-                                 KeyDown="OnRemoteIdKeyDown"
+                        <TextBox Name="RemoteIdTextBox" FontSize="16" PlaceholderText="123 456 789"
+                                 Text="{Binding RemoteIdInput}" KeyDown="OnRemoteIdKeyDown"
                                  AutomationProperties.Name="Remote device ID or direct IP address and port" />
-                        <TextBlock Text="Password (optional, unattended access only)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
-                        <TextBox PlaceholderText="Password (only for unattended access)" PasswordChar="*"
-                                 AutomationProperties.Name="Unattended access password, optional"
-                                 Text="{Binding RemotePasswordInput}" />
-                        <Button Content="CONNECT" Classes="primary" HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Center" Command="{Binding ConnectCommand}" />
-                        <Button Content="Cancel connection" Command="{Binding CancelConnectCommand}" IsVisible="{Binding IsConnecting}" />
-                        <TextBlock Text="{Binding StatusMessage}" FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding RemoteIdValidationMessage}" FontSize="12"
+                                   Foreground="{DynamicResource DangerBrush}"
+                                   IsVisible="{Binding HasRemoteIdValidationMessage}" TextWrapping="Wrap" />
+                        <TextBox PlaceholderText="Password (only for unattended access)" PasswordChar="●"
+                                 Text="{Binding RemotePasswordInput}"
+                                 AutomationProperties.Name="Unattended access password, optional" />
+                        <Button Content="CONNECT" Classes="primary" HorizontalAlignment="Stretch" FontSize="15"
+                                MinHeight="48" Command="{Binding ConnectCommand}"
+                                IsVisible="{Binding !IsConnecting}" />
+                        <Button Content="Cancel connection" Classes="danger" HorizontalAlignment="Stretch"
+                                MinHeight="48" Command="{Binding CancelConnectCommand}"
+                                IsVisible="{Binding IsConnecting}" />
+                        <TextBlock Text="{Binding StatusMessage}" Classes="hint"
+                                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
                 </Border>
 
+                <!-- Favorites -->
                 <StackPanel Spacing="10" IsVisible="{Binding DashboardFavoriteDevices.Count}">
-                    <TextBlock Text="FAVORITES" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="FAVORITES" Classes="eyebrow" />
                     <ItemsControl ItemsSource="{Binding DashboardFavoriteDevices}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="persistence:FavoriteDevice">
-                                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                                        BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,4">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                        <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                                <Border Classes="device" Margin="0,0,0,8">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
+                                            <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+                                            <Separator />
+                                            <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20"
+                                                Background="{DynamicResource SubtleFillBrush}"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name[0]}" FontWeight="Bold" FontSize="16"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                                             <TextBlock Text="{Binding FormattedId}" FontSize="12"
+                                                       FontFamily="Consolas, monospace"
                                                        Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+                                                <Run Text="Last connected: " /><Run Text="{Binding LastConnectedDisplay}" />
+                                            </TextBlock>
                                         </StackPanel>
-                                        <Button Grid.Column="1" Content="Connect" Classes="primary"
+                                        <Button Grid.Column="2" Content="Connect" Classes="primary" VerticalAlignment="Center"
                                                 Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToFavoriteCommand}"
                                                 CommandParameter="{Binding}" />
+                                        <Button Grid.Column="3" Content="⋯" Classes="ghost" VerticalAlignment="Center"
+                                                Padding="10,6" ToolTip.Tip="More actions"
+                                                AutomationProperties.Name="More actions">
+                                            <Button.Flyout>
+                                                <MenuFlyout>
+                                                    <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
+                                                    <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+                                                    <Separator />
+                                                    <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
+                                                </MenuFlyout>
+                                            </Button.Flyout>
+                                        </Button>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -132,28 +180,24 @@
                     </ItemsControl>
                 </StackPanel>
 
+                <!-- Recent sessions -->
                 <StackPanel Spacing="10" IsVisible="{Binding DashboardRecentConnections.Count}">
-                    <TextBlock Text="RECENT SESSIONS" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="RECENT SESSIONS" Classes="eyebrow" />
                     <ItemsControl ItemsSource="{Binding DashboardRecentConnections}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="persistence:ConnectionHistoryEntry">
-                                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                                        BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,4">
+                                <Border Classes="device" Margin="0,0,0,8">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                        <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-                                            <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}">
-                                                <Run Text="{Binding RemoteId}" />
-                                                <Run Text=" · " />
-                                                <Run Text="{Binding Status}" />
+                                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock FontWeight="SemiBold" FontFamily="Consolas, monospace"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}">
+                                                <Run Text="{Binding RemoteId}" /><Run Text="  ·  " /><Run Text="{Binding Direction}" />
                                             </TextBlock>
-                                            <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
-                                                <Run Text="{Binding Direction}" />
-                                                <Run Text=" · " />
-                                                <Run Text="{Binding DisplayTimestamp}" />
+                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+                                                <Run Text="{Binding DisplayTimestamp}" /><Run Text="  ·  " /><Run Text="{Binding Status}" />
                                             </TextBlock>
                                         </StackPanel>
-                                        <Button Grid.Column="1" Content="Connect"
+                                        <Button Grid.Column="1" Content="Connect" VerticalAlignment="Center"
                                                 Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToRecentCommand}"
                                                 CommandParameter="{Binding}" />
                                     </Grid>
@@ -164,54 +208,127 @@
                 </StackPanel>
             </StackPanel>
 
-            <StackPanel Spacing="16" MaxWidth="520" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+            <!-- ======== File Transfer ======== -->
+            <StackPanel Spacing="16" MaxWidth="620" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=FileTransfer}">
-                <TextBlock Text="File Transfer" FontSize="22" FontWeight="Bold" />
-                <TextBlock Text="Connect to a device with File Transfer permission. The receiver chooses where to save each file." TextWrapping="Wrap" />
-                <TextBox Text="{Binding SelectedFilePath}" PlaceholderText="Choose a file or enter its full path" />
-                <Button Content="Choose file…" Click="OnChooseFileClick" />
-                <Button Content="Send file" Classes="primary" Command="{Binding SendFileCommand}" IsEnabled="{Binding IsConnected}" />
-                <Button Content="Cancel transfer" Command="{Binding CancelTransferCommand}" IsVisible="{Binding IsTransferringFile}" />
-                <ProgressBar Minimum="0" Maximum="100" Value="{Binding FileTransferProgress}" />
-                <TextBlock Text="{Binding FileTransferMessage}" TextWrapping="Wrap" />
+                <TextBlock Text="File Transfer" Classes="display" FontSize="26" />
+                <TextBlock Text="Connect to a device that granted File Transfer permission. The receiver chooses where to save each file."
+                           Classes="hint" />
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="SEND A FILE" Classes="eyebrow" />
+                        <TextBox Text="{Binding SelectedFilePath}" PlaceholderText="Choose a file or enter its full path" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Content="Choose file…" Click="OnChooseFileClick" />
+                            <Button Content="Send file" Classes="primary" Command="{Binding SendFileCommand}"
+                                    IsEnabled="{Binding IsConnected}" />
+                            <Button Content="Cancel transfer" Classes="danger" Command="{Binding CancelTransferCommand}"
+                                    IsVisible="{Binding IsTransferringFile}" />
+                        </StackPanel>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding FileTransferProgress}"
+                                     IsVisible="{Binding IsTransferringFile}" />
+                        <TextBlock Text="{Binding FileTransferMessage}" Classes="hint"
+                                   IsVisible="{Binding FileTransferMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Text="Connect to a device first to enable sending." Classes="hint muted"
+                                   IsVisible="{Binding !IsConnected}" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
-            <!-- My Devices -->
-            <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top"
+            <!-- ======== My Devices ======== -->
+            <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=MyDevices}">
-                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1" CornerRadius="10" Padding="20">
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="Save a device" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="My Devices" Classes="display" FontSize="26" />
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="SAVE A DEVICE" Classes="eyebrow" />
                         <TextBox PlaceholderText="Name (e.g. Office PC)" Text="{Binding NewFavoriteName}" />
-                        <TextBox PlaceholderText="IPCast ID" Text="{Binding NewFavoriteIdInput}" />
-                        <Button Content="Save Device" Classes="primary" HorizontalAlignment="Left"
+                        <TextBox PlaceholderText="IPCast ID" FontFamily="Consolas, monospace" Text="{Binding NewFavoriteIdInput}" />
+                        <Button Content="Save device" Classes="primary" HorizontalAlignment="Left"
                                 Command="{Binding AddFavoriteCommand}" />
-                        <TextBlock Text="{Binding FavoritesMessage}" FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding FavoritesMessage}" Classes="hint"
+                                   IsVisible="{Binding FavoritesMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
                 </Border>
 
+                <TextBlock Text="SAVED DEVICES" Classes="eyebrow" />
+                <TextBlock Text="No saved devices yet." Classes="hint muted"
+                           IsVisible="{Binding !FavoriteDevices.Count}" />
                 <ItemsControl ItemsSource="{Binding FavoriteDevices}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="persistence:FavoriteDevice">
-                            <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                                    BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,8">
-                                <Grid ColumnDefinitions="*,Auto,Auto">
-                                    <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="{Binding Name}" FontWeight="Bold"
+                            <Border Classes="device" Margin="0,0,0,8">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
+                                        <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+                                        <Separator />
+                                        <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20"
+                                            Background="{DynamicResource SubtleFillBrush}" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name[0]}" FontWeight="Bold" FontSize="16"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                                         <TextBlock Text="{Binding FormattedId}" FontSize="12"
+                                                   FontFamily="Consolas, monospace"
                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
                                             <Run Text="Last connected: " /><Run Text="{Binding LastConnectedDisplay}" />
                                         </TextBlock>
                                     </StackPanel>
-                                    <Button Grid.Column="1" Content="Connect" Classes="primary" Margin="0,0,6,0"
+                                    <Button Grid.Column="2" Content="Connect" Classes="primary" VerticalAlignment="Center"
                                             Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToFavoriteCommand}"
                                             CommandParameter="{Binding}" />
-                                    <Button Grid.Column="2" Content="Remove"
-                                            Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).RemoveFavoriteCommand}"
+                                    <Button Grid.Column="3" Content="⋯" Classes="ghost" VerticalAlignment="Center"
+                                            Padding="10,6" ToolTip.Tip="More actions" AutomationProperties.Name="More actions">
+                                        <Button.Flyout>
+                                            <MenuFlyout>
+                                                <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
+                                                <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+                                                <Separator />
+                                                <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
+                                            </MenuFlyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- ======== Recent Connections ======== -->
+            <StackPanel Spacing="14" MaxWidth="620" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=RecentConnections}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="Recent Connections" Classes="display" FontSize="26" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Clear history" Classes="danger" VerticalAlignment="Center"
+                            Command="{Binding ClearHistoryCommand}" IsVisible="{Binding ConnectionHistory.Count}" />
+                </Grid>
+                <TextBlock Text="No connections yet." Classes="hint muted"
+                           IsVisible="{Binding !ConnectionHistory.Count}" />
+                <ItemsControl ItemsSource="{Binding ConnectionHistory}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="persistence:ConnectionHistoryEntry">
+                            <Border Classes="device" Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock FontWeight="SemiBold" FontFamily="Consolas, monospace"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}">
+                                            <Run Text="{Binding RemoteId}" /><Run Text="  ·  " /><Run Text="{Binding Direction}" />
+                                        </TextBlock>
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+                                            <Run Text="{Binding DisplayTimestamp}" /><Run Text="  ·  " /><Run Text="{Binding Status}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="Connect" VerticalAlignment="Center"
+                                            Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToRecentCommand}"
                                             CommandParameter="{Binding}" />
                                 </Grid>
                             </Border>
@@ -220,149 +337,130 @@
                 </ItemsControl>
             </StackPanel>
 
-            <!-- Recent Connections -->
-            <StackPanel Spacing="12" MaxWidth="480" HorizontalAlignment="Left" VerticalAlignment="Top"
-                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=RecentConnections}">
-                <Button Content="Clear History" HorizontalAlignment="Left" Command="{Binding ClearHistoryCommand}" />
-                <TextBlock Text="No connections yet." Foreground="{DynamicResource TextSecondaryBrush}"
-                           IsVisible="{Binding !ConnectionHistory.Count}" />
-                <ItemsControl ItemsSource="{Binding ConnectionHistory}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="persistence:ConnectionHistoryEntry">
-                            <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                                    BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,8">
-                                <StackPanel Spacing="2">
-                                    <TextBlock FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}">
-                                        <Run Text="{Binding RemoteId}" /><Run Text=" — " /><Run Text="{Binding Direction}" />
-                                    </TextBlock>
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
-                                        <Run Text="{Binding DisplayTimestamp}" /><Run Text=" · " /><Run Text="{Binding Status}" />
-                                    </TextBlock>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+            <!-- ======== Settings ======== -->
+            <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
+                <TextBlock Text="Settings" Classes="display" FontSize="26" />
+                <TextBox PlaceholderText="Search settings…" Text="{Binding SettingsQuery}"
+                         AutomationProperties.Name="Search settings" />
+
+                <TextBlock Text="No settings match your search." Classes="hint muted"
+                           IsVisible="{Binding !HasVisibleSettings}" />
+
+                <!-- General -->
+                <Border Classes="card" IsVisible="{Binding ShowGeneralSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="General" Classes="h2" />
+                        <CheckBox Content="Start IPCast when I sign in to Windows"
+                                  IsChecked="{Binding LaunchAtStartup}"
+                                  IsEnabled="{Binding IsLaunchAtStartupSupported}" />
+                        <TextBlock Text="Per-user startup setting. No administrator permission is required."
+                                   Classes="hint" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Display -->
+                <Border Classes="card" IsVisible="{Binding ShowDisplaySettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Display performance" Classes="h2" />
+                        <TextBlock Text="Choose on the computer being shared. Applies to the next connection. Balanced: everyday work. Speed: slower networks. Quality: sharper text."
+                                   Classes="hint" />
+                        <ComboBox ItemsSource="{Binding StreamingModes}" SelectedItem="{Binding StreamingMode}"
+                                  HorizontalAlignment="Stretch" AutomationProperties.Name="Screen sharing performance" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Connection -->
+                <Border Classes="card" IsVisible="{Binding ShowConnectionSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Connection" Classes="h2" />
+                        <TextBlock Text="IPCast relay is configured automatically. Open this version on both computers, enter the other computer's 9-digit ID and accept the connection there. No relay address or setup code is needed."
+                                   Classes="hint" />
+                        <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Unattended Access -->
+                <Border Classes="card" IsVisible="{Binding ShowUnattendedSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Unattended access" Classes="h2" />
+                        <TextBlock Text="Let authorized devices connect to this computer using its ID and a password, bypassing the interactive Accept prompt."
+                                   Classes="hint" />
+                        <Border CornerRadius="6" Padding="10,6" HorizontalAlignment="Left"
+                                Background="{DynamicResource SubtleFillBrush}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                         Fill="{DynamicResource AccentBrush}" IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                                <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                         Fill="{DynamicResource TextMutedBrush}" IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+                                <TextBlock Text="Status: ON" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"
+                                           IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                                <TextBlock Text="Status: OFF" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+                            </StackPanel>
+                        </Border>
+                        <TextBox PlaceholderText="New password (min. 8 characters)" PasswordChar="●"
+                                 Text="{Binding UnattendedAccessPasswordInput}"
+                                 IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+                        <Button Content="Enable unattended access" Classes="primary" HorizontalAlignment="Left"
+                                Command="{Binding EnableUnattendedAccessCommand}"
+                                IsVisible="{Binding !IsUnattendedAccessEnabled}" />
+                        <Button Content="Disable unattended access" Classes="danger" HorizontalAlignment="Left"
+                                Command="{Binding DisableUnattendedAccessCommand}"
+                                IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                        <TextBlock Text="{Binding UnattendedAccessMessage}" Classes="hint"
+                                   IsVisible="{Binding UnattendedAccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Clipboard -->
+                <Border Classes="card" IsVisible="{Binding ShowClipboardSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Clipboard" Classes="h2" />
+                        <CheckBox Content="Enable automatic bidirectional clipboard sync during connected sessions"
+                                  IsChecked="{Binding IsClipboardSyncEnabled}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Security -->
+                <Border Classes="card" IsVisible="{Binding ShowSecuritySettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Security" Classes="h2" />
+                        <TextBlock Text="This device's TLS certificate fingerprint (SHA-256). Compare it out-of-band the first time a new device connects."
+                                   Classes="hint" />
+                        <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap"
+                                 FontFamily="Consolas, monospace" FontSize="12" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
-            <!-- Settings -->
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
-                          IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
-                <StackPanel Spacing="20" MaxWidth="520" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <!-- ======== Help ======== -->
+            <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Help}">
+                <TextBlock Text="Help &amp; Documentation" Classes="display" FontSize="26" />
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="IPCast is a secure remote desktop and file transfer application." Classes="hint" />
 
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="24">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="General" FontSize="18" FontWeight="Bold" />
-                            <CheckBox Content="Start IPCast when I sign in to Windows"
-                                      IsChecked="{Binding LaunchAtStartup}"
-                                      IsEnabled="{Binding IsLaunchAtStartupSupported}" />
-                            <TextBlock Text="Per-user startup setting. No administrator permission is required."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
+                        <TextBlock Text="1. How to connect" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0" />
+                        <TextBlock Text="Ask for the remote device's 9-digit IPCast ID (shown on its Home screen). Enter it under 'Connect to a device' and press CONNECT. You can also type a direct IP:port (e.g. 192.168.1.50:9876)."
+                                   Classes="hint" />
 
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="24">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Display performance" FontSize="18" FontWeight="Bold" />
-                            <TextBlock Text="Choose on the computer being shared. Applies to the next connection. Balanced: everyday work. Speed: slower networks. Quality: sharper text." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <ComboBox ItemsSource="{Binding StreamingModes}" SelectedItem="{Binding StreamingMode}" MinHeight="44" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen sharing performance" />
-                        </StackPanel>
-                    </Border>
+                        <TextBlock Text="2. Permissions &amp; security" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0" />
+                        <TextBlock Text="When an incoming connection arrives, an interactive dialog lets the local user grant specific capabilities: View Screen, Control Mouse, Control Keyboard, Clipboard and File Transfer."
+                                   Classes="hint" />
 
-                    <!-- Relay Server Settings -->
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="10" Padding="24">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Automatic internet connection" FontSize="14" FontWeight="Bold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="IPCast relay is configured automatically. Open this version on both computers, enter the other computer's 9-digit ID and accept the connection on that computer. No relay address or setup code is needed."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="{Binding RelayServerMessage}" FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
+                        <TextBlock Text="3. Unattended access" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0" />
+                        <TextBlock Text="Set a password under Settings → Unattended access to let trusted devices connect with your ID and that password, without anyone clicking Accept."
+                                   Classes="hint" />
 
-                    <!-- Unattended Access -->
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="This device's certificate fingerprint (SHA-256)" FontWeight="Bold" TextWrapping="Wrap" />
-                        <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap" />
+                        <TextBlock Text="4. Encryption &amp; privacy" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0" />
+                        <TextBlock Text="Every session is encrypted with TLS, and new device certificates must be verified by fingerprint before the connection is trusted."
+                                   Classes="hint" />
                     </StackPanel>
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="10" Padding="24">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Security → Unattended Access" FontSize="14" FontWeight="Bold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Let authorized devices connect to this computer using its ID and a password, bypassing the interactive Accept prompt."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </Border>
+            </StackPanel>
 
-                            <TextBlock Text="Status: ON" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
-                                       IsVisible="{Binding IsUnattendedAccessEnabled}" />
-                            <TextBlock Text="Status: OFF" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"
-                                       IsVisible="{Binding !IsUnattendedAccessEnabled}" />
-
-                            <TextBox PlaceholderText="New password (min. 8 characters)" PasswordChar="*"
-                                     Text="{Binding UnattendedAccessPasswordInput}"
-                                     IsVisible="{Binding !IsUnattendedAccessEnabled}" />
-                            <Button Content="Enable Unattended Access" Classes="primary" HorizontalAlignment="Left"
-                                    Command="{Binding EnableUnattendedAccessCommand}"
-                                    IsVisible="{Binding !IsUnattendedAccessEnabled}" />
-                            <Button Content="Disable Unattended Access" HorizontalAlignment="Left"
-                                    Command="{Binding DisableUnattendedAccessCommand}"
-                                    IsVisible="{Binding IsUnattendedAccessEnabled}" />
-
-                            <TextBlock Text="{Binding UnattendedAccessMessage}" FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Clipboard Sync Option -->
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="10" Padding="24">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Preferences → Clipboard Sync" FontSize="14" FontWeight="Bold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <CheckBox Content="Enable automatic bidirectional clipboard sync during connected sessions"
-                                      IsChecked="{Binding IsClipboardSyncEnabled}" Foreground="{DynamicResource TextPrimaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-
-            <!-- Help -->
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
-                          IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Help}">
-                <StackPanel Spacing="20" MaxWidth="520" HorizontalAlignment="Left" VerticalAlignment="Top">
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1" CornerRadius="10" Padding="24">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="IPCast Help &amp; Documentation" FontSize="18" FontWeight="Bold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="IPCast is a secure remote desktop and file transfer application."
-                                       FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-
-                            <TextBlock Text="1. How to Connect" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
-                                       Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Text="To connect to a remote device, ask for its 9-digit IPCast ID (found on their Home screen). Enter the ID in 'Connect to Remote Device' and click CONNECT. You can also connect directly by typing an IP address and port (e.g. 192.168.1.50:9876)."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-
-                            <TextBlock Text="2. Permissions &amp; Security" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
-                                       Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Text="When an incoming connection arrives, an interactive permission dialog appears. The local user can grant or deny specific capabilities: View Screen, Control Mouse, Control Keyboard, Clipboard Sync, and File Transfer."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-
-                            <TextBlock Text="3. Unattended Access" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
-                                       Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Text="To manage remote devices without manual approval, go to Settings -> Security and set an Unattended Access password. Anyone with your 9-digit ID and password will connect instantly."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-
-                            <TextBlock Text="4. Encryption &amp; Privacy" FontSize="14" FontWeight="Bold" Margin="0,8,0,0"
-                                       Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Text="All connections are encrypted end-to-end using TLS. No third-party servers see your screen or data."
-                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
         </Grid>
         </ScrollViewer>
     </Grid>

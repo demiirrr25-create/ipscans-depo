@@ -22,7 +22,8 @@ public partial class IncomingConnectionWindow : Window
         _result = ConnectionDecision.Reject("Dismissed without a response.");
         InitializeComponent();
 
-        RequesterText.Text = $"Device {request.RemoteDeviceId.Formatted} wants to connect to this computer.";
+        DeviceIdText.Text = request.RemoteDeviceId.Formatted;
+        RequestTimeText.Text = $"Requested {DateTime.Now:MMM d, HH:mm} · wants to connect to this computer.";
 
         ViewScreenCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.ViewScreen);
         ControlMouseCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.ControlMouse);
