@@ -8,7 +8,7 @@ export const ipcastRelease = {
   bytes: 105811342,
   sha256: "a86a675ae742d1c7979b653c0cdc34164c0f836c5216b4c4552a198c72330675",
   fileName: "IPCast-2.0.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/v2.0.0/IPCast-2.0.0.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-latest/IPCast.exe",
 } as const;
 
 export const platformCopy: Record<Locale, {

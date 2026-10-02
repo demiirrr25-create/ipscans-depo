@@ -67,7 +67,7 @@ export default async function IpCastPage({
           </ul>
 
           <a
-            href="/api/download/ipcast"
+            href={ipcastRelease.url}
             aria-describedby="ipcast-release-notes"
             className="btn-primary mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold"
           >

@@ -33,7 +33,7 @@ export default async function IPCastDownloadPage({ params }: Props) {
         <Image src="/ipcast-mark.svg" alt="" width={72} height={72} />
         <p className="mt-4 text-sm text-neutral-300">{copy.preview} · {ipcastRelease.platform}</p>
         <IPCastReleaseDetails locale={locale} />
-        <a href="/api/download/ipcast" className="btn-primary mt-7 flex min-h-12 items-center justify-center rounded-xl px-6 font-semibold">
+        <a href={ipcastRelease.url} className="btn-primary mt-7 flex min-h-12 items-center justify-center rounded-xl px-6 font-semibold">
           {product.button}
         </a>
         <p className="mt-4 text-xs text-neutral-400">{product.safe}</p>
