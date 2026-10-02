@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { locales } from "@/i18n/config";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -16,6 +17,6 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: "Bingbot", allow: "/" },
       { userAgent: "CCBot", allow: "/" },
     ],
-    sitemap: "https://ipscans.com/sitemap.xml",
+    sitemap: locales.map((_, index) => `https://ipscans.com/sitemap/${index}.xml`),
   };
 }
