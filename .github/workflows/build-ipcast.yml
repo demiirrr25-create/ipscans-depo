@@ -57,24 +57,28 @@ jobs:
           $env:IPCAST_RELAY_SERVER = "ws://127.0.0.1:1/relay"
           $process = Start-Process -FilePath "publish\win-x64\IPCast.exe" -PassThru
           try {
-            $null = $process.WaitForInputIdle(15000)
-            $process.Refresh()
-            if ($process.HasExited -or $process.MainWindowHandle -eq [IntPtr]::Zero) {
+            $ready = [System.Threading.SpinWait]::SpinUntil([Func[bool]] {
+              $process.Refresh()
+              return $process.HasExited -or ($process.MainWindowHandle -ne [IntPtr]::Zero -and $process.MainWindowTitle.StartsWith("IPCast") -and $process.Responding)
+            }, 30000)
+            if (-not $ready -or $process.HasExited) {
               throw "IPCast did not create its main window."
             }
             Write-Host "IPCast main window opened: $($process.MainWindowTitle) (handle $($process.MainWindowHandle))."
+            if (-not $process.CloseMainWindow()) {
+              throw "IPCast rejected the window close request."
+            }
+            if (-not $process.WaitForExit(20000)) {
+              throw "IPCast did not shut down after the window close request."
+            }
+            if ($process.ExitCode -ne 0) {
+              throw "IPCast exited with code $($process.ExitCode)."
+            }
+            Write-Host "IPCast opened and closed successfully."
           }
           finally {
             if (-not $process.HasExited) {
-              $closeSent = $process.CloseMainWindow()
-              Write-Host "CloseMainWindow returned: $closeSent."
-              if (-not $process.WaitForExit(20000)) {
-                $process.Refresh()
-                Write-Host "Process still running: title='$($process.MainWindowTitle)', handle=$($process.MainWindowHandle), responding=$($process.Responding)."
-                Stop-Process -Id $process.Id -Force
-                throw "IPCast did not shut down after its main window closed."
-              }
-              Write-Host "IPCast exited with code $($process.ExitCode)."
+              Stop-Process -Id $process.Id -Force
             }
             if (Test-Path $env:IPCAST_DATA_DIR) {
               Remove-Item -Path $env:IPCAST_DATA_DIR -Recurse -Force
