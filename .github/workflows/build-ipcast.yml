@@ -143,51 +143,61 @@ jobs:
           name: IPCast-win-x64
           path: release
 
-      - name: Publish IPCast Windows download
+- name: Publish IPCast Windows download
         uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
-            const tag = "ipcast-latest";
-            let release;
-            try {
-              const result = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-              release = result.data;
-            } catch (error) {
-              if (error.status !== 404) throw error;
-              const result = await github.rest.repos.createRelease({
-                owner,
-                repo,
-                tag_name: tag,
-                target_commitish: "main",
-                name: "IPCast for Windows",
-                body: "Latest self-contained IPCast Windows x64 build.",
-                draft: false,
-                prerelease: true,
-                make_latest: "false",
-              });
-              release = result.data;
-            }
-
-            const previousAsset = release.assets.find((asset) => asset.name === "IPCast.exe");
-            if (previousAsset) {
-              await github.rest.repos.deleteReleaseAsset({
-                owner,
-                repo,
-                asset_id: previousAsset.id,
-              });
-            }
-
             const fs = require("fs");
             const fileData = fs.readFileSync("release/IPCast.exe");
-            await github.rest.repos.uploadReleaseAsset({
-              owner,
-              repo,
-              release_id: release.id,
-              name: "IPCast.exe",
-              data: fileData,
-              headers: {
-                "content-type": "application/octet-stream",
-                "content-length": fileData.length,
-              },
-            });
+
+            const targets = [
+              { tag: "v2.0.0", name: "IPCast-2.0.0.exe", releaseName: "IPCast 2.0.0 Enterprise" },
+              { tag: "ipcast-latest", name: "IPCast.exe", releaseName: "IPCast for Windows" }
+            ];
+
+            for (const target of targets) {
+              let release;
+              try {
+                const result = await github.rest.repos.getReleaseByTag({ owner, repo, tag: target.tag });
+                release = result.data;
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                const result = await github.rest.repos.createRelease({
+                  owner,
+                  repo,
+                  tag_name: target.tag,
+                  target_commitish: "main",
+                  name: target.releaseName,
+                  body: "Latest self-contained IPCast Windows x64 build.",
+                  draft: false,
+                  prerelease: false,
+                });
+                release = result.data;
+              }
+
+              for (const assetName of [target.name, "IPCast-2.0.0.exe", "IPCast.exe"]) {
+                const previousAsset = (release.assets || []).find((asset) => asset.name === assetName);
+                if (previousAsset) {
+                  try {
+                    await github.rest.repos.deleteReleaseAsset({
+                      owner,
+                      repo,
+                      asset_id: previousAsset.id,
+                    });
+                  } catch (e) {}
+                }
+              }
+
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: release.id,
+                name: target.name,
+                data: fileData,
+                headers: {
+                  "content-type": "application/octet-stream",
+                  "content-length": fileData.length,
+                },
+              });
+            }

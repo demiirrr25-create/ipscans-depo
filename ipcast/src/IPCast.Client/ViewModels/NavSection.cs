@@ -3,6 +3,12 @@ namespace IPCast.Client.ViewModels;
 /// <summary>The section of the app currently shown in the main content area.</summary>
 public enum NavSection
 {
+    Home,
+    FileTransfer,
+    MyDevices,
+    RecentConnections,
+    Settings,
+    Help,
     Dashboard,
     RemoteSession,
     FileManager,
@@ -10,7 +16,6 @@ public enum NavSection
     TcpTunnel,
     WakeOnLan,
     AuditLogs,
-    Settings,
     About
 }
 
