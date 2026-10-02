@@ -100,14 +100,15 @@ public class UnattendedAccessTests : IAsyncDisposable
         var host = CreateHostWithPolicy(store);
         var endpoint = new IPEndPoint(IPAddress.Loopback, host.Port);
 
-        for (var i = 0; i < 5; i++)
+        for (var i = 1; i <= 5; i++)
         {
-            var attempt = await new IPCastConnector(_clientId).ConnectAsync(
+            var claimedId = DeviceId.FromValidatedRaw($"10000000{i}");
+            var attempt = await new IPCastConnector(claimedId).ConnectAsync(
                 endpoint, _hostId, ConnectionPermissions.None, password: "wrong");
             Assert.Equal("Incorrect password.", attempt.Error);
         }
 
-        var finalAttempt = await new IPCastConnector(_clientId).ConnectAsync(
+        var finalAttempt = await new IPCastConnector(DeviceId.FromValidatedRaw("100000006")).ConnectAsync(
             endpoint, _hostId, ConnectionPermissions.None, password: "correct horse battery staple");
 
         Assert.False(finalAttempt.Success);

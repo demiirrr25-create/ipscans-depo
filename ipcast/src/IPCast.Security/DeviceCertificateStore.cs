@@ -6,10 +6,9 @@ namespace IPCast.Security;
 
 /// <summary>
 /// Generates and persists a self-signed TLS certificate for this device, used to encrypt the
-/// Phase 2 connection channel. This is opportunistic encryption (defends against a passive
-/// eavesdropper on the same LAN/Wi-Fi) - without a PKI or an out-of-band way to compare
-/// certificates, it does not yet defend against an active man-in-the-middle. That needs
-/// certificate pinning tied to a trusted introduction, which is a later hardening step.
+/// connection channel. The client pins approved fingerprints by device ID after an out-of-band
+/// comparison; TLS certificate validation itself is permissive so the app can present the
+/// fingerprint for that explicit trust decision.
 /// </summary>
 public sealed class DeviceCertificateStore
 {

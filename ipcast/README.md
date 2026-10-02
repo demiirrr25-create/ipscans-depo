@@ -1,19 +1,19 @@
 # IPCast
 
-## September 2026 repair status (supersedes the historical phase notes below)
+## Current implementation status
+
+See the [delivery roadmap](ROADMAP.md) for the phase plan and production release gates.
 
 The repair adds serialized message writes, larger bounded screen frames, corrected Windows key codes and virtual-desktop mouse mapping, working file-transfer controls with receiver confirmation, clipboard preference enforcement, disconnect/cancel controls, persistent preferences, certificate approval/pinning, and an inbound relay listener. Both endpoints must be updated together for the file-transfer completion protocol.
 
-See [Northflank WebSocket pilot](deploy/NORTHFLANK.md) for the deployed WSS endpoint and [real-device acceptance](deploy/README.md) for remaining checks. New profiles use the pilot relay by default. The deployed transport passed TLS, clipboard, synthetic frame, file-integrity and reconnect tests; two-physical-device screen/input acceptance is still pending. This is not a claim of AnyDesk feature parity. Build using `dotnet build IPCast.slnx`; run tests with `dotnet test IPCast.slnx`.
+See [Northflank WebSocket pilot](deploy/NORTHFLANK.md) for the deployed WSS endpoint and [real-device acceptance](deploy/README.md) for remaining checks. New profiles use the pilot relay by default. The deployed transport passed TLS, clipboard, synthetic frame, file-integrity and reconnect tests; two-physical-device screen/input acceptance is still pending. Build using `dotnet build IPCast.slnx`; run tests with `dotnet test IPCast.slnx`.
 
-A from-scratch, free, AnyDesk-style remote desktop app for Windows — original name, UI, code,
-and protocol design (no AnyDesk code, assets, or branding are used anywhere in this project).
+A from-scratch, free remote desktop app for Windows with IPCast's own name, interface, code, and
+protocol design.
 
 Read [Roadmap](#roadmap) before assuming any feature exists — per the project's own development
-rule, nothing here pretends to work if it doesn't yet. As of this writing: the app shell, the LAN
-connection layer (discovery, TLS-encrypted handshake, permissions), clipboard sync, and file
-transfer are real and verified. Actual screen viewing/remote control, internet (non-LAN)
-connections, and unattended access are **not** implemented yet.
+rule, nothing here pretends to work if it doesn't yet. The implemented features and their
+verification limits are described below.
 
 ## 1. Technology choice (and why)
 
@@ -25,9 +25,10 @@ connections, and unattended access are **not** implemented yet.
 | ID generation | `System.Security.Cryptography.RandomNumberGenerator` | Cryptographically secure and unbiased (rejection-sampled), unlike `System.Random` — required so device IDs can't be guessed or enumerated by an attacker. |
 | Tests | xUnit | Already the SDK's default test template; nothing exotic needed. |
 
-Everything not covered by the phases marked done below (real-time screen streaming, input
-injection, internet/NAT-traversal connections, a deployed relay server, unattended access,
-certificate pinning) is **not implemented yet** — see the [Roadmap](#roadmap).
+The LAN/relay transport, screen/input pipeline, file-transfer engine, clipboard sync, unattended
+access and certificate pinning are implemented, but have acceptance limits described below.
+Multi-monitor support, a two-panel file manager, adaptive encoding and audit logging are not
+implemented.
 
 ## 2. Project structure
 
@@ -42,7 +43,7 @@ ipcast/
 │   ├── IPCast.Network/       Phase 2/8/10: LAN discovery, TLS handshake, permissions, session loop, clipboard sync.
 │   ├── IPCast.FileTransfer/  Phase 7: chunked file send/receive over an established session.
 │   ├── IPCast.RemoteDesktop/ Phase 3: screen capture, JPEG encode/decode, input injection, session orchestration.
-│   ├── IPCast.Server/        Phase 4-6: standalone relay/rendezvous server (not deployed anywhere by default).
+│   ├── IPCast.Server/        Phase 4-6: relay/rendezvous server used by the WSS pilot.
 │   └── IPCast.Client/        The Avalonia desktop app (what becomes IPCast.exe).
 └── tests/
     └── IPCast.Tests/         xUnit tests for every project above.
@@ -51,8 +52,10 @@ ipcast/
 ## 3. What actually works right now
 
 **Phase 1 — UI shell + persistent ID:**
-- A dark-themed desktop window with the sidebar (Home / My Devices / Recent Connections /
-  Settings / Help) and the "Your ID" / "Connect to Remote Device" cards from the spec.
+- A monochrome dark desktop window with the sidebar (Home / My Devices / Recent Connections /
+  Settings / Help), a prominent IPCast ID card, and a connect form. Pressing Enter in the remote ID
+  field starts the same connection command as the Connect button. The dashboard also surfaces up to
+  four saved devices and recent connection attempts with working Connect actions.
 - **Real** cryptographically-secure 9-digit device ID generation, persisted to disk
   (Windows: `%APPDATA%\IPCast\device-identity.json`) and reloaded on every launch.
 - **Real** clipboard copy for "Copy ID".
@@ -70,10 +73,9 @@ ipcast/
 - **Real** TLS via `SslStream`, using a self-signed certificate generated once per device and
   persisted (`DeviceCertificateStore`, `%APPDATA%\IPCast\device-cert.pfx`). Every byte after the
   raw TCP connect is encrypted.
-- Honest limitation, stated in the UI itself: there's no PKI yet, so any certificate is currently
-  accepted (`TlsPolicy.AcceptAnyCertificate`). This stops a **passive** eavesdropper on the LAN;
-  it does not yet stop an **active** man-in-the-middle. Certificate pinning tied to a trusted
-  introduction is the natural next hardening step, not yet built.
+- Peer identity is checked separately from the TLS handshake: on first connection the user must
+  compare the displayed SHA-256 fingerprint out-of-band, and the fingerprint is pinned for future
+  connections. A changed certificate requires explicit re-approval.
 
 **Phase 8 — clipboard sync (`SessionMessageLoop`, wired into the Client):**
 - **Real** bidirectional text clipboard sync for any session granted the Clipboard permission:
@@ -95,8 +97,8 @@ ipcast/
   plaintext). A device connecting with the correct ID + password is accepted **immediately**,
   bypassing the interactive Accept dialog entirely — verified with two real running instances:
   no dialog window ever appeared on the host side.
-- **Real** rate limiting: 5 failed attempts per 9-digit ID per 5-minute window, then further
-  attempts are rejected outright regardless of the password.
+- **Real** rate limiting: 5 failed attempts per remote TCP source IP per 5-minute window, then
+  further attempts are rejected outright regardless of the claimed device ID or password.
 - The Home screen and Settings both visibly show "Unattended access is ON" per spec §9 — it's
   never silently active.
 
@@ -224,17 +226,15 @@ Status of the 13 phases from the original spec:
 - [~] **Phase 3 (mostly done)** — Screen capture/streaming + input control: the pipeline (capture
       → JPEG encode → TLS transport → decode → render, and input forwarding) is real and tested;
       only the Win32 GDI/SendInput pieces are unverified outside CI (see below)
-- [~] **Phase 4-6 (relay architecture done, NOT deployed)** — `IPCast.Server` is a real,
-      tested TCP rendezvous/relay (pairs two clients by ID, then pipes raw bytes between them).
-      Deliberately not hosted anywhere: that's an ongoing cost decision, not a technical one - see
-      §5 below. STUN-based public-IP discovery and wiring the relay into the Client's Connect flow
-      as an automatic LAN-failed fallback are not done yet.
+- [~] **Phase 4-6 (relay pilot deployed)** — the client tries LAN discovery, then can fall back to
+      the configured WSS relay. The relay is an in-memory pilot with a single instance; direct
+      internet P2P/STUN and two-physical-device acceptance on separate networks remain outstanding.
 - [x] **Phase 7** — File transfer (engine real and tested; no file-manager UI yet)
 - [x] **Phase 8** — Clipboard sync (text only; no on/off setting yet)
 - [x] **Phase 9** — Unattended access: PBKDF2 password hashing, rate-limited (5 attempts/5 min),
       bypasses the interactive Accept prompt entirely on a correct password
-- [~] **Phase 10 (partial)** — TLS transport encryption + rate limiting are real; certificate pinning, and audit
-      logging are not done
+- [~] **Phase 10 (partial)** — TLS, explicit certificate pinning and source-IP rate limiting are
+      implemented; audit logging and other production controls remain outstanding.
 - [x] **Phase 11** — Recent Connections history + My Devices/favorites, both persisted and with
       real UI (no unattended-access-style "off by default" needed; Settings general/display
       options still pending)
@@ -245,13 +245,8 @@ Status of the 13 phases from the original spec:
 - [ ] Phase 13 — Performance optimization (adaptive quality/bitrate, delta-frame or hardware
       video encoding instead of per-frame JPEG)
 
-**Why the remaining phases aren't "just build them faster":** several need resources this
-sandbox genuinely doesn't have, not just more time:
-- Phase 4-6's relay server code is done and tested, but making it an actual, always-available
-  "connect from anywhere" feature needs *someone* to run an instance of `IPCast.Server` somewhere
-  reachable from the internet, continuously. That has a real, ongoing cost (hosting, bandwidth)
-  that scales with how much it's used - not something to sign up for or provision on your behalf
-  without you explicitly choosing to and picking where.
+**Why some acceptance gates remain:** a production-ready remote-control application requires
+real Windows hardware and separate-network tests, not just cross-platform unit tests:
 - Phase 3's `GdiScreenCapturer`/`SendInputInjector` are Win32-only APIs that cannot be executed on
   this Linux dev container - only this repo's `windows-latest` CI job
   (`.github/workflows/build-ipcast.yml`) can actually exercise them; a real human clicking through
@@ -266,21 +261,19 @@ Fixed by round-tripping the generated certificate through a PKCS#12 export/impor
 (`DeviceCertificateStore`/`TestCertificateFactory`), which forces a real, persistable key. Without
 this repo's `windows-latest` CI job, IPCast's TLS encryption would have silently never worked on
 an actual end-user's Windows machine despite passing every test in this Linux dev sandbox - exactly
-the class of bug this CI setup exists to catch. After the fix: **all 49 tests pass, and the
-self-contained `IPCast.exe` builds successfully, on a real Windows machine.**
+the class of bug this CI setup exists to catch. The original Windows CI run passed all 49 tests and
+built the self-contained EXE. The current test suite has 89 tests and must be green on Windows
+again before a production release.
 
 ## 6. Security notes
 
 - Device IDs are generated with a CSPRNG, not `System.Random`.
-- No passwords or secrets exist yet, so there is nothing to hash yet — that lands in Phase 9
-  (unattended access), and will use proper password hashing (never plaintext) per the spec.
-- **The connection is TLS-encrypted, but not yet identity-verified.** Every session is wrapped in
-  `SslStream` with a real, per-device self-signed certificate — a passive eavesdropper on the LAN
-  can no longer read the traffic. But since there's no PKI yet, either side currently accepts any
-  certificate the peer presents, so an **active** man-in-the-middle isn't ruled out. This is
-  deliberately called out in the UI itself (the incoming-connection dialog says so) rather than
-  hidden. Certificate pinning (trust a device's certificate the first time, like SSH host keys,
-  and flag if it ever changes) is the natural next step and isn't built yet.
+- Unattended-access passwords are stored as salted PBKDF2-SHA256 hashes, never plaintext.
+- TLS peer identity uses explicit fingerprint pinning, not a public PKI. On first connection, the
+  user must compare fingerprints out-of-band; future sessions enforce the saved pin, and a changed
+  certificate requires explicit re-approval.
+- Unattended-access failed attempts are limited by TCP source IP, not by the peer's self-asserted
+  device ID. This is not a substitute for abuse controls at a public relay or identity service.
 - Discovery only responds to a request for a device's own exact ID; it never broadcasts or leaks
   the ID list of other devices.
 - A connection still requires the local user to explicitly click Accept and choose which
