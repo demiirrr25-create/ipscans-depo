@@ -129,6 +129,8 @@ public partial class MainWindowViewModel : ObservableObject
 
         ConnectionHistory = new ObservableCollection<ConnectionHistoryEntry>(historyStore.GetAll());
         FavoriteDevices = new ObservableCollection<FavoriteDevice>(favoritesStore.GetAll());
+        DashboardRecentConnections = new ObservableCollection<ConnectionHistoryEntry>(ConnectionHistory.Take(4));
+        DashboardFavoriteDevices = new ObservableCollection<FavoriteDevice>(FavoriteDevices.Take(4));
 
         var discoveryPort = int.TryParse(Environment.GetEnvironmentVariable("IPCAST_DISCOVERY_PORT"), out var p)
             ? p
@@ -230,6 +232,10 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Persisted saved devices (spec §20).</summary>
     public ObservableCollection<FavoriteDevice> FavoriteDevices { get; }
 
+    public ObservableCollection<ConnectionHistoryEntry> DashboardRecentConnections { get; }
+
+    public ObservableCollection<FavoriteDevice> DashboardFavoriteDevices { get; }
+
     /// <summary>Owns this device's incoming/outgoing LAN connections. The View wires up the incoming-request dialog and starts it.</summary>
     public IPCastService NetworkService { get; }
 
@@ -268,6 +274,13 @@ public partial class MainWindowViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(RemoteIdInput))
         {
             StatusMessage = "Enter a valid 9-digit IPCast ID or direct IP:port address.";
+            return;
+        }
+
+        if (!DeviceId.TryParse(RemoteIdInput, out _) &&
+            !IPCastService.TryParseEndpoint(RemoteIdInput, defaultPort: 0, out _))
+        {
+            StatusMessage = "Enter a valid 9-digit IPCast ID or direct IP:port address (e.g. 192.168.1.50:9876).";
             return;
         }
 
@@ -390,6 +403,7 @@ public partial class MainWindowViewModel : ObservableObject
         var entry = new ConnectionHistoryEntry(DateTimeOffset.UtcNow, remoteId.Formatted, direction, status);
         _historyStore.Add(entry);
         ConnectionHistory.Insert(0, entry);
+        RefreshDashboardRecentConnections();
     }
 
     [RelayCommand]
@@ -397,6 +411,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         _historyStore.Clear();
         ConnectionHistory.Clear();
+        DashboardRecentConnections.Clear();
     }
 
     [RelayCommand]
@@ -418,6 +433,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         FavoriteDevices.Add(new FavoriteDevice(name, deviceId.Raw, LastConnectedUtc: null));
+        RefreshDashboardFavoriteDevices();
         NewFavoriteName = string.Empty;
         NewFavoriteIdInput = string.Empty;
         FavoritesMessage = $"Saved {name}.";
@@ -428,12 +444,28 @@ public partial class MainWindowViewModel : ObservableObject
     {
         _favoritesStore.Remove(favorite.DeviceId);
         FavoriteDevices.Remove(favorite);
+        RefreshDashboardFavoriteDevices();
     }
 
     [RelayCommand]
     private async Task ConnectToFavoriteAsync(FavoriteDevice favorite)
     {
         RemoteIdInput = favorite.DeviceId;
+        SelectedNav = NavSection.Home;
+        SelectedNavItem = NavItems[0];
+        await ConnectAsync();
+    }
+
+    [RelayCommand]
+    private async Task ConnectToRecentAsync(ConnectionHistoryEntry entry)
+    {
+        if (!DeviceId.TryParse(entry.RemoteId, out var deviceId))
+        {
+            StatusMessage = "This history entry doesn't contain a valid IPCast ID.";
+            return;
+        }
+
+        RemoteIdInput = deviceId.Raw;
         SelectedNav = NavSection.Home;
         SelectedNavItem = NavItems[0];
         await ConnectAsync();
@@ -446,6 +478,25 @@ public partial class MainWindowViewModel : ObservableObject
         {
             var index = FavoriteDevices.IndexOf(existing);
             FavoriteDevices[index] = existing with { LastConnectedUtc = DateTimeOffset.UtcNow };
+            RefreshDashboardFavoriteDevices();
+        }
+    }
+
+    private void RefreshDashboardRecentConnections()
+    {
+        DashboardRecentConnections.Clear();
+        foreach (var entry in ConnectionHistory.Take(4))
+        {
+            DashboardRecentConnections.Add(entry);
+        }
+    }
+
+    private void RefreshDashboardFavoriteDevices()
+    {
+        DashboardFavoriteDevices.Clear();
+        foreach (var favorite in FavoriteDevices.Take(4))
+        {
+            DashboardFavoriteDevices.Add(favorite);
         }
     }
 

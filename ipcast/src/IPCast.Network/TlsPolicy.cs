@@ -6,11 +6,9 @@ namespace IPCast.Network;
 /// <summary>
 /// The certificate-validation policy shared by <see cref="IPCastHost"/> and
 /// <see cref="IPCastConnector"/>. There is no PKI yet: devices don't have any pre-shared way to
-/// know which certificate a given ID is "supposed" to present, so we accept whatever certificate
-/// the peer offers rather than rejecting every connection outright. This still encrypts the
-/// channel against a passive eavesdropper - it does not yet stop an active man-in-the-middle.
-/// Pinning the certificate to a device ID (learned on first connect, like SSH host keys) is the
-/// natural next hardening step.
+/// validate a peer during the TLS handshake. The client therefore completes the handshake to
+/// obtain the peer fingerprint, then requires explicit approval and enforces the stored pin
+/// before proceeding with the IPCast protocol.
 /// </summary>
 internal static class TlsPolicy
 {
