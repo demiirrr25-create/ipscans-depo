@@ -132,7 +132,7 @@ public partial class FileManagerWindow : Window
             var speed = (p.BytesTransferred - initial) / Math.Max(0.01, watch.Elapsed.TotalSeconds);
             var remaining = Math.Max(0, p.TotalBytes - p.BytesTransferred);
             TransferProgress.Value = p.FractionComplete * 100;
-            OperationStatus.Text = $"{entry.Name} · {p.BytesTransferred:N0}/{p.TotalBytes:N0} bytes · {speed / 1024:0.0} KiB/s · Remaining {remaining:N0} bytes · ETA {(speed > 0 ? TimeSpan.FromSeconds(remaining / speed).ToString(@"hh\:mm\:ss") : "calculating")}";
+            OperationStatus.Text = $"{entry.Name} · {p.BytesTransferred:N0}/{p.TotalBytes:N0} bytes · {speed / 1024:0.0} KiB/s · Remaining {remaining:N0} bytes · ETA {(speed > 0 ? TimeSpan.FromSeconds(Math.Clamp(remaining / speed, 0, 31536000)).ToString(@"d\.hh\:mm\:ss") : "calculating")}";
         });
         try
         {

@@ -36,6 +36,7 @@
             <CheckBox Name="ChatCheck" Content="Session chat" />
             <CheckBox Name="RecordingCheck" Content="Allow visible session recording" />
             <CheckBox Name="TunnelCheck" Content="TCP tunnels (each route asks for approval)" />
+            <CheckBox Name="AudioCheck" Content="System audio (starts muted)" />
             <CheckBox Name="SystemInfoCheck" Content="System information" />
             <CheckBox Name="RemoteRestartCheck" Content="Remote restart (asks for confirmation)" />
         </StackPanel>

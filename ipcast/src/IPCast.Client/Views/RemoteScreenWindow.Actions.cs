@@ -5,6 +5,13 @@ using IPCast.Network;
 namespace IPCast.Client.Views;
 public partial class RemoteScreenWindow
 {
+    private void OnPermissionsClick(object? sender, RoutedEventArgs e)
+    {
+        _informationTimer.Stop();
+        InformationPanel.IsVisible = true;
+        InformationText.Text = "Granted by the remote owner:\n" + _desktop.GrantedPermissionsDescription +
+            "\n\nTo change permissions, disconnect and request a new session. The owner can stop access at any time.";
+    }
     private SessionTools? _tools;
     public void ConfigureTools(SessionTools tools)
     {
@@ -16,6 +23,7 @@ public partial class RemoteScreenWindow
         {
             var result = await _tools!.GetInformationAsync();
             var info = result.Information ?? throw new IOException("No system information received.");
+            _informationTimer.Stop();
             InformationPanel.IsVisible = true;
             InformationText.Text = $"{info.Name}\n{info.Platform}\n{info.Architecture} · {info.Processors} processors\nIPCast {info.Version}";
         }

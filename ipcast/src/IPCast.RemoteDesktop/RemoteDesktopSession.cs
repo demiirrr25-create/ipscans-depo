@@ -26,6 +26,7 @@ public sealed class RemoteDesktopSession : IDisposable
     private long _receivedVideoBytes;
     private int _frameWidth, _frameHeight;
     public string RemoteDeviceId => _session.RemoteDeviceId.Formatted;
+    public string GrantedPermissionsDescription => _session.GrantedPermissions.ToString();
     public ConnectionKind ConnectionKind => _session.ConnectionKind;
     public string Encryption => _session.Stream is System.Net.Security.SslStream tls && tls.IsEncrypted
         ? tls.SslProtocol.ToString() : "Not encrypted";

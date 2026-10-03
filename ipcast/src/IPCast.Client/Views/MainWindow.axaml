@@ -9,7 +9,7 @@
         Title="IPCast — Secure Remote Access"
         Icon="/Assets/ipcast.ico"
         Width="1120" Height="780"
-        MinWidth="860" MinHeight="580"
+        MinWidth="740" MinHeight="420"
         Background="{DynamicResource AppBackgroundBrush}">
 
     <Window.Resources>
@@ -56,7 +56,7 @@
                         <TextBlock Text="Unattended access ON" FontSize="10"
                                    Foreground="{DynamicResource AccentBrush}"
                                    IsVisible="{Binding IsUnattendedAccessEnabled}" />
-                        <TextBlock Text="v1.1 Preview · Auto Relay" FontSize="10"
+                        <TextBlock Text="{Binding VersionLabel}" FontSize="10"
                                    Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
                 </Border>
@@ -98,6 +98,7 @@
                             <TextBlock Text="REC — The remote viewer is recording this session" IsVisible="{Binding IsPeerRecording}"
                                        Foreground="{DynamicResource DangerBrush}" FontWeight="Bold" />
                             <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
+                            <TextBlock Text="System audio is being shared" IsVisible="{Binding IsSystemAudioShared}" Classes="hint" />
                             <Button Content="Disconnect current session" Classes="danger" HorizontalAlignment="Left"
                                     Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
                             <Button Content="Open session chat" HorizontalAlignment="Left" Click="OnChatClick"
@@ -367,6 +368,7 @@
             <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
                 <TextBlock Text="Settings" Classes="display" FontSize="26" />
+                <TextBlock Text="System audio is being shared with the connected device" IsVisible="{Binding IsSystemAudioShared}" Classes="hint" />
                 <TextBox PlaceholderText="Search settings…" Text="{Binding SettingsQuery}"
                          AutomationProperties.Name="Search settings" />
 
@@ -464,6 +466,8 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="{Binding VersionLabel}" Classes="h2" />
                         <Button Content="Check for updates" Click="OnCheckUpdatesClick" />
+                        <CheckBox Content="Check for updates when IPCast starts" IsChecked="{Binding CheckUpdatesOnStartup}" />
+                        <TextBlock Text="{Binding UpdateStatus}" Classes="hint" />
                         <TextBlock Text="Diagnostics contain audit events, device IDs, app and OS versions. They exclude passwords, clipboard contents and file contents." Classes="hint" />
                         <WrapPanel>
                             <Button Content="Open Logs Folder" Click="OnOpenLogsClick" Margin="0,0,8,8" />
@@ -475,6 +479,7 @@
                 <Border Classes="card" IsVisible="{Binding ShowSecuritySettings}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Security" Classes="h2" />
+                        <TextBlock Text="This release runs in the signed-in user session. Secure-desktop control (Ctrl+Alt+Del/UAC), privacy-screen blanking and virtual printer redirection require a trusted service or driver and are unavailable. Transfer a document with Files and print it locally instead." Classes="hint" />
                         <TextBlock Text="This device's TLS certificate fingerprint (SHA-256). Compare it out-of-band the first time a new device connects."
                                    Classes="hint" />
                         <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap"

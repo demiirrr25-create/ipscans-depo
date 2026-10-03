@@ -7,8 +7,10 @@ namespace IPCast.Tests;
 
 public class FileManagerSessionTests
 {
-    [Fact]
-    public async Task SharedFolderIsOptInAndRpcTransfersVerifiedFileOverTls()
+    [Theory]
+    [InlineData(350000)]
+    [InlineData(33554432)]
+    public async Task SharedFolderIsOptInAndRpcTransfersVerifiedFileOverTls(int size)
     {
         var root = Path.Combine(Path.GetTempPath(), "ipcast-manager-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -16,7 +18,7 @@ public class FileManagerSessionTests
         {
             var sourceRoot = Directory.CreateDirectory(Path.Combine(root, "source")).FullName;
             var targetRoot = Directory.CreateDirectory(Path.Combine(root, "target")).FullName;
-            var data = new byte[350000]; Random.Shared.NextBytes(data);
+            var data = new byte[size]; Random.Shared.NextBytes(data);
             await File.WriteAllBytesAsync(Path.Combine(sourceRoot, "payload.bin"), data);
             var (viewer, sharer, host) = await SessionTestHelper.EstablishSessionAsync(
                 DeviceId.FromValidatedRaw("123456789"), DeviceId.FromValidatedRaw("987654321"), ConnectionPermissions.FileTransfer);

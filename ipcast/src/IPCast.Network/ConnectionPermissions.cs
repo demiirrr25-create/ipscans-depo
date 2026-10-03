@@ -18,4 +18,5 @@ public enum ConnectionPermissions
     Chat = 1 << 7,
     Recording = 1 << 8,
     TcpTunnel = 1 << 9,
+    Audio = 1 << 10,
 }

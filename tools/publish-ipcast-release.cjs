@@ -53,6 +53,17 @@ async function publish({ github, context, core, directory = 'release' }) {
     'These binaries are unsigned. SHA-256 verifies file integrity; it does not authenticate the publisher.',
     'Windows 10/11 testing on two physical devices was waived and was not performed.',
     '',
+    'What is new:',
+    '- Resumable shared-folder file manager, permission profiles, chat, LAN discovery and Wake-on-LAN.',
+    '- Multi-monitor viewing, adaptive JPEG quality, fullscreen, Unicode input and viewer annotations.',
+    '- Visible AVI recording, Windows system audio with opt-in consent, and forward/reverse TCP tunnels.',
+    '- Device information, owner-confirmed restart, reconnect attempts, tray controls and diagnostic export.',
+    '- Update checks verify GitHub asset SHA-256 before opening the installer; binaries remain unsigned.',
+    '',
+    'Limits: signed-in Windows desktop only; Ctrl+Alt+Del/UAC secure-desktop control, privacy-screen driver and virtual-printer redirection are unavailable.',
+    'Annotations are viewer-local. Recording stops at resolution changes or 1.8 GB. Audio/recording are off until allowed.',
+    'Reconnect uses a new authenticated session and asks for fresh consent. Audio hardware and cross-network physical-device tests were not performed.',
+    '',
     ...manifest.assets.map(asset => `- ${asset.name}: ${asset.size} bytes; SHA-256 ${asset.sha256}`)
   ].join('\n');
   if (!release) {

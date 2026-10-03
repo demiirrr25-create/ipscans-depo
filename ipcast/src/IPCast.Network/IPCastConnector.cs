@@ -11,7 +11,7 @@ namespace IPCast.Network;
 /// <summary>Places outbound connections to other IPCast devices (spec §4: the "CONNECT" flow).</summary>
 public sealed class IPCastConnector
 {
-    private const string AppVersion = "1.0.0-phase2";
+    private static string AppVersion => System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "2.2.0";
 
     private readonly DeviceId _localDeviceId;
     public Func<string, string, Task<bool>>? VerifyPeerCertificateAsync { get; set; }

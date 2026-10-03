@@ -26,6 +26,7 @@
                     <Button Classes="toolbar" Content="Information" Click="OnInformationClick"
                             AutomationProperties.Name="Connection information" />
                     <Button Name="DeviceInfoButton" IsVisible="False" Classes="toolbar" Content="Device" Click="OnDeviceInfoClick" />
+                    <Button Classes="toolbar" Content="Permissions" Click="OnPermissionsClick" />
                     <Button Name="RestartButton" IsVisible="False" Classes="toolbar" Content="Restart" Click="OnRestartClick" />
                     <Button Classes="toolbar" Content="Alt+Tab" Click="OnAltTabClick" />
                     <Button Classes="toolbar" Content="Windows key" Click="OnWindowsKeyClick" />
@@ -34,6 +35,8 @@
                             AutomationProperties.Name="Open session chat" />
                     <Button Name="FilesButton" IsVisible="False" Classes="toolbar" Content="Files" Click="OnFilesClick" />
                     <Button Name="TunnelsButton" IsVisible="False" Classes="toolbar" Content="TCP tunnels" Click="OnTunnelsClick" />
+                    <Button Name="AudioButton" IsVisible="False" Classes="toolbar" Content="Audio off · enable" Click="OnAudioClick" />
+                    <Slider Name="AudioVolume" IsVisible="False" Minimum="0" Maximum="100" Value="100" Width="85" ToolTip.Tip="Remote audio volume" AutomationProperties.Name="Remote audio volume" />
                     <Button Name="RecordButton" IsVisible="False" Classes="toolbar" Content="Record" Click="OnRecordClick" />
                     <Button Name="AnnotationButton" Classes="toolbar" Content="Annotate" Click="OnAnnotateClick"
                             ToolTip.Tip="Temporary annotations in your viewer; remote input is paused while drawing." />

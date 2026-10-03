@@ -34,6 +34,8 @@ public partial class IncomingConnectionWindow : Window
         ChatCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Chat);
         RecordingCheck.IsChecked = false;
         TunnelCheck.IsChecked = false;
+        AudioCheck.IsChecked = false;
+        AudioCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Audio) && OperatingSystem.IsWindows();
         TunnelCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.TcpTunnel);
         RecordingCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Recording);
         SystemInfoCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.SystemInformation);
@@ -79,6 +81,7 @@ public partial class IncomingConnectionWindow : Window
         if (ChatCheck.IsChecked == true) granted |= ConnectionPermissions.Chat;
         if (RecordingCheck.IsChecked == true) granted |= ConnectionPermissions.Recording;
         if (TunnelCheck.IsChecked == true) granted |= ConnectionPermissions.TcpTunnel;
+        if (AudioCheck.IsChecked == true) granted |= ConnectionPermissions.Audio;
         if (SystemInfoCheck.IsChecked == true) granted |= ConnectionPermissions.SystemInformation;
         if (RemoteRestartCheck.IsChecked == true) granted |= ConnectionPermissions.RemoteRestart;
 

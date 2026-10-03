@@ -97,6 +97,7 @@ public partial class MainWindow : Window
         _clipboardPoll.Start();
         _discoveryPoll.Start();
         _ = vm.RefreshDiscoveredDevicesAsync();
+        _ = vm.CheckForUpdateAsync();
         vm.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(vm.IsPeerRecording)) Title = vm.IsPeerRecording ? "IPCast — REC: remote viewer is recording" : "IPCast — Secure Remote Access"; };
     }
 
@@ -154,6 +155,7 @@ public partial class MainWindow : Window
         Dispatcher.UIThread.Post(() => {
             var window = new RemoteScreenWindow(desktop);
             if (DataContext is MainWindowViewModel toolsVm && toolsVm.Tools is { } tools) window.ConfigureTools(tools);
+            if (DataContext is MainWindowViewModel audioVm && audioVm.Audio is { } audio) window.ConfigureAudio(audio);
             if (_tunnelWindow is { } tunnels) window.EnableTunnels(() => { tunnels.Show(); tunnels.Activate(); });
             if (DataContext is MainWindowViewModel settings)
                 window.ConfigureRecording(settings.RecordingDirectory, settings.AutomaticRecording);

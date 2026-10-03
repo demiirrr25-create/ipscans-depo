@@ -40,6 +40,9 @@ public enum MessageType
     RestartRequest,
     RestartResponse,
     TextInput = 170,
+    AudioControl = 180,
+    AudioState,
+    AudioData,
 }
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>

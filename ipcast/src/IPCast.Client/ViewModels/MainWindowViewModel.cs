@@ -33,6 +33,8 @@ public partial class MainWindowViewModel : ObservableObject
     private FileManagerSession? _fileManager;
     private TunnelSession? _tunnels;
     public SessionTools? Tools { get; private set; }
+    public SessionAudio? Audio { get; private set; }
+    [ObservableProperty] private bool _isSystemAudioShared;
     public Func<Task<bool>>? OnRestartRequested { get; set; }
     public event Action<TunnelSession>? TunnelsReady;
     [ObservableProperty] private bool _isTunnelAvailable;
@@ -191,6 +193,7 @@ public partial class MainWindowViewModel : ObservableObject
         _recordingDirectory = preferences.RecordingDirectory;
         _automaticRecording = preferences.AutomaticRecording;
         _automaticReconnect = preferences.AutomaticReconnect;
+        _checkUpdatesOnStartup = preferences.CheckUpdatesOnStartup;
         _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
         _launchAtStartup = IsRegisteredForStartup();
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER")))
@@ -204,7 +207,8 @@ public partial class MainWindowViewModel : ObservableObject
     private void SavePreferences()
     {
         try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode, LaunchAtStartup: LaunchAtStartup,
-            RecordingDirectory: RecordingDirectory, AutomaticRecording: AutomaticRecording, AutomaticReconnect: AutomaticReconnect)); }
+            RecordingDirectory: RecordingDirectory, AutomaticRecording: AutomaticRecording, AutomaticReconnect: AutomaticReconnect,
+            CheckUpdatesOnStartup: CheckUpdatesOnStartup)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
     }
 
@@ -458,6 +462,7 @@ public partial class MainWindowViewModel : ObservableObject
         _reconnectCts?.Cancel();
         _tunnels?.Dispose(); _tunnels = null; IsTunnelAvailable = false;
         Tools?.Dispose(); Tools = null;
+        Audio?.Dispose(); Audio = null; IsSystemAudioShared = false;
         var desktopToDispose = _activeDesktop;
         _activeDesktop = null;
         var loop = _activeSessionLoop;
@@ -715,6 +720,16 @@ public partial class MainWindowViewModel : ObservableObject
 
         _activeSessionLoop = loop;
         Tools = new SessionTools(loop, session) { RequestRestart = () => OnRestartRequested?.Invoke() ?? Task.FromResult(false) };
+        if (OperatingSystem.IsWindows() && session.GrantedPermissions.HasFlag(ConnectionPermissions.Audio))
+        {
+            Audio = new SessionAudio(loop, session, () => OperatingSystem.IsWindows()
+                ? new WindowsSystemAudio() : throw new PlatformNotSupportedException("System audio requires Windows."));
+            Audio.StateChanged += (enabled, error) => Dispatcher.UIThread.Post(() =>
+            {
+                IsSystemAudioShared = enabled && !session.IsInitiator;
+                if (error is not null) StatusMessage = error;
+            });
+        }
         IsTunnelAvailable = session.GrantedPermissions.HasFlag(ConnectionPermissions.TcpTunnel);
         if (IsTunnelAvailable)
         {

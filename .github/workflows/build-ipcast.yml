@@ -1,7 +1,8 @@
 name: Build IPCast
 
-# Build and verify IPCast on Windows and Linux. Publishing requires a separate manual dispatch
-# after release acceptance. Unsigned artifacts must be disclosed until a trusted signing
+# Build and verify IPCast on Windows and Linux. Main-branch changes publish only after both
+# platform gates succeed. Published versions are immutable; every new release must bump Version.
+# Unsigned artifacts must be disclosed until a trusted signing
 # certificate is available; SHA-256 guards against accidental artifact mismatch.
 
 on:
@@ -183,7 +184,7 @@ jobs:
           if-no-files-found: error
 
   publish-download:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release))
     needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
