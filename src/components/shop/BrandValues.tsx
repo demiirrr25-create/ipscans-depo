@@ -13,26 +13,26 @@ interface BrandValuesProps {
 export function BrandValues({ title, brandValues }: BrandValuesProps) {
   const icons = [
     (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
+      <svg key="icon-0" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
       </svg>
     ),
     (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
+      <svg key="icon-1" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
         <circle cx="6" cy="6" r="3" />
         <circle cx="6" cy="18" r="3" />
         <path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12" />
       </svg>
     ),
     (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
+      <svg key="icon-2" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
         <path d="M12 2v20M2 12h20" />
         <circle cx="12" cy="12" r="9" />
       </svg>
     ),
     (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
+      <svg key="icon-3" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE68A" strokeWidth="1.5">
         <circle cx="12" cy="12" r="10" />
         <polyline points="12 6 12 12 16 14" />
       </svg>
