@@ -14,6 +14,7 @@ public sealed class SessionMessageLoop : IAsyncDisposable
     private readonly RemoteSession _session;
     private readonly CancellationTokenSource _cts = new();
     private Task? _loopTask;
+    private int _started;
     private readonly SemaphoreSlim _probeGate = new(1, 1);
     private TaskCompletionSource<long>? _probe;
     private long _probeSequence;
@@ -39,7 +40,10 @@ public sealed class SessionMessageLoop : IAsyncDisposable
 
     public void Start()
     {
-        _loopTask = RunAsync(_cts.Token);
+        if (Interlocked.Exchange(ref _started, 1) != 0)
+            throw new InvalidOperationException("The session receive loop has already started.");
+        var token = _cts.Token;
+        _loopTask = Task.Run(() => RunAsync(token));
     }
 
     private async Task RunAsync(CancellationToken ct)

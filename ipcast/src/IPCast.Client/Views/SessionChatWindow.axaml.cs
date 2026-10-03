@@ -13,6 +13,7 @@ public partial class SessionChatWindow : Window
     private bool _ended;
     private bool _sending;
     private int _unread;
+    private int _historyCharacters;
 
     public SessionChatWindow() => InitializeComponent();
 
@@ -48,8 +49,11 @@ public partial class SessionChatWindow : Window
 
     private void Append(string author, string text)
     {
-        _messages.Enqueue($"[{DateTime.Now:HH:mm:ss}] {author}\n{text}");
-        while (_messages.Count > 200) _messages.Dequeue();
+        var entry = $"[{DateTime.Now:HH:mm:ss}] {author}\n{text}";
+        _messages.Enqueue(entry);
+        _historyCharacters += entry.Length;
+        while (_messages.Count > 200 || _historyCharacters > 64000)
+            _historyCharacters -= _messages.Dequeue().Length;
         Transcript.Text = string.Join("\n\n", _messages);
         Transcript.CaretIndex = Transcript.Text.Length;
     }
