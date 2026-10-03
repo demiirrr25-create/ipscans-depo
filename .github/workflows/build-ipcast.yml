@@ -44,6 +44,11 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      - name: Validate Windows workflow scripts
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: ../tools/validate-ipcast-workflow.ps1
+
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
@@ -125,7 +130,9 @@ jobs:
           if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
           [xml]$project = Get-Content src/IPCast.Client/IPCast.Client.csproj
           $version = [string]$project.Project.PropertyGroup.Version
-          if ($version -notmatch '^\d+\.\d+\.\d+
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid release version." }
+          & $iscc "/DMyAppVersion=$version" installer\IPCast.iss
+          if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed." }
 
       - name: Smoke test the installer (silent install, verify, uninstall)
         if: matrix.os == 'windows-latest'

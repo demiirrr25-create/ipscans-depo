@@ -29,6 +29,10 @@ public partial class RemoteScreenWindow : Window
     private bool _suppressEscapeKeyUp;
     private bool _updatingMonitors;
     private DisplayMode _viewMode = DisplayMode.AutoAdapt;
+    private readonly DispatcherTimer _informationTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private bool _probing;
+    private long _lastFrames, _lastBytes;
+    private TimeSpan _lastSample;
 
     public RemoteScreenWindow()
     {
@@ -50,6 +54,7 @@ public partial class RemoteScreenWindow : Window
         Opened += async (_, _) => await SendSafely(() => _desktop.RequestAvailableMonitorsAsync());
         _renderTimer.Tick += (_, _) => RenderLatestFrame();
         _renderTimer.Start();
+        _informationTimer.Tick += async (_, _) => await UpdateInformationAsync();
         _desktop.Closed += OnSessionClosed;
         ScreenImage.PointerMoved += OnPointerMoved;
         ScreenImage.PointerPressed += OnPointerPressed;
@@ -60,7 +65,7 @@ public partial class RemoteScreenWindow : Window
         Deactivated += async (_, _) => await ReleaseInputAsync();
         ScreenImage.LostFocus += async (_, _) => await ReleaseInputAsync();
         ScreenImage.PointerCaptureLost += async (_, _) => await ReleaseInputAsync();
-        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.AvailableMonitorsReceived -= OnAvailableMonitorsReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
+        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); _informationTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.AvailableMonitorsReceived -= OnAvailableMonitorsReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
     }
 
     private sealed record MonitorOption(string DeviceName, string Label)
@@ -89,6 +94,41 @@ public partial class RemoteScreenWindow : Window
     }
 
     private void OnSessionClosed() => Dispatcher.UIThread.Post(Close);
+
+    private async void OnInformationClick(object? sender, RoutedEventArgs e)
+    {
+        InformationPanel.IsVisible = !InformationPanel.IsVisible;
+        if (!InformationPanel.IsVisible) { _informationTimer.Stop(); return; }
+        _lastSample = _desktop.Duration;
+        _lastFrames = _desktop.ReceivedFrames;
+        _lastBytes = _desktop.ReceivedVideoBytes;
+        InformationText.Text = "Measuring connection…";
+        _informationTimer.Start();
+        await UpdateInformationAsync();
+    }
+
+    private async Task UpdateInformationAsync()
+    {
+        if (_closed || _probing || !InformationPanel.IsVisible) return;
+        _probing = true;
+        try
+        {
+            string latency;
+            try { latency = $"{(await _desktop.MeasureLatencyAsync()).TotalMilliseconds:0} ms"; }
+            catch (Exception) { latency = "Unavailable"; }
+            if (_closed) return;
+            var duration = _desktop.Duration;
+            var seconds = (duration - _lastSample).TotalSeconds;
+            var frames = _desktop.ReceivedFrames;
+            var bytes = _desktop.ReceivedVideoBytes;
+            var fps = seconds > 0.25 ? $"{(frames - _lastFrames) / seconds:0.0}" : "Measuring";
+            var rate = seconds > 0.25 ? $"{(bytes - _lastBytes) / seconds / 1024:0.0} KiB/s" : "Measuring";
+            var resolution = _desktop.Resolution;
+            InformationText.Text = $"Device: {_desktop.RemoteDeviceId}\nConnection: {_desktop.ConnectionKind}\nLatency: {latency}\nReceived FPS: {fps}\nResolution: {resolution.Width} × {resolution.Height}\nVideo rate: {rate}\nCodec: JPEG\nEncryption: {_desktop.Encryption}\nDuration: {(int)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
+            _lastSample = duration; _lastFrames = frames; _lastBytes = bytes;
+        }
+        finally { _probing = false; }
+    }
 
     private void OnDisplaySelectionChanged(object? sender, SelectionChangedEventArgs e)
     {

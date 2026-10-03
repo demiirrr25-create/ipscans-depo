@@ -21,6 +21,19 @@ public sealed class RemoteDesktopSession : IDisposable
     private CancellationTokenSource? _captureCts;
     private Task? _captureLoop;
     private int _disposed;
+    private readonly Stopwatch _duration = Stopwatch.StartNew();
+    private long _receivedFrames;
+    private long _receivedVideoBytes;
+    private int _frameWidth, _frameHeight;
+    public string RemoteDeviceId => _session.RemoteDeviceId.Formatted;
+    public ConnectionKind ConnectionKind => _session.ConnectionKind;
+    public string Encryption => _session.Stream is System.Net.Security.SslStream tls && tls.IsEncrypted
+        ? tls.SslProtocol.ToString() : "Not encrypted";
+    public TimeSpan Duration => _duration.Elapsed;
+    public long ReceivedFrames => Interlocked.Read(ref _receivedFrames);
+    public long ReceivedVideoBytes => Interlocked.Read(ref _receivedVideoBytes);
+    public (int Width, int Height) Resolution => (Volatile.Read(ref _frameWidth), Volatile.Read(ref _frameHeight));
+    public Task<TimeSpan> MeasureLatencyAsync(CancellationToken ct = default) => _loop.MeasureLatencyAsync(ct);
     private readonly Lock _inputLock = new();
     private readonly HashSet<int> _heldKeys = [];
     private readonly HashSet<int> _heldButtons = [];
@@ -62,6 +75,11 @@ public sealed class RemoteDesktopSession : IDisposable
     /// <param name="displayMode">How to display the captured frame</param>
     public void StartSharing(IScreenCapturer capturer, IInputInjector injector, TimeSpan frameInterval, int jpegQuality = 70, int maxDimension = 0, int maxBytesPerSecond = 0, MonitorInfo? monitorInfo = null, DisplayMode displayMode = DisplayMode.AutoAdapt)
     {
+        ObjectDisposedException.ThrowIf(_disposed != 0, this);
+        ArgumentNullException.ThrowIfNull(capturer);
+        ArgumentNullException.ThrowIfNull(injector);
+        if (frameInterval <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(frameInterval));
+        if (_captureLoop is not null) throw new InvalidOperationException("Screen sharing has already started.");
         if (!_session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
         {
             throw new InvalidOperationException("This session wasn't granted ViewScreen.");
@@ -214,7 +232,14 @@ public sealed class RemoteDesktopSession : IDisposable
                 var frameMessage = payload.Deserialize<ScreenFrameMessage>();
                 if (frameMessage is not null)
                 {
-                    FrameReceived?.Invoke(FrameCodec.DecodeJpeg(frameMessage.Data));
+                    if (!string.Equals(frameMessage.Codec, "jpeg", StringComparison.Ordinal))
+                        throw new InvalidDataException("Unsupported screen codec.");
+                    var frame = FrameCodec.DecodeJpeg(frameMessage.Data);
+                    Interlocked.Increment(ref _receivedFrames);
+                    Interlocked.Add(ref _receivedVideoBytes, frameMessage.Data.Length);
+                    Volatile.Write(ref _frameWidth, frame.Width);
+                    Volatile.Write(ref _frameHeight, frame.Height);
+                    FrameReceived?.Invoke(frame);
                 }
 
                 break;

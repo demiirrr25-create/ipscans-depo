@@ -31,7 +31,9 @@ public sealed class IPCastConnector
         var client = new TcpClient();
         try
         {
-            await client.ConnectAsync(remoteEndpoint.Address, remoteEndpoint.Port, ct).ConfigureAwait(false);
+            using var dialTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            dialTimeout.CancelAfter(TimeSpan.FromSeconds(5));
+            await client.ConnectAsync(remoteEndpoint.Address, remoteEndpoint.Port, dialTimeout.Token).ConfigureAwait(false);
             return await ConnectAsync(
                 client.GetStream(),
                 remoteDeviceId,
@@ -39,7 +41,8 @@ public sealed class IPCastConnector
                 password,
                 client: client,
                 ct: ct,
-                trustKey: remoteDeviceId == _localDeviceId ? remoteEndpoint.ToString() : remoteDeviceId.Raw).ConfigureAwait(false);
+                trustKey: remoteDeviceId == _localDeviceId ? remoteEndpoint.ToString() : remoteDeviceId.Raw,
+                connectionKind: ConnectionKind.Direct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException
             or OperationCanceledException or System.Security.Authentication.AuthenticationException)
@@ -57,7 +60,8 @@ public sealed class IPCastConnector
         TcpClient? client = null,
         IDisposable? ownerToDispose = null,
         CancellationToken ct = default,
-        string? trustKey = null)
+        string? trustKey = null,
+        ConnectionKind connectionKind = ConnectionKind.Unknown)
     {
         try
         {
@@ -98,7 +102,8 @@ public sealed class IPCastConnector
                 return ConnectResult.Failed("The remote device sent an unexpected response.");
             }
 
-            var decision = payload.Deserialize<ConnectionDecisionMessage>()!;
+            var decision = payload.Deserialize<ConnectionDecisionMessage>()
+                ?? throw new InvalidDataException("The remote device sent an empty decision.");
             if (!decision.Accepted)
             {
                 client?.Dispose();
@@ -107,13 +112,27 @@ public sealed class IPCastConnector
                 return ConnectResult.Reject(decision.Reason ?? "The remote device declined the connection.");
             }
 
+            if ((decision.GrantedPermissions & ~requestedPermissions) != ConnectionPermissions.None)
+            {
+                sslStream.Dispose(); client?.Dispose(); ownerToDispose?.Dispose();
+                return ConnectResult.Reject("The remote device returned permissions that were not requested.");
+            }
+            if (decision.HostDeviceId is not null &&
+                (!DeviceId.TryParse(decision.HostDeviceId, out var declaredId) ||
+                 (remoteDeviceId != _localDeviceId && declaredId != remoteDeviceId)))
+            {
+                sslStream.Dispose(); client?.Dispose(); ownerToDispose?.Dispose();
+                return ConnectResult.Reject("The remote device identity does not match the requested device.");
+            }
+
             var session = new RemoteSession(
                 DeviceId.TryParse(decision.HostDeviceId ?? "", out var hostId) ? hostId : remoteDeviceId,
                 client,
                 stream,
                 decision.GrantedPermissions,
                 isInitiator: true,
-                ownerToDispose: ownerToDispose);
+                ownerToDispose: ownerToDispose,
+                connectionKind: connectionKind);
             return ConnectResult.Succeeded(session);
         }
         catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException

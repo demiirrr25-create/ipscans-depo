@@ -140,7 +140,9 @@ public sealed class IPCastService : IAsyncDisposable
 
         if (endpoint is not null)
         {
-            return await _connector.ConnectAsync(endpoint, targetId, requestedPermissions, password, ct).ConfigureAwait(false);
+            var direct = await _connector.ConnectAsync(endpoint, targetId, requestedPermissions, password, ct).ConfigureAwait(false);
+            if (direct.Success || direct.Rejected || ct.IsCancellationRequested || RelayServerAddress is null)
+                return direct;
         }
 
         if (RelayServerAddress is { } relayAddress)
@@ -151,7 +153,7 @@ public sealed class IPCastService : IAsyncDisposable
                     relayAddress, _localDeviceId.Raw, targetId.Raw, ct).ConfigureAwait(false);
 
                 return await _connector.ConnectAsync(
-                    relayStream, targetId, requestedPermissions, password, ct: ct).ConfigureAwait(false);
+                    relayStream, targetId, requestedPermissions, password, ct: ct, connectionKind: ConnectionKind.Relay).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

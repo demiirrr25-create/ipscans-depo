@@ -153,4 +153,31 @@ public class IPCastHandshakeTests : IAsyncDisposable
         });
         Assert.False(prompted);
     }
+
+    [Theory]
+    [InlineData(ConnectionPermissions.ViewScreen | ConnectionPermissions.Clipboard, "111222333")]
+    [InlineData(ConnectionPermissions.ViewScreen, "999888777")]
+    public async Task ConnectorRejectsUntrustedDecision(ConnectionPermissions permissions, string claimedId)
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var certificate = TestCertificateFactory.CreateSelfSigned();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var server = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync(timeout.Token);
+            using var tls = new SslStream(client.GetStream(), false);
+            await tls.AuthenticateAsServerAsync(new SslServerAuthenticationOptions { ServerCertificate = certificate }, timeout.Token);
+            await MessageStream.ReadAsync(tls, timeout.Token);
+            await MessageStream.ReadAsync(tls, timeout.Token);
+            await MessageStream.WriteAsync(tls, MessageType.ConnectionDecision,
+                new ConnectionDecisionMessage(true, permissions, null, claimedId), timeout.Token);
+        });
+        var result = await new IPCastConnector(_clientId).ConnectAsync(
+            (IPEndPoint)listener.LocalEndpoint, _hostId, ConnectionPermissions.ViewScreen, ct: timeout.Token);
+        await server;
+        Assert.False(result.Success);
+        Assert.True(result.Rejected);
+        Assert.Null(result.Session);
+    }
 }

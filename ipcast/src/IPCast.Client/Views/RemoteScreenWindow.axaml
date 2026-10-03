@@ -22,6 +22,8 @@
                     <ComboBox Name="DisplaySelector" MinWidth="125" Margin="8,0"
                               SelectionChanged="OnDisplaySelectionChanged"
                               AutomationProperties.Name="Display scaling" ToolTip.Tip="Choose how the remote image fits this window" />
+                    <Button Classes="toolbar" Content="Information" Click="OnInformationClick"
+                            AutomationProperties.Name="Connection information" />
                     <Button Grid.Column="3" Classes="toolbar" Content="Hide bar" Click="OnToggleToolbarClick"
                             ToolTip.Tip="Hide the toolbar for a cleaner view" AutomationProperties.Name="Hide toolbar" />
                     <Button Grid.Column="4" Name="FullScreenButton" Classes="toolbar" Content="Full screen"
@@ -39,6 +41,18 @@
                        AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
             </ScrollViewer>
         </Grid>
+
+        <Border Name="InformationPanel" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="16,70,16,16" MaxWidth="340" Padding="20"
+                Background="{DynamicResource CardBrushElevated}" BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1" CornerRadius="8">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Connection information" Classes="h2" />
+                <TextBlock Name="InformationText" TextWrapping="Wrap" />
+                <TextBlock Text="Video rate measures received JPEG data. Transport overhead and file transfers are excluded." Classes="hint" />
+                <Button Content="Close" Click="OnInformationClick" />
+            </StackPanel>
+        </Border>
 
         <!-- Floating affordance to restore a hidden toolbar -->
         <Button Name="ShowToolbarButton" Classes="toolbar" Content="▾ Show toolbar"
