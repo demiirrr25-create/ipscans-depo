@@ -22,6 +22,14 @@ public enum MessageType
     RelayListen,
     FileTransferComplete,
     FileTransferCancel,
+    MonitorInfoRequest = 100,
+    MonitorInfoResponse,
+    AvailableMonitorsRequest,
+    AvailableMonitorsResponse,
+    MonitorRequest,
+    MonitorResponse,
+    DisplayModeRequest,
+    DisplayModeResponse,
 }
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>

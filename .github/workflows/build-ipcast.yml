@@ -1,7 +1,7 @@
 name: Build IPCast
 
-# Build and verify IPCast on Windows and Linux. On successful main-branch Windows builds,
-# publish the self-contained EXE as a GitHub prerelease asset for the website download button.
+# Build and verify IPCast on Windows and Linux. Publishing requires a separate manual dispatch
+# after the physical-device and signing gates in ipcast/ROADMAP.md have been completed.
 
 on:
   push:
@@ -13,7 +13,13 @@ on:
     paths:
       - "ipcast/**"
       - ".github/workflows/build-ipcast.yml"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish the verified Windows executable after release acceptance"
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   build-and-test:
@@ -130,9 +136,26 @@ jobs:
           path: ipcast/publish/installer/IPCast-Setup.exe
           if-no-files-found: error
 
-  publish-download:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  verify-release-signature:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/main'
     needs: build-and-test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: IPCast-win-x64
+          path: release
+      - name: Require valid Authenticode signature
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature 'release\IPCast.exe'
+          if ($signature.Status -ne 'Valid') {
+            throw "Release refused: IPCast.exe has no valid Authenticode signature ($($signature.Status))."
+          }
+
+  publish-download:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/main'
+    needs: [build-and-test, verify-release-signature]
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -393,20 +393,6 @@ public sealed class RemoteDesktopSession : IDisposable
     }
 }
 
-// New message types for monitor and display mode control
-internal enum MessageType
-{
-    // Existing messages...
-    MonitorInfoRequest = 100,
-    MonitorInfoResponse = 101,
-    AvailableMonitorsRequest = 102,
-    AvailableMonitorsResponse = 103,
-    MonitorRequest = 104,
-    MonitorResponse = 105,
-    DisplayModeRequest = 106,
-    DisplayModeResponse = 107
-}
-
 // Message definitions for monitor and display mode control
 public sealed record MonitorInfoRequestMessage();
 public sealed record MonitorInfoResponseMessage(string JsonMonitors);

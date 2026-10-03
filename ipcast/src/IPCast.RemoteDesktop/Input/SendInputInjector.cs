@@ -34,8 +34,6 @@ public sealed class SendInputInjector : IInputInjector
     private const uint KEYEVENTF_SCANCODE = 0x0008;
     private const uint KEYEVENTF_UNICODE = 0x0004;
     private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
-    
-    private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
 
     public SendInputInjector()
     {
@@ -452,7 +450,7 @@ public sealed class SendInputInjector : IInputInjector
             // Release L
             new NativeMethods.INPUT
             {
-                type = INPUT_KEYBOARD;
+                type = INPUT_KEYBOARD,
                 u = new NativeMethods.InputUnion
                 {
                     ki = new NativeMethods.KEYBDINPUT
@@ -467,7 +465,7 @@ public sealed class SendInputInjector : IInputInjector
             // Release Windows key
             new NativeMethods.INPUT
             {
-                type = INPUT_KEYBOARD;
+                type = INPUT_KEYBOARD,
                 u = new NativeMethods.InputUnion
                 {
                     ki = new NativeMethods.KEYBDINPUT

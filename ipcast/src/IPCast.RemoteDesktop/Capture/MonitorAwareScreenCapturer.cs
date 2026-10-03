@@ -73,10 +73,35 @@ public sealed class MonitorAwareScreenCapturer : IMonitorAwareCapturer, IScreenC
         ));
         
         // Enumerate actual display monitors
+        bool AddMonitor(IntPtr hMonitor, IntPtr hdcMonitor, ref NativeMethods.RECT bounds, IntPtr data)
+        {
+            var monitorInfo = new NativeMethods.MONITORINFOEX
+            {
+                cbSize = (uint)Marshal.SizeOf<NativeMethods.MONITORINFOEX>()
+            };
+            if (NativeMethods.GetMonitorInfo(hMonitor, ref monitorInfo))
+            {
+                var deviceName = monitorInfo.szDevice.TrimEnd((char)0);
+                var friendlyName = deviceName;
+                if (deviceName.StartsWith("\\\\.\\DISPLAY", StringComparison.OrdinalIgnoreCase) &&
+                    int.TryParse(deviceName["\\\\.\\DISPLAY".Length..], out var displayNumber))
+                {
+                    friendlyName = $"Monitor {displayNumber}";
+                }
+
+                monitors.Add(new MonitorInfo(deviceName, friendlyName,
+                    monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top,
+                    monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+                    monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top));
+            }
+
+            return true;
+        }
+
         bool enumResult = NativeMethods.EnumDisplayMonitors(
             IntPtr.Zero, 
             IntPtr.Zero, 
-            MonitorEnumProc,
+            AddMonitor,
             IntPtr.Zero
         );
         
@@ -87,41 +112,6 @@ public sealed class MonitorAwareScreenCapturer : IMonitorAwareCapturer, IScreenC
         }
         
         return monitors;
-    }
-
-    private bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref NativeMethods.RECT lprcMonitor, IntPtr dwData)
-    {
-        // Get monitor information
-        var monitorInfo = new NativeMethods.MONITORINFOEX();
-        monitorInfo.cbSize = Marshal.SizeOf<NativeMethods.MONITORINFOEX>();
-        
-        if (NativeMethods.GetMonitorInfo(hMonitor, ref monitorInfo))
-        {
-            // Create a friendly name from the device name
-            string deviceName = monitorInfo.szDevice.TrimEnd((char)0);
-            string friendlyName = deviceName;
-            
-            // Try to make it more user-friendly
-            if (deviceName.StartsWith("\\\\.\\DISPLAY", StringComparison.OrdinalIgnoreCase))
-            {
-                if (int.TryParse(deviceName.Substring("\\\\.\\DISPLAY".Length), out int displayNum))
-                {
-                    friendlyName = $"Monitor {displayNum}";
-                }
-            }
-            
-            // Add the monitor
-            monitors.Add(new MonitorInfo(
-                deviceName,
-                friendlyName,
-                monitorInfo.rcMonitor.left,
-                monitorInfo.rcMonitor.top,
-                monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
-                monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top
-            ));
-        }
-        
-        return true; // Continue enumeration
     }
 
     private CapturedFrame CaptureFrameFromMonitor(MonitorInfo monitor)
@@ -266,7 +256,7 @@ public sealed class MonitorAwareScreenCapturer : IMonitorAwareCapturer, IScreenC
             public int biHeight;
             public ushort biPlanes;
             public ushort biBitCount;
-            public int biCompression;
+            public uint biCompression;
             public uint biSizeImage;
             public int biXPelsPerMeter;
             public int biYPelsPerMeter;
