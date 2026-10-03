@@ -288,11 +288,137 @@ const dictionaries = {
       reject: "Reddet",
     },
     shop: {
-      title: "Mağaza",
-      comingSoonTitle: "Çok Yakında...",
-      comingSoonBody:
-        "Ağ güvenliği ve akıllı ev donanımları mağazamızı hazırlıyoruz. Yeni nesil güvenlik kameraları ve kurulum hizmetleriyle çok yakında burada.",
-    },
+      "title": "Harry Villegas — Lüks Erkek Giyim Mağazası",
+      "brandName": "Harry Villegas",
+      "tagline": "Haute Couture & Exclusive Men's Fashion",
+      "comingSoonTitle": "Erkek Modasında Zamansız Şıklık — Çok Yakında Açılıyor",
+      "comingSoonBody": "İtalyan kumaşlar, özel dikim takım elbiseler, kaşmir kabanlar ve prestijli erkek aksesuarlarından oluşan Harry Villegas koleksiyonu çok yakında online mağazamızda ve Nişantaşı şubemizde.",
+      "heroBadge": "Lüks Erkek Giyim Koleksiyonu",
+      "heroTitle": "Harry Villegas",
+      "heroSubtitle": "Modern Erkeğin Şıklık ve Zarafet İmzası",
+      "countdownTitle": "Büyük Açılışa Kalan Süre",
+      "days": "Gün",
+      "hours": "Saat",
+      "minutes": "Dakika",
+      "seconds": "Saniye",
+      "newsletterTitle": "VIP Açılış Davetiyesi & %15 İndirim",
+      "newsletterSubtitle": "Açılış gününe özel sürpriz indirim kodu ve ilk koleksiyonu önceden inceleme ayrıcalığı için e-bültenimize kaydolun.",
+      "emailPlaceholder": "E-posta adresinizi girin...",
+      "subscribeBtn": "VIP Erişime Katıl",
+      "successMsg": "VIP listemize başarıyla kaydoldunuz! Açılış kuponunuz e-postanıza gönderilecektir.",
+      "collectionsTitle": "Öne Çıkan Koleksiyonlar",
+      "collectionsSubtitle": "İtalyan zanaat anlayışı, terzi el işçiliği ve zamansız tasarımlar.",
+      "collections": [
+            {
+                  "id": "suits",
+                  "name": "Takım Elbise & Smoking",
+                  "desc": "%100 İtalyan Yünü, Süper 150s kumaşlar ve kusursuz özel dikim kalıplar.",
+                  "badge": "Bespoke / Tailored",
+                  "tag": "Süper 150s Yün"
+            },
+            {
+                  "id": "outerwear",
+                  "name": "Kaşmir Kaban & Dış Giyim",
+                  "desc": "Soğuk günlerde şıklığından ödün vermeyenler için saf kaşmir ve kruvaze kabanlar.",
+                  "badge": "Luxury Outerwear",
+                  "tag": "%100 Saf Kaşmir"
+            },
+            {
+                  "id": "shirts",
+                  "name": "Özel Dikim Gömlekler",
+                  "desc": "Mısır pamuğundan üretilen, sedef düğmeli ve kolay ütülenen prestij gömlekler.",
+                  "badge": "Egyptian Cotton",
+                  "tag": "Sedef Düğmeli"
+            },
+            {
+                  "id": "footwear",
+                  "name": "Deri Ayakkabı & Aksesuar",
+                  "desc": "El yapımı İtalyan deri kösele ayakkabılar, ipek kravatlar ve kol düğmeleri.",
+                  "badge": "Handcrafted Leather",
+                  "tag": "El İşçiliği"
+            }
+      ],
+      "featuredTitle": "Gelecek Koleksiyondan Ön İzleme",
+      "quickLook": "İncele",
+      "close": "Kapat",
+      "products": [
+            {
+                  "id": "prod-1",
+                  "name": "Milano Süper 150s İtalyan Yün Takım Elbise",
+                  "category": "Takım Elbise",
+                  "price": "34.500 ₺",
+                  "fabric": "%100 Süper 150s İtalyan Yünü",
+                  "details": "Kruvaze Yaka, İpek Astar, Özel Dikim Slim-Fit Kalıp.",
+                  "badge": "Bestseller Preview"
+            },
+            {
+                  "id": "prod-2",
+                  "name": "Roma Saf Kaşmir Kruvaze Kaban",
+                  "category": "Dış Giyim",
+                  "price": "42.000 ₺",
+                  "fabric": "%100 Saf Kaşmir",
+                  "details": "Kruvaze kesim, deve tüyü tonu, boynuz düğmeler.",
+                  "badge": "Limited Edition"
+            },
+            {
+                  "id": "prod-3",
+                  "name": "Venedik Mısır Pamuğu Beyaz Ata Yaka Gömlek",
+                  "category": "Gömlek",
+                  "price": "8.900 ₺",
+                  "fabric": "%100 Giza Mısır Pamuğu",
+                  "details": "Sedef düğmeler, manşetli kollar, leke tutmaz doku.",
+                  "badge": "Essential"
+            },
+            {
+                  "id": "prod-4",
+                  "name": "Floransa El Yapımı Deri Oxford Ayakkabı",
+                  "category": "Ayakkabı",
+                  "price": "18.500 ₺",
+                  "fabric": "Hakiki Dana Derisi & Kösele Taban",
+                  "details": "Goodyear welted dikiş teknolojisi, bordo ve siyah seçenekleri.",
+                  "badge": "Handmade Italy"
+            }
+      ],
+      "brandValuesTitle": "Neden Harry Villegas?",
+      "brandValues": [
+            {
+                  "title": "İtalyan Kumaş Kalitesi",
+                  "desc": "Sadece Biella ve Como bölgesinden ithal edilen en kaliteli kumaşlar kullanılır."
+            },
+            {
+                  "title": "Usta Terzi İşçiliği",
+                  "desc": "Her bir parça tecrübeli ustaların elinde hassas dikişlerle şekillenir."
+            },
+            {
+                  "title": "Kişiye Özel Kalıp & Randevu",
+                  "desc": "Mağazamızda özel dikim randevusu ile vücudunuza kusursuz uyan tasarımlar."
+            },
+            {
+                  "title": "Zamansız Erkek Modası",
+                  "desc": "Gelip geçici trendler yerine yıllarca gardırobunuzun baş tacı olacak şıklık."
+            }
+      ],
+      "faqTitle": "Sıkça Sorulan Sorular",
+      "faqs": [
+            {
+                  "q": "Mağazanız ne zaman açılacak?",
+                  "a": "Harry Villegas online mağazamız ve Nişantaşı flagship showroom'umuz çok yakında kapılarını açıyor. VIP e-bültene katılarak kesin açılış tarihinden ilk siz haberdar olabilirsiniz."
+            },
+            {
+                  "q": "Özel dikim (Bespoke) hizmetiniz var mı?",
+                  "a": "Evet. Nişantaşı mağazamızda uzman terzilerimiz eşliğinde randevulu özel dikim hizmeti sunuyoruz."
+            },
+            {
+                  "q": "Kargo ve teslimat koşulları nelerdir?",
+                  "a": "Açılışımıza özel tüm Türkiye içi siparişlerde ücretsiz sigortalı kargo imkanı sunulacaktır."
+            }
+      ],
+      "storeTitle": "Flagship Showroom & İletişim",
+      "storeAddress": "Abdi İpekçi Caddesi No: 42, Nişantaşı / İstanbul",
+      "onlineStoreNote": "Türkiye ve Dünya Geneline Online Gönderim",
+      "whatsappBtn": "WhatsApp İletişim Line",
+      "emailBtn": "E-posta Gönder"
+},
   },
   en: {
     a11y: {
@@ -578,11 +704,137 @@ const dictionaries = {
       reject: "Reject",
     },
     shop: {
-      title: "Shop",
-      comingSoonTitle: "Coming Soon...",
-      comingSoonBody:
-        "We're building our network security and smart home hardware shop. Next-gen security cameras and installation services, launching soon.",
-    },
+      "title": "Harry Villegas — Luxury Men's Wear Store",
+      "brandName": "Harry Villegas",
+      "tagline": "Haute Couture & Exclusive Men's Fashion",
+      "comingSoonTitle": "Timeless Elegance in Men's Fashion — Opening Soon",
+      "comingSoonBody": "The Harry Villegas collection featuring Italian fabrics, tailored suits, cashmere overcoats and luxury men's accessories is coming soon to our online store and flagship boutique.",
+      "heroBadge": "Luxury Men's Wear Collection",
+      "heroTitle": "Harry Villegas",
+      "heroSubtitle": "The Signature of Elegance & Sophistication for Modern Men",
+      "countdownTitle": "Countdown to Grand Opening",
+      "days": "Days",
+      "hours": "Hours",
+      "minutes": "Minutes",
+      "seconds": "Seconds",
+      "newsletterTitle": "VIP Opening Invitation & 15% Off",
+      "newsletterSubtitle": "Subscribe to our VIP newsletter for launch invitations, exclusive discount codes and early preview access.",
+      "emailPlaceholder": "Enter your email address...",
+      "subscribeBtn": "Join VIP Access",
+      "successMsg": "You have joined our VIP list! Your launch discount code will be sent to your email.",
+      "collectionsTitle": "Featured Collections",
+      "collectionsSubtitle": "Italian craftsmanship, bespoke tailoring and timeless menswear design.",
+      "collections": [
+            {
+                  "id": "suits",
+                  "name": "Tailored Suits & Tuxedos",
+                  "desc": "100% Italian Wool, Super 150s fabrics and flawless bespoke tailoring.",
+                  "badge": "Bespoke / Tailored",
+                  "tag": "Super 150s Wool"
+            },
+            {
+                  "id": "outerwear",
+                  "name": "Cashmere Overcoats & Outerwear",
+                  "desc": "Pure cashmere double-breasted overcoats designed for refined elegance.",
+                  "badge": "Luxury Outerwear",
+                  "tag": "100% Pure Cashmere"
+            },
+            {
+                  "id": "shirts",
+                  "name": "Bespoke Dress Shirts",
+                  "desc": "Egyptian cotton dress shirts with mother-of-pearl buttons and easy-iron finish.",
+                  "badge": "Egyptian Cotton",
+                  "tag": "Mother of Pearl"
+            },
+            {
+                  "id": "footwear",
+                  "name": "Leather Shoes & Accessories",
+                  "desc": "Handcrafted Italian leather shoes, pure silk ties and elegant cufflinks.",
+                  "badge": "Handcrafted Leather",
+                  "tag": "Italian Handcraft"
+            }
+      ],
+      "featuredTitle": "Exclusive Collection Preview",
+      "quickLook": "Quick View",
+      "close": "Close",
+      "products": [
+            {
+                  "id": "prod-1",
+                  "name": "Milano Super 150s Italian Wool Suit",
+                  "category": "Tailored Suits",
+                  "price": "$1,150",
+                  "fabric": "100% Super 150s Italian Wool",
+                  "details": "Peak Lapel, Silk Lining, Tailored Slim-Fit Cut.",
+                  "badge": "Bestseller Preview"
+            },
+            {
+                  "id": "prod-2",
+                  "name": "Roma Pure Cashmere Double-Breasted Coat",
+                  "category": "Outerwear",
+                  "price": "$1,400",
+                  "fabric": "100% Pure Cashmere",
+                  "details": "Double-breasted cut, camel tone, real horn buttons.",
+                  "badge": "Limited Edition"
+            },
+            {
+                  "id": "prod-3",
+                  "name": "Venice Egyptian Cotton Wing-Tip Shirt",
+                  "category": "Shirts",
+                  "price": "$290",
+                  "fabric": "100% Giza Egyptian Cotton",
+                  "details": "Mother-of-pearl buttons, french cuffs, stain resistant.",
+                  "badge": "Essential"
+            },
+            {
+                  "id": "prod-4",
+                  "name": "Florence Handcrafted Leather Oxford Shoes",
+                  "category": "Footwear",
+                  "price": "$620",
+                  "fabric": "Genuine Calfskin & Leather Sole",
+                  "details": "Goodyear welted stitching, available in burgundy and black.",
+                  "badge": "Handmade Italy"
+            }
+      ],
+      "brandValuesTitle": "Why Harry Villegas?",
+      "brandValues": [
+            {
+                  "title": "Italian Fabric Quality",
+                  "desc": "Woven exclusively from Biella and Como mills in Italy."
+            },
+            {
+                  "title": "Master Tailoring",
+                  "desc": "Handcrafted by experienced master tailors with meticulous attention to detail."
+            },
+            {
+                  "title": "Bespoke Fitting & Appointments",
+                  "desc": "Personal fitting appointments in our flagship boutique."
+            },
+            {
+                  "title": "Timeless Menswear",
+                  "desc": "Enduring luxury styles built to surpass fleeting trends."
+            }
+      ],
+      "faqTitle": "Frequently Asked Questions",
+      "faqs": [
+            {
+                  "q": "When will the store open?",
+                  "a": "Our online boutique and flagship store are opening very soon. Join our VIP newsletter to receive the exact launch notification."
+            },
+            {
+                  "q": "Do you offer bespoke tailored fittings?",
+                  "a": "Yes. We offer personal bespoke fitting appointments with our master tailors at our boutique."
+            },
+            {
+                  "q": "What are the shipping details?",
+                  "a": "Complimentary insured worldwide express shipping will be offered during our launch period."
+            }
+      ],
+      "storeTitle": "Flagship Showroom & Contact",
+      "storeAddress": "Abdi Ipekci Avenue No: 42, Nisantasi / Istanbul",
+      "onlineStoreNote": "Worldwide & National Online Express Shipping",
+      "whatsappBtn": "WhatsApp Care Line",
+      "emailBtn": "Send Email"
+},
   },
   de: {
     a11y: {
@@ -871,11 +1123,137 @@ const dictionaries = {
       reject: "Ablehnen",
     },
     shop: {
-      title: "Shop",
-      comingSoonTitle: "Bald verfügbar...",
-      comingSoonBody:
-        "Wir bauen unseren Shop für Netzwerksicherheit und Smart-Home-Hardware auf. Sicherheitskameras der nächsten Generation und Installationsservices, bald verfügbar.",
-    },
+      "title": "Harry Villegas — Luxus-Herrenmodegeschäft",
+      "brandName": "Harry Villegas",
+      "tagline": "Haute Couture & Exklusive Herrenmode",
+      "comingSoonTitle": "Zeitlose Eleganz in der Herrenmode — Eröffnung demnächst",
+      "comingSoonBody": "Die Harry Villegas Kollektion mit italienischen Stoffen, maßgeschneiderten Anzügen, Kaschmirmänteln und exklusiven Accessoires öffnet bald online und in unserer Boutique.",
+      "heroBadge": "Luxus-Herrenmode-Kollektion",
+      "heroTitle": "Harry Villegas",
+      "heroSubtitle": "Die Signatur für Eleganz und Stil des modernen Mannes",
+      "countdownTitle": "Countdown zur Eröffnung",
+      "days": "Tage",
+      "hours": "Stunden",
+      "minutes": "Minuten",
+      "seconds": "Sekunden",
+      "newsletterTitle": "VIP-Eröffnungseinladung & 15% Rabatt",
+      "newsletterSubtitle": "Abonnieren Sie unseren VIP-Newsletter für Einladungen, Rabattcodes und exklusiven Vorabzugang.",
+      "emailPlaceholder": "Ihre E-Mail-Adresse...",
+      "subscribeBtn": "VIP-Zugang beitreten",
+      "successMsg": "Sie wurden erfolgreich zur VIP-Liste hinzugefügt!",
+      "collectionsTitle": "Ausgewählte Kollektionen",
+      "collectionsSubtitle": "Italienische Handwerkskunst, Maßschneiderei und zeitloses Design.",
+      "collections": [
+            {
+                  "id": "suits",
+                  "name": "Maßanzüge & Smokings",
+                  "desc": "100% italienische Wolle, Super 150s Stoffe und perfekte Passform.",
+                  "badge": "Bespoke / Tailored",
+                  "tag": "Super 150s Wolle"
+            },
+            {
+                  "id": "outerwear",
+                  "name": "Kaschmirmäntel & Jacken",
+                  "desc": "Reiner Kaschmir und zweireihige Mäntel für höchste Ansprüche.",
+                  "badge": "Luxury Outerwear",
+                  "tag": "100% Reiner Kaschmir"
+            },
+            {
+                  "id": "shirts",
+                  "name": "Maßhemden",
+                  "desc": "Ägyptische Baumwolle mit Perlmuttknöpfen.",
+                  "badge": "Egyptian Cotton",
+                  "tag": "Perlmuttknöpfe"
+            },
+            {
+                  "id": "footwear",
+                  "name": "Lederschuhe & Accessoires",
+                  "desc": "Handgefertigte italienische Lederschuhe und Seidenkrawatten.",
+                  "badge": "Handcrafted Leather",
+                  "tag": "Italienische Handarbeit"
+            }
+      ],
+      "featuredTitle": "Vorschau auf die kommende Kollektion",
+      "quickLook": "Schnellansicht",
+      "close": "Schließen",
+      "products": [
+            {
+                  "id": "prod-1",
+                  "name": "Milano Super 150s Italienischer Wollanzug",
+                  "category": "Maßanzüge",
+                  "price": "1.150 €",
+                  "fabric": "100% Super 150s Italienische Wolle",
+                  "details": "Spitzrevers, Seidenfutter, körperbetonter Schnitt.",
+                  "badge": "Bestseller Preview"
+            },
+            {
+                  "id": "prod-2",
+                  "name": "Roma Reiner Kaschmir-Zweireiher-Mantel",
+                  "category": "Oberbekleidung",
+                  "price": "1.400 €",
+                  "fabric": "100% Reiner Kaschmir",
+                  "details": "Zweireihiger Schnitt, Kamelton, Echthornknöpfe.",
+                  "badge": "Limited Edition"
+            },
+            {
+                  "id": "prod-3",
+                  "name": "Venedig Ägyptische Baumwollhemd",
+                  "category": "Hemden",
+                  "price": "290 €",
+                  "fabric": "100% Giza Ägyptische Baumwolle",
+                  "details": "Perlmuttknöpfe, Umschlagmanschetten.",
+                  "badge": "Essential"
+            },
+            {
+                  "id": "prod-4",
+                  "name": "Florenz Handgefertigte Oxford-Schuhe",
+                  "category": "Schuhe",
+                  "price": "620 €",
+                  "fabric": "Echtes Kalbsleder & Ledersohle",
+                  "details": "Goodyear-welted Naht, verfügbar in Bordeaux und Schwarz.",
+                  "badge": "Handmade Italy"
+            }
+      ],
+      "brandValuesTitle": "Warum Harry Villegas?",
+      "brandValues": [
+            {
+                  "title": "Italienische Stoffqualität",
+                  "desc": "Exklusiv gewebt in Biella und Como, Italien."
+            },
+            {
+                  "title": "Meisterhafte Schneiderkunst",
+                  "desc": "Von erfahrenen Schneidern in Handarbeit gefertigt."
+            },
+            {
+                  "title": "Maßanfertigung & Termine",
+                  "desc": "Persönliche Anprobetermine in unserer Boutique."
+            },
+            {
+                  "title": "Zeitlose Herrenmode",
+                  "desc": "Beständige Eleganz über wechselnde Trends hinweg."
+            }
+      ],
+      "faqTitle": "Häufig gestellte Fragen",
+      "faqs": [
+            {
+                  "q": "Wann eröffnet der Store?",
+                  "a": "Unsere Online-Boutique und der Flagship Store eröffnen sehr bald. Abonnieren Sie unseren Newsletter für Updates."
+            },
+            {
+                  "q": "Bieten Sie Maßschneiderei an?",
+                  "a": "Ja, wir bieten persönliche Termine für Maßanfertigungen in unserer Boutique an."
+            },
+            {
+                  "q": "Wie sind die Versandbedingungen?",
+                  "a": "Zur Eröffnung bieten wir kostenlosen versicherten Expressversand an."
+            }
+      ],
+      "storeTitle": "Flagship Showroom & Kontakt",
+      "storeAddress": "Abdi Ipekci Straße Nr. 42, Nisantasi / Istanbul",
+      "onlineStoreNote": "Weltweiter Online-Expressversand",
+      "whatsappBtn": "WhatsApp Kundenservice",
+      "emailBtn": "E-Mail Senden"
+},
   },
   fr: {
     a11y: {
@@ -1164,11 +1542,137 @@ const dictionaries = {
       reject: "Refuser",
     },
     shop: {
-      title: "Boutique",
-      comingSoonTitle: "Bientôt disponible...",
-      comingSoonBody:
-        "Nous préparons notre boutique de matériel de sécurité réseau et domotique. Caméras de sécurité nouvelle génération et services d'installation, bientôt disponibles.",
-    },
+      "title": "Harry Villegas — Boutique de Mode Masculine de Luxe",
+      "brandName": "Harry Villegas",
+      "tagline": "Haute Couture & Exclusive Men's Fashion",
+      "comingSoonTitle": "L'Élégance Intemporelle Masculine — Ouverture Prochaine",
+      "comingSoonBody": "La collection Harry Villegas combinant tissus italiens, costumes sur mesure, manteaux en cachemire et accessoires de luxe arrive très bientôt.",
+      "heroBadge": "Collection Homme de Luxe",
+      "heroTitle": "Harry Villegas",
+      "heroSubtitle": "La Signature de l'Élégance pour l'Homme Moderne",
+      "countdownTitle": "Compte à rebours avant l'Ouverture",
+      "days": "Jours",
+      "hours": "Heures",
+      "minutes": "Minutes",
+      "seconds": "Secondes",
+      "newsletterTitle": "Invitation VIP & -15% de Réduction",
+      "newsletterSubtitle": "Inscrivez-vous à notre newsletter VIP pour recevoir une invitation d'ouverture et un code promo exclusif.",
+      "emailPlaceholder": "Votre adresse e-mail...",
+      "subscribeBtn": "Rejoindre l'Accès VIP",
+      "successMsg": "Vous avez rejoint la liste VIP avec succès !",
+      "collectionsTitle": "Collections En Vedette",
+      "collectionsSubtitle": "Artisanat italien, coupe sur mesure et design masculin intemporel.",
+      "collections": [
+            {
+                  "id": "suits",
+                  "name": "Costumes & Smokings sur Mesure",
+                  "desc": "100% Laine Italienne Super 150s et coupes irréprochables.",
+                  "badge": "Bespoke / Tailored",
+                  "tag": "Laine Super 150s"
+            },
+            {
+                  "id": "outerwear",
+                  "name": "Manteaux Cachemire & Vestes",
+                  "desc": "Pure cachemire et manteaux croisés pour une élégance absolue.",
+                  "badge": "Luxury Outerwear",
+                  "tag": "100% Pur Cachemire"
+            },
+            {
+                  "id": "shirts",
+                  "name": "Chemises Sur Mesure",
+                  "desc": "Coton égyptien et boutons en nacre synthétisant le chic masculin.",
+                  "badge": "Egyptian Cotton",
+                  "tag": "Boutons Nacre"
+            },
+            {
+                  "id": "footwear",
+                  "name": "Chaussures Cuir & Accessoires",
+                  "desc": "Chaussures en cuir italien fait main et cravates en soie pur.",
+                  "badge": "Handcrafted Leather",
+                  "tag": "Artisanat Italien"
+            }
+      ],
+      "featuredTitle": "Aperçu de la Prochaine Collection",
+      "quickLook": "Aperçu Rapide",
+      "close": "Fermer",
+      "products": [
+            {
+                  "id": "prod-1",
+                  "name": "Costume Milano Laine Italienne Super 150s",
+                  "category": "Costumes Sur Mesure",
+                  "price": "1 150 €",
+                  "fabric": "100% Laine Italienne Super 150s",
+                  "details": "Revers à pointe, doublure soie, coupe ajustée.",
+                  "badge": "Bestseller Preview"
+            },
+            {
+                  "id": "prod-2",
+                  "name": "Manteau Croisé Roma Pur Cachemire",
+                  "category": "Manteaux",
+                  "price": "1 400 €",
+                  "fabric": "100% Pur Cachemire",
+                  "details": "Coupe croisée, teinte camel, boutons en corne véritable.",
+                  "badge": "Limited Edition"
+            },
+            {
+                  "id": "prod-3",
+                  "name": "Chemise Col Cassé Venise Coton Égyptien",
+                  "category": "Chemises",
+                  "price": "290 €",
+                  "fabric": "100% Coton Égyptien Giza",
+                  "details": "Boutons en nacre, poignets mousquetaire.",
+                  "badge": "Essential"
+            },
+            {
+                  "id": "prod-4",
+                  "name": "Chaussures Oxford Florence Cuir Fait Main",
+                  "category": "Chaussures",
+                  "price": "620 €",
+                  "fabric": "Cuir de Veau Véritable & Semelle Cuir",
+                  "details": "Couture Goodyear welted, disponible en bordeaux et noir.",
+                  "badge": "Handmade Italy"
+            }
+      ],
+      "brandValuesTitle": "Pourquoi Harry Villegas ?",
+      "brandValues": [
+            {
+                  "title": "Qualité des Tissus Italiens",
+                  "desc": "Tissés exclusivement dans les régions de Biella et Côme."
+            },
+            {
+                  "title": "Maître Tailleur",
+                  "desc": "Fabriqué à la main par des maîtres tailleurs expérimentés."
+            },
+            {
+                  "title": "Sur Mesure & Rendez-vous",
+                  "desc": "Rendez-vous personnalisé dans notre boutique de luxe."
+            },
+            {
+                  "title": "Élégance Intemporelle",
+                  "desc": "Des créations durables conçues pour traverser le temps."
+            }
+      ],
+      "faqTitle": "Foire Aux Questions",
+      "faqs": [
+            {
+                  "q": "Quand la boutique ouvrira-t-elle ?",
+                  "a": "Notre boutique en ligne et showroom ouvriront très bientôt. Inscrivez-vous à la newsletter."
+            },
+            {
+                  "q": "Proposez-vous un service sur mesure ?",
+                  "a": "Oui, nous proposons des rendez-vous personnalisés sur mesure dans notre boutique."
+            },
+            {
+                  "q": "Quelles sont les conditions de livraison ?",
+                  "a": "Livraison express assurée gratuite durant la période de lancement."
+            }
+      ],
+      "storeTitle": "Showroom Flagship & Contact",
+      "storeAddress": "Rue Abdi Ipekci No: 42, Nisantasi / Istanbul",
+      "onlineStoreNote": "Expédition Express Internationale et Nationale",
+      "whatsappBtn": "Service Client WhatsApp",
+      "emailBtn": "Envoyer un E-mail"
+},
   },
   es: {
     a11y: {
@@ -1457,11 +1961,137 @@ const dictionaries = {
       reject: "Rechazar",
     },
     shop: {
-      title: "Tienda",
-      comingSoonTitle: "Próximamente...",
-      comingSoonBody:
-        "Estamos preparando nuestra tienda de seguridad de red y hardware para el hogar inteligente. Cámaras de seguridad de nueva generación y servicios de instalación, muy pronto.",
-    },
+      "title": "Harry Villegas — Tienda de Moda Masculina de Lujo",
+      "brandName": "Harry Villegas",
+      "tagline": "Haute Couture & Exclusive Men's Fashion",
+      "comingSoonTitle": "Elegancia Intemporal en Moda Masculina — Apertura Próxima",
+      "comingSoonBody": "La colección Harry Villegas de tejidos italianos, trajes a medida, abrigos de cachemira y accesorios de lujo llega pronto a nuestra tienda online y boutique.",
+      "heroBadge": "Colección Masculina de Lujo",
+      "heroTitle": "Harry Villegas",
+      "heroSubtitle": "La Firma de Elegancia y Distinción para el Hombre Moderno",
+      "countdownTitle": "Cuenta Regresiva para la Gran Apertura",
+      "days": "Días",
+      "hours": "Horas",
+      "minutes": "Minutos",
+      "seconds": "Segundos",
+      "newsletterTitle": "Invitación VIP & 15% de Descuento",
+      "newsletterSubtitle": "Suscríbete a nuestra newsletter VIP para recibir invitaciones y un código de descuento exclusivo.",
+      "emailPlaceholder": "Tu correo electrónico...",
+      "subscribeBtn": "Unirme al Acceso VIP",
+      "successMsg": "¡Te has unido con éxito a nuestra lista VIP!",
+      "collectionsTitle": "Colecciones Destacadas",
+      "collectionsSubtitle": "Artesanía italiana, sastrería a medida y diseño masculino atemporal.",
+      "collections": [
+            {
+                  "id": "suits",
+                  "name": "Trajes a Medida & Esmoquin",
+                  "desc": "100% Lana Italiana Super 150s y cortes de sastrería impecables.",
+                  "badge": "Bespoke / Tailored",
+                  "tag": "Lana Super 150s"
+            },
+            {
+                  "id": "outerwear",
+                  "name": "Abrigos de Cachemira & Chaquetas",
+                  "desc": "Pura cachemira y abrigos cruzados para un estilo distinguido.",
+                  "badge": "Luxury Outerwear",
+                  "tag": "100% Pura Cachemira"
+            },
+            {
+                  "id": "shirts",
+                  "name": "Camisas a Medida",
+                  "desc": "Algodón egipcio con botones de madreperla.",
+                  "badge": "Egyptian Cotton",
+                  "tag": "Botones Madreperla"
+            },
+            {
+                  "id": "footwear",
+                  "name": "Zapatos de Cuero & Accesorios",
+                  "desc": "Zapatos de cuero italiano hechos a mano y corbatas de seda pura.",
+                  "badge": "Handcrafted Leather",
+                  "tag": "Artesanía Italiana"
+            }
+      ],
+      "featuredTitle": "Vistazo a la Próxima Colección",
+      "quickLook": "Vista Rápida",
+      "close": "Cerrar",
+      "products": [
+            {
+                  "id": "prod-1",
+                  "name": "Traje Milano Lana Italiana Super 150s",
+                  "category": "Trajes a Medida",
+                  "price": "1.150 €",
+                  "fabric": "100% Lana Italiana Super 150s",
+                  "details": "Solapa en punta, forro de seda, corte ajustado a medida.",
+                  "badge": "Bestseller Preview"
+            },
+            {
+                  "id": "prod-2",
+                  "name": "Abrigo Cruzado Roma Pura Cachemira",
+                  "category": "Abrigos",
+                  "price": "1.400 €",
+                  "fabric": "100% Pura Cachemira",
+                  "details": "Corte cruzado, tono camel, botones de cuerno auténtico.",
+                  "badge": "Limited Edition"
+            },
+            {
+                  "id": "prod-3",
+                  "name": "Camisa Venecia Algodón Egipcio",
+                  "category": "Camisas",
+                  "price": "290 €",
+                  "fabric": "100% Algodón Egipcio Giza",
+                  "details": "Botones de madreperla, puño doble para gemelos.",
+                  "badge": "Essential"
+            },
+            {
+                  "id": "prod-4",
+                  "name": "Zapatos Oxford Florencia Cuir Artesanal",
+                  "category": "Calzado",
+                  "price": "620 €",
+                  "fabric": "Cuero de Ternero & Suela de Cuero",
+                  "details": "Costura Goodyear welted, disponible en burdeos y negro.",
+                  "badge": "Handmade Italy"
+            }
+      ],
+      "brandValuesTitle": "¿Por qué Harry Villegas?",
+      "brandValues": [
+            {
+                  "title": "Calidad de Tejidos Italianos",
+                  "desc": "Tejidos exclusivamente en Biella y Como, Italia."
+            },
+            {
+                  "title": "Maestría en Sastrería",
+                  "desc": "Confeccionado a mano por sastres artesanos con gran experiencia."
+            },
+            {
+                  "title": "Sastrería a Medida & Citas",
+                  "desc": "Citas personalizadas en nuestra boutique de lujo."
+            },
+            {
+                  "title": "Moda Masculina Atemporal",
+                  "desc": "Elegancia duradera que trasciende las modas pasajeras."
+            }
+      ],
+      "faqTitle": "Preguntas Frecuentes",
+      "faqs": [
+            {
+                  "q": "¿Cuándo abrirá la tienda?",
+                  "a": "Nuestra tienda online y showroom abrirán muy pronto. Únete a nuestra newsletter para enterarte."
+            },
+            {
+                  "q": "¿Ofrecen servicio de sastrería a medida?",
+                  "a": "Sí, ofrecemos citas de sastrería a medida con nuestros maestros sastres."
+            },
+            {
+                  "q": "¿Cuáles son las condiciones de envío?",
+                  "a": "Envío express asegurado gratuito durante el periodo de lanzamiento."
+            }
+      ],
+      "storeTitle": "Showroom Flagship & Contacto",
+      "storeAddress": "Calle Abdi Ipekci No: 42, Nisantasi / Estambul",
+      "onlineStoreNote": "Envíos Express a Todo el Mundo y Nacionales",
+      "whatsappBtn": "Atención por WhatsApp",
+      "emailBtn": "Enviar Correo"
+},
   },
 } as const;
 
