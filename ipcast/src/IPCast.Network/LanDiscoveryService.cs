@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using IPCast.Shared;
 
 namespace IPCast.Network;
@@ -16,6 +17,7 @@ public sealed class LanDiscoveryService : IDisposable
     public const int DefaultDiscoveryPort = 48700;
     private const string RequestPrefix = "IPCAST-WHOIS:";
     private const string ResponsePrefix = "IPCAST-HERE:";
+    private const string DevicePrefix = "IPCAST-DEVICE:";
 
     private readonly DeviceId _localDeviceId;
     private readonly int _tcpPort;
@@ -40,6 +42,8 @@ public sealed class LanDiscoveryService : IDisposable
 
     private async Task RunResponderAsync(CancellationToken ct)
     {
+        var window = Environment.TickCount64;
+        var responses = 0;
         while (!ct.IsCancellationRequested)
         {
             UdpReceiveResult result;
@@ -52,7 +56,20 @@ public sealed class LanDiscoveryService : IDisposable
                 return;
             }
 
+            if (result.Buffer.Length > 64) continue;
+            if (Environment.TickCount64 - window >= 1000) { window = Environment.TickCount64; responses = 0; }
+            if (responses >= 20) continue;
             var text = Encoding.UTF8.GetString(result.Buffer);
+            if (text == RequestPrefix + "*")
+            {
+                responses++;
+                var info = new DiscoveredDevice(_localDeviceId.Raw, Environment.MachineName,
+                    System.Runtime.InteropServices.RuntimeInformation.OSDescription, "", _tcpPort);
+                var packet = Encoding.UTF8.GetBytes(DevicePrefix + JsonSerializer.Serialize(info));
+                try { await _responder.SendAsync(packet, result.RemoteEndPoint, ct).ConfigureAwait(false); }
+                catch (Exception ex) when (ex is SocketException or OperationCanceledException or ObjectDisposedException) { }
+                continue;
+            }
             if (!text.StartsWith(RequestPrefix, StringComparison.Ordinal))
             {
                 continue;
@@ -64,6 +81,7 @@ public sealed class LanDiscoveryService : IDisposable
             }
 
             var response = Encoding.UTF8.GetBytes($"{ResponsePrefix}{_localDeviceId.Raw}:{_tcpPort}");
+            responses++;
             try
             {
                 await _responder.SendAsync(response, result.RemoteEndPoint, ct).ConfigureAwait(false);
@@ -113,7 +131,7 @@ public sealed class LanDiscoveryService : IDisposable
                 }
 
                 var parts = text[ResponsePrefix.Length..].Split(':');
-                if (parts.Length == 2 && parts[0] == targetId.Raw && int.TryParse(parts[1], out var port))
+                if (parts.Length == 2 && parts[0] == targetId.Raw && int.TryParse(parts[1], out var port) && port is > 0 and <= 65535)
                 {
                     return new IPEndPoint(result.RemoteEndPoint.Address, port);
                 }
@@ -131,4 +149,40 @@ public sealed class LanDiscoveryService : IDisposable
         _responder.Dispose();
         _cts.Dispose();
     }
+
+    public static async Task<IReadOnlyList<DiscoveredDevice>> DiscoverAllAsync(TimeSpan timeout,
+        int discoveryPort = DefaultDiscoveryPort, IPEndPoint? overrideTarget = null, CancellationToken ct = default)
+    {
+        using var client = new UdpClient(AddressFamily.InterNetwork) { EnableBroadcast = true };
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        lifetime.CancelAfter(timeout);
+        var found = new Dictionary<string, DiscoveredDevice>();
+        await client.SendAsync(Encoding.UTF8.GetBytes(RequestPrefix + "*"),
+            overrideTarget ?? new IPEndPoint(IPAddress.Broadcast, discoveryPort), ct).ConfigureAwait(false);
+        try
+        {
+            while (found.Count < 256)
+            {
+                var result = await client.ReceiveAsync(lifetime.Token).ConfigureAwait(false);
+                if (result.Buffer.Length > 4096) continue;
+                var text = Encoding.UTF8.GetString(result.Buffer);
+                if (!text.StartsWith(DevicePrefix, StringComparison.Ordinal)) continue;
+                try
+                {
+                    var device = JsonSerializer.Deserialize<DiscoveredDevice>(text[DevicePrefix.Length..]);
+                    if (device is null || !DeviceId.TryParse(device.DeviceId, out _) || device.Port is < 1 or > 65535 ||
+                        device.Name is null || device.Name.Length > 128 || device.Platform is null || device.Platform.Length > 256) continue;
+                    found[device.DeviceId] = device with { Address = result.RemoteEndPoint.Address.ToString() };
+                }
+                catch (JsonException) { }
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }
+        return found.Values.ToArray();
+    }
+}
+
+public sealed record DiscoveredDevice(string DeviceId, string Name, string Platform, string Address, int Port)
+{
+    public string Description => $"{Name} · {DeviceId} · {Address}:{Port} · {Platform}";
 }

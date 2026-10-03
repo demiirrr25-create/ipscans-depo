@@ -17,7 +17,9 @@ public partial class MainWindow : Window
     private string? _lastSeenClipboardText;
     private SessionChatWindow? _chatWindow;
     private FileManagerWindow? _fileManagerWindow;
+    private TunnelWindow? _tunnelWindow;
     private readonly DispatcherTimer _clipboardPoll = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer _discoveryPoll = new() { Interval = TimeSpan.FromSeconds(30) };
 
     public MainWindow()
     {
@@ -25,6 +27,7 @@ public partial class MainWindow : Window
         Opened += OnOpened;
         Closed += OnClosed;
         _clipboardPoll.Tick += async (_, _) => await PollLocalClipboardAsync();
+        _discoveryPoll.Tick += async (_, _) => { if (DataContext is MainWindowViewModel vm && IsVisible) await vm.RefreshDiscoveredDevicesAsync(); };
     }
 
     private void OnOpened(object? sender, EventArgs e)
@@ -35,6 +38,7 @@ public partial class MainWindow : Window
         }
 
         vm.NetworkService.OnConnectionRequested = request => IncomingConnectionWindow.ShowAsync(this, request);
+        vm.OnRestartRequested = () => SessionActions.ConfirmRestartAsync(this);
         vm.NetworkService.SessionEstablished += session => Dispatcher.UIThread.Post(() => vm.OnSessionEstablished(session));
         vm.OnTrustRequested = async (device, fingerprint, previous) => await Dispatcher.UIThread.InvokeAsync(async () => {
             var dialog = new Window { Title = "Verify remote device", Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -62,6 +66,14 @@ public partial class MainWindow : Window
             return path is null ? FileOfferDecision.Reject("File declined.") : FileOfferDecision.AcceptTo(path);
         });
         vm.PeerClipboardTextReceived += OnPeerClipboardTextReceived;
+        vm.TunnelsReady += tunnels =>
+        {
+            tunnels.Approve = configuration => TunnelWindow.RequestApprovalAsync(this, configuration);
+            var window = new TunnelWindow(tunnels);
+            _tunnelWindow = window;
+            window.Closed += (_, _) => { if (ReferenceEquals(_tunnelWindow, window)) _tunnelWindow = null; };
+            window.Show();
+        };
         vm.RemoteDesktopSessionReady += OnRemoteDesktopSessionReady;
         vm.FileManagerReady += session =>
         {
@@ -83,11 +95,15 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) { vm.StatusMessage = $"Network startup failed: {ex.Message}"; }
         _clipboardPoll.Start();
+        _discoveryPoll.Start();
+        _ = vm.RefreshDiscoveredDevicesAsync();
+        vm.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(vm.IsPeerRecording)) Title = vm.IsPeerRecording ? "IPCast — REC: remote viewer is recording" : "IPCast — Secure Remote Access"; };
     }
 
     private async void OnClosed(object? sender, EventArgs e)
     {
         _clipboardPoll.Stop();
+        _discoveryPoll.Stop();
         if (DataContext is MainWindowViewModel vm)
         {
             await vm.ShutdownAsync();
@@ -137,6 +153,10 @@ public partial class MainWindow : Window
     {
         Dispatcher.UIThread.Post(() => {
             var window = new RemoteScreenWindow(desktop);
+            if (DataContext is MainWindowViewModel toolsVm && toolsVm.Tools is { } tools) window.ConfigureTools(tools);
+            if (_tunnelWindow is { } tunnels) window.EnableTunnels(() => { tunnels.Show(); tunnels.Activate(); });
+            if (DataContext is MainWindowViewModel settings)
+                window.ConfigureRecording(settings.RecordingDirectory, settings.AutomaticRecording);
             if (_fileManagerWindow is { } manager)
             {
                 window.EnableFileManager(() => { manager.Show(); manager.Activate(); });

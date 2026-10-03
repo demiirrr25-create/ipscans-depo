@@ -36,7 +36,7 @@ public sealed class SharedFileSystem
             throw new UnauthorizedAccessException("Use a relative path inside the shared folder.");
         var components = relative.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (components.Any(c => c is "." or ".." || c.StartsWith(".ipcast-", StringComparison.OrdinalIgnoreCase) ||
-            c.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || c.EndsWith(' ') || c.EndsWith('.')))
+            c.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || c.EndsWith(' ') || c.EndsWith('.') || IsReservedName(c)))
             throw new UnauthorizedAccessException("Invalid shared path.");
         if (components.Length == 0 && !allowRoot) throw new UnauthorizedAccessException("The shared root cannot be changed.");
         var result = _root;
@@ -47,6 +47,14 @@ public sealed class SharedFileSystem
             if (File.Exists(result) || Directory.Exists(result)) RejectLink(result);
         }
         return result;
+    }
+
+    private static bool IsReservedName(string name)
+    {
+        var stem = name.Split('.')[0].ToUpperInvariant();
+        return stem is "CON" or "PRN" or "AUX" or "NUL" or "CONIN$" or "CONOUT$" ||
+            stem.Length == 4 && (stem.StartsWith("COM") || stem.StartsWith("LPT")) &&
+            "123456789¹²³".Contains(stem[3]);
     }
 
     private static string Hash(string path)

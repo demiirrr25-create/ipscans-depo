@@ -103,26 +103,7 @@ public sealed class SendInputInjector : IInputInjector
 
     public void SendCharacter(char character)
     {
-        // Send a Unicode character
-        SendSingleInput(new NativeMethods.INPUT
-        {
-            type = INPUT_KEYBOARD,
-            u = new NativeMethods.InputUnion
-            {
-                ki = new NativeMethods.KEYBDINPUT
-                {
-                    wVk = 0,
-                    wScan = 0,
-                    dwFlags = KEYEVENTF_UNICODE,
-                    time = 0,
-                    dwExtraInfo = IntPtr.Zero,
-                    // For Unicode, we put the character in wScan
-                }
-            },
-        });
-        
-        // Actually, for Unicode we need to use a different approach
-        // Let's use the proper Unicode character input
+        // Unicode input uses the UTF-16 code unit in wScan.
         var inputs = new[]
         {
             new NativeMethods.INPUT

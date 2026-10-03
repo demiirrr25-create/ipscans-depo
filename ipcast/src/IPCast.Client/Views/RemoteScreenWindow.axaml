@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:IPCast.Client.Views"
         x:Class="IPCast.Client.Views.RemoteScreenWindow"
         Title="IPCast — Remote Screen"
         Icon="/Assets/ipcast.ico"
@@ -24,10 +25,21 @@
                               AutomationProperties.Name="Display scaling" ToolTip.Tip="Choose how the remote image fits this window" />
                     <Button Classes="toolbar" Content="Information" Click="OnInformationClick"
                             AutomationProperties.Name="Connection information" />
+                    <Button Name="DeviceInfoButton" IsVisible="False" Classes="toolbar" Content="Device" Click="OnDeviceInfoClick" />
+                    <Button Name="RestartButton" IsVisible="False" Classes="toolbar" Content="Restart" Click="OnRestartClick" />
+                    <Button Classes="toolbar" Content="Alt+Tab" Click="OnAltTabClick" />
+                    <Button Classes="toolbar" Content="Windows key" Click="OnWindowsKeyClick" />
+                    <Button Classes="toolbar" Content="Type text" Click="OnTypeTextClick" ToolTip.Tip="Send Unicode text independently of keyboard layout" />
                     <Button Name="ChatButton" IsVisible="False" Classes="toolbar" Content="Chat" Click="OnChatClick"
                             AutomationProperties.Name="Open session chat" />
                     <Button Name="FilesButton" IsVisible="False" Classes="toolbar" Content="Files" Click="OnFilesClick" />
+                    <Button Name="TunnelsButton" IsVisible="False" Classes="toolbar" Content="TCP tunnels" Click="OnTunnelsClick" />
                     <Button Name="RecordButton" IsVisible="False" Classes="toolbar" Content="Record" Click="OnRecordClick" />
+                    <Button Name="AnnotationButton" Classes="toolbar" Content="Annotate" Click="OnAnnotateClick"
+                            ToolTip.Tip="Temporary annotations in your viewer; remote input is paused while drawing." />
+                    <ComboBox Name="AnnotationTool" IsVisible="False" SelectionChanged="OnAnnotationToolChanged" MinWidth="110" />
+                    <TextBox Name="AnnotationText" IsVisible="False" Text="Note" MaxLength="200" Width="120" TextChanged="OnAnnotationTextChanged" />
+                    <Button Name="ClearAnnotationsButton" IsVisible="False" Classes="toolbar" Content="Clear" Click="OnClearAnnotationsClick" />
                     <Button Grid.Column="3" Classes="toolbar" Content="Hide bar" Click="OnToggleToolbarClick"
                             ToolTip.Tip="Hide the toolbar for a cleaner view" AutomationProperties.Name="Hide toolbar" />
                     <Button Grid.Column="4" Name="FullScreenButton" Classes="toolbar" Content="Full screen"
@@ -44,6 +56,7 @@
                 <Image Name="ScreenImage" Stretch="Uniform" StretchDirection="DownOnly" Focusable="True"
                        AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
             </ScrollViewer>
+            <views:AnnotationSurface Name="Annotations" Grid.Row="1" IsVisible="False" />
         </Grid>
 
         <Border Name="InformationPanel" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top"

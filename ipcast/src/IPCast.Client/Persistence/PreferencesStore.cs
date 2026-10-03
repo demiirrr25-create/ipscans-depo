@@ -7,7 +7,10 @@ public sealed record Preferences(
     string RelayAddress = Preferences.DefaultRelayAddress,
     bool ClipboardSync = true,
     string StreamingMode = "Balanced",
-    bool LaunchAtStartup = false)
+    bool LaunchAtStartup = false,
+    string RecordingDirectory = "",
+    bool AutomaticRecording = false,
+    bool AutomaticReconnect = true)
 {
     public const string DefaultRelayAddress = "wss://p01--ipcast-relay--d5n8c99gjxdn.code.run/relay";
 }

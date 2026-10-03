@@ -10,6 +10,7 @@ public static class PermissionProfiles
         "Support" => ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse |
             ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard | ConnectionPermissions.Chat,
         _ => ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse | ConnectionPermissions.ControlKeyboard |
-            ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer | ConnectionPermissions.Chat | ConnectionPermissions.Recording
+            ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer | ConnectionPermissions.Chat | ConnectionPermissions.Recording |
+            ConnectionPermissions.SystemInformation | ConnectionPermissions.RemoteRestart | ConnectionPermissions.TcpTunnel
     };
 }

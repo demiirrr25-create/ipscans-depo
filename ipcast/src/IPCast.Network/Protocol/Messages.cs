@@ -34,6 +34,12 @@ public enum MessageType
     FileSystemRequest = 130,
     FileSystemResponse,
     RecordingState = 140,
+    TunnelPacket = 150,
+    DeviceInformationRequest = 160,
+    DeviceInformationResponse,
+    RestartRequest,
+    RestartResponse,
+    TextInput = 170,
 }
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>

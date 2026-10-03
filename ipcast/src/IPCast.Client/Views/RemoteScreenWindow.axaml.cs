@@ -27,6 +27,13 @@ public partial class RemoteScreenWindow : Window
     private CapturedFrame? _recordingFrame;
     private SessionRecorder? _recorder;
     private bool _recordingTransition;
+    private string _recordingDirectory = "";
+    private bool _autoRecordPending;
+    public void ConfigureRecording(string directory, bool automatic)
+    {
+        _recordingDirectory = directory;
+        _autoRecordPending = automatic && _desktop.CanRecord;
+    }
     private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly HashSet<int> _pressedKeys = [];
     private readonly HashSet<int> _pressedButtons = [];
@@ -39,6 +46,9 @@ public partial class RemoteScreenWindow : Window
     private TimeSpan _lastSample;
     private Action? _openChat;
     private Action? _openFiles;
+    private Action? _openTunnels;
+    public void EnableTunnels(Action open) { _openTunnels = open; TunnelsButton.IsVisible = true; }
+    private void OnTunnelsClick(object? sender, RoutedEventArgs e) => _openTunnels?.Invoke();
     public void EnableFileDrop(Func<IEnumerable<string>, Task> upload)
     {
         DragDrop.SetAllowDrop(ScreenImage, true);
@@ -67,6 +77,8 @@ public partial class RemoteScreenWindow : Window
         _desktop = desktop;
         InitializeComponent();
         RecordButton.IsVisible = desktop.CanRecord;
+        AnnotationTool.ItemsSource = new[] { "Pen", "Arrow", "Rectangle", "Circle", "Text", "Erase" };
+        AnnotationTool.SelectedIndex = 0;
         Closed += async (_, _) => await StopRecordingAsync();
         DisplaySelector.ItemsSource = new[] { "Original", "Fit", "Stretch", "Auto adapt" };
         DisplaySelector.SelectedIndex = 3;
@@ -176,6 +188,23 @@ public partial class RemoteScreenWindow : Window
     {
         Interlocked.Exchange(ref _recordingFrame, frame);
         Interlocked.Exchange(ref _pendingFrame, frame);
+        if (_autoRecordPending)
+        {
+            _autoRecordPending = false;
+            Dispatcher.UIThread.Post(async () =>
+            {
+                if (_closed || _recordingTransition || _recorder is not null) return;
+                _recordingTransition = true;
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(_recordingDirectory) || !Directory.Exists(_recordingDirectory))
+                    { Title = "IPCast — Choose an automatic recording folder in Settings"; return; }
+                    await StartRecordingAsync(Path.Combine(_recordingDirectory, $"IPCast-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.avi"));
+                }
+                catch (Exception ex) { Title = "IPCast — " + ex.Message; await SendSafely(() => _desktop.NotifyRecordingAsync(false)); }
+                finally { _recordingTransition = false; }
+            });
+        }
     }
 
     private async void OnRecordClick(object? sender, RoutedEventArgs e)
@@ -193,17 +222,43 @@ public partial class RemoteScreenWindow : Window
             });
             if (file?.TryGetLocalPath() is not { } path) return;
             if (File.Exists(path)) { Title = "IPCast — choose a new filename for the recording"; return; }
-            await _desktop.NotifyRecordingAsync(true);
-            var recorder = new SessionRecorder(path, () => Volatile.Read(ref _recordingFrame));
-            _recorder = recorder;
-            RecordButton.Content = "REC · Stop";
-            ShowToolbarButton.Content = "REC · Show toolbar";
-            Title = "IPCast — RECORDING";
-            _ = ObserveRecordingAsync(recorder);
+            await StartRecordingAsync(path);
         }
         catch (Exception ex) { Title = "IPCast — " + ex.Message; await SendSafely(() => _desktop.NotifyRecordingAsync(false)); }
         finally { _recordingTransition = false; }
     }
+
+    private async Task StartRecordingAsync(string path)
+    {
+        if (_closed || !_desktop.CanRecord) return;
+        await _desktop.NotifyRecordingAsync(true);
+        var recorder = new SessionRecorder(path, () => Volatile.Read(ref _recordingFrame));
+        _recorder = recorder;
+        RecordButton.Content = "REC · Stop";
+        ShowToolbarButton.Content = "REC · Show toolbar";
+        Title = "IPCast — RECORDING";
+        _ = ObserveRecordingAsync(recorder);
+    }
+
+    private async void OnAnnotateClick(object? sender, RoutedEventArgs e)
+    {
+        await ReleaseInputAsync();
+        var enabled = !Annotations.IsVisible;
+        Annotations.IsVisible = enabled; AnnotationTool.IsVisible = enabled; ClearAnnotationsButton.IsVisible = enabled;
+        AnnotationText.IsVisible = enabled && AnnotationTool.SelectedItem as string == "Text";
+        AnnotationButton.Content = enabled ? "Stop annotating" : "Annotate";
+        if (!enabled) Annotations.Clear();
+    }
+    private void OnAnnotationToolChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (Annotations is null || AnnotationTool.SelectedItem is not string tool) return;
+        Annotations.Tool = tool; AnnotationText.IsVisible = Annotations.IsVisible && tool == "Text";
+    }
+    private void OnAnnotationTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (Annotations is not null) Annotations.Label = AnnotationText.Text ?? "";
+    }
+    private void OnClearAnnotationsClick(object? sender, RoutedEventArgs e) => Annotations.Clear();
 
     private async Task ObserveRecordingAsync(SessionRecorder recorder)
     {
@@ -345,7 +400,7 @@ public partial class RemoteScreenWindow : Window
             e.Handled = true;
             return;
         }
-        if (!ScreenImage.IsFocused) return;
+        if (!ScreenImage.IsFocused || Annotations.IsVisible) return;
         var key = AvaloniaKeyToVirtualKey(e.Key);
         if (key == 0) return;
         _pressedKeys.Add(key);

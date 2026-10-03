@@ -3,6 +3,7 @@
         xmlns:vm="using:IPCast.Client.ViewModels"
         xmlns:conv="using:IPCast.Client.Converters"
         xmlns:persistence="using:IPCast.Client.Persistence"
+        xmlns:network="using:IPCast.Network"
         x:Class="IPCast.Client.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="IPCast — Secure Remote Access"
@@ -133,6 +134,23 @@
                 </Border>
 
                 <!-- Favorites -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="DISCOVERED DEVICES · LOCAL NETWORK" Classes="eyebrow" />
+                    <TextBlock Text="Refreshed every 30 seconds. Verify the device certificate before connecting." Classes="hint" />
+                    <ItemsControl ItemsSource="{Binding DiscoveredDevices}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="network:DiscoveredDevice">
+                                <Border Classes="device" Margin="0,0,0,8">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                                        <Button Content="Connect" Classes="primary" CommandParameter="{Binding}"
+                                                Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectDiscoveredCommand}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <StackPanel Spacing="10" IsVisible="{Binding DashboardFavoriteDevices.Count}">
                     <TextBlock Text="FAVORITES" Classes="eyebrow" />
                     <ItemsControl ItemsSource="{Binding DashboardFavoriteDevices}">
@@ -385,6 +403,8 @@
                         <TextBlock Text="IPCast relay is configured automatically. Open this version on both computers, enter the other computer's 9-digit ID and accept the connection there. No relay address or setup code is needed."
                                    Classes="hint" />
                         <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
+                        <CheckBox Content="Retry after network interruption (up to 3 attempts)" IsChecked="{Binding AutomaticReconnect}" />
+                        <TextBlock Text="A new connection asks the remote owner for permission again." Classes="hint" />
                     </StackPanel>
                 </Border>
 
@@ -430,6 +450,27 @@
                     </StackPanel>
                 </Border>
 
+                <Border Classes="card" IsVisible="{Binding ShowRecordingSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Recording" Classes="h2" />
+                        <TextBox Text="{Binding RecordingDirectory}" PlaceholderText="Choose a recording folder" IsReadOnly="True" />
+                        <Button Content="Choose recording folder" Click="OnRecordingDirectoryClick" />
+                        <CheckBox Content="Automatically record new sessions when the host permits recording"
+                                  IsChecked="{Binding AutomaticRecording}" />
+                        <TextBlock Text="REC is shown on both devices. AVI recordings stop at a resolution change or 1.8 GB." Classes="hint" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="card" IsVisible="{Binding ShowDiagnosticsSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{Binding VersionLabel}" Classes="h2" />
+                        <Button Content="Check for updates" Click="OnCheckUpdatesClick" />
+                        <TextBlock Text="Diagnostics contain audit events, device IDs, app and OS versions. They exclude passwords, clipboard contents and file contents." Classes="hint" />
+                        <WrapPanel>
+                            <Button Content="Open Logs Folder" Click="OnOpenLogsClick" Margin="0,0,8,8" />
+                            <Button Content="Export Diagnostics" Click="OnExportDiagnosticsClick" Margin="0,0,8,8" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
                 <!-- Security -->
                 <Border Classes="card" IsVisible="{Binding ShowSecuritySettings}">
                     <StackPanel Spacing="12">

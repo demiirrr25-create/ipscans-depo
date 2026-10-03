@@ -233,6 +233,11 @@ public sealed class RemoteDesktopSession : IDisposable
         if (_disposed != 0) return;
         switch (type)
         {
+            case MessageType.TextInput when CanControlKeyboard():
+                var inputText = payload.Deserialize<ClipboardTextMessage>()?.Text;
+                if (inputText is null || inputText.Length > 4000) throw new InvalidDataException("Invalid text input.");
+                _sharingInjector!.SendString(inputText);
+                break;
             case MessageType.RecordingState when !_session.IsInitiator && CanRecord:
                 var recording = payload.Deserialize<RecordingStateMessage>();
                 if (recording is not null) RecordingStateChanged?.Invoke(recording.IsRecording);
@@ -359,6 +364,10 @@ public sealed class RemoteDesktopSession : IDisposable
     }
 
     private bool CanControlKeyboard() => _sharingInjector is not null && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard);
+    public Task SendTextAsync(string text, CancellationToken ct = default) =>
+        _session.IsInitiator && text.Length <= 4000 && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard)
+            ? _loop.SendAsync(MessageType.TextInput, new ClipboardTextMessage(text), ct)
+            : throw new UnauthorizedAccessException("Keyboard control was not granted or the text is too long.");
 
     public Task SendMouseMoveAsync(double normalizedX, double normalizedY, CancellationToken ct = default) =>
 

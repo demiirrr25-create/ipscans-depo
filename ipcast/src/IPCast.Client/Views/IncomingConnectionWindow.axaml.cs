@@ -33,9 +33,13 @@ public partial class IncomingConnectionWindow : Window
         ChatCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.Chat);
         ChatCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Chat);
         RecordingCheck.IsChecked = false;
+        TunnelCheck.IsChecked = false;
+        TunnelCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.TcpTunnel);
         RecordingCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Recording);
         SystemInfoCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.SystemInformation);
-        RemoteRestartCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.RemoteRestart);
+        RemoteRestartCheck.IsChecked = false;
+        RemoteRestartCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.RemoteRestart) && OperatingSystem.IsWindows();
+        SystemInfoCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.SystemInformation);
         ProfileSelector.ItemsSource = PermissionProfiles.Names.Concat(["Custom"]).ToArray();
         ProfileSelector.SelectedIndex = 4;
         ViewScreenCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.ViewScreen);
@@ -74,6 +78,9 @@ public partial class IncomingConnectionWindow : Window
         if (FileTransferCheck.IsChecked == true) granted |= ConnectionPermissions.FileTransfer;
         if (ChatCheck.IsChecked == true) granted |= ConnectionPermissions.Chat;
         if (RecordingCheck.IsChecked == true) granted |= ConnectionPermissions.Recording;
+        if (TunnelCheck.IsChecked == true) granted |= ConnectionPermissions.TcpTunnel;
+        if (SystemInfoCheck.IsChecked == true) granted |= ConnectionPermissions.SystemInformation;
+        if (RemoteRestartCheck.IsChecked == true) granted |= ConnectionPermissions.RemoteRestart;
 
         _result = new ConnectionDecision(true, granted);
         Close();

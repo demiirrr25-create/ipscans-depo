@@ -17,4 +17,5 @@ public enum ConnectionPermissions
     RemoteRestart = 1 << 6,
     Chat = 1 << 7,
     Recording = 1 << 8,
+    TcpTunnel = 1 << 9,
 }

@@ -5,10 +5,11 @@
         Icon="/Assets/ipcast.ico"
         Width="440"
         SizeToContent="Height"
+        MaxHeight="800"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppBackgroundBrush}">
-    <StackPanel Margin="28" Spacing="18">
+    <ScrollViewer><StackPanel Margin="28" Spacing="18">
 
         <StackPanel Spacing="4">
             <TextBlock Text="INCOMING CONNECTION" Classes="eyebrow" />
@@ -34,8 +35,9 @@
             <CheckBox Name="FileTransferCheck" Content="File transfer" />
             <CheckBox Name="ChatCheck" Content="Session chat" />
             <CheckBox Name="RecordingCheck" Content="Allow visible session recording" />
-            <CheckBox Name="SystemInfoCheck" Content="System information" IsVisible="False" IsEnabled="False" />
-            <CheckBox Name="RemoteRestartCheck" Content="Remote restart" IsVisible="False" IsEnabled="False" />
+            <CheckBox Name="TunnelCheck" Content="TCP tunnels (each route asks for approval)" />
+            <CheckBox Name="SystemInfoCheck" Content="System information" />
+            <CheckBox Name="RemoteRestartCheck" Content="Remote restart (asks for confirmation)" />
         </StackPanel>
 
         <Border Background="{DynamicResource SubtleFillBrush}" CornerRadius="8" Padding="12">
@@ -49,5 +51,5 @@
             <Button Grid.Column="1" Content="Accept" Classes="primary" HorizontalAlignment="Stretch"
                     MinHeight="46" Click="OnAcceptClick" />
         </Grid>
-    </StackPanel>
+    </StackPanel></ScrollViewer>
 </Window>

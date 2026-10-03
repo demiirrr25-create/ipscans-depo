@@ -8,6 +8,18 @@ namespace IPCast.Tests;
 public class LanDiscoveryServiceTests
 {
     [Fact]
+    public async Task DiscoverAll_ReturnsActualSenderAddressAndDeviceMetadata()
+    {
+        using var service = new LanDiscoveryService(DeviceId.FromValidatedRaw("777888999"), 54321, 0);
+        var found = await LanDiscoveryService.DiscoverAllAsync(TimeSpan.FromMilliseconds(300),
+            overrideTarget: new IPEndPoint(IPAddress.Loopback, service.Port));
+        var device = Assert.Single(found);
+        Assert.Equal("777888999", device.DeviceId);
+        Assert.Equal("127.0.0.1", device.Address);
+        Assert.Equal(54321, device.Port);
+        Assert.Equal(Environment.MachineName, device.Name);
+    }
+    [Fact]
     public async Task DiscoverAsync_FindsRunningServiceByOverrideEndpoint()
     {
         var targetId = DeviceId.FromValidatedRaw("777888999");

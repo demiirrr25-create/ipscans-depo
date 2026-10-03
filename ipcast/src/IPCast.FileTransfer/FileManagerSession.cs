@@ -60,6 +60,8 @@ public sealed class FileManagerSession : IAsyncDisposable
                 var result = !_allowed || shared is null
                     ? new FileSystemResponse(request.Id, false, "The peer must grant file transfer and choose a shared folder.")
                     : shared.Execute(request);
+                if (result.Success && request.Operation is "finish" or "delete" or "move" or "copy" or "mkdir")
+                    IPCast.Shared.AuditLog.Default.Write(IPCast.Shared.AuditEvent.FileTransferred, deviceId: RemoteDeviceId);
                 await _loop.SendAsync(MessageType.FileSystemResponse, result, _lifetime.Token).ConfigureAwait(false);
             }
         }
