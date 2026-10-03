@@ -31,6 +31,9 @@ public enum MessageType
     DisplayModeRequest,
     DisplayModeResponse,
     ChatText = 120,
+    FileSystemRequest = 130,
+    FileSystemResponse,
+    RecordingState = 140,
 }
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>
@@ -47,6 +50,7 @@ public sealed record PingMessage(long Sequence, DateTimeOffset SentAtUtc);
 
 public sealed record PongMessage(long Sequence);
 public sealed record ChatTextMessage(string Text);
+public sealed record RecordingStateMessage(bool IsRecording);
 
 /// <summary>Graceful session teardown notice.</summary>
 public sealed record ByeMessage(string? Reason);

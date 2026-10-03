@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Media;
 using Avalonia.Controls.Primitives;
+using Avalonia.Platform.Storage;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.Interactivity;
@@ -23,6 +24,9 @@ public partial class RemoteScreenWindow : Window
     private WriteableBitmap? _bitmap;
     private bool _closed;
     private CapturedFrame? _pendingFrame;
+    private CapturedFrame? _recordingFrame;
+    private SessionRecorder? _recorder;
+    private bool _recordingTransition;
     private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly HashSet<int> _pressedKeys = [];
     private readonly HashSet<int> _pressedButtons = [];
@@ -34,6 +38,20 @@ public partial class RemoteScreenWindow : Window
     private long _lastFrames, _lastBytes;
     private TimeSpan _lastSample;
     private Action? _openChat;
+    private Action? _openFiles;
+    public void EnableFileDrop(Func<IEnumerable<string>, Task> upload)
+    {
+        DragDrop.SetAllowDrop(ScreenImage, true);
+        ScreenImage.AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects =
+            e.DataTransfer.TryGetFiles()?.Any() == true ? DragDropEffects.Copy : DragDropEffects.None);
+        ScreenImage.AddHandler(DragDrop.DropEvent, async (_, e) =>
+        {
+            var paths = e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToArray() ?? [];
+            await upload(paths);
+        });
+    }
+    public void EnableFileManager(Action openFiles) { _openFiles = openFiles; FilesButton.IsVisible = true; }
+    private void OnFilesClick(object? sender, RoutedEventArgs e) => _openFiles?.Invoke();
     public void EnableChat(Action openChat) { _openChat = openChat; ChatButton.IsVisible = true; }
     private void OnChatClick(object? sender, RoutedEventArgs e) => _openChat?.Invoke();
 
@@ -48,6 +66,8 @@ public partial class RemoteScreenWindow : Window
     {
         _desktop = desktop;
         InitializeComponent();
+        RecordButton.IsVisible = desktop.CanRecord;
+        Closed += async (_, _) => await StopRecordingAsync();
         DisplaySelector.ItemsSource = new[] { "Original", "Fit", "Stretch", "Auto adapt" };
         DisplaySelector.SelectedIndex = 3;
         ScalingChanged += (_, _) => ApplyDisplayMode();
@@ -152,7 +172,60 @@ public partial class RemoteScreenWindow : Window
         ScreenImage.StretchDirection = _viewMode == DisplayMode.AutoAdapt ? StretchDirection.DownOnly : StretchDirection.Both;
     }
 
-    private void OnFrameReceived(CapturedFrame frame) => Interlocked.Exchange(ref _pendingFrame, frame);
+    private void OnFrameReceived(CapturedFrame frame)
+    {
+        Interlocked.Exchange(ref _recordingFrame, frame);
+        Interlocked.Exchange(ref _pendingFrame, frame);
+    }
+
+    private async void OnRecordClick(object? sender, RoutedEventArgs e)
+    {
+        if (_recordingTransition) return;
+        if (_recorder is not null) { await StopRecordingAsync(); return; }
+        _recordingTransition = true;
+        try
+        {
+            if (_recordingFrame is null) { Title = "IPCast — wait for the first frame before recording"; return; }
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Save visible session recording", SuggestedFileName = $"IPCast-{DateTime.Now:yyyyMMdd-HHmmss}.avi",
+                DefaultExtension = "avi", FileTypeChoices = [new FilePickerFileType("MJPEG AVI video") { Patterns = ["*.avi"] }]
+            });
+            if (file?.TryGetLocalPath() is not { } path) return;
+            if (File.Exists(path)) { Title = "IPCast — choose a new filename for the recording"; return; }
+            await _desktop.NotifyRecordingAsync(true);
+            var recorder = new SessionRecorder(path, () => Volatile.Read(ref _recordingFrame));
+            _recorder = recorder;
+            RecordButton.Content = "REC · Stop";
+            ShowToolbarButton.Content = "REC · Show toolbar";
+            Title = "IPCast — RECORDING";
+            _ = ObserveRecordingAsync(recorder);
+        }
+        catch (Exception ex) { Title = "IPCast — " + ex.Message; await SendSafely(() => _desktop.NotifyRecordingAsync(false)); }
+        finally { _recordingTransition = false; }
+    }
+
+    private async Task ObserveRecordingAsync(SessionRecorder recorder)
+    {
+        try { await recorder.Completion; }
+        catch (Exception ex)
+        {
+            if (ReferenceEquals(_recorder, recorder)) { await StopRecordingAsync(); Title = "IPCast — " + ex.Message; }
+        }
+    }
+
+    private async Task StopRecordingAsync()
+    {
+        var recorder = _recorder; _recorder = null;
+        if (recorder is null) return;
+        try { await recorder.StopAsync(); Title = "IPCast — Recording saved"; }
+        catch (Exception ex) { Title = "IPCast — " + ex.Message; }
+        finally
+        {
+            RecordButton.Content = "Record"; ShowToolbarButton.Content = "Show toolbar";
+            try { await _desktop.NotifyRecordingAsync(false); } catch (Exception) { }
+        }
+    }
 
     private void RenderLatestFrame()
     {

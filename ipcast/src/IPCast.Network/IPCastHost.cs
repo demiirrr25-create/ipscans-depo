@@ -21,7 +21,7 @@ public sealed class IPCastHost : IAsyncDisposable
         ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse |
         ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard |
         ConnectionPermissions.FileTransfer | ConnectionPermissions.SystemInformation |
-        ConnectionPermissions.RemoteRestart | ConnectionPermissions.Chat;
+        ConnectionPermissions.RemoteRestart | ConnectionPermissions.Chat | ConnectionPermissions.Recording;
     private readonly X509Certificate2 _certificate;
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _cts = new();

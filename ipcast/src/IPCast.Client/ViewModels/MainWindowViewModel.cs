@@ -27,8 +27,14 @@ public partial class MainWindowViewModel : ObservableObject
     private CancellationTokenSource? _connectCts;
     private CancellationTokenSource? _transferCts;
     [ObservableProperty] private bool _isConnected;
+    [ObservableProperty] private bool _isPeerRecording;
     [ObservableProperty] private bool _isChatAvailable;
     private SessionChat? _activeChat;
+    private FileManagerSession? _fileManager;
+    [ObservableProperty] private bool _isFileManagerAvailable;
+    public IReadOnlyList<string> PermissionProfileNames => PermissionProfiles.Names;
+    [ObservableProperty] private string _selectedPermissionProfile = "Full access";
+    public event Action<FileManagerSession>? FileManagerReady;
     [ObservableProperty] private string _localConnectionInfo = "Starting local listener...";
     public FileOfferHandler? OnFileOffered { get; set; }
     public Func<string, string, string?, Task<bool>>? OnTrustRequested { get; set; }
@@ -368,7 +374,7 @@ public partial class MainWindowViewModel : ObservableObject
             _connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
             var result = await NetworkService.ConnectAsync(
                 RemoteIdInput.Trim(),
-                DefaultRequestedPermissions,
+                PermissionProfiles.ForName(SelectedPermissionProfile),
                 password: string.IsNullOrEmpty(RemotePasswordInput) ? null : RemotePasswordInput,
                 ct: _connectCts.Token);
 
@@ -414,6 +420,9 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task DisconnectAsync()
     {
+        IsPeerRecording = false;
+        IsFileManagerAvailable = false;
+        if (_fileManager is not null) { await _fileManager.DisposeAsync(); _fileManager = null; }
         IsChatAvailable = false;
         _activeChat?.Dispose();
         _activeChat = null;
@@ -537,6 +546,14 @@ public partial class MainWindowViewModel : ObservableObject
         FavoritesMessage = $"Renamed to {newName}.";
     }
 
+    public async Task WakeFavoriteAsync(FavoriteDevice favorite, string mac)
+    {
+        await WakeOnLan.SendAsync(mac);
+        _favoritesStore.SetMacAddress(favorite.DeviceId, mac);
+        ReplaceFavorite(favorite, favorite with { MacAddress = mac });
+        StatusMessage = "Wake packet sent on the local network. The device must support and enable Wake-on-LAN.";
+    }
+
     private void ReplaceFavorite(FavoriteDevice existing, FavoriteDevice updated)
     {
         var index = FavoriteDevices.IndexOf(existing);
@@ -651,6 +668,12 @@ public partial class MainWindowViewModel : ObservableObject
         _fileReceiver.Faulted += ex => Dispatcher.UIThread.Post(() => FileTransferMessage = $"Receive failed: {ex.Message}");
 
         _activeSessionLoop = loop;
+        IsFileManagerAvailable = session.GrantedPermissions.HasFlag(ConnectionPermissions.FileTransfer);
+        if (IsFileManagerAvailable)
+        {
+            _fileManager = new FileManagerSession(loop, session);
+            FileManagerReady?.Invoke(_fileManager);
+        }
         IsChatAvailable = session.GrantedPermissions.HasFlag(ConnectionPermissions.Chat);
         if (IsChatAvailable)
         {
@@ -666,6 +689,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         var desktop = new RemoteDesktopSession(loop, session);
         _activeDesktop = desktop;
+        desktop.RecordingStateChanged += recording => Dispatcher.UIThread.Post(() => IsPeerRecording = recording);
         desktop.Faulted += ex => Dispatcher.UIThread.Post(async () => { await DisconnectAsync(); StatusMessage = $"Screen sharing stopped: {ex.Message}"; });
 
         if (session.IsInitiator)

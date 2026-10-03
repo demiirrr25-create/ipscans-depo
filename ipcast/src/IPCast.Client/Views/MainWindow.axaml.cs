@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     // otherwise look like a new local change and get echoed straight back to them.
     private string? _lastSeenClipboardText;
     private SessionChatWindow? _chatWindow;
+    private FileManagerWindow? _fileManagerWindow;
     private readonly DispatcherTimer _clipboardPoll = new() { Interval = TimeSpan.FromSeconds(1) };
 
     public MainWindow()
@@ -62,6 +63,12 @@ public partial class MainWindow : Window
         });
         vm.PeerClipboardTextReceived += OnPeerClipboardTextReceived;
         vm.RemoteDesktopSessionReady += OnRemoteDesktopSessionReady;
+        vm.FileManagerReady += session =>
+        {
+            var manager = new FileManagerWindow(session);
+            _fileManagerWindow = manager;
+            manager.Closed += (_, _) => { if (ReferenceEquals(_fileManagerWindow, manager)) _fileManagerWindow = null; };
+        };
         vm.SessionChatReady += chat =>
         {
             var chatWindow = new SessionChatWindow(chat);
@@ -130,6 +137,11 @@ public partial class MainWindow : Window
     {
         Dispatcher.UIThread.Post(() => {
             var window = new RemoteScreenWindow(desktop);
+            if (_fileManagerWindow is { } manager)
+            {
+                window.EnableFileManager(() => { manager.Show(); manager.Activate(); });
+                window.EnableFileDrop(manager.UploadExternalFilesAsync);
+            }
             if (_chatWindow is { } chatWindow)
                 window.EnableChat(() => { chatWindow.Show(); chatWindow.Activate(); });
             window.Closed += async (_, _) => { if (DataContext is MainWindowViewModel vm) await vm.DisconnectDesktopAsync(desktop); };
@@ -148,6 +160,11 @@ public partial class MainWindow : Window
     {
         _chatWindow?.Show();
         _chatWindow?.Activate();
+    }
+
+    private void OnFileManagerClick(object? sender, RoutedEventArgs e)
+    {
+        _fileManagerWindow?.Show(); _fileManagerWindow?.Activate();
     }
 
     private async void OnCopyIdClick(object? sender, RoutedEventArgs e)
@@ -210,12 +227,21 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task<string?> PromptForNameAsync(string currentName)
+    private async void OnFavoriteWake(object? sender, RoutedEventArgs e)
     {
-        var input = new TextBox { Text = currentName, PlaceholderText = "Device name", MinWidth = 320 };
+        if (DataContext is not MainWindowViewModel vm || FavoriteFrom(sender) is not { } device) return;
+        var mac = await PromptForNameAsync(device.MacAddress ?? "00-11-22-33-44-55", "Wake device — MAC address", "MAC address");
+        if (string.IsNullOrWhiteSpace(mac)) return;
+        try { await vm.WakeFavoriteAsync(device, mac); }
+        catch (Exception ex) { vm.StatusMessage = ex.Message; }
+    }
+
+    private async Task<string?> PromptForNameAsync(string currentName, string title = "Rename device", string label = "Device name")
+    {
+        var input = new TextBox { Text = currentName, PlaceholderText = label, MinWidth = 320 };
         var dialog = new Window
         {
-            Title = "Rename device",
+            Title = title,
             Width = 400,
             SizeToContent = SizeToContent.Height,
             CanResize = false,
@@ -242,7 +268,7 @@ public partial class MainWindow : Window
             Spacing = 16,
             Children =
             {
-                new TextBlock { Text = "Enter a new name for this device.", Foreground = this.FindResource("TextSecondaryBrush") as Avalonia.Media.IBrush },
+                new TextBlock { Text = label, Foreground = this.FindResource("TextSecondaryBrush") as Avalonia.Media.IBrush },
                 input,
                 buttons,
             },

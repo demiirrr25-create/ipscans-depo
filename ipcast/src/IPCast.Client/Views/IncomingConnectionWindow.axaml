@@ -26,12 +26,14 @@
 
         <StackPanel Spacing="8">
             <TextBlock Text="ALLOW ONLY WHAT YOU WANT" Classes="eyebrow" />
+            <ComboBox Name="ProfileSelector" SelectionChanged="OnProfileChanged" AutomationProperties.Name="Permission profile" />
             <CheckBox Name="ViewScreenCheck" Content="View screen" />
             <CheckBox Name="ControlMouseCheck" Content="Control mouse" />
             <CheckBox Name="ControlKeyboardCheck" Content="Control keyboard" />
             <CheckBox Name="ClipboardCheck" Content="Clipboard sync" />
             <CheckBox Name="FileTransferCheck" Content="File transfer" />
             <CheckBox Name="ChatCheck" Content="Session chat" />
+            <CheckBox Name="RecordingCheck" Content="Allow visible session recording" />
             <CheckBox Name="SystemInfoCheck" Content="System information" IsVisible="False" IsEnabled="False" />
             <CheckBox Name="RemoteRestartCheck" Content="Remote restart" IsVisible="False" IsEnabled="False" />
         </StackPanel>

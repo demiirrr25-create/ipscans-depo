@@ -16,4 +16,5 @@ public enum ConnectionPermissions
     SystemInformation = 1 << 5,
     RemoteRestart = 1 << 6,
     Chat = 1 << 7,
+    Recording = 1 << 8,
 }

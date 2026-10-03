@@ -38,6 +38,11 @@ public sealed class RemoteDesktopSession : IDisposable
     private readonly HashSet<int> _heldKeys = [];
     private readonly HashSet<int> _heldButtons = [];
     public event Action? Closed;
+    public event Action<bool>? RecordingStateChanged;
+    public bool CanRecord => _session.GrantedPermissions.HasFlag(ConnectionPermissions.Recording);
+    public Task NotifyRecordingAsync(bool recording) => CanRecord
+        ? _loop.SendAsync(MessageType.RecordingState, new RecordingStateMessage(recording))
+        : throw new UnauthorizedAccessException("Recording permission was not granted.");
     
     // Enhanced properties for multi-monitor and display modes
     private MonitorInfo? _currentMonitor;
@@ -228,6 +233,10 @@ public sealed class RemoteDesktopSession : IDisposable
         if (_disposed != 0) return;
         switch (type)
         {
+            case MessageType.RecordingState when !_session.IsInitiator && CanRecord:
+                var recording = payload.Deserialize<RecordingStateMessage>();
+                if (recording is not null) RecordingStateChanged?.Invoke(recording.IsRecording);
+                break;
             case MessageType.ScreenFrame when _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
                 var frameMessage = payload.Deserialize<ScreenFrameMessage>();
                 if (frameMessage is not null)
