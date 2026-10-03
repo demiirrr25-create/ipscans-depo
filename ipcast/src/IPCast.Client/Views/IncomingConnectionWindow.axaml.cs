@@ -30,6 +30,8 @@ public partial class IncomingConnectionWindow : Window
         ControlKeyboardCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard);
         ClipboardCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.Clipboard);
         FileTransferCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.FileTransfer);
+        ChatCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.Chat);
+        ChatCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Chat);
         SystemInfoCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.SystemInformation);
         RemoteRestartCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.RemoteRestart);
     }
@@ -48,6 +50,7 @@ public partial class IncomingConnectionWindow : Window
         if (ControlKeyboardCheck.IsChecked == true) granted |= ConnectionPermissions.ControlKeyboard;
         if (ClipboardCheck.IsChecked == true) granted |= ConnectionPermissions.Clipboard;
         if (FileTransferCheck.IsChecked == true) granted |= ConnectionPermissions.FileTransfer;
+        if (ChatCheck.IsChecked == true) granted |= ConnectionPermissions.Chat;
 
         _result = new ConnectionDecision(true, granted);
         Close();

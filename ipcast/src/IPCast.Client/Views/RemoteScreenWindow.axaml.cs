@@ -33,6 +33,9 @@ public partial class RemoteScreenWindow : Window
     private bool _probing;
     private long _lastFrames, _lastBytes;
     private TimeSpan _lastSample;
+    private Action? _openChat;
+    public void EnableChat(Action openChat) { _openChat = openChat; ChatButton.IsVisible = true; }
+    private void OnChatClick(object? sender, RoutedEventArgs e) => _openChat?.Invoke();
 
     public RemoteScreenWindow()
     {

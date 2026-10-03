@@ -97,6 +97,8 @@
                             <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
                             <Button Content="Disconnect current session" Classes="danger" HorizontalAlignment="Left"
                                     Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
+                            <Button Content="Open session chat" HorizontalAlignment="Left" Click="OnChatClick"
+                                    IsVisible="{Binding IsChatAvailable}" />
                         </StackPanel>
                     </Grid>
                 </Border>

@@ -21,12 +21,14 @@ public partial class MainWindowViewModel : ObservableObject
 
     private const ConnectionPermissions DefaultRequestedPermissions =
         ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse |
-        ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer;
+        ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer | ConnectionPermissions.Chat;
 
     private readonly PreferencesStore _preferencesStore = new();
     private CancellationTokenSource? _connectCts;
     private CancellationTokenSource? _transferCts;
     [ObservableProperty] private bool _isConnected;
+    [ObservableProperty] private bool _isChatAvailable;
+    private SessionChat? _activeChat;
     [ObservableProperty] private string _localConnectionInfo = "Starting local listener...";
     public FileOfferHandler? OnFileOffered { get; set; }
     public Func<string, string, string?, Task<bool>>? OnTrustRequested { get; set; }
@@ -251,6 +253,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Raised when we're the viewer side of a screen-share session - the View opens the remote screen window for it.</summary>
     public event Action<RemoteDesktopSession>? RemoteDesktopSessionReady;
+    public event Action<SessionChat>? SessionChatReady;
 
     public IReadOnlyList<NavItem> NavItems { get; } =
     [
@@ -411,6 +414,9 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task DisconnectAsync()
     {
+        IsChatAvailable = false;
+        _activeChat?.Dispose();
+        _activeChat = null;
         _transferCts?.Cancel();
         _activeDesktop?.Dispose();
         _activeDesktop = null;
@@ -645,6 +651,12 @@ public partial class MainWindowViewModel : ObservableObject
         _fileReceiver.Faulted += ex => Dispatcher.UIThread.Post(() => FileTransferMessage = $"Receive failed: {ex.Message}");
 
         _activeSessionLoop = loop;
+        IsChatAvailable = session.GrantedPermissions.HasFlag(ConnectionPermissions.Chat);
+        if (IsChatAvailable)
+        {
+            _activeChat = new SessionChat(loop, session);
+            SessionChatReady?.Invoke(_activeChat);
+        }
 
         if (!session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
         {

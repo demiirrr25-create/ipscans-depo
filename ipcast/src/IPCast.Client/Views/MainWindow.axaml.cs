@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     // Guards against the clipboard-sync feedback loop: applying a peer's clipboard text would
     // otherwise look like a new local change and get echoed straight back to them.
     private string? _lastSeenClipboardText;
+    private SessionChatWindow? _chatWindow;
     private readonly DispatcherTimer _clipboardPoll = new() { Interval = TimeSpan.FromSeconds(1) };
 
     public MainWindow()
@@ -61,6 +62,13 @@ public partial class MainWindow : Window
         });
         vm.PeerClipboardTextReceived += OnPeerClipboardTextReceived;
         vm.RemoteDesktopSessionReady += OnRemoteDesktopSessionReady;
+        vm.SessionChatReady += chat =>
+        {
+            var chatWindow = new SessionChatWindow(chat);
+            _chatWindow = chatWindow;
+            chatWindow.Closed += (_, _) => { if (ReferenceEquals(_chatWindow, chatWindow)) _chatWindow = null; };
+            chatWindow.Show();
+        };
         try
         {
             vm.NetworkService.Start();
@@ -122,6 +130,8 @@ public partial class MainWindow : Window
     {
         Dispatcher.UIThread.Post(() => {
             var window = new RemoteScreenWindow(desktop);
+            if (_chatWindow is { } chatWindow)
+                window.EnableChat(() => { chatWindow.Show(); chatWindow.Activate(); });
             window.Closed += async (_, _) => { if (DataContext is MainWindowViewModel vm) await vm.DisconnectDesktopAsync(desktop); };
             window.Show();
         });
@@ -132,6 +142,12 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel vm) return;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Choose a file to send", AllowMultiple = false });
         if (files.Count > 0) vm.SelectedFilePath = files[0].TryGetLocalPath() ?? string.Empty;
+    }
+
+    private void OnChatClick(object? sender, RoutedEventArgs e)
+    {
+        _chatWindow?.Show();
+        _chatWindow?.Activate();
     }
 
     private async void OnCopyIdClick(object? sender, RoutedEventArgs e)

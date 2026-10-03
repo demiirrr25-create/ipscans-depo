@@ -31,6 +31,7 @@
             <CheckBox Name="ControlKeyboardCheck" Content="Control keyboard" />
             <CheckBox Name="ClipboardCheck" Content="Clipboard sync" />
             <CheckBox Name="FileTransferCheck" Content="File transfer" />
+            <CheckBox Name="ChatCheck" Content="Session chat" />
             <CheckBox Name="SystemInfoCheck" Content="System information" IsVisible="False" IsEnabled="False" />
             <CheckBox Name="RemoteRestartCheck" Content="Remote restart" IsVisible="False" IsEnabled="False" />
         </StackPanel>
