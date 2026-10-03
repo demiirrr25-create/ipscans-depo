@@ -246,7 +246,9 @@ public sealed class RemoteDesktopSession : IDisposable
 
             case MessageType.MouseMove when CanControlMouse():
                 var moveMessage = payload.Deserialize<MouseMoveMessage>();
-                if (moveMessage is not null)
+                if (moveMessage is not null &&
+                    double.IsFinite(moveMessage.NormalizedX) && double.IsFinite(moveMessage.NormalizedY) &&
+                    moveMessage.NormalizedX is >= 0 and <= 1 && moveMessage.NormalizedY is >= 0 and <= 1)
                 {
                     var (x, y) = MapPointerToVirtualDesktop(moveMessage.NormalizedX, moveMessage.NormalizedY);
                     _sharingInjector!.MoveMouse(x, y);
@@ -256,7 +258,7 @@ public sealed class RemoteDesktopSession : IDisposable
 
             case MessageType.MouseButton when CanControlMouse():
                 var buttonMessage = payload.Deserialize<MouseButtonMessage>();
-                if (buttonMessage is not null)
+                if (buttonMessage is not null && buttonMessage.Button is >= 0 and <= 2)
                 {
                     _sharingInjector!.MouseButton(buttonMessage.Button, buttonMessage.IsDown);
                     if (buttonMessage.IsDown) _heldButtons.Add(buttonMessage.Button); else _heldButtons.Remove(buttonMessage.Button);
@@ -275,7 +277,7 @@ public sealed class RemoteDesktopSession : IDisposable
 
             case MessageType.KeyEvent when CanControlKeyboard():
                 var keyMessage = payload.Deserialize<KeyEventMessage>();
-                if (keyMessage is not null)
+                if (keyMessage is not null && keyMessage.VirtualKeyCode is >= 1 and <= 255)
                 {
                     _sharingInjector!.KeyEvent(keyMessage.VirtualKeyCode, keyMessage.IsDown);
                     if (keyMessage.IsDown) _heldKeys.Add(keyMessage.VirtualKeyCode); else _heldKeys.Remove(keyMessage.VirtualKeyCode);

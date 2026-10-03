@@ -227,6 +227,29 @@ public class RemoteDesktopSessionTests : IAsyncDisposable
         }
     }
 
+    [Fact]
+    public async Task InvalidInputCodesAreIgnoredBeforeInjectionAndTracking()
+    {
+        var (viewer, sharer, host) = await SessionTestHelper.EstablishSessionAsync(_hostId, _clientId, FullControl);
+        _host = host;
+        using (viewer) using (sharer)
+        {
+            await using var sender = new SessionMessageLoop(viewer);
+            await using var receiver = new SessionMessageLoop(sharer);
+            using var desktop = new RemoteDesktopSession(receiver, sharer);
+            var injector = new RecordingInputInjector();
+            desktop.StartSharing(new StaticCapturer(), injector, TimeSpan.FromSeconds(30));
+            sender.Start(); receiver.Start();
+            await sender.SendAsync(IPCast.Network.Protocol.MessageType.KeyEvent, new IPCast.Network.Protocol.KeyEventMessage(9999, true));
+            await sender.SendAsync(IPCast.Network.Protocol.MessageType.MouseButton, new IPCast.Network.Protocol.MouseButtonMessage(-1, true));
+            await sender.SendAsync(IPCast.Network.Protocol.MessageType.MouseMove, new IPCast.Network.Protocol.MouseMoveMessage(-0.5, 2));
+            await sender.MeasureLatencyAsync();
+            Assert.Empty(injector.KeyEvents);
+            Assert.Empty(injector.MouseButtons);
+            Assert.Empty(injector.MouseMoves);
+        }
+    }
+
     private sealed class TwoMonitorCapturer : IScreenCapturer, IMonitorAwareCapturer
     {
         public string? LastSelectedMonitor { get; private set; }
