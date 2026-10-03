@@ -194,6 +194,15 @@ public partial class MainWindowViewModel : ObservableObject
         _automaticRecording = preferences.AutomaticRecording;
         _automaticReconnect = preferences.AutomaticReconnect;
         _checkUpdatesOnStartup = preferences.CheckUpdatesOnStartup;
+        _theme = Themes.Contains(preferences.Theme) ? preferences.Theme : "Dark";
+        _openAddressBookOnStartup = preferences.OpenAddressBookOnStartup;
+        _preventDisplaySleep = preferences.PreventDisplaySleep;
+        _interactiveAccess = InteractiveAccessModes.Contains(preferences.InteractiveAccess) ? preferences.InteractiveAccess : "Always ask";
+        _sessionIdleMinutes = IdleTimeoutOptions.Contains(preferences.SessionIdleMinutes) ? preferences.SessionIdleMinutes : 0;
+        MonochromeTheme.Apply(_theme);
+        FavoriteDevices.CollectionChanged += (_, _) => RefreshDeviceFilter();
+        RefreshDeviceFilter();
+        if (_openAddressBookOnStartup) Navigate(NavSection.MyDevices);
         _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
         _launchAtStartup = IsRegisteredForStartup();
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER")))
@@ -208,7 +217,8 @@ public partial class MainWindowViewModel : ObservableObject
     {
         try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode, LaunchAtStartup: LaunchAtStartup,
             RecordingDirectory: RecordingDirectory, AutomaticRecording: AutomaticRecording, AutomaticReconnect: AutomaticReconnect,
-            CheckUpdatesOnStartup: CheckUpdatesOnStartup)); }
+            CheckUpdatesOnStartup: CheckUpdatesOnStartup, Theme: Theme, OpenAddressBookOnStartup: OpenAddressBookOnStartup, PreventDisplaySleep: PreventDisplaySleep,
+            InteractiveAccess: InteractiveAccess, SessionIdleMinutes: SessionIdleMinutes)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
     }
 
@@ -297,10 +307,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     public IReadOnlyList<NavItem> NavItems { get; } =
     [
-        new NavItem(NavSection.Home, "Home"),
+        new NavItem(NavSection.Home, "New session"),
         new NavItem(NavSection.FileTransfer, "File Transfer"),
-        new NavItem(NavSection.MyDevices, "My Devices"),
-        new NavItem(NavSection.RecentConnections, "Recent Connections"),
+        new NavItem(NavSection.MyDevices, "Address book"),
+        new NavItem(NavSection.RecentConnections, "Recent sessions"),
         new NavItem(NavSection.Settings, "Settings"),
         new NavItem(NavSection.Help, "Help"),
     ];
@@ -366,7 +376,13 @@ public partial class MainWindowViewModel : ObservableObject
     private bool SettingMatches(params string[] keywords)
     {
         var query = SettingsQuery?.Trim();
-        if (string.IsNullOrEmpty(query)) return true;
+        if (string.IsNullOrEmpty(query)) return SettingsCategory switch
+        {
+            "General" => keywords.Contains("general"), "Connection" => keywords.Contains("connection"),
+            "Access" => keywords.Contains("unattended"), "Display" => keywords.Contains("display"),
+            "Clipboard" => keywords.Contains("clipboard"), "Recording" => keywords.Contains("recording"),
+            "Security" => keywords.Contains("certificate"), "About" => keywords.Contains("about"), _ => false
+        };
         return keywords.Any(k => k.Contains(query, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -412,7 +428,7 @@ public partial class MainWindowViewModel : ObservableObject
                 RemoteIdInput.Trim(),
                 PermissionProfiles.ForName(SelectedPermissionProfile),
                 password: string.IsNullOrEmpty(RemotePasswordInput) ? null : RemotePasswordInput,
-                ct: _connectCts.Token);
+                ct: _connectCts.Token, oneTimeCode: string.IsNullOrWhiteSpace(RemoteOneTimeCode) ? null : RemoteOneTimeCode.Trim());
 
             if (result.Success)
             {
@@ -450,6 +466,7 @@ public partial class MainWindowViewModel : ObservableObject
             _connectCts?.Dispose();
             _connectCts = null;
             RemotePasswordInput = string.Empty;
+            RemoteOneTimeCode = string.Empty;
             IsConnecting = false;
         }
     }
@@ -564,6 +581,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         var name = string.IsNullOrWhiteSpace(NewFavoriteName) ? deviceId.Formatted : NewFavoriteName.Trim();
         _favoritesStore.Add(name, deviceId.Raw);
+        _favoritesStore.SetDetails(deviceId.Raw, NewFavoriteGroup, NewFavoriteTags, _favoritesStore.GetAll().First(d => d.DeviceId == deviceId.Raw).Notes);
 
         var existing = FavoriteDevices.FirstOrDefault(d => d.DeviceId == deviceId.Raw);
         if (existing is not null)
@@ -571,7 +589,7 @@ public partial class MainWindowViewModel : ObservableObject
             FavoriteDevices.Remove(existing);
         }
 
-        FavoriteDevices.Add(new FavoriteDevice(name, deviceId.Raw, LastConnectedUtc: null));
+        FavoriteDevices.Add(_favoritesStore.GetAll().First(d => d.DeviceId == deviceId.Raw));
         RefreshDashboardFavoriteDevices();
         NewFavoriteName = string.Empty;
         NewFavoriteIdInput = string.Empty;

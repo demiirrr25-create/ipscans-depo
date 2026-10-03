@@ -11,46 +11,56 @@
             <!-- Collapsible session toolbar (spec §5) -->
             <Border Name="Toolbar" Grid.Row="0" Background="{DynamicResource SidebarBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
-                <WrapPanel Orientation="Horizontal">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Ellipse Width="8" Height="8" Fill="{DynamicResource StatusOnlineBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="IPCast" FontWeight="Bold" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                    </StackPanel>
-                    <ComboBox Grid.Column="2" Name="MonitorSelector" MinWidth="145"
-                              IsVisible="False" SelectionChanged="OnMonitorSelectionChanged"
-                              AutomationProperties.Name="Remote monitor" ToolTip.Tip="Choose a remote monitor" />
-                    <ComboBox Name="DisplaySelector" MinWidth="125" Margin="8,0"
-                              SelectionChanged="OnDisplaySelectionChanged"
-                              AutomationProperties.Name="Display scaling" ToolTip.Tip="Choose how the remote image fits this window" />
-                    <Button Classes="toolbar" Content="Information" Click="OnInformationClick"
-                            AutomationProperties.Name="Connection information" />
-                    <Button Name="DeviceInfoButton" IsVisible="False" Classes="toolbar" Content="Device" Click="OnDeviceInfoClick" />
-                    <Button Classes="toolbar" Content="Permissions" Click="OnPermissionsClick" />
-                    <Button Name="RestartButton" IsVisible="False" Classes="toolbar" Content="Restart" Click="OnRestartClick" />
-                    <Button Classes="toolbar" Content="Alt+Tab" Click="OnAltTabClick" />
-                    <Button Classes="toolbar" Content="Windows key" Click="OnWindowsKeyClick" />
-                    <Button Classes="toolbar" Content="Type text" Click="OnTypeTextClick" ToolTip.Tip="Send Unicode text independently of keyboard layout" />
-                    <Button Name="ChatButton" IsVisible="False" Classes="toolbar" Content="Chat" Click="OnChatClick"
-                            AutomationProperties.Name="Open session chat" />
-                    <Button Name="FilesButton" IsVisible="False" Classes="toolbar" Content="Files" Click="OnFilesClick" />
-                    <Button Name="TunnelsButton" IsVisible="False" Classes="toolbar" Content="TCP tunnels" Click="OnTunnelsClick" />
-                    <Button Name="AudioButton" IsVisible="False" Classes="toolbar" Content="Audio off · enable" Click="OnAudioClick" />
-                    <Slider Name="AudioVolume" IsVisible="False" Minimum="0" Maximum="100" Value="100" Width="85" ToolTip.Tip="Remote audio volume" AutomationProperties.Name="Remote audio volume" />
-                    <Button Name="RecordButton" IsVisible="False" Classes="toolbar" Content="Record" Click="OnRecordClick" />
-                    <Button Name="AnnotationButton" Classes="toolbar" Content="Annotate" Click="OnAnnotateClick"
-                            ToolTip.Tip="Temporary annotations in your viewer; remote input is paused while drawing." />
-                    <ComboBox Name="AnnotationTool" IsVisible="False" SelectionChanged="OnAnnotationToolChanged" MinWidth="110" />
-                    <TextBox Name="AnnotationText" IsVisible="False" Text="Note" MaxLength="200" Width="120" TextChanged="OnAnnotationTextChanged" />
-                    <Button Name="ClearAnnotationsButton" IsVisible="False" Classes="toolbar" Content="Clear" Click="OnClearAnnotationsClick" />
-                    <Button Grid.Column="3" Classes="toolbar" Content="Hide bar" Click="OnToggleToolbarClick"
-                            ToolTip.Tip="Hide the toolbar for a cleaner view" AutomationProperties.Name="Hide toolbar" />
-                    <Button Grid.Column="4" Name="FullScreenButton" Classes="toolbar" Content="Full screen"
-                            Click="OnToggleFullScreenClick" ToolTip.Tip="Toggle full screen (F11)"
-                            AutomationProperties.Name="Toggle full screen" />
-                    <Button Grid.Column="5" Classes="danger" Content="Disconnect" MinHeight="34" Padding="14,6"
-                            Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
-                </WrapPanel>
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Name="SessionAddressText" Text="Remote session" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Name="SessionStatusText" Text="TLS encrypted" Classes="hint" VerticalAlignment="Center" />
+                    </Grid>
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Classes="toolbar" Content="Information" Click="OnInformationClick" AutomationProperties.Name="Connection information" />
+                        <Button Name="FilesButton" IsVisible="False" Classes="toolbar" Content="Files" Click="OnFilesClick" />
+                        <ComboBox Name="MonitorSelector" MinWidth="130" IsVisible="False" SelectionChanged="OnMonitorSelectionChanged" AutomationProperties.Name="Remote monitor" />
+                        <Button Classes="toolbar" Content="Display ▾"><Button.Flyout><Flyout><StackPanel Spacing="10" Width="230">
+                            <TextBlock Text="Display" Classes="h2" />
+                            <TextBlock Text="Stream quality" Classes="hint" />
+                            <ComboBox Name="QualitySelector" HorizontalAlignment="Stretch" SelectionChanged="OnQualitySelectionChanged" AutomationProperties.Name="Live stream quality" />
+                            <TextBlock Text="Image scaling" Classes="hint" />
+                            <ComboBox Name="DisplaySelector" HorizontalAlignment="Stretch" SelectionChanged="OnDisplaySelectionChanged" AutomationProperties.Name="Display scaling" />
+                            <Button Name="FullScreenButton" Classes="toolbar" Content="Full screen" Click="OnToggleFullScreenClick" ToolTip.Tip="F11" />
+                            <Button Classes="toolbar" Content="Save screenshot…" Click="OnScreenshotClick" />
+                            <Button Classes="toolbar" Content="Hide toolbar" Click="OnToggleToolbarClick" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Name="ChatButton" IsVisible="False" Classes="toolbar" Content="Chat" Click="OnChatClick" AutomationProperties.Name="Open session chat" />
+                        <Button Classes="toolbar" Content="Actions ▾"><Button.Flyout><Flyout><StackPanel Spacing="6" Width="230">
+                            <TextBlock Text="Session actions" Classes="h2" />
+                            <Button Name="DeviceInfoButton" IsVisible="False" Content="System information" Click="OnDeviceInfoClick" />
+                            <Button Name="TunnelsButton" IsVisible="False" Content="TCP tunnels" Click="OnTunnelsClick" />
+                            <Button Name="RestartButton" IsVisible="False" Content="Request remote restart…" Click="OnRestartClick" />
+                            <Button Content="Save screenshot…" Click="OnScreenshotClick" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Classes="toolbar" Content="Keyboard ▾"><Button.Flyout><Flyout><StackPanel Spacing="6" Width="230">
+                            <Button Content="Send Alt+Tab" Click="OnAltTabClick" />
+                            <Button Content="Send Windows key" Click="OnWindowsKeyClick" />
+                            <Button Content="Type text…" Click="OnTypeTextClick" />
+                            <Button Name="InputToggleButton" Content="Pause remote control" Click="OnToggleInputClick" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Classes="toolbar" Content="Permissions" Click="OnPermissionsClick" />
+                        <Button Classes="toolbar" Content="Audio ▾"><Button.Flyout><Flyout><StackPanel Spacing="8" Width="220">
+                            <Button Name="AudioButton" IsVisible="False" Content="Audio off · enable" Click="OnAudioClick" />
+                            <Slider Name="AudioVolume" IsVisible="False" Minimum="0" Maximum="100" Value="100" AutomationProperties.Name="Remote audio volume" />
+                            <TextBlock Text="Audio requires the remote owner's permission." Classes="hint" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Name="RecordButton" IsVisible="False" Classes="toolbar" Content="Record" Click="OnRecordClick" />
+                        <Button Classes="toolbar" Content="Draw ▾"><Button.Flyout><Flyout><StackPanel Spacing="8" Width="230">
+                            <Button Name="AnnotationButton" Content="Annotate" Click="OnAnnotateClick" />
+                            <ComboBox Name="AnnotationTool" IsVisible="False" SelectionChanged="OnAnnotationToolChanged" />
+                            <TextBox Name="AnnotationText" IsVisible="False" Text="Note" MaxLength="200" TextChanged="OnAnnotationTextChanged" />
+                            <Button Name="ClearAnnotationsButton" IsVisible="False" Content="Clear annotations" Click="OnClearAnnotationsClick" />
+                            <TextBlock Text="Drawings appear in your viewer. Input is paused while drawing." Classes="hint" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Classes="primary" Content="Disconnect" MinHeight="34" Padding="12,6" Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
+                    </WrapPanel>
+                </StackPanel>
             </Border>
 
             <ScrollViewer Name="ScreenViewport" Grid.Row="1"

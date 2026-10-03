@@ -21,5 +21,7 @@ public sealed class UnattendedAccessPolicy : IUnattendedAccessPolicy
     }
 
     public ConnectionPermissions? TryAuthenticate(string password) =>
-        _store.VerifyPassword(password) ? GrantedOnSuccess : null;
+        TryAuthenticate(password, null);
+    public ConnectionPermissions? TryAuthenticate(string password, string? oneTimeCode) =>
+        _store.VerifyCredentials(password, oneTimeCode) ? GrantedOnSuccess : null;
 }

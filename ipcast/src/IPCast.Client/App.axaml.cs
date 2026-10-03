@@ -15,6 +15,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        ActualThemeVariantChanged += (_, _) => MonochromeTheme.ApplyResources(this);
     }
 
     public override void OnFrameworkInitializationCompleted()

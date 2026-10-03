@@ -59,6 +59,22 @@ jobs:
       - name: Test release publication failure handling
         run: node --test ../tools/publish-ipcast-release.test.cjs
 
+      - name: Verify desktop workspaces, themes and address book
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $env:AVALONIA_TELEMETRY_OPTOUT = "1"
+          dotnet run --project tests/IPCast.UiSmoke -c Release -- "$env:RUNNER_TEMP/IPCastUiSmoke"
+          if ($LASTEXITCODE -ne 0) { throw "Desktop workspace verification failed." }
+
+      - name: Upload desktop verification screenshots
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: IPCast-ui-verification
+          path: ${{ runner.temp }}/IPCastUiSmoke/*.png
+          if-no-files-found: error
+
       - name: Publish self-contained win-x64 EXE
         if: matrix.os == 'windows-latest'
         run: >

@@ -26,7 +26,7 @@ public sealed class IPCastConnector
         DeviceId remoteDeviceId,
         ConnectionPermissions requestedPermissions,
         string? password = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, string? oneTimeCode = null)
     {
         var client = new TcpClient();
         try
@@ -42,7 +42,7 @@ public sealed class IPCastConnector
                 client: client,
                 ct: ct,
                 trustKey: remoteDeviceId == _localDeviceId ? remoteEndpoint.ToString() : remoteDeviceId.Raw,
-                connectionKind: ConnectionKind.Direct).ConfigureAwait(false);
+                connectionKind: ConnectionKind.Direct, oneTimeCode: oneTimeCode).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException
             or OperationCanceledException or System.Security.Authentication.AuthenticationException)
@@ -61,7 +61,7 @@ public sealed class IPCastConnector
         IDisposable? ownerToDispose = null,
         CancellationToken ct = default,
         string? trustKey = null,
-        ConnectionKind connectionKind = ConnectionKind.Unknown)
+        ConnectionKind connectionKind = ConnectionKind.Unknown, string? oneTimeCode = null)
     {
         try
         {
@@ -90,7 +90,7 @@ public sealed class IPCastConnector
             await MessageStream.WriteAsync(
                 stream,
                 MessageType.ConnectionRequest,
-                new ConnectionRequestMessage(_localDeviceId.Raw, requestedPermissions, password),
+                new ConnectionRequestMessage(_localDeviceId.Raw, requestedPermissions, password, oneTimeCode),
                 ct).ConfigureAwait(false);
 
             var (type, payload) = await MessageStream.ReadAsync(stream, ct).ConfigureAwait(false);

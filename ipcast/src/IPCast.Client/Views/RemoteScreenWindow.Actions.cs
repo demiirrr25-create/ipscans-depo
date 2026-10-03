@@ -37,17 +37,20 @@ public partial class RemoteScreenWindow
     }
     private async void OnAltTabClick(object? sender, RoutedEventArgs e)
     {
+        if (_inputPaused) return;
         await ReleaseInputAsync();
         try { await SendSafely(() => _desktop.SendKeyEventAsync(0x12, true)); await SendSafely(() => _desktop.SendKeyEventAsync(0x09, true)); }
         finally { await SendSafely(() => _desktop.SendKeyEventAsync(0x09, false)); await SendSafely(() => _desktop.SendKeyEventAsync(0x12, false)); }
     }
     private async void OnWindowsKeyClick(object? sender, RoutedEventArgs e)
     {
+        if (_inputPaused) return;
         await SendSafely(() => _desktop.SendKeyEventAsync(0x5b, true));
         await SendSafely(() => _desktop.SendKeyEventAsync(0x5b, false));
     }
     private async void OnTypeTextClick(object? sender, RoutedEventArgs e)
     {
+        if (_inputPaused) return;
         var input = new TextBox { AcceptsReturn = true, MaxLength = 4000, MinHeight = 120, PlaceholderText = "Text to type on the remote device" };
         var send = new Button { Content = "Type text" };
         var dialog = new Window { Title = "IPCast — Type Unicode text", Width = 460, SizeToContent = SizeToContent.Height };

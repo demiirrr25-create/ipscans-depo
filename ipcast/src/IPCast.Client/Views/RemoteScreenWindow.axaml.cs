@@ -77,6 +77,8 @@ public partial class RemoteScreenWindow : Window
         _desktop = desktop;
         InitializeComponent();
         RecordButton.IsVisible = desktop.CanRecord;
+        QualitySelector.ItemsSource = new[] { "Auto", "Balanced", "Speed", "Quality" };
+        SessionAddressText.Text = desktop.RemoteDeviceId + " — Remote desktop";
         AnnotationTool.ItemsSource = new[] { "Pen", "Arrow", "Rectangle", "Circle", "Text", "Erase" };
         AnnotationTool.SelectedIndex = 0;
         Closed += async (_, _) => await StopRecordingAsync();
@@ -322,6 +324,7 @@ public partial class RemoteScreenWindow : Window
     private bool TryGetPointerPosition(PointerEventArgs e, out double x, out double y)
     {
         x = y = 0;
+        if (_inputPaused || Annotations.IsVisible) return false;
         var bounds = ScreenImage.Bounds;
         if (bounds.Width <= 0 || bounds.Height <= 0)
         {
@@ -400,7 +403,7 @@ public partial class RemoteScreenWindow : Window
             e.Handled = true;
             return;
         }
-        if (!ScreenImage.IsFocused || Annotations.IsVisible) return;
+        if (_inputPaused || !ScreenImage.IsFocused || Annotations.IsVisible) return;
         var key = AvaloniaKeyToVirtualKey(e.Key);
         if (key == 0) return;
         _pressedKeys.Add(key);

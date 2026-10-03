@@ -43,13 +43,17 @@ public enum MessageType
     AudioControl = 180,
     AudioState,
     AudioData,
+    StreamQualityRequest = 190,
+    StreamQualityResponse,
 }
+
+public sealed record StreamQualityMessage(string RequestId, string Profile, bool Accepted = false);
 
 /// <summary>Sent immediately after connecting so the remote side knows who's talking to it.</summary>
 public sealed record HelloMessage(string DeviceId, string AppVersion);
 
 /// <summary>Asks the remote device for permission to start a session (spec §4/§10). Password is set only for unattended-access (spec §9) attempts.</summary>
-public sealed record ConnectionRequestMessage(string FromDeviceId, ConnectionPermissions RequestedPermissions, string? Password = null);
+public sealed record ConnectionRequestMessage(string FromDeviceId, ConnectionPermissions RequestedPermissions, string? Password = null, string? OneTimeCode = null);
 
 /// <summary>The remote user's answer to a ConnectionRequestMessage.</summary>
 public sealed record ConnectionDecisionMessage(bool Accepted, ConnectionPermissions GrantedPermissions, string? Reason, string? HostDeviceId = null);

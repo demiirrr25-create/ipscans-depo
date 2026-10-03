@@ -62,6 +62,10 @@ public partial class IncomingConnectionWindow : Window
         FileTransferCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.FileTransfer);
         ChatCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.Chat);
         RecordingCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.Recording);
+        TunnelCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.TcpTunnel);
+        AudioCheck.IsChecked = AudioCheck.IsEnabled && permissions.HasFlag(ConnectionPermissions.Audio);
+        SystemInfoCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.SystemInformation);
+        RemoteRestartCheck.IsChecked = RemoteRestartCheck.IsEnabled && permissions.HasFlag(ConnectionPermissions.RemoteRestart);
     }
 
     private void OnRejectClick(object? sender, RoutedEventArgs e)
