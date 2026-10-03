@@ -14,7 +14,8 @@ public sealed class RemoteSession : IDisposable
         Stream stream,
         ConnectionPermissions grantedPermissions,
         bool isInitiator,
-        IDisposable? ownerToDispose = null)
+        IDisposable? ownerToDispose = null,
+        ConnectionKind connectionKind = ConnectionKind.Unknown)
     {
         RemoteDeviceId = remoteDeviceId;
         Client = client;
@@ -22,6 +23,7 @@ public sealed class RemoteSession : IDisposable
         GrantedPermissions = grantedPermissions;
         IsInitiator = isInitiator;
         _ownerToDispose = ownerToDispose;
+        ConnectionKind = connectionKind;
     }
 
     public DeviceId RemoteDeviceId { get; }
@@ -33,6 +35,7 @@ public sealed class RemoteSession : IDisposable
 
     /// <summary>True if this side placed the connection (pressed Connect); false if it accepted an incoming one.</summary>
     public bool IsInitiator { get; }
+    public ConnectionKind ConnectionKind { get; }
 
     public void Dispose()
     {
@@ -41,3 +44,5 @@ public sealed class RemoteSession : IDisposable
         _ownerToDispose?.Dispose();
     }
 }
+
+public enum ConnectionKind { Unknown, Direct, Relay }

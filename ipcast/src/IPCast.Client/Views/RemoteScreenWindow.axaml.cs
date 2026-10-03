@@ -3,6 +3,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media.Imaging;
+using Avalonia.Media;
+using Avalonia.Controls.Primitives;
+using Avalonia.Platform.Storage;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.Interactivity;
@@ -21,9 +24,46 @@ public partial class RemoteScreenWindow : Window
     private WriteableBitmap? _bitmap;
     private bool _closed;
     private CapturedFrame? _pendingFrame;
+    private CapturedFrame? _recordingFrame;
+    private SessionRecorder? _recorder;
+    private bool _recordingTransition;
+    private string _recordingDirectory = "";
+    private bool _autoRecordPending;
+    public void ConfigureRecording(string directory, bool automatic)
+    {
+        _recordingDirectory = directory;
+        _autoRecordPending = automatic && _desktop.CanRecord;
+    }
     private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly HashSet<int> _pressedKeys = [];
+    private readonly HashSet<int> _pressedButtons = [];
     private bool _suppressEscapeKeyUp;
+    private bool _updatingMonitors;
+    private DisplayMode _viewMode = DisplayMode.AutoAdapt;
+    private readonly DispatcherTimer _informationTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private bool _probing;
+    private long _lastFrames, _lastBytes;
+    private TimeSpan _lastSample;
+    private Action? _openChat;
+    private Action? _openFiles;
+    private Action? _openTunnels;
+    public void EnableTunnels(Action open) { _openTunnels = open; TunnelsButton.IsVisible = true; }
+    private void OnTunnelsClick(object? sender, RoutedEventArgs e) => _openTunnels?.Invoke();
+    public void EnableFileDrop(Func<IEnumerable<string>, Task> upload)
+    {
+        DragDrop.SetAllowDrop(ScreenImage, true);
+        ScreenImage.AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects =
+            e.DataTransfer.TryGetFiles()?.Any() == true ? DragDropEffects.Copy : DragDropEffects.None);
+        ScreenImage.AddHandler(DragDrop.DropEvent, async (_, e) =>
+        {
+            var paths = e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToArray() ?? [];
+            await upload(paths);
+        });
+    }
+    public void EnableFileManager(Action openFiles) { _openFiles = openFiles; FilesButton.IsVisible = true; }
+    private void OnFilesClick(object? sender, RoutedEventArgs e) => _openFiles?.Invoke();
+    public void EnableChat(Action openChat) { _openChat = openChat; ChatButton.IsVisible = true; }
+    private void OnChatClick(object? sender, RoutedEventArgs e) => _openChat?.Invoke();
 
     public RemoteScreenWindow()
     {
@@ -36,10 +76,20 @@ public partial class RemoteScreenWindow : Window
     {
         _desktop = desktop;
         InitializeComponent();
+        RecordButton.IsVisible = desktop.CanRecord;
+        AnnotationTool.ItemsSource = new[] { "Pen", "Arrow", "Rectangle", "Circle", "Text", "Erase" };
+        AnnotationTool.SelectedIndex = 0;
+        Closed += async (_, _) => await StopRecordingAsync();
+        DisplaySelector.ItemsSource = new[] { "Original", "Fit", "Stretch", "Auto adapt" };
+        DisplaySelector.SelectedIndex = 3;
+        ScalingChanged += (_, _) => ApplyDisplayMode();
 
         _desktop.FrameReceived += OnFrameReceived;
+        _desktop.AvailableMonitorsReceived += OnAvailableMonitorsReceived;
+        Opened += async (_, _) => await SendSafely(() => _desktop.RequestAvailableMonitorsAsync());
         _renderTimer.Tick += (_, _) => RenderLatestFrame();
         _renderTimer.Start();
+        _informationTimer.Tick += async (_, _) => await UpdateInformationAsync();
         _desktop.Closed += OnSessionClosed;
         ScreenImage.PointerMoved += OnPointerMoved;
         ScreenImage.PointerPressed += OnPointerPressed;
@@ -47,16 +97,190 @@ public partial class RemoteScreenWindow : Window
         ScreenImage.PointerWheelChanged += OnPointerWheelChanged;
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
-        Deactivated += async (_, _) => {
-            foreach (var key in _pressedKeys.ToArray()) await SendSafely(() => _desktop.SendKeyEventAsync(key, false));
-            _pressedKeys.Clear();
-        };
-        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
+        Deactivated += async (_, _) => await ReleaseInputAsync();
+        ScreenImage.LostFocus += async (_, _) => await ReleaseInputAsync();
+        ScreenImage.PointerCaptureLost += async (_, _) => await ReleaseInputAsync();
+        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); _informationTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.AvailableMonitorsReceived -= OnAvailableMonitorsReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
+    }
+
+    private sealed record MonitorOption(string DeviceName, string Label)
+    {
+        public override string ToString() => Label;
+    }
+
+    private void OnAvailableMonitorsReceived(IReadOnlyList<MonitorInfo> monitors) =>
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_closed) return;
+            _updatingMonitors = true;
+            try
+            {
+                MonitorSelector.ItemsSource = monitors.Select(m => new MonitorOption(m.DeviceName, m.FriendlyName)).ToArray();
+                MonitorSelector.IsVisible = monitors.Count > 1;
+                MonitorSelector.SelectedIndex = monitors.Count > 0 ? 0 : -1;
+            }
+            finally { _updatingMonitors = false; }
+        });
+
+    private async void OnMonitorSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingMonitors || MonitorSelector.SelectedItem is not MonitorOption selected) return;
+        await SendSafely(() => _desktop.SelectMonitorAsync(selected.DeviceName));
     }
 
     private void OnSessionClosed() => Dispatcher.UIThread.Post(Close);
 
-    private void OnFrameReceived(CapturedFrame frame) => Interlocked.Exchange(ref _pendingFrame, frame);
+    private async void OnInformationClick(object? sender, RoutedEventArgs e)
+    {
+        InformationPanel.IsVisible = !InformationPanel.IsVisible;
+        if (!InformationPanel.IsVisible) { _informationTimer.Stop(); return; }
+        _lastSample = _desktop.Duration;
+        _lastFrames = _desktop.ReceivedFrames;
+        _lastBytes = _desktop.ReceivedVideoBytes;
+        InformationText.Text = "Measuring connection…";
+        _informationTimer.Start();
+        await UpdateInformationAsync();
+    }
+
+    private async Task UpdateInformationAsync()
+    {
+        if (_closed || _probing || !InformationPanel.IsVisible) return;
+        _probing = true;
+        try
+        {
+            string latency;
+            try { latency = $"{(await _desktop.MeasureLatencyAsync()).TotalMilliseconds:0} ms"; }
+            catch (Exception) { latency = "Unavailable"; }
+            if (_closed) return;
+            var duration = _desktop.Duration;
+            var seconds = (duration - _lastSample).TotalSeconds;
+            var frames = _desktop.ReceivedFrames;
+            var bytes = _desktop.ReceivedVideoBytes;
+            var fps = seconds > 0.25 ? $"{(frames - _lastFrames) / seconds:0.0}" : "Measuring";
+            var rate = seconds > 0.25 ? $"{(bytes - _lastBytes) / seconds / 1024:0.0} KiB/s" : "Measuring";
+            var resolution = _desktop.Resolution;
+            InformationText.Text = $"Device: {_desktop.RemoteDeviceId}\nConnection: {_desktop.ConnectionKind}\nLatency: {latency}\nReceived FPS: {fps}\nResolution: {resolution.Width} × {resolution.Height}\nVideo rate: {rate}\nCodec: JPEG\nEncryption: {_desktop.Encryption}\nDuration: {(int)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
+            _lastSample = duration; _lastFrames = frames; _lastBytes = bytes;
+        }
+        finally { _probing = false; }
+    }
+
+    private void OnDisplaySelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DisplaySelector.SelectedIndex < 0) return;
+        _viewMode = (DisplayMode)DisplaySelector.SelectedIndex;
+        ApplyDisplayMode();
+    }
+
+    private void ApplyDisplayMode()
+    {
+        if (ScreenImage is null || ScreenViewport is null) return;
+        var original = _viewMode == DisplayMode.Original;
+        ScreenViewport.HorizontalScrollBarVisibility = original ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+        ScreenViewport.VerticalScrollBarVisibility = original ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+        ScreenImage.Width = original && _bitmap is not null ? _bitmap.PixelSize.Width / RenderScaling : double.NaN;
+        ScreenImage.Height = original && _bitmap is not null ? _bitmap.PixelSize.Height / RenderScaling : double.NaN;
+        ScreenImage.Stretch = _viewMode is DisplayMode.Stretch or DisplayMode.Original ? Stretch.Fill : Stretch.Uniform;
+        ScreenImage.StretchDirection = _viewMode == DisplayMode.AutoAdapt ? StretchDirection.DownOnly : StretchDirection.Both;
+    }
+
+    private void OnFrameReceived(CapturedFrame frame)
+    {
+        Interlocked.Exchange(ref _recordingFrame, frame);
+        Interlocked.Exchange(ref _pendingFrame, frame);
+        if (_autoRecordPending)
+        {
+            _autoRecordPending = false;
+            Dispatcher.UIThread.Post(async () =>
+            {
+                if (_closed || _recordingTransition || _recorder is not null) return;
+                _recordingTransition = true;
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(_recordingDirectory) || !Directory.Exists(_recordingDirectory))
+                    { Title = "IPCast — Choose an automatic recording folder in Settings"; return; }
+                    await StartRecordingAsync(Path.Combine(_recordingDirectory, $"IPCast-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.avi"));
+                }
+                catch (Exception ex) { Title = "IPCast — " + ex.Message; await SendSafely(() => _desktop.NotifyRecordingAsync(false)); }
+                finally { _recordingTransition = false; }
+            });
+        }
+    }
+
+    private async void OnRecordClick(object? sender, RoutedEventArgs e)
+    {
+        if (_recordingTransition) return;
+        if (_recorder is not null) { await StopRecordingAsync(); return; }
+        _recordingTransition = true;
+        try
+        {
+            if (_recordingFrame is null) { Title = "IPCast — wait for the first frame before recording"; return; }
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Save visible session recording", SuggestedFileName = $"IPCast-{DateTime.Now:yyyyMMdd-HHmmss}.avi",
+                DefaultExtension = "avi", FileTypeChoices = [new FilePickerFileType("MJPEG AVI video") { Patterns = ["*.avi"] }]
+            });
+            if (file?.TryGetLocalPath() is not { } path) return;
+            if (File.Exists(path)) { Title = "IPCast — choose a new filename for the recording"; return; }
+            await StartRecordingAsync(path);
+        }
+        catch (Exception ex) { Title = "IPCast — " + ex.Message; await SendSafely(() => _desktop.NotifyRecordingAsync(false)); }
+        finally { _recordingTransition = false; }
+    }
+
+    private async Task StartRecordingAsync(string path)
+    {
+        if (_closed || !_desktop.CanRecord) return;
+        await _desktop.NotifyRecordingAsync(true);
+        var recorder = new SessionRecorder(path, () => Volatile.Read(ref _recordingFrame));
+        _recorder = recorder;
+        RecordButton.Content = "REC · Stop";
+        ShowToolbarButton.Content = "REC · Show toolbar";
+        Title = "IPCast — RECORDING";
+        _ = ObserveRecordingAsync(recorder);
+    }
+
+    private async void OnAnnotateClick(object? sender, RoutedEventArgs e)
+    {
+        await ReleaseInputAsync();
+        var enabled = !Annotations.IsVisible;
+        Annotations.IsVisible = enabled; AnnotationTool.IsVisible = enabled; ClearAnnotationsButton.IsVisible = enabled;
+        AnnotationText.IsVisible = enabled && AnnotationTool.SelectedItem as string == "Text";
+        AnnotationButton.Content = enabled ? "Stop annotating" : "Annotate";
+        if (!enabled) Annotations.Clear();
+    }
+    private void OnAnnotationToolChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (Annotations is null || AnnotationTool.SelectedItem is not string tool) return;
+        Annotations.Tool = tool; AnnotationText.IsVisible = Annotations.IsVisible && tool == "Text";
+    }
+    private void OnAnnotationTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (Annotations is not null) Annotations.Label = AnnotationText.Text ?? "";
+    }
+    private void OnClearAnnotationsClick(object? sender, RoutedEventArgs e) => Annotations.Clear();
+
+    private async Task ObserveRecordingAsync(SessionRecorder recorder)
+    {
+        try { await recorder.Completion; }
+        catch (Exception ex)
+        {
+            if (ReferenceEquals(_recorder, recorder)) { await StopRecordingAsync(); Title = "IPCast — " + ex.Message; }
+        }
+    }
+
+    private async Task StopRecordingAsync()
+    {
+        var recorder = _recorder; _recorder = null;
+        if (recorder is null) return;
+        try { await recorder.StopAsync(); Title = "IPCast — Recording saved"; }
+        catch (Exception ex) { Title = "IPCast — " + ex.Message; }
+        finally
+        {
+            RecordButton.Content = "Record"; ShowToolbarButton.Content = "Show toolbar";
+            try { await _desktop.NotifyRecordingAsync(false); } catch (Exception) { }
+        }
+    }
 
     private void RenderLatestFrame()
     {
@@ -69,6 +293,7 @@ public partial class RemoteScreenWindow : Window
                 _bitmap = new WriteableBitmap(
                     new PixelSize(frame.Width, frame.Height), new Avalonia.Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
                 ScreenImage.Source = _bitmap;
+                ApplyDisplayMode();
             }
 
             using var fb = _bitmap.Lock();
@@ -90,21 +315,23 @@ public partial class RemoteScreenWindow : Window
 
     private async void OnPointerMoved(object? sender, PointerEventArgs e)
     {
+        if (TryGetPointerPosition(e, out var x, out var y))
+            await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
+    }
+
+    private bool TryGetPointerPosition(PointerEventArgs e, out double x, out double y)
+    {
+        x = y = 0;
         var bounds = ScreenImage.Bounds;
         if (bounds.Width <= 0 || bounds.Height <= 0)
         {
-            return;
+            return false;
         }
 
         var pos = e.GetPosition(ScreenImage);
-        if (_bitmap is null) return;
-        var scale = Math.Min(bounds.Width / _bitmap.PixelSize.Width, bounds.Height / _bitmap.PixelSize.Height);
-        var width = _bitmap.PixelSize.Width * scale;
-        var height = _bitmap.PixelSize.Height * scale;
-        var x = (pos.X - (bounds.Width - width) / 2) / width;
-        var y = (pos.Y - (bounds.Height - height) / 2) / height;
-        if (x < 0 || x > 1 || y < 0 || y > 1) return;
-        await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
+        if (_bitmap is null) return false;
+        return ScreenCoordinates.TryNormalize(pos.X, pos.Y, bounds.Width, bounds.Height,
+            _bitmap.PixelSize.Width, _bitmap.PixelSize.Height, _viewMode, out x, out y);
     }
 
     private async void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -117,10 +344,12 @@ public partial class RemoteScreenWindow : Window
             _ => -1,
         };
 
-        if (button >= 0)
+        if (button >= 0 && TryGetPointerPosition(e, out var x, out var y))
         {
             ScreenImage.Focus();
             e.Pointer.Capture(ScreenImage);
+            _pressedButtons.Add(button);
+            await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
             await SendSafely(() => _desktop.SendMouseButtonAsync(button, isDown: true));
             e.Handled = true;
         }
@@ -136,16 +365,31 @@ public partial class RemoteScreenWindow : Window
             _ => -1,
         };
 
-        if (button >= 0)
+        if (button >= 0 && _pressedButtons.Remove(button))
         {
             await SendSafely(() => _desktop.SendMouseButtonAsync(button, isDown: false));
-            e.Pointer.Capture(null);
+            if (_pressedButtons.Count == 0) e.Pointer.Capture(null);
             e.Handled = true;
         }
     }
 
-    private async void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e) =>
+    private async void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (!TryGetPointerPosition(e, out var x, out var y)) return;
+        await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
         await SendSafely(() => _desktop.SendMouseWheelAsync((int)(e.Delta.Y * 120)));
+        e.Handled = true;
+    }
+
+    private async Task ReleaseInputAsync()
+    {
+        var keys = _pressedKeys.ToArray();
+        var buttons = _pressedButtons.ToArray();
+        _pressedKeys.Clear();
+        _pressedButtons.Clear();
+        foreach (var key in keys) await SendSafely(() => _desktop.SendKeyEventAsync(key, false));
+        foreach (var button in buttons) await SendSafely(() => _desktop.SendMouseButtonAsync(button, false));
+    }
 
     private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
@@ -156,6 +400,7 @@ public partial class RemoteScreenWindow : Window
             e.Handled = true;
             return;
         }
+        if (!ScreenImage.IsFocused || Annotations.IsVisible) return;
         var key = AvaloniaKeyToVirtualKey(e.Key);
         if (key == 0) return;
         _pressedKeys.Add(key);
@@ -172,8 +417,7 @@ public partial class RemoteScreenWindow : Window
             return;
         }
         var key = AvaloniaKeyToVirtualKey(e.Key);
-        if (key == 0) return;
-        _pressedKeys.Remove(key);
+        if (key == 0 || !_pressedKeys.Remove(key)) return;
         await SendSafely(() => _desktop.SendKeyEventAsync(key, isDown: false));
         e.Handled = true;
     }

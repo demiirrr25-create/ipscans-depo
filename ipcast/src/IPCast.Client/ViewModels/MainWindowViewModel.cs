@@ -21,12 +21,48 @@ public partial class MainWindowViewModel : ObservableObject
 
     private const ConnectionPermissions DefaultRequestedPermissions =
         ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse |
-        ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer;
+        ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard | ConnectionPermissions.FileTransfer | ConnectionPermissions.Chat;
 
     private readonly PreferencesStore _preferencesStore = new();
     private CancellationTokenSource? _connectCts;
     private CancellationTokenSource? _transferCts;
     [ObservableProperty] private bool _isConnected;
+    [ObservableProperty] private bool _isPeerRecording;
+    [ObservableProperty] private bool _isChatAvailable;
+    private SessionChat? _activeChat;
+    private FileManagerSession? _fileManager;
+    private TunnelSession? _tunnels;
+    public SessionTools? Tools { get; private set; }
+    public SessionAudio? Audio { get; private set; }
+    [ObservableProperty] private bool _isSystemAudioShared;
+    public Func<Task<bool>>? OnRestartRequested { get; set; }
+    public event Action<TunnelSession>? TunnelsReady;
+    [ObservableProperty] private bool _isTunnelAvailable;
+    [ObservableProperty] private bool _isFileManagerAvailable;
+    public IReadOnlyList<string> PermissionProfileNames => PermissionProfiles.Names;
+    [ObservableProperty] private string _selectedPermissionProfile = "Full access";
+    public ObservableCollection<DiscoveredDevice> DiscoveredDevices { get; } = [];
+    private bool _discovering;
+    public async Task RefreshDiscoveredDevicesAsync()
+    {
+        if (_discovering) return;
+        _discovering = true;
+        try
+        {
+            var devices = await LanDiscoveryService.DiscoverAllAsync(TimeSpan.FromSeconds(2));
+            DiscoveredDevices.Clear();
+            foreach (var device in devices.Where(d => d.DeviceId != _localDeviceId.Raw)) DiscoveredDevices.Add(device);
+        }
+        catch (Exception ex) when (ex is System.Net.Sockets.SocketException or OperationCanceledException) { }
+        finally { _discovering = false; }
+    }
+    [RelayCommand]
+    private async Task ConnectDiscoveredAsync(DiscoveredDevice device)
+    {
+        RemoteIdInput = device.DeviceId;
+        await ConnectAsync();
+    }
+    public event Action<FileManagerSession>? FileManagerReady;
     [ObservableProperty] private string _localConnectionInfo = "Starting local listener...";
     public FileOfferHandler? OnFileOffered { get; set; }
     public Func<string, string, string?, Task<bool>>? OnTrustRequested { get; set; }
@@ -105,7 +141,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
     }
-    public IReadOnlyList<string> StreamingModes { get; } = ["Balanced", "Speed", "Quality"];
+    public IReadOnlyList<string> StreamingModes { get; } = ["Auto", "Balanced", "Speed", "Quality"];
     [ObservableProperty] private string _streamingMode = "Balanced";
     partial void OnStreamingModeChanged(string value) => SavePreferences();
     public bool IsLaunchAtStartupSupported => OperatingSystem.IsWindows();
@@ -154,6 +190,10 @@ public partial class MainWindowViewModel : ObservableObject
         };
         var preferences = _preferencesStore.Load();
         _isClipboardSyncEnabled = preferences.ClipboardSync;
+        _recordingDirectory = preferences.RecordingDirectory;
+        _automaticRecording = preferences.AutomaticRecording;
+        _automaticReconnect = preferences.AutomaticReconnect;
+        _checkUpdatesOnStartup = preferences.CheckUpdatesOnStartup;
         _streamingMode = StreamingModes.Contains(preferences.StreamingMode) ? preferences.StreamingMode : "Balanced";
         _launchAtStartup = IsRegisteredForStartup();
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IPCAST_RELAY_SERVER")))
@@ -166,7 +206,9 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnIsClipboardSyncEnabledChanged(bool value) => SavePreferences();
     private void SavePreferences()
     {
-        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode, LaunchAtStartup: LaunchAtStartup)); }
+        try { _preferencesStore.Save(new Preferences(ClipboardSync: IsClipboardSyncEnabled, StreamingMode: StreamingMode, LaunchAtStartup: LaunchAtStartup,
+            RecordingDirectory: RecordingDirectory, AutomaticRecording: AutomaticRecording, AutomaticReconnect: AutomaticReconnect,
+            CheckUpdatesOnStartup: CheckUpdatesOnStartup)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = $"Couldn't save settings: {ex.Message}"; }
     }
 
@@ -251,6 +293,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Raised when we're the viewer side of a screen-share session - the View opens the remote screen window for it.</summary>
     public event Action<RemoteDesktopSession>? RemoteDesktopSessionReady;
+    public event Action<SessionChat>? SessionChatReady;
 
     public IReadOnlyList<NavItem> NavItems { get; } =
     [
@@ -316,6 +359,8 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowClipboardSettings));
         OnPropertyChanged(nameof(ShowSecuritySettings));
         OnPropertyChanged(nameof(HasVisibleSettings));
+        OnPropertyChanged(nameof(ShowRecordingSettings));
+        OnPropertyChanged(nameof(ShowDiagnosticsSettings));
     }
 
     private bool SettingMatches(params string[] keywords)
@@ -333,7 +378,7 @@ public partial class MainWindowViewModel : ObservableObject
     public bool ShowSecuritySettings => SettingMatches("security", "certificate", "fingerprint", "encryption", "tls", "identity", "trust");
 
     public bool HasVisibleSettings => ShowGeneralSettings || ShowDisplaySettings || ShowConnectionSettings
-        || ShowUnattendedSettings || ShowClipboardSettings || ShowSecuritySettings;
+        || ShowUnattendedSettings || ShowClipboardSettings || ShowSecuritySettings || ShowRecordingSettings || ShowDiagnosticsSettings;
 
     partial void OnSelectedNavItemChanged(NavItem value)
     {
@@ -365,12 +410,14 @@ public partial class MainWindowViewModel : ObservableObject
             _connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
             var result = await NetworkService.ConnectAsync(
                 RemoteIdInput.Trim(),
-                DefaultRequestedPermissions,
+                PermissionProfiles.ForName(SelectedPermissionProfile),
                 password: string.IsNullOrEmpty(RemotePasswordInput) ? null : RemotePasswordInput,
                 ct: _connectCts.Token);
 
             if (result.Success)
             {
+                _connectedTarget = RemoteIdInput.Trim();
+                _connectedPermissions = result.Session!.GrantedPermissions;
                 AttachSession(result.Session!);
                 var remoteDisplay = result.Session!.RemoteDeviceId.Formatted;
                 RecordHistory(result.Session!.RemoteDeviceId, "Outgoing", "Connected");
@@ -381,6 +428,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
             else if (result.Rejected)
             {
+                AuditLog.Default.Write(AuditEvent.AuthenticationFailed, AuditLevel.Warning);
                 if (DeviceId.TryParse(RemoteIdInput, out var targetId))
                 {
                     RecordHistory(targetId, "Outgoing", "Rejected");
@@ -406,16 +454,34 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    [RelayCommand] private void CancelConnect() => _connectCts?.Cancel();
+    [RelayCommand] private void CancelConnect() { _connectCts?.Cancel(); _reconnectCts?.Cancel(); }
 
     [RelayCommand]
     private async Task DisconnectAsync()
     {
-        _transferCts?.Cancel();
-        _activeDesktop?.Dispose();
+        _reconnectCts?.Cancel();
+        _tunnels?.Dispose(); _tunnels = null; IsTunnelAvailable = false;
+        Tools?.Dispose(); Tools = null;
+        Audio?.Dispose(); Audio = null; IsSystemAudioShared = false;
+        var desktopToDispose = _activeDesktop;
         _activeDesktop = null;
         var loop = _activeSessionLoop;
         _activeSessionLoop = null;
+        if (loop is not null)
+        {
+            using var goodbye = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            try { await loop.SendAsync(IPCast.Network.Protocol.MessageType.Bye, new IPCast.Network.Protocol.ByeMessage("Disconnected"), goodbye.Token); }
+            catch (Exception) { }
+        }
+        if (_activeSession is not null) AuditLog.Default.Write(AuditEvent.ConnectionEnded, deviceId: _activeSession.RemoteDeviceId.Raw);
+        IsPeerRecording = false;
+        IsFileManagerAvailable = false;
+        if (_fileManager is not null) { await _fileManager.DisposeAsync(); _fileManager = null; }
+        IsChatAvailable = false;
+        _activeChat?.Dispose();
+        _activeChat = null;
+        _transferCts?.Cancel();
+        desktopToDispose?.Dispose();
         _activeSession?.Dispose();
         _activeSession = null;
         if (loop is not null) await loop.DisposeAsync();
@@ -531,6 +597,14 @@ public partial class MainWindowViewModel : ObservableObject
         FavoritesMessage = $"Renamed to {newName}.";
     }
 
+    public async Task WakeFavoriteAsync(FavoriteDevice favorite, string mac)
+    {
+        await WakeOnLan.SendAsync(mac);
+        _favoritesStore.SetMacAddress(favorite.DeviceId, mac);
+        ReplaceFavorite(favorite, favorite with { MacAddress = mac });
+        StatusMessage = "Wake packet sent on the local network. The device must support and enable Wake-on-LAN.";
+    }
+
     private void ReplaceFavorite(FavoriteDevice existing, FavoriteDevice updated)
     {
         var index = FavoriteDevices.IndexOf(existing);
@@ -628,23 +702,52 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void AttachSession(RemoteSession session)
     {
+        AuditLog.Default.Write(AuditEvent.ConnectionStarted, deviceId: session.RemoteDeviceId.Raw);
         _activeSession = session;
         IsConnected = true;
         var loop = new SessionMessageLoop(session);
         loop.ClipboardTextReceived += text => { if (IsClipboardSyncEnabled) PeerClipboardTextReceived?.Invoke(text); };
-        loop.Faulted += ex => Dispatcher.UIThread.Post(() => StatusMessage = $"Connection ended: {ex.Message}");
-        loop.Ended += () => Dispatcher.UIThread.Post(async () => {
-            if (ReferenceEquals(_activeSessionLoop, loop)) { await DisconnectAsync(); StatusMessage = "Disconnected."; }
-        });
+        var networkFailure = false;
+        loop.Faulted += ex => networkFailure = ex is IOException or System.Net.Sockets.SocketException;
+        loop.Ended += () => Dispatcher.UIThread.Post(async () => await RecoverConnectionAsync(loop, networkFailure));
 
         _fileReceiver = new FileReceiver(loop, session)
         {
             OnFileOffered = offer => OnFileOffered?.Invoke(offer) ?? Task.FromResult(FileOfferDecision.Reject("No file receiver is available."))
         };
-        _fileReceiver.FileReceived += path => Dispatcher.UIThread.Post(() => FileTransferMessage = $"Received file saved to: {path}");
+        _fileReceiver.FileReceived += path => { AuditLog.Default.Write(AuditEvent.FileTransferred, deviceId: session.RemoteDeviceId.Raw); Dispatcher.UIThread.Post(() => FileTransferMessage = $"Received file saved to: {path}"); };
         _fileReceiver.Faulted += ex => Dispatcher.UIThread.Post(() => FileTransferMessage = $"Receive failed: {ex.Message}");
 
         _activeSessionLoop = loop;
+        Tools = new SessionTools(loop, session) { RequestRestart = () => OnRestartRequested?.Invoke() ?? Task.FromResult(false) };
+        if (OperatingSystem.IsWindows() && session.GrantedPermissions.HasFlag(ConnectionPermissions.Audio))
+        {
+            Audio = new SessionAudio(loop, session, () => OperatingSystem.IsWindows()
+                ? new WindowsSystemAudio() : throw new PlatformNotSupportedException("System audio requires Windows."));
+            Audio.StateChanged += (enabled, error) => Dispatcher.UIThread.Post(() =>
+            {
+                IsSystemAudioShared = enabled && !session.IsInitiator;
+                if (error is not null) StatusMessage = error;
+            });
+        }
+        IsTunnelAvailable = session.GrantedPermissions.HasFlag(ConnectionPermissions.TcpTunnel);
+        if (IsTunnelAvailable)
+        {
+            _tunnels = new TunnelSession(loop, session);
+            TunnelsReady?.Invoke(_tunnels);
+        }
+        IsFileManagerAvailable = session.GrantedPermissions.HasFlag(ConnectionPermissions.FileTransfer);
+        if (IsFileManagerAvailable)
+        {
+            _fileManager = new FileManagerSession(loop, session);
+            FileManagerReady?.Invoke(_fileManager);
+        }
+        IsChatAvailable = session.GrantedPermissions.HasFlag(ConnectionPermissions.Chat);
+        if (IsChatAvailable)
+        {
+            _activeChat = new SessionChat(loop, session);
+            SessionChatReady?.Invoke(_activeChat);
+        }
 
         if (!session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
         {
@@ -654,6 +757,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         var desktop = new RemoteDesktopSession(loop, session);
         _activeDesktop = desktop;
+        desktop.RecordingStateChanged += recording => Dispatcher.UIThread.Post(() => IsPeerRecording = recording);
         desktop.Faulted += ex => Dispatcher.UIThread.Post(async () => { await DisconnectAsync(); StatusMessage = $"Screen sharing stopped: {ex.Message}"; });
 
         if (session.IsInitiator)
@@ -686,7 +790,7 @@ public partial class MainWindowViewModel : ObservableObject
                 "Real screen sharing requires Windows. Set IPCAST_FAKE_CAPTURE=1 for local development on other platforms.");
         }
 
-        return (new GdiScreenCapturer(), new SendInputInjector());
+        return (new MonitorAwareScreenCapturer(), new SendInputInjector());
     }
 
     /// <summary>Pushes locally-copied clipboard text to the connected peer, if any (spec §8).</summary>

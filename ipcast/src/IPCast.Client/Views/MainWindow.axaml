@@ -3,12 +3,13 @@
         xmlns:vm="using:IPCast.Client.ViewModels"
         xmlns:conv="using:IPCast.Client.Converters"
         xmlns:persistence="using:IPCast.Client.Persistence"
+        xmlns:network="using:IPCast.Network"
         x:Class="IPCast.Client.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="IPCast — Secure Remote Access"
         Icon="/Assets/ipcast.ico"
         Width="1120" Height="780"
-        MinWidth="860" MinHeight="580"
+        MinWidth="740" MinHeight="420"
         Background="{DynamicResource AppBackgroundBrush}">
 
     <Window.Resources>
@@ -55,7 +56,7 @@
                         <TextBlock Text="Unattended access ON" FontSize="10"
                                    Foreground="{DynamicResource AccentBrush}"
                                    IsVisible="{Binding IsUnattendedAccessEnabled}" />
-                        <TextBlock Text="v1.1 Preview · Auto Relay" FontSize="10"
+                        <TextBlock Text="{Binding VersionLabel}" FontSize="10"
                                    Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
                 </Border>
@@ -94,9 +95,14 @@
                         </StackPanel>
                         <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Spacing="8">
                             <TextBlock Text="{Binding LocalConnectionInfo}" Classes="hint" />
+                            <TextBlock Text="REC — The remote viewer is recording this session" IsVisible="{Binding IsPeerRecording}"
+                                       Foreground="{DynamicResource DangerBrush}" FontWeight="Bold" />
                             <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
+                            <TextBlock Text="System audio is being shared" IsVisible="{Binding IsSystemAudioShared}" Classes="hint" />
                             <Button Content="Disconnect current session" Classes="danger" HorizontalAlignment="Left"
                                     Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
+                            <Button Content="Open session chat" HorizontalAlignment="Left" Click="OnChatClick"
+                                    IsVisible="{Binding IsChatAvailable}" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -106,6 +112,8 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="CONNECT TO A DEVICE" Classes="eyebrow" />
                         <TextBlock Text="Remote IPCast ID" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding PermissionProfileNames}" SelectedItem="{Binding SelectedPermissionProfile}"
+                                  AutomationProperties.Name="Requested permission profile" />
                         <TextBox Name="RemoteIdTextBox" FontSize="16" PlaceholderText="123 456 789"
                                  Text="{Binding RemoteIdInput}" KeyDown="OnRemoteIdKeyDown"
                                  AutomationProperties.Name="Remote device ID or direct IP address and port" />
@@ -127,6 +135,23 @@
                 </Border>
 
                 <!-- Favorites -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="DISCOVERED DEVICES · LOCAL NETWORK" Classes="eyebrow" />
+                    <TextBlock Text="Refreshed every 30 seconds. Verify the device certificate before connecting." Classes="hint" />
+                    <ItemsControl ItemsSource="{Binding DiscoveredDevices}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="network:DiscoveredDevice">
+                                <Border Classes="device" Margin="0,0,0,8">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                                        <Button Content="Connect" Classes="primary" CommandParameter="{Binding}"
+                                                Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectDiscoveredCommand}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <StackPanel Spacing="10" IsVisible="{Binding DashboardFavoriteDevices.Count}">
                     <TextBlock Text="FAVORITES" Classes="eyebrow" />
                     <ItemsControl ItemsSource="{Binding DashboardFavoriteDevices}">
@@ -137,6 +162,7 @@
                                         <ContextMenu>
                                             <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
                                             <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+                                            <MenuItem Header="Wake device…" Click="OnFavoriteWake" />
                                             <Separator />
                                             <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
                                         </ContextMenu>
@@ -217,6 +243,7 @@
                 <Border Classes="card">
                     <StackPanel Spacing="12">
                         <TextBlock Text="SEND A FILE" Classes="eyebrow" />
+                        <Button Content="Open two-panel file manager" Click="OnFileManagerClick" IsVisible="{Binding IsFileManagerAvailable}" />
                         <TextBox Text="{Binding SelectedFilePath}" PlaceholderText="Choose a file or enter its full path" />
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Button Content="Choose file…" Click="OnChooseFileClick" />
@@ -341,6 +368,7 @@
             <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
                 <TextBlock Text="Settings" Classes="display" FontSize="26" />
+                <TextBlock Text="System audio is being shared with the connected device" IsVisible="{Binding IsSystemAudioShared}" Classes="hint" />
                 <TextBox PlaceholderText="Search settings…" Text="{Binding SettingsQuery}"
                          AutomationProperties.Name="Search settings" />
 
@@ -377,6 +405,8 @@
                         <TextBlock Text="IPCast relay is configured automatically. Open this version on both computers, enter the other computer's 9-digit ID and accept the connection there. No relay address or setup code is needed."
                                    Classes="hint" />
                         <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
+                        <CheckBox Content="Retry after network interruption (up to 3 attempts)" IsChecked="{Binding AutomaticReconnect}" />
+                        <TextBlock Text="A new connection asks the remote owner for permission again." Classes="hint" />
                     </StackPanel>
                 </Border>
 
@@ -422,10 +452,34 @@
                     </StackPanel>
                 </Border>
 
+                <Border Classes="card" IsVisible="{Binding ShowRecordingSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Recording" Classes="h2" />
+                        <TextBox Text="{Binding RecordingDirectory}" PlaceholderText="Choose a recording folder" IsReadOnly="True" />
+                        <Button Content="Choose recording folder" Click="OnRecordingDirectoryClick" />
+                        <CheckBox Content="Automatically record new sessions when the host permits recording"
+                                  IsChecked="{Binding AutomaticRecording}" />
+                        <TextBlock Text="REC is shown on both devices. AVI recordings stop at a resolution change or 1.8 GB." Classes="hint" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="card" IsVisible="{Binding ShowDiagnosticsSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{Binding VersionLabel}" Classes="h2" />
+                        <Button Content="Check for updates" Click="OnCheckUpdatesClick" />
+                        <CheckBox Content="Check for updates when IPCast starts" IsChecked="{Binding CheckUpdatesOnStartup}" />
+                        <TextBlock Text="{Binding UpdateStatus}" Classes="hint" />
+                        <TextBlock Text="Diagnostics contain audit events, device IDs, app and OS versions. They exclude passwords, clipboard contents and file contents." Classes="hint" />
+                        <WrapPanel>
+                            <Button Content="Open Logs Folder" Click="OnOpenLogsClick" Margin="0,0,8,8" />
+                            <Button Content="Export Diagnostics" Click="OnExportDiagnosticsClick" Margin="0,0,8,8" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
                 <!-- Security -->
                 <Border Classes="card" IsVisible="{Binding ShowSecuritySettings}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Security" Classes="h2" />
+                        <TextBlock Text="This release runs in the signed-in user session. Secure-desktop control (Ctrl+Alt+Del/UAC), privacy-screen blanking and virtual printer redirection require a trusted service or driver and are unavailable. Transfer a document with Files and print it locally instead." Classes="hint" />
                         <TextBlock Text="This device's TLS certificate fingerprint (SHA-256). Compare it out-of-band the first time a new device connects."
                                    Classes="hint" />
                         <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap"

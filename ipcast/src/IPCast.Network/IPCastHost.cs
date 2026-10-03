@@ -16,6 +16,12 @@ namespace IPCast.Network;
 /// </summary>
 public sealed class IPCastHost : IAsyncDisposable
 {
+    private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(15);
+    private const ConnectionPermissions SupportedPermissions =
+        ConnectionPermissions.ViewScreen | ConnectionPermissions.ControlMouse |
+        ConnectionPermissions.ControlKeyboard | ConnectionPermissions.Clipboard |
+        ConnectionPermissions.FileTransfer | ConnectionPermissions.SystemInformation |
+        ConnectionPermissions.RemoteRestart | ConnectionPermissions.Chat | ConnectionPermissions.Recording | ConnectionPermissions.TcpTunnel | ConnectionPermissions.Audio;
     private readonly X509Certificate2 _certificate;
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _cts = new();
@@ -72,6 +78,9 @@ public sealed class IPCastHost : IAsyncDisposable
 
     private async Task HandleIncomingAsync(TcpClient client, CancellationToken ct)
     {
+        using var handshakeTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        handshakeTimeout.CancelAfter(HandshakeTimeout);
+        var handshakeToken = handshakeTimeout.Token;
         Stream stream;
         try
         {
@@ -83,7 +92,7 @@ public sealed class IPCastHost : IAsyncDisposable
                     ClientCertificateRequired = false,
                     EnabledSslProtocols = SslProtocols.None, // let the OS/runtime pick the best mutually-supported version (TLS 1.2/1.3)
                 },
-                ct).ConfigureAwait(false);
+                handshakeToken).ConfigureAwait(false);
             stream = sslStream;
         }
         catch (Exception)
@@ -95,7 +104,7 @@ public sealed class IPCastHost : IAsyncDisposable
 
         try
         {
-            var (helloType, helloPayload) = await MessageStream.ReadAsync(stream, ct).ConfigureAwait(false);
+            var (helloType, helloPayload) = await MessageStream.ReadAsync(stream, handshakeToken).ConfigureAwait(false);
             if (helloType != MessageType.Hello)
             {
                 client.Dispose();
@@ -109,7 +118,7 @@ public sealed class IPCastHost : IAsyncDisposable
                 return;
             }
 
-            var (requestType, requestPayload) = await MessageStream.ReadAsync(stream, ct).ConfigureAwait(false);
+            var (requestType, requestPayload) = await MessageStream.ReadAsync(stream, handshakeToken).ConfigureAwait(false);
             if (requestType != MessageType.ConnectionRequest)
             {
                 client.Dispose();
@@ -117,10 +126,21 @@ public sealed class IPCastHost : IAsyncDisposable
             }
 
             var request = requestPayload.Deserialize<ConnectionRequestMessage>()!;
+            if (request.FromDeviceId != remoteId.Raw ||
+                (request.RequestedPermissions & ~SupportedPermissions) != ConnectionPermissions.None)
+            {
+                client.Dispose();
+                return;
+            }
+
+            // The timeout protects only the unauthenticated handshake. A user may need longer
+            // than 15 seconds to review an interactive permission request.
+            handshakeTimeout.CancelAfter(Timeout.InfiniteTimeSpan);
 
             if (!string.IsNullOrEmpty(request.Password))
             {
-                await HandleUnattendedAccessAttemptAsync(stream, client, remoteId, request.Password, ct).ConfigureAwait(false);
+                await HandleUnattendedAccessAttemptAsync(stream, client, remoteId, request.Password,
+                    request.RequestedPermissions, ct).ConfigureAwait(false);
                 return;
             }
 
@@ -130,6 +150,7 @@ public sealed class IPCastHost : IAsyncDisposable
             var decision = handler is null
                 ? ConnectionDecision.Reject("No one is available to accept connections right now.")
                 : await handler(incoming).ConfigureAwait(false);
+            decision = decision with { GrantedPermissions = decision.GrantedPermissions & request.RequestedPermissions };
 
             await MessageStream.WriteAsync(
                 stream,
@@ -153,7 +174,8 @@ public sealed class IPCastHost : IAsyncDisposable
     }
 
     private async Task HandleUnattendedAccessAttemptAsync(
-        Stream stream, TcpClient client, DeviceId remoteId, string password, CancellationToken ct)
+        Stream stream, TcpClient client, DeviceId remoteId, string password,
+        ConnectionPermissions requestedPermissions, CancellationToken ct)
     {
         try
         {
@@ -183,7 +205,7 @@ public sealed class IPCastHost : IAsyncDisposable
                     else
                     {
                         failed = false;
-                        decision = new ConnectionDecision(true, granted.Value);
+                        decision = new ConnectionDecision(true, granted.Value & requestedPermissions);
                     }
                 }
                 finally

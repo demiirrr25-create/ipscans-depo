@@ -34,8 +34,6 @@ public sealed class SendInputInjector : IInputInjector
     private const uint KEYEVENTF_SCANCODE = 0x0008;
     private const uint KEYEVENTF_UNICODE = 0x0004;
     private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
-    
-    private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
 
     public SendInputInjector()
     {
@@ -105,26 +103,7 @@ public sealed class SendInputInjector : IInputInjector
 
     public void SendCharacter(char character)
     {
-        // Send a Unicode character
-        SendSingleInput(new NativeMethods.INPUT
-        {
-            type = INPUT_KEYBOARD,
-            u = new NativeMethods.InputUnion
-            {
-                ki = new NativeMethods.KEYBDINPUT
-                {
-                    wVk = 0,
-                    wScan = 0,
-                    dwFlags = KEYEVENTF_UNICODE,
-                    time = 0,
-                    dwExtraInfo = IntPtr.Zero,
-                    // For Unicode, we put the character in wScan
-                }
-            },
-        });
-        
-        // Actually, for Unicode we need to use a different approach
-        // Let's use the proper Unicode character input
+        // Unicode input uses the UTF-16 code unit in wScan.
         var inputs = new[]
         {
             new NativeMethods.INPUT
@@ -274,105 +253,8 @@ public sealed class SendInputInjector : IInputInjector
         SendMultipleInputs(inputs);
     }
 
-    public void SendCtrlAltDel()
-    {
-        // Ctrl+Alt+Del: press Ctrl, press Alt, press Del, release Del, release Alt, release Ctrl
-        var inputs = new[]
-        {
-            // Press Ctrl
-            new NativeMethods.INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new NativeMethods.InputUnion
-                {
-                    ki = new NativeMethods.KEYBDINPUT
-                    {
-                        wVk = (ushort)NativeMethods.VK_CONTROL,
-                        dwFlags = 0,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero,
-                    }
-                },
-            },
-            // Press Alt
-            new NativeMethods.INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new NativeMethods.InputUnion
-                {
-                    ki = new NativeMethods.KEYBDINPUT
-                    {
-                        wVk = (ushort)NativeMethods.VK_MENU,
-                        dwFlags = 0,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero,
-                    }
-                },
-            },
-            // Press Del
-            new NativeMethods.INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new NativeMethods.InputUnion
-                {
-                    ki = new NativeMethods.KEYBDINPUT
-                    {
-                        wVk = (ushort)NativeMethods.VK_DELETE,
-                        dwFlags = 0,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero,
-                    }
-                },
-            },
-            // Release Del
-            new NativeMethods.INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new NativeMethods.InputUnion
-                {
-                    ki = new NativeMethods.KEYBDINPUT
-                    {
-                        wVk = (ushort)NativeMethods.VK_DELETE,
-                        dwFlags = KEYEVENTF_KEYUP,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero,
-                    }
-                },
-            },
-            // Release Alt
-            new NativeMethods.INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new NativeMethods.InputUnion
-                {
-                    ki = new NativeMethods.KEYBDINPUT
-                    {
-                        wVk = (ushort)NativeMethods.VK_MENU,
-                        dwFlags = KEYEVENTF_KEYUP,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero,
-                    }
-                },
-            },
-            // Release Ctrl
-            new NativeMethods.INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new NativeMethods.InputUnion
-                {
-                    ki = new NativeMethods.KEYBDINPUT
-                    {
-                        wVk = (ushort)NativeMethods.VK_CONTROL,
-                        dwFlags = KEYEVENTF_KEYUP,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero,
-                    }
-                },
-            }
-        };
-        
-        SendMultipleInputs(inputs);
-    }
+    public void SendCtrlAltDel() => throw new NotSupportedException(
+        "Windows secure attention requires a trusted service; SendInput cannot send Ctrl+Alt+Del.");
 
     public void SendWindowsKey()
     {
@@ -452,7 +334,7 @@ public sealed class SendInputInjector : IInputInjector
             // Release L
             new NativeMethods.INPUT
             {
-                type = INPUT_KEYBOARD;
+                type = INPUT_KEYBOARD,
                 u = new NativeMethods.InputUnion
                 {
                     ki = new NativeMethods.KEYBDINPUT
@@ -467,7 +349,7 @@ public sealed class SendInputInjector : IInputInjector
             // Release Windows key
             new NativeMethods.INPUT
             {
-                type = INPUT_KEYBOARD;
+                type = INPUT_KEYBOARD,
                 u = new NativeMethods.InputUnion
                 {
                     ki = new NativeMethods.KEYBDINPUT

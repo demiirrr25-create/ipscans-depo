@@ -15,7 +15,11 @@ public partial class MainWindow : Window
     // Guards against the clipboard-sync feedback loop: applying a peer's clipboard text would
     // otherwise look like a new local change and get echoed straight back to them.
     private string? _lastSeenClipboardText;
+    private SessionChatWindow? _chatWindow;
+    private FileManagerWindow? _fileManagerWindow;
+    private TunnelWindow? _tunnelWindow;
     private readonly DispatcherTimer _clipboardPoll = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer _discoveryPoll = new() { Interval = TimeSpan.FromSeconds(30) };
 
     public MainWindow()
     {
@@ -23,6 +27,7 @@ public partial class MainWindow : Window
         Opened += OnOpened;
         Closed += OnClosed;
         _clipboardPoll.Tick += async (_, _) => await PollLocalClipboardAsync();
+        _discoveryPoll.Tick += async (_, _) => { if (DataContext is MainWindowViewModel vm && IsVisible) await vm.RefreshDiscoveredDevicesAsync(); };
     }
 
     private void OnOpened(object? sender, EventArgs e)
@@ -33,6 +38,7 @@ public partial class MainWindow : Window
         }
 
         vm.NetworkService.OnConnectionRequested = request => IncomingConnectionWindow.ShowAsync(this, request);
+        vm.OnRestartRequested = () => SessionActions.ConfirmRestartAsync(this);
         vm.NetworkService.SessionEstablished += session => Dispatcher.UIThread.Post(() => vm.OnSessionEstablished(session));
         vm.OnTrustRequested = async (device, fingerprint, previous) => await Dispatcher.UIThread.InvokeAsync(async () => {
             var dialog = new Window { Title = "Verify remote device", Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -60,7 +66,28 @@ public partial class MainWindow : Window
             return path is null ? FileOfferDecision.Reject("File declined.") : FileOfferDecision.AcceptTo(path);
         });
         vm.PeerClipboardTextReceived += OnPeerClipboardTextReceived;
+        vm.TunnelsReady += tunnels =>
+        {
+            tunnels.Approve = configuration => TunnelWindow.RequestApprovalAsync(this, configuration);
+            var window = new TunnelWindow(tunnels);
+            _tunnelWindow = window;
+            window.Closed += (_, _) => { if (ReferenceEquals(_tunnelWindow, window)) _tunnelWindow = null; };
+            window.Show();
+        };
         vm.RemoteDesktopSessionReady += OnRemoteDesktopSessionReady;
+        vm.FileManagerReady += session =>
+        {
+            var manager = new FileManagerWindow(session);
+            _fileManagerWindow = manager;
+            manager.Closed += (_, _) => { if (ReferenceEquals(_fileManagerWindow, manager)) _fileManagerWindow = null; };
+        };
+        vm.SessionChatReady += chat =>
+        {
+            var chatWindow = new SessionChatWindow(chat);
+            _chatWindow = chatWindow;
+            chatWindow.Closed += (_, _) => { if (ReferenceEquals(_chatWindow, chatWindow)) _chatWindow = null; };
+            chatWindow.Show();
+        };
         try
         {
             vm.NetworkService.Start();
@@ -68,11 +95,16 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) { vm.StatusMessage = $"Network startup failed: {ex.Message}"; }
         _clipboardPoll.Start();
+        _discoveryPoll.Start();
+        _ = vm.RefreshDiscoveredDevicesAsync();
+        _ = vm.CheckForUpdateAsync();
+        vm.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(vm.IsPeerRecording)) Title = vm.IsPeerRecording ? "IPCast — REC: remote viewer is recording" : "IPCast — Secure Remote Access"; };
     }
 
     private async void OnClosed(object? sender, EventArgs e)
     {
         _clipboardPoll.Stop();
+        _discoveryPoll.Stop();
         if (DataContext is MainWindowViewModel vm)
         {
             await vm.ShutdownAsync();
@@ -122,6 +154,18 @@ public partial class MainWindow : Window
     {
         Dispatcher.UIThread.Post(() => {
             var window = new RemoteScreenWindow(desktop);
+            if (DataContext is MainWindowViewModel toolsVm && toolsVm.Tools is { } tools) window.ConfigureTools(tools);
+            if (DataContext is MainWindowViewModel audioVm && audioVm.Audio is { } audio) window.ConfigureAudio(audio);
+            if (_tunnelWindow is { } tunnels) window.EnableTunnels(() => { tunnels.Show(); tunnels.Activate(); });
+            if (DataContext is MainWindowViewModel settings)
+                window.ConfigureRecording(settings.RecordingDirectory, settings.AutomaticRecording);
+            if (_fileManagerWindow is { } manager)
+            {
+                window.EnableFileManager(() => { manager.Show(); manager.Activate(); });
+                window.EnableFileDrop(manager.UploadExternalFilesAsync);
+            }
+            if (_chatWindow is { } chatWindow)
+                window.EnableChat(() => { chatWindow.Show(); chatWindow.Activate(); });
             window.Closed += async (_, _) => { if (DataContext is MainWindowViewModel vm) await vm.DisconnectDesktopAsync(desktop); };
             window.Show();
         });
@@ -132,6 +176,17 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel vm) return;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Choose a file to send", AllowMultiple = false });
         if (files.Count > 0) vm.SelectedFilePath = files[0].TryGetLocalPath() ?? string.Empty;
+    }
+
+    private void OnChatClick(object? sender, RoutedEventArgs e)
+    {
+        _chatWindow?.Show();
+        _chatWindow?.Activate();
+    }
+
+    private void OnFileManagerClick(object? sender, RoutedEventArgs e)
+    {
+        _fileManagerWindow?.Show(); _fileManagerWindow?.Activate();
     }
 
     private async void OnCopyIdClick(object? sender, RoutedEventArgs e)
@@ -194,12 +249,21 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task<string?> PromptForNameAsync(string currentName)
+    private async void OnFavoriteWake(object? sender, RoutedEventArgs e)
     {
-        var input = new TextBox { Text = currentName, PlaceholderText = "Device name", MinWidth = 320 };
+        if (DataContext is not MainWindowViewModel vm || FavoriteFrom(sender) is not { } device) return;
+        var mac = await PromptForNameAsync(device.MacAddress ?? "00-11-22-33-44-55", "Wake device — MAC address", "MAC address");
+        if (string.IsNullOrWhiteSpace(mac)) return;
+        try { await vm.WakeFavoriteAsync(device, mac); }
+        catch (Exception ex) { vm.StatusMessage = ex.Message; }
+    }
+
+    private async Task<string?> PromptForNameAsync(string currentName, string title = "Rename device", string label = "Device name")
+    {
+        var input = new TextBox { Text = currentName, PlaceholderText = label, MinWidth = 320 };
         var dialog = new Window
         {
-            Title = "Rename device",
+            Title = title,
             Width = 400,
             SizeToContent = SizeToContent.Height,
             CanResize = false,
@@ -226,7 +290,7 @@ public partial class MainWindow : Window
             Spacing = 16,
             Children =
             {
-                new TextBlock { Text = "Enter a new name for this device.", Foreground = this.FindResource("TextSecondaryBrush") as Avalonia.Media.IBrush },
+                new TextBlock { Text = label, Foreground = this.FindResource("TextSecondaryBrush") as Avalonia.Media.IBrush },
                 input,
                 buttons,
             },

@@ -30,8 +30,38 @@ public partial class IncomingConnectionWindow : Window
         ControlKeyboardCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard);
         ClipboardCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.Clipboard);
         FileTransferCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.FileTransfer);
+        ChatCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.Chat);
+        ChatCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Chat);
+        RecordingCheck.IsChecked = false;
+        TunnelCheck.IsChecked = false;
+        AudioCheck.IsChecked = false;
+        AudioCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Audio) && OperatingSystem.IsWindows();
+        TunnelCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.TcpTunnel);
+        RecordingCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Recording);
         SystemInfoCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.SystemInformation);
-        RemoteRestartCheck.IsChecked = request.RequestedPermissions.HasFlag(ConnectionPermissions.RemoteRestart);
+        RemoteRestartCheck.IsChecked = false;
+        RemoteRestartCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.RemoteRestart) && OperatingSystem.IsWindows();
+        SystemInfoCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.SystemInformation);
+        ProfileSelector.ItemsSource = PermissionProfiles.Names.Concat(["Custom"]).ToArray();
+        ProfileSelector.SelectedIndex = 4;
+        ViewScreenCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.ViewScreen);
+        ControlMouseCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.ControlMouse);
+        ControlKeyboardCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard);
+        ClipboardCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.Clipboard);
+        FileTransferCheck.IsEnabled = request.RequestedPermissions.HasFlag(ConnectionPermissions.FileTransfer);
+    }
+
+    private void OnProfileChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (ProfileSelector.SelectedItem is not string name || name == "Custom") return;
+        var permissions = PermissionProfiles.ForName(name) & _request.RequestedPermissions;
+        ViewScreenCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.ViewScreen);
+        ControlMouseCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.ControlMouse);
+        ControlKeyboardCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.ControlKeyboard);
+        ClipboardCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.Clipboard);
+        FileTransferCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.FileTransfer);
+        ChatCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.Chat);
+        RecordingCheck.IsChecked = permissions.HasFlag(ConnectionPermissions.Recording);
     }
 
     private void OnRejectClick(object? sender, RoutedEventArgs e)
@@ -48,6 +78,12 @@ public partial class IncomingConnectionWindow : Window
         if (ControlKeyboardCheck.IsChecked == true) granted |= ConnectionPermissions.ControlKeyboard;
         if (ClipboardCheck.IsChecked == true) granted |= ConnectionPermissions.Clipboard;
         if (FileTransferCheck.IsChecked == true) granted |= ConnectionPermissions.FileTransfer;
+        if (ChatCheck.IsChecked == true) granted |= ConnectionPermissions.Chat;
+        if (RecordingCheck.IsChecked == true) granted |= ConnectionPermissions.Recording;
+        if (TunnelCheck.IsChecked == true) granted |= ConnectionPermissions.TcpTunnel;
+        if (AudioCheck.IsChecked == true) granted |= ConnectionPermissions.Audio;
+        if (SystemInfoCheck.IsChecked == true) granted |= ConnectionPermissions.SystemInformation;
+        if (RemoteRestartCheck.IsChecked == true) granted |= ConnectionPermissions.RemoteRestart;
 
         _result = new ConnectionDecision(true, granted);
         Close();

@@ -1,7 +1,9 @@
 name: Build IPCast
 
-# Build and verify IPCast on Windows and Linux. On successful main-branch Windows builds,
-# publish the self-contained EXE as a GitHub prerelease asset for the website download button.
+# Build and verify IPCast on Windows and Linux. Main-branch changes publish only after both
+# platform gates succeed. Published versions are immutable; every new release must bump Version.
+# Unsigned artifacts must be disclosed until a trusted signing
+# certificate is available; SHA-256 guards against accidental artifact mismatch.
 
 on:
   push:
@@ -9,11 +11,19 @@ on:
     paths:
       - "ipcast/**"
       - ".github/workflows/build-ipcast.yml"
+      - "tools/publish-ipcast-release*.cjs"
   pull_request:
     paths:
       - "ipcast/**"
       - ".github/workflows/build-ipcast.yml"
-  workflow_dispatch: {}
+      - "tools/publish-ipcast-release*.cjs"
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish the verified Windows executable after release acceptance"
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   build-and-test:
@@ -35,11 +45,19 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      - name: Validate Windows workflow scripts
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: ../tools/validate-ipcast-workflow.ps1
+
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
       - name: Test
         run: dotnet test --configuration Release --no-build --logger "console;verbosity=normal"
+
+      - name: Test release publication failure handling
+        run: node --test ../tools/publish-ipcast-release.test.cjs
 
       - name: Publish self-contained win-x64 EXE
         if: matrix.os == 'windows-latest'
@@ -85,12 +103,21 @@ jobs:
             }
           }
 
+      - name: Record executable SHA-256
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash 'publish\win-x64\IPCast.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content 'publish\win-x64\IPCast.exe.sha256' "$hash  IPCast.exe" -NoNewline
+
       - name: Upload IPCast.exe artifact
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: IPCast-win-x64
-          path: ipcast/publish/win-x64/IPCast.exe
+          path: |
+            ipcast/publish/win-x64/IPCast.exe
+            ipcast/publish/win-x64/IPCast.exe.sha256
           if-no-files-found: error
 
       - name: Install Inno Setup
@@ -102,7 +129,11 @@ jobs:
         run: |
           $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
           if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
-          & $iscc installer\IPCast.iss
+          [xml]$project = Get-Content src/IPCast.Client/IPCast.Client.csproj
+          $version = [string]$project.Project.PropertyGroup.Version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid release version." }
+          & $iscc "/DMyAppVersion=$version" installer\IPCast.iss
+          if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed." }
 
       - name: Smoke test the installer (silent install, verify, uninstall)
         if: matrix.os == 'windows-latest'
@@ -122,82 +153,56 @@ jobs:
             throw "Uninstaller did not remove IPCast.exe from $installDir"
           }
 
-      - name: Upload installer artifact
+      - name: Prepare versioned release bundle
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content src/IPCast.Client/IPCast.Client.csproj
+          $version = [string]$project.Project.PropertyGroup.Version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid release version." }
+          $bundle = New-Item -ItemType Directory -Path publish/release -Force
+          $portable = "IPCast-$version.exe"
+          $installer = "IPCast-$version-Setup.exe"
+          Copy-Item publish/win-x64/IPCast.exe (Join-Path $bundle $portable)
+          Copy-Item publish/installer/IPCast-Setup.exe (Join-Path $bundle $installer)
+          $assets = @()
+          foreach ($name in @($portable, $installer)) {
+            $file = Get-Item (Join-Path $bundle $name)
+            $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            Set-Content (Join-Path $bundle "$name.sha256") "$hash  $name" -Encoding utf8
+            $assets += @{ name = $name; size = $file.Length; sha256 = $hash }
+          }
+          @{ version = $version; commit = $env:GITHUB_SHA; signed = $false; assets = $assets } |
+            ConvertTo-Json -Depth 4 | Set-Content (Join-Path $bundle "release.json") -Encoding utf8
+
+      - name: Upload versioned release bundle
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: IPCast-Setup
-          path: ipcast/publish/installer/IPCast-Setup.exe
+          name: IPCast-release
+          path: ipcast/publish/release/*
           if-no-files-found: error
 
   publish-download:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release))
     needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download Windows executable
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
-          name: IPCast-win-x64
+          name: IPCast-release
           path: release
 
-      - name: Publish IPCast Windows download
+      - name: Verify both release checksums
+        run: sha256sum --check *.sha256
+        working-directory: release
+
+      - name: Publish versioned IPCast release
         uses: actions/github-script@v7
         with:
           script: |
-            const { owner, repo } = context.repo;
-            const fs = require("fs");
-            const fileData = fs.readFileSync("release/IPCast.exe");
-
-            const targets = [
-              { tag: "v2.0.0", name: "IPCast-2.0.0.exe", releaseName: "IPCast 2.0.0 Enterprise" },
-              { tag: "ipcast-latest", name: "IPCast.exe", releaseName: "IPCast for Windows" }
-            ];
-
-            for (const target of targets) {
-              let release;
-              try {
-                const result = await github.rest.repos.getReleaseByTag({ owner, repo, tag: target.tag });
-                release = result.data;
-              } catch (error) {
-                if (error.status !== 404) throw error;
-                const result = await github.rest.repos.createRelease({
-                  owner,
-                  repo,
-                  tag_name: target.tag,
-                  target_commitish: "main",
-                  name: target.releaseName,
-                  body: "Latest self-contained IPCast Windows x64 build.",
-                  draft: false,
-                  prerelease: false,
-                });
-                release = result.data;
-              }
-
-              for (const assetName of [target.name, "IPCast-2.0.0.exe", "IPCast.exe"]) {
-                const previousAsset = (release.assets || []).find((asset) => asset.name === assetName);
-                if (previousAsset) {
-                  try {
-                    await github.rest.repos.deleteReleaseAsset({
-                      owner,
-                      repo,
-                      asset_id: previousAsset.id,
-                    });
-                  } catch (e) {}
-                }
-              }
-
-              await github.rest.repos.uploadReleaseAsset({
-                owner,
-                repo,
-                release_id: release.id,
-                name: target.name,
-                data: fileData,
-                headers: {
-                  "content-type": "application/octet-stream",
-                  "content-length": fileData.length,
-                },
-              });
-            }
+            await require('./tools/publish-ipcast-release.cjs')({ github, context, core });

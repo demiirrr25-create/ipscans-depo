@@ -4,6 +4,7 @@ public sealed record StreamingProfile(int MaxDimension, int Quality, int FramesP
 {
     public static StreamingProfile FromName(string? name) => name switch
     {
+        "Auto" => new(1600, -1, 20, 1024 * 1024),
         "Speed" => new(1280, 45, 20, 384 * 1024),
         "Quality" => new(2560, 80, 15, 2 * 1024 * 1024),
         _ => new(1600, 60, 20, 1024 * 1024)

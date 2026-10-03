@@ -14,7 +14,7 @@ namespace IPCast.RemoteDesktop;
 /// (common from GDI's GetDIBits) making everything decode as invisible.
 /// 
 /// Enhanced with adaptive quality support for dynamic bandwidth adaptation.
-/// </version>
+/// </summary>
 public static class FrameCodec
 {
     /// <summary>
@@ -147,5 +147,41 @@ public static class FrameCodec
         }
         
         /// <summary>
-        /// Resets the adaptive quality state to defaults.
-        /// 
+        /// Returns the quality selected from recent bandwidth samples.
+        /// </summary>
+        public static int GetCurrentQuality() => _currentQuality;
+
+        /// <summary>Clears bandwidth samples before a new session.</summary>
+        public static void Reset()
+        {
+            _bandwidthSamples.Clear();
+            _currentQuality = DefaultQuality;
+        }
+    }
+
+    /// <summary>Decodes a bounded JPEG frame into top-down BGRA pixels.</summary>
+    public static CapturedFrame DecodeJpeg(byte[] jpeg)
+    {
+        ArgumentNullException.ThrowIfNull(jpeg);
+        using var data = SKData.CreateCopy(jpeg);
+        using var codec = SKCodec.Create(data) ?? throw new InvalidDataException("Invalid JPEG frame.");
+        var sourceInfo = codec.Info;
+        if (sourceInfo.Width <= 0 || sourceInfo.Height <= 0 ||
+            sourceInfo.Width > 8192 || sourceInfo.Height > 8192 ||
+            (long)sourceInfo.Width * sourceInfo.Height > 16_777_216)
+        {
+            throw new InvalidDataException("JPEG frame dimensions are out of range.");
+        }
+
+        var info = new SKImageInfo(sourceInfo.Width, sourceInfo.Height, SKColorType.Bgra8888, SKAlphaType.Opaque);
+        using var bitmap = new SKBitmap(info);
+        if (codec.GetPixels(info, bitmap.GetPixels()) != SKCodecResult.Success)
+        {
+            throw new InvalidDataException("JPEG frame could not be decoded.");
+        }
+
+        var pixels = new byte[checked(sourceInfo.Width * sourceInfo.Height * 4)];
+        Marshal.Copy(bitmap.GetPixels(), pixels, 0, pixels.Length);
+        return new CapturedFrame(sourceInfo.Width, sourceInfo.Height, pixels);
+    }
+}

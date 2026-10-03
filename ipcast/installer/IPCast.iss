@@ -8,7 +8,9 @@
 ; optional desktop shortcut, and optional "start with Windows".
 
 #define MyAppName "IPCast"
-#define MyAppVersion "2.0.0"
+#ifndef MyAppVersion
+  #error MyAppVersion must be supplied from IPCast.Client.csproj using /DMyAppVersion
+#endif
 #define MyAppPublisher "IPCast"
 #define MyAppExeName "IPCast.exe"
 #define MyPublishDir "..\publish\win-x64"

@@ -7,7 +7,8 @@ namespace IPCast.Client.Persistence;
 public sealed record FavoriteDevice(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("deviceId")] string DeviceId,
-    [property: JsonPropertyName("lastConnectedUtc")] DateTimeOffset? LastConnectedUtc)
+    [property: JsonPropertyName("lastConnectedUtc")] DateTimeOffset? LastConnectedUtc,
+    [property: JsonPropertyName("macAddress")] string? MacAddress = null)
 {
     [JsonIgnore]
     public string FormattedId => DeviceId.Length == 9 ? $"{DeviceId[..3]} {DeviceId[3..6]} {DeviceId[6..9]}" : DeviceId;
@@ -55,6 +56,8 @@ public sealed class FavoriteDevicesStore
     }
 
     public void Remove(string deviceId) => Save(GetAll().Where(d => d.DeviceId != deviceId).ToList());
+    public void SetMacAddress(string deviceId, string mac) =>
+        Save(GetAll().Select(d => d.DeviceId == deviceId ? d with { MacAddress = mac } : d).ToList());
 
     public void Rename(string deviceId, string newName)
     {
