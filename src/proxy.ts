@@ -12,6 +12,7 @@ function getPreferredLocale(request: NextRequest): string {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") || "";
 
   // Next's dynamically-generated icon routes (no file extension in their
   // URL, so the matcher below can't exclude them via ".*\\..*") must be
@@ -21,12 +22,21 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const locale = getPreferredLocale(request);
+
+  // Domain routing for harryvillegas.shop
+  const isHarryVillegasDomain = host.toLowerCase().includes("harryvillegas");
+  if (isHarryVillegasDomain && (pathname === "/" || pathname === "")) {
+    const shopUrl = request.nextUrl.clone();
+    shopUrl.pathname = `/${locale}/shop`;
+    return NextResponse.redirect(shopUrl);
+  }
+
   const hasLocale = locales.some(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+    (loc) => pathname === `/${loc}` || pathname.startsWith(`/${loc}/`)
   );
   if (hasLocale) return NextResponse.next();
 
-  const locale = getPreferredLocale(request);
   const url = request.nextUrl.clone();
   url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
   return NextResponse.redirect(url);
