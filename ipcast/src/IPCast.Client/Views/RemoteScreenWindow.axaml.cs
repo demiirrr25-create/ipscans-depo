@@ -3,6 +3,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media.Imaging;
+using Avalonia.Media;
+using Avalonia.Controls.Primitives;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.Interactivity;
@@ -26,6 +28,7 @@ public partial class RemoteScreenWindow : Window
     private readonly HashSet<int> _pressedButtons = [];
     private bool _suppressEscapeKeyUp;
     private bool _updatingMonitors;
+    private DisplayMode _viewMode = DisplayMode.AutoAdapt;
 
     public RemoteScreenWindow()
     {
@@ -38,6 +41,9 @@ public partial class RemoteScreenWindow : Window
     {
         _desktop = desktop;
         InitializeComponent();
+        DisplaySelector.ItemsSource = new[] { "Original", "Fit", "Stretch", "Auto adapt" };
+        DisplaySelector.SelectedIndex = 3;
+        ScalingChanged += (_, _) => ApplyDisplayMode();
 
         _desktop.FrameReceived += OnFrameReceived;
         _desktop.AvailableMonitorsReceived += OnAvailableMonitorsReceived;
@@ -84,6 +90,25 @@ public partial class RemoteScreenWindow : Window
 
     private void OnSessionClosed() => Dispatcher.UIThread.Post(Close);
 
+    private void OnDisplaySelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DisplaySelector.SelectedIndex < 0) return;
+        _viewMode = (DisplayMode)DisplaySelector.SelectedIndex;
+        ApplyDisplayMode();
+    }
+
+    private void ApplyDisplayMode()
+    {
+        if (ScreenImage is null || ScreenViewport is null) return;
+        var original = _viewMode == DisplayMode.Original;
+        ScreenViewport.HorizontalScrollBarVisibility = original ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+        ScreenViewport.VerticalScrollBarVisibility = original ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+        ScreenImage.Width = original && _bitmap is not null ? _bitmap.PixelSize.Width / RenderScaling : double.NaN;
+        ScreenImage.Height = original && _bitmap is not null ? _bitmap.PixelSize.Height / RenderScaling : double.NaN;
+        ScreenImage.Stretch = _viewMode is DisplayMode.Stretch or DisplayMode.Original ? Stretch.Fill : Stretch.Uniform;
+        ScreenImage.StretchDirection = _viewMode == DisplayMode.AutoAdapt ? StretchDirection.DownOnly : StretchDirection.Both;
+    }
+
     private void OnFrameReceived(CapturedFrame frame) => Interlocked.Exchange(ref _pendingFrame, frame);
 
     private void RenderLatestFrame()
@@ -97,6 +122,7 @@ public partial class RemoteScreenWindow : Window
                 _bitmap = new WriteableBitmap(
                     new PixelSize(frame.Width, frame.Height), new Avalonia.Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
                 ScreenImage.Source = _bitmap;
+                ApplyDisplayMode();
             }
 
             using var fb = _bitmap.Lock();
@@ -133,12 +159,8 @@ public partial class RemoteScreenWindow : Window
 
         var pos = e.GetPosition(ScreenImage);
         if (_bitmap is null) return false;
-        var scale = Math.Min(bounds.Width / _bitmap.PixelSize.Width, bounds.Height / _bitmap.PixelSize.Height);
-        var width = _bitmap.PixelSize.Width * scale;
-        var height = _bitmap.PixelSize.Height * scale;
-        x = (pos.X - (bounds.Width - width) / 2) / width;
-        y = (pos.Y - (bounds.Height - height) / 2) / height;
-        return x >= 0 && x <= 1 && y >= 0 && y <= 1;
+        return ScreenCoordinates.TryNormalize(pos.X, pos.Y, bounds.Width, bounds.Height,
+            _bitmap.PixelSize.Width, _bitmap.PixelSize.Height, _viewMode, out x, out y);
     }
 
     private async void OnPointerPressed(object? sender, PointerPressedEventArgs e)
