@@ -11,7 +11,12 @@ public sealed record Preferences(
     string RecordingDirectory = "",
     bool AutomaticRecording = false,
     bool AutomaticReconnect = true,
-    bool CheckUpdatesOnStartup = true)
+    bool CheckUpdatesOnStartup = true,
+    string Theme = "Dark",
+    bool OpenAddressBookOnStartup = false,
+    bool PreventDisplaySleep = true,
+    string InteractiveAccess = "Always ask",
+    int SessionIdleMinutes = 0)
 {
     public const string DefaultRelayAddress = "wss://p01--ipcast-relay--d5n8c99gjxdn.code.run/relay";
 }

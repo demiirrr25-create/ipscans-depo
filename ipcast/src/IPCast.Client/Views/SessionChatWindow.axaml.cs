@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using IPCast.Network;
+using Avalonia.Platform.Storage;
 
 namespace IPCast.Client.Views;
 
@@ -59,6 +60,14 @@ public partial class SessionChatWindow : Window
     }
 
     private async void OnSendClick(object? sender, RoutedEventArgs e) => await SendAsync();
+    private async void OnSaveTranscriptClick(object? sender, RoutedEventArgs e)
+    {
+        var snapshot = Transcript.Text ?? "";
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions { Title = "Save chat transcript", SuggestedFileName = $"IPCast-chat-{DateTime.Now:yyyyMMdd-HHmmss}.txt", DefaultExtension = "txt", ShowOverwritePrompt = true });
+        if (file is null) return;
+        try { await using var stream = await file.OpenWriteAsync(); stream.SetLength(0); await using var writer = new StreamWriter(stream); await writer.WriteAsync(snapshot); StatusText.Text = "Transcript saved to your chosen file."; }
+        catch (Exception ex) { StatusText.Text = "Save failed: " + ex.Message; }
+    }
     private async void OnInputKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter) return;

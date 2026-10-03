@@ -16,7 +16,7 @@ public partial class MainWindowViewModel
     partial void OnAutomaticReconnectChanged(bool value) => SavePreferences();
     public bool ShowRecordingSettings => SettingMatches("recording", "video", "directory", "automatic");
     public bool ShowDiagnosticsSettings => SettingMatches("advanced", "logs", "diagnostics", "about", "version");
-    public string VersionLabel => "IPCast " + (Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "unknown");
+    public string VersionLabel => "IPCast " + (typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "unknown");
     public async Task CheckForUpdateAsync()
     {
         if (!CheckUpdatesOnStartup) return;

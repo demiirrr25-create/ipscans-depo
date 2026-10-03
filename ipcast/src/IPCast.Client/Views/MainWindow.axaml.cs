@@ -24,6 +24,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        KeyDown += (_, e) =>
+        {
+            if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.L) { RemoteIdTextBox.Focus(); RemoteIdTextBox.SelectAll(); e.Handled = true; }
+            if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.B) { OnAddressBookClick(this, new RoutedEventArgs()); e.Handled = true; }
+        };
         Opened += OnOpened;
         Closed += OnClosed;
         _clipboardPoll.Tick += async (_, _) => await PollLocalClipboardAsync();
@@ -37,7 +42,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        vm.NetworkService.OnConnectionRequested = request => IncomingConnectionWindow.ShowAsync(this, request);
+        vm.NetworkService.OnConnectionRequested = async request => await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            if (vm.InteractiveAccess == "Unattended access only" ||
+                (vm.InteractiveAccess == "Only when window is visible" && !IsVisible))
+                return IPCast.Network.ConnectionDecision.Reject("Interactive access is disabled. Use authorized unattended access credentials.");
+            return await IncomingConnectionWindow.ShowAsync(this, request);
+        });
         vm.OnRestartRequested = () => SessionActions.ConfirmRestartAsync(this);
         vm.NetworkService.SessionEstablished += session => Dispatcher.UIThread.Post(() => vm.OnSessionEstablished(session));
         vm.OnTrustRequested = async (device, fingerprint, previous) => await Dispatcher.UIThread.InvokeAsync(async () => {
@@ -80,6 +91,7 @@ public partial class MainWindow : Window
             var manager = new FileManagerWindow(session);
             _fileManagerWindow = manager;
             manager.Closed += (_, _) => { if (ReferenceEquals(_fileManagerWindow, manager)) _fileManagerWindow = null; };
+            if (vm.SelectedPermissionProfile == "File transfer") manager.Show();
         };
         vm.SessionChatReady += chat =>
         {
@@ -158,7 +170,7 @@ public partial class MainWindow : Window
             if (DataContext is MainWindowViewModel audioVm && audioVm.Audio is { } audio) window.ConfigureAudio(audio);
             if (_tunnelWindow is { } tunnels) window.EnableTunnels(() => { tunnels.Show(); tunnels.Activate(); });
             if (DataContext is MainWindowViewModel settings)
-                window.ConfigureRecording(settings.RecordingDirectory, settings.AutomaticRecording);
+                { window.ConfigureRecording(settings.RecordingDirectory, settings.AutomaticRecording); window.ConfigurePower(settings.PreventDisplaySleep); window.ConfigureIdleTimeout(settings.SessionIdleMinutes); }
             if (_fileManagerWindow is { } manager)
             {
                 window.EnableFileManager(() => { manager.Show(); manager.Activate(); });

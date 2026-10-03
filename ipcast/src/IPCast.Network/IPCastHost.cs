@@ -140,7 +140,7 @@ public sealed class IPCastHost : IAsyncDisposable
             if (!string.IsNullOrEmpty(request.Password))
             {
                 await HandleUnattendedAccessAttemptAsync(stream, client, remoteId, request.Password,
-                    request.RequestedPermissions, ct).ConfigureAwait(false);
+                    request.RequestedPermissions, ct, request.OneTimeCode).ConfigureAwait(false);
                 return;
             }
 
@@ -175,7 +175,7 @@ public sealed class IPCastHost : IAsyncDisposable
 
     private async Task HandleUnattendedAccessAttemptAsync(
         Stream stream, TcpClient client, DeviceId remoteId, string password,
-        ConnectionPermissions requestedPermissions, CancellationToken ct)
+        ConnectionPermissions requestedPermissions, CancellationToken ct, string? oneTimeCode)
     {
         try
         {
@@ -197,7 +197,7 @@ public sealed class IPCastHost : IAsyncDisposable
                 var failed = true;
                 try
                 {
-                    var granted = UnattendedAccessPolicy?.TryAuthenticate(password);
+                    var granted = UnattendedAccessPolicy?.TryAuthenticate(password, oneTimeCode);
                     if (granted is null)
                     {
                         decision = ConnectionDecision.Reject("Incorrect password.");

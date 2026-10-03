@@ -24,6 +24,24 @@ public sealed class RemoteDesktopSession : IDisposable
     private readonly Stopwatch _duration = Stopwatch.StartNew();
     private long _receivedFrames;
     private long _receivedVideoBytes;
+    private StreamingProfile? _requestedStreamingProfile;
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _qualityRequests = new();
+
+    public async Task SetStreamingQualityAsync(string profile, CancellationToken ct = default)
+    {
+        if (!_session.IsInitiator || !_session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
+            throw new UnauthorizedAccessException("Only an authorized viewer can change stream quality.");
+        if (profile is not ("Auto" or "Balanced" or "Speed" or "Quality")) throw new ArgumentException("Unknown streaming profile.");
+        if (_qualityRequests.Count >= 4) throw new InvalidOperationException("Wait for the previous quality change.");
+        var id = Guid.NewGuid().ToString("N"); var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _qualityRequests[id] = completion;
+        try
+        {
+            await _loop.SendAsync(MessageType.StreamQualityRequest, new StreamQualityMessage(id, profile), ct);
+            if (!await completion.Task.WaitAsync(TimeSpan.FromSeconds(5), ct)) throw new IOException("The remote device declined the quality change.");
+        }
+        finally { _qualityRequests.TryRemove(id, out _); }
+    }
     private int _frameWidth, _frameHeight;
     public string RemoteDeviceId => _session.RemoteDeviceId.Formatted;
     public string GrantedPermissionsDescription => _session.GrantedPermissions.ToString();
@@ -175,6 +193,11 @@ public sealed class RemoteDesktopSession : IDisposable
             var unchangedFrames = 0;
             while (!ct.IsCancellationRequested)
             {
+                if (Volatile.Read(ref _requestedStreamingProfile) is { } requested)
+                {
+                    frameInterval = TimeSpan.FromSeconds(1d / requested.FramesPerSecond);
+                    jpegQuality = requested.Quality; maxDimension = requested.MaxDimension; maxBytesPerSecond = requested.BytesPerSecond;
+                }
                 var started = Stopwatch.GetTimestamp();
                 var budget = frameInterval;
                 var (frame, monitorName) = await CaptureFrameAsync(capturer, ct).ConfigureAwait(false);
@@ -234,6 +257,17 @@ public sealed class RemoteDesktopSession : IDisposable
         if (_disposed != 0) return;
         switch (type)
         {
+            case MessageType.StreamQualityRequest when !_session.IsInitiator && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
+                var qualityRequest = payload.Deserialize<StreamQualityMessage>();
+                if (qualityRequest is null || qualityRequest.RequestId is null || qualityRequest.RequestId.Length > 64) throw new InvalidDataException("Invalid stream quality request.");
+                var valid = qualityRequest.Profile is "Auto" or "Balanced" or "Speed" or "Quality";
+                if (valid) Volatile.Write(ref _requestedStreamingProfile, StreamingProfile.FromName(qualityRequest.Profile));
+                _ = ReplyQualityAsync(qualityRequest with { Accepted = valid });
+                break;
+            case MessageType.StreamQualityResponse when _session.IsInitiator:
+                var qualityResponse = payload.Deserialize<StreamQualityMessage>();
+                if (qualityResponse?.RequestId is { } qualityId && _qualityRequests.TryGetValue(qualityId, out var pendingQuality)) pendingQuality.TrySetResult(qualityResponse.Accepted);
+                break;
             case MessageType.TextInput when CanControlKeyboard():
                 var inputText = payload.Deserialize<ClipboardTextMessage>()?.Text;
                 if (inputText is null || inputText.Length > 4000) throw new InvalidDataException("Invalid text input.");
@@ -365,6 +399,12 @@ public sealed class RemoteDesktopSession : IDisposable
     }
 
     private bool CanControlKeyboard() => _sharingInjector is not null && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard);
+    private async Task ReplyQualityAsync(StreamQualityMessage response)
+    {
+        try { await _loop.SendAsync(MessageType.StreamQualityResponse, response); }
+        catch (Exception ex) { if (_disposed == 0) Faulted?.Invoke(ex); }
+    }
+
     public Task SendTextAsync(string text, CancellationToken ct = default) =>
         _session.IsInitiator && text.Length <= 4000 && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard)
             ? _loop.SendAsync(MessageType.TextInput, new ClipboardTextMessage(text), ct)

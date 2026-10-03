@@ -17,17 +17,19 @@ internal sealed class UnattendedAccessRecord
 
     [JsonPropertyName("iterations")]
     public int Iterations { get; set; }
+    public string? ProtectedTotpSecret { get; set; }
+    public long LastTotpStep { get; set; } = -1;
 }
 
 /// <summary>Whether unattended access is currently enabled - never exposes the password itself.</summary>
-public sealed record UnattendedAccessStatus(bool Enabled);
+public sealed record UnattendedAccessStatus(bool Enabled, bool TwoFactorEnabled = false);
 
 /// <summary>
 /// Persists this device's unattended-access (spec §9) settings: whether it's enabled, and the
 /// hashed+salted password required to connect without anyone at the keyboard to click Accept.
 /// The password itself is never stored or logged in plaintext.
 /// </summary>
-public sealed class UnattendedAccessStore
+public sealed partial class UnattendedAccessStore
 {
     private const int MinimumPasswordLength = 8;
 
@@ -43,7 +45,7 @@ public sealed class UnattendedAccessStore
     public UnattendedAccessStatus GetStatus()
     {
         var record = TryLoad();
-        return new UnattendedAccessStatus(record?.Enabled ?? false);
+        return new UnattendedAccessStatus(record?.Enabled ?? false, !string.IsNullOrEmpty(record?.ProtectedTotpSecret));
     }
 
     /// <summary>Enables unattended access with the given password. Throws <see cref="ArgumentException"/> if the password is too weak.</summary>

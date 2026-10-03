@@ -4,7 +4,7 @@
         Background="{DynamicResource AppBackgroundBrush}">
     <Grid Margin="20" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="14">
         <StackPanel Spacing="4">
-            <TextBlock Text="Session chat" Classes="h2" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Session chat" Classes="h2" VerticalAlignment="Center" /><Button Grid.Column="1" Content="Save transcript" Click="OnSaveTranscriptClick" /></Grid>
             <TextBlock Name="PeerText" Classes="hint" />
         </StackPanel>
         <TextBox Name="Transcript" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
