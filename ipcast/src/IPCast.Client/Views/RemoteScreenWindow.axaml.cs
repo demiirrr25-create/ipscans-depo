@@ -24,6 +24,7 @@ public partial class RemoteScreenWindow : Window
     private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly HashSet<int> _pressedKeys = [];
     private bool _suppressEscapeKeyUp;
+    private bool _updatingMonitors;
 
     public RemoteScreenWindow()
     {
@@ -38,6 +39,8 @@ public partial class RemoteScreenWindow : Window
         InitializeComponent();
 
         _desktop.FrameReceived += OnFrameReceived;
+        _desktop.AvailableMonitorsReceived += OnAvailableMonitorsReceived;
+        Opened += async (_, _) => await SendSafely(() => _desktop.RequestAvailableMonitorsAsync());
         _renderTimer.Tick += (_, _) => RenderLatestFrame();
         _renderTimer.Start();
         _desktop.Closed += OnSessionClosed;
@@ -51,7 +54,32 @@ public partial class RemoteScreenWindow : Window
             foreach (var key in _pressedKeys.ToArray()) await SendSafely(() => _desktop.SendKeyEventAsync(key, false));
             _pressedKeys.Clear();
         };
-        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
+        Closed += (_, _) => { _closed = true; _renderTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.AvailableMonitorsReceived -= OnAvailableMonitorsReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
+    }
+
+    private sealed record MonitorOption(string DeviceName, string Label)
+    {
+        public override string ToString() => Label;
+    }
+
+    private void OnAvailableMonitorsReceived(IReadOnlyList<MonitorInfo> monitors) =>
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_closed) return;
+            _updatingMonitors = true;
+            try
+            {
+                MonitorSelector.ItemsSource = monitors.Select(m => new MonitorOption(m.DeviceName, m.FriendlyName)).ToArray();
+                MonitorSelector.IsVisible = monitors.Count > 1;
+                MonitorSelector.SelectedIndex = monitors.Count > 0 ? 0 : -1;
+            }
+            finally { _updatingMonitors = false; }
+        });
+
+    private async void OnMonitorSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingMonitors || MonitorSelector.SelectedItem is not MonitorOption selected) return;
+        await SendSafely(() => _desktop.SelectMonitorAsync(selected.DeviceName));
     }
 
     private void OnSessionClosed() => Dispatcher.UIThread.Post(Close);

@@ -157,6 +157,66 @@ public class RemoteDesktopSessionTests : IAsyncDisposable
         acceptorSession.Dispose();
     }
 
+    [Fact]
+    public async Task ViewerCanSelectMonitorAndPointerMapsToVirtualDesktop()
+    {
+        var (viewer, sharer, host) = await SessionTestHelper.EstablishSessionAsync(_hostId, _clientId, FullControl);
+        _host = host;
+        using (viewer) using (sharer)
+        {
+            await using var sharerLoop = new SessionMessageLoop(sharer);
+            await using var viewerLoop = new SessionMessageLoop(viewer);
+            using var sharerDesktop = new RemoteDesktopSession(sharerLoop, sharer);
+            using var viewerDesktop = new RemoteDesktopSession(viewerLoop, viewer);
+            var monitorsReceived = new TaskCompletionSource<IReadOnlyList<MonitorInfo>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            viewerDesktop.AvailableMonitorsReceived += monitors => monitorsReceived.TrySetResult(monitors);
+            var selectedFrameReceived = new TaskCompletionSource<CapturedFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
+            viewerDesktop.FrameReceived += frame =>
+            {
+                if (frame.Width == 100) selectedFrameReceived.TrySetResult(frame);
+            };
+            var capturer = new TwoMonitorCapturer();
+            var injector = new RecordingInputInjector();
+            sharerLoop.Start(); viewerLoop.Start();
+            sharerDesktop.StartSharing(capturer, injector, TimeSpan.FromMilliseconds(20));
+
+            await viewerDesktop.RequestAvailableMonitorsAsync();
+            var monitors = await monitorsReceived.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(3, monitors.Count);
+            Assert.Contains(monitors, m => m.DeviceName == "right");
+
+            await viewerDesktop.SelectMonitorAsync("right");
+            await WaitUntilAsync(() => capturer.LastSelectedMonitor == "right");
+            Assert.Equal(100, (await selectedFrameReceived.Task.WaitAsync(TimeSpan.FromSeconds(5))).Width);
+            await viewerDesktop.SendMouseMoveAsync(0.5, 0.5);
+            await WaitUntilAsync(() => injector.MouseMoves.Count > 0);
+            Assert.Equal(0.75, injector.MouseMoves[^1].NormalizedX, precision: 3);
+            Assert.Equal(0.5, injector.MouseMoves[^1].NormalizedY, precision: 3);
+        }
+    }
+
+    private sealed class TwoMonitorCapturer : IScreenCapturer, IMonitorAwareCapturer
+    {
+        public string? LastSelectedMonitor { get; private set; }
+
+        public IEnumerable<MonitorInfo> GetAvailableMonitors() =>
+        [
+            new(MonitorInfo.VirtualDesktopDeviceName, "All monitors", 0, 0, 200, 100),
+            new("left", "Monitor 1", 0, 0, 100, 100),
+            new("right", "Monitor 2", 100, 0, 100, 100),
+        ];
+
+        public Task<CapturedFrame?> CaptureFrameAsync(MonitorInfo monitor, CancellationToken ct)
+        {
+            LastSelectedMonitor = monitor.DeviceName;
+            return Task.FromResult<CapturedFrame?>(new CapturedFrame(monitor.Width, monitor.Height,
+                new byte[monitor.Width * monitor.Height * 4]));
+        }
+
+        public CapturedFrame CaptureFrame() => new(200, 100, new byte[200 * 100 * 4]);
+        public void Dispose() { }
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 5000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);

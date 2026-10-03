@@ -10,7 +10,7 @@
             <!-- Collapsible session toolbar (spec §5) -->
             <Border Name="Toolbar" Grid.Row="0" Background="{DynamicResource SidebarBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Ellipse Width="8" Height="8" Fill="{DynamicResource StatusOnlineBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="IPCast" FontWeight="Bold" VerticalAlignment="Center"
@@ -19,12 +19,15 @@
                     <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" TextWrapping="NoWrap"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="Live view — click or type here to control (only if the remote device granted it)." />
-                    <Button Grid.Column="2" Classes="toolbar" Content="Hide bar" Click="OnToggleToolbarClick"
+                    <ComboBox Grid.Column="2" Name="MonitorSelector" MinWidth="145"
+                              IsVisible="False" SelectionChanged="OnMonitorSelectionChanged"
+                              AutomationProperties.Name="Remote monitor" ToolTip.Tip="Choose a remote monitor" />
+                    <Button Grid.Column="3" Classes="toolbar" Content="Hide bar" Click="OnToggleToolbarClick"
                             ToolTip.Tip="Hide the toolbar for a cleaner view" AutomationProperties.Name="Hide toolbar" />
-                    <Button Grid.Column="3" Name="FullScreenButton" Classes="toolbar" Content="Full screen"
+                    <Button Grid.Column="4" Name="FullScreenButton" Classes="toolbar" Content="Full screen"
                             Click="OnToggleFullScreenClick" ToolTip.Tip="Toggle full screen (F11)"
                             AutomationProperties.Name="Toggle full screen" />
-                    <Button Grid.Column="4" Classes="danger" Content="Disconnect" MinHeight="34" Padding="14,6"
+                    <Button Grid.Column="5" Classes="danger" Content="Disconnect" MinHeight="34" Padding="14,6"
                             Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
                 </Grid>
             </Border>

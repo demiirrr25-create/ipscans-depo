@@ -686,7 +686,7 @@ public partial class MainWindowViewModel : ObservableObject
                 "Real screen sharing requires Windows. Set IPCAST_FAKE_CAPTURE=1 for local development on other platforms.");
         }
 
-        return (new GdiScreenCapturer(), new SendInputInjector());
+        return (new MonitorAwareScreenCapturer(), new SendInputInjector());
     }
 
     /// <summary>Pushes locally-copied clipboard text to the connected peer, if any (spec §8).</summary>

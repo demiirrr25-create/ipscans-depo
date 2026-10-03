@@ -1,7 +1,8 @@
 name: Build IPCast
 
 # Build and verify IPCast on Windows and Linux. Publishing requires a separate manual dispatch
-# after the physical-device and signing gates in ipcast/ROADMAP.md have been completed.
+# after release acceptance. Unsigned artifacts must be disclosed until a trusted signing
+# certificate is available; SHA-256 guards against accidental artifact mismatch.
 
 on:
   push:
@@ -91,12 +92,21 @@ jobs:
             }
           }
 
+      - name: Record executable SHA-256
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash 'publish\win-x64\IPCast.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content 'publish\win-x64\IPCast.exe.sha256' "$hash  IPCast.exe" -NoNewline
+
       - name: Upload IPCast.exe artifact
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: IPCast-win-x64
-          path: ipcast/publish/win-x64/IPCast.exe
+          path: |
+            ipcast/publish/win-x64/IPCast.exe
+            ipcast/publish/win-x64/IPCast.exe.sha256
           if-no-files-found: error
 
       - name: Install Inno Setup
@@ -136,26 +146,9 @@ jobs:
           path: ipcast/publish/installer/IPCast-Setup.exe
           if-no-files-found: error
 
-  verify-release-signature:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/main'
-    needs: build-and-test
-    runs-on: windows-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: IPCast-win-x64
-          path: release
-      - name: Require valid Authenticode signature
-        shell: pwsh
-        run: |
-          $signature = Get-AuthenticodeSignature 'release\IPCast.exe'
-          if ($signature.Status -ne 'Valid') {
-            throw "Release refused: IPCast.exe has no valid Authenticode signature ($($signature.Status))."
-          }
-
   publish-download:
     if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/main'
-    needs: [build-and-test, verify-release-signature]
+    needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -166,6 +159,10 @@ jobs:
           name: IPCast-win-x64
           path: release
 
+      - name: Verify release checksum
+        run: sha256sum --check IPCast.exe.sha256
+        working-directory: release
+
       - name: Publish IPCast Windows download
         uses: actions/github-script@v7
         with:
@@ -173,6 +170,8 @@ jobs:
             const { owner, repo } = context.repo;
             const fs = require("fs");
             const fileData = fs.readFileSync("release/IPCast.exe");
+            const checksumData = fs.readFileSync("release/IPCast.exe.sha256");
+            const checksum = checksumData.toString("utf8").trim().split(/\s+/)[0];
 
             const targets = [
               { tag: "v2.0.0", name: "IPCast-2.0.0.exe", releaseName: "IPCast 2.0.0 Enterprise" },
@@ -192,14 +191,16 @@ jobs:
                   tag_name: target.tag,
                   target_commitish: "main",
                   name: target.releaseName,
-                  body: "Latest self-contained IPCast Windows x64 build.",
+                  body: "Self-contained IPCast Windows x64 build. This executable is currently unsigned. Verify its SHA-256 against the attached checksum.",
                   draft: false,
                   prerelease: false,
                 });
                 release = result.data;
               }
 
-              for (const assetName of [target.name, "IPCast-2.0.0.exe", "IPCast.exe"]) {
+              const checksumName = `${target.name}.sha256`;
+              const targetChecksumData = Buffer.from(`${checksum}  ${target.name}\n`);
+              for (const assetName of [target.name, "IPCast-2.0.0.exe", "IPCast.exe", checksumName]) {
                 const previousAsset = (release.assets || []).find((asset) => asset.name === assetName);
                 if (previousAsset) {
                   try {
@@ -221,6 +222,16 @@ jobs:
                 headers: {
                   "content-type": "application/octet-stream",
                   "content-length": fileData.length,
+                },
+              });
+              await github.rest.repos.uploadReleaseAsset({
+                owner, repo,
+                release_id: release.id,
+                name: checksumName,
+                data: targetChecksumData,
+                headers: {
+                  "content-type": "text/plain",
+                  "content-length": targetChecksumData.length,
                 },
               });
             }

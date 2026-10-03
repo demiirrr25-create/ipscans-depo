@@ -27,10 +27,10 @@ public sealed class RemoteDesktopSession : IDisposable
     public event Action? Closed;
     
     // Enhanced properties for multi-monitor and display modes
-    private MonitorInfo _currentMonitor = MonitorInfo.Primary;
+    private MonitorInfo? _currentMonitor;
+    private MonitorInfo? _virtualMonitor;
     private DisplayMode _displayMode = DisplayMode.AutoAdapt;
     private readonly Dictionary<string, MonitorInfo> _availableMonitors = new Dictionary<string, MonitorInfo>();
-    private bool _isMultiMonitorAware = false;
 
     public RemoteDesktopSession(SessionMessageLoop loop, RemoteSession session)
     {
@@ -45,6 +45,7 @@ public sealed class RemoteDesktopSession : IDisposable
     
     /// <summary>Raised when monitor information is updated</summary>
     public event Action<MonitorInfo>? MonitorChanged;
+    public event Action<IReadOnlyList<MonitorInfo>>? AvailableMonitorsReceived;
     /// <summary>Raised when display mode is changed</summary>
     public event Action<DisplayMode>? DisplayModeChanged;
 
@@ -68,7 +69,12 @@ public sealed class RemoteDesktopSession : IDisposable
 
         _sharingCapturer = capturer;
         _sharingInjector = injector;
-        _currentMonitor = monitorInfo ?? MonitorInfo.Primary;
+        if (capturer is IMonitorAwareCapturer monitorAware)
+        {
+            UpdateAvailableMonitors(monitorAware.GetAvailableMonitors());
+            if (monitorInfo is not null && !SetCurrentMonitor(monitorInfo.DeviceName))
+                throw new ArgumentException("The selected monitor is not available.", nameof(monitorInfo));
+        }
         _displayMode = displayMode;
         _captureCts = new CancellationTokenSource();
         var token = _captureCts.Token;
@@ -78,7 +84,10 @@ public sealed class RemoteDesktopSession : IDisposable
     /// <summary>
     /// Gets the list of available monitors on the system.
     /// </summary>
-    public IReadOnlyDictionary<string, MonitorInfo> AvailableMonitors => _availableMonitors.AsReadOnly();
+    public IReadOnlyDictionary<string, MonitorInfo> AvailableMonitors
+    {
+        get { lock (_inputLock) return new Dictionary<string, MonitorInfo>(_availableMonitors); }
+    }
 
     /// <summary>
     /// Updates the list of available monitors. Call this when monitor configuration changes.
@@ -93,15 +102,12 @@ public sealed class RemoteDesktopSession : IDisposable
                 _availableMonitors[monitor.DeviceName] = monitor;
             }
             
-            _isMultiMonitorAware = _availableMonitors.Count > 1;
-            
-            // If current monitor is no longer available, fall back to primary
-            if (!_availableMonitors.ContainsKey(_currentMonitor.DeviceName))
+            _virtualMonitor = _availableMonitors.GetValueOrDefault(MonitorInfo.VirtualDesktopDeviceName);
+            if (_currentMonitor is null || !_availableMonitors.ContainsKey(_currentMonitor.DeviceName))
             {
-                _currentMonitor = MonitorInfo.Primary;
+                _currentMonitor = _virtualMonitor ?? _availableMonitors.Values.FirstOrDefault();
             }
-            
-            MonitorChanged?.Invoke(_currentMonitor);
+            if (_currentMonitor is not null) MonitorChanged?.Invoke(_currentMonitor);
         }
     }
 
@@ -112,10 +118,10 @@ public sealed class RemoteDesktopSession : IDisposable
     {
         lock (_inputLock)
         {
-            if (_availableMonitors.ContainsKey(deviceName))
+            if (_availableMonitors.TryGetValue(deviceName, out var monitor))
             {
-                _currentMonitor = _availableMonitors[deviceName];
-                MonitorChanged?.Invoke(_currentMonitor);
+                _currentMonitor = monitor;
+                MonitorChanged?.Invoke(monitor);
                 return true;
             }
             return false;
@@ -146,7 +152,7 @@ public sealed class RemoteDesktopSession : IDisposable
             
             // Adaptive quality state
             int effectiveJpegQuality = jpegQuality;
-            int consecutiveBandwidthUpdates = 0;
+            string? previousMonitorName = null;
             
             while (!ct.IsCancellationRequested)
             {
@@ -154,8 +160,14 @@ public sealed class RemoteDesktopSession : IDisposable
                 var budget = frameInterval;
                 
                 // Capture frame from the selected monitor
-                var frame = await CaptureFrameAsync(capturer, ct);
+                var (frame, monitorName) = await CaptureFrameAsync(capturer, ct);
                 if (frame == null) continue; // Skip if capture failed
+                lock (_inputLock)
+                {
+                    if (monitorName != _currentMonitor?.DeviceName) continue;
+                }
+                if (monitorName != previousMonitorName) previous = null;
+                previousMonitorName = monitorName;
                 
                 // Apply display mode transformations
                 var displayFrame = ApplyDisplayMode(frame);
@@ -214,25 +226,24 @@ public sealed class RemoteDesktopSession : IDisposable
     /// <summary>
     /// Captures a frame from the specified monitor.
     /// </summary>
-    private async Task<CapturedFrame?> CaptureFrameAsync(IScreenCapturer capturer, CancellationToken ct)
+    private async Task<(CapturedFrame? Frame, string? MonitorName)> CaptureFrameAsync(IScreenCapturer capturer, CancellationToken ct)
     {
+        MonitorInfo? selectedMonitor;
+        lock (_inputLock) selectedMonitor = _currentMonitor;
         try
         {
-            // If we have a monitor-aware capturer, use it
-            if (_isMultiMonitorAware && capturer is IMonitorAwareCapturer monitorAware)
+            if (capturer is IMonitorAwareCapturer monitorAware && selectedMonitor is not null)
             {
-                return await monitorAware.CaptureFrameAsync(_currentMonitor, ct);
+                return (await monitorAware.CaptureFrameAsync(selectedMonitor, ct), selectedMonitor.DeviceName);
             }
             else
             {
-                // Fall back to standard capture (captures virtual desktop)
-                // In a real implementation, we'd crop to the specific monitor bounds
-                return await Task.Run(() => capturer.CaptureFrame(), ct);
+                return (await Task.Run(() => capturer.CaptureFrame(), ct), selectedMonitor?.DeviceName);
             }
         }
         catch (Exception)
         {
-            return null; // Indicate capture failure
+            return (null, selectedMonitor?.DeviceName);
         }
     }
 
@@ -285,7 +296,8 @@ public sealed class RemoteDesktopSession : IDisposable
                 var moveMessage = payload.Deserialize<MouseMoveMessage>();
                 if (moveMessage is not null)
                 {
-                    _sharingInjector!.MoveMouse(moveMessage.NormalizedX, moveMessage.NormalizedY);
+                    var (x, y) = MapPointerToVirtualDesktop(moveMessage.NormalizedX, moveMessage.NormalizedY);
+                    _sharingInjector!.MoveMouse(x, y);
                 }
 
                 break;
@@ -325,12 +337,31 @@ public sealed class RemoteDesktopSession : IDisposable
                 if (monitorRequest is not null && SetCurrentMonitor(monitorRequest.MonitorId))
                 {
                     // Acknowledge the monitor change
-                    _ = _loop.SendAsync(MessageType.MonitorResponse, new MonitorResponseMessage(true, _currentMonitor.DeviceName), default);
+                    _ = _loop.SendAsync(MessageType.MonitorResponse, new MonitorResponseMessage(true, _currentMonitor!.DeviceName), default);
                 }
                 else
                 {
                     // Failed to set monitor
                     _ = _loop.SendAsync(MessageType.MonitorResponse, new MonitorResponseMessage(false, null), default);
+                }
+                break;
+
+            case MessageType.AvailableMonitorsRequest when !_session.IsInitiator &&
+                _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
+                var descriptors = _availableMonitors.Values.Select(m =>
+                    new MonitorDescriptor(m.DeviceName, m.FriendlyName, m.X, m.Y, m.Width, m.Height)).ToArray();
+                _ = _loop.SendAsync(MessageType.AvailableMonitorsResponse,
+                    new AvailableMonitorsResponseMessage(descriptors), default);
+                break;
+
+            case MessageType.AvailableMonitorsResponse when _session.IsInitiator:
+                var response = payload.Deserialize<AvailableMonitorsResponseMessage>();
+                if (response?.Monitors is { } available)
+                {
+                    var monitors = available.Where(m => m.Width > 0 && m.Height > 0)
+                        .Select(m => new MonitorInfo(m.DeviceName, m.FriendlyName, m.X, m.Y, m.Width, m.Height))
+                        .ToArray();
+                    AvailableMonitorsReceived?.Invoke(monitors);
                 }
                 break;
                 
@@ -354,6 +385,16 @@ public sealed class RemoteDesktopSession : IDisposable
 
     private bool CanControlMouse() => _sharingInjector is not null && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlMouse);
 
+    private (double X, double Y) MapPointerToVirtualDesktop(double x, double y)
+    {
+        if (_currentMonitor is not { } selected || _virtualMonitor is not { } virtualDesktop ||
+            virtualDesktop.Width <= 0 || virtualDesktop.Height <= 0)
+            return (x, y);
+        return (
+            Math.Clamp((selected.X - virtualDesktop.X + x * selected.Width) / virtualDesktop.Width, 0, 1),
+            Math.Clamp((selected.Y - virtualDesktop.Y + y * selected.Height) / virtualDesktop.Height, 0, 1));
+    }
+
     private bool CanControlKeyboard() => _sharingInjector is not null && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard);
 
     public Task SendMouseMoveAsync(double normalizedX, double normalizedY, CancellationToken ct = default) =>
@@ -376,6 +417,9 @@ public sealed class RemoteDesktopSession : IDisposable
     public Task RequestAvailableMonitorsAsync(CancellationToken ct = default) =>
         _loop.SendAsync(MessageType.AvailableMonitorsRequest, new AvailableMonitorsRequestMessage(), ct);
 
+    public Task SelectMonitorAsync(string deviceName, CancellationToken ct = default) =>
+        _loop.SendAsync(MessageType.MonitorRequest, new MonitorRequestMessage(deviceName), ct);
+
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
@@ -397,7 +441,8 @@ public sealed class RemoteDesktopSession : IDisposable
 public sealed record MonitorInfoRequestMessage();
 public sealed record MonitorInfoResponseMessage(string JsonMonitors);
 public sealed record AvailableMonitorsRequestMessage();
-public sealed record AvailableMonitorsResponseMessage(string JsonMonitors);
+public sealed record MonitorDescriptor(string DeviceName, string FriendlyName, int X, int Y, int Width, int Height);
+public sealed record AvailableMonitorsResponseMessage(MonitorDescriptor[] Monitors);
 public sealed record MonitorRequestMessage(string MonitorId);
 public sealed record MonitorResponseMessage(bool Success, string? MonitorId);
 public sealed record DisplayModeRequestMessage(DisplayMode Mode);
@@ -406,7 +451,7 @@ public sealed record DisplayModeResponseMessage(bool Success, DisplayMode Mode);
 // Monitor information structure
 public sealed record MonitorInfo
 {
-    public static MonitorInfo Primary => new MonitorInfo("\\\\.\\DISPLAY1", "Primary Monitor", 0, 0, 1920, 1080); // Placeholder
+    public const string VirtualDesktopDeviceName = "\\\\.\\DISPLAY_VIRTUAL";
     
     public MonitorInfo(string deviceName, string friendlyName, int x, int y, int width, int height)
     {
@@ -446,6 +491,7 @@ public sealed record Rectangle
 // Interface for monitor-aware capturers
 public interface IMonitorAwareCapturer
 {
+    IEnumerable<MonitorInfo> GetAvailableMonitors();
     Task<CapturedFrame?> CaptureFrameAsync(MonitorInfo monitor, CancellationToken ct);
 }
 
