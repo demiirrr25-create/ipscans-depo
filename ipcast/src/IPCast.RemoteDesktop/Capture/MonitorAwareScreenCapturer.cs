@@ -32,24 +32,10 @@ public sealed class MonitorAwareScreenCapturer : IMonitorAwareCapturer, IScreenC
     /// </summary>
     /// <param name="monitor">The monitor to capture</param>
     /// <param name="ct">Cancellation token</param>
-    public async Task<CapturedFrame?> CaptureFrameAsync(MonitorInfo monitor, CancellationToken ct)
+    public Task<CapturedFrame?> CaptureFrameAsync(MonitorInfo monitor, CancellationToken ct)
     {
-        // Note: This implementation doesn't actually use the cancellation token during the capture
-        // operation because GDI operations are not easily cancelable mid-operation.
-        // In a more sophisticated implementation, we might check the token before and after.
-        if (ct.IsCancellationRequested)
-        {
-            return null;
-        }
-        
-        try
-        {
-            return CaptureFrameFromMonitor(monitor);
-        }
-        catch (Exception)
-        {
-            return null; // Indicate failure
-        }
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult<CapturedFrame?>(CaptureFrameFromMonitor(monitor));
     }
 
     /// <summary>
@@ -240,7 +226,7 @@ public sealed class MonitorAwareScreenCapturer : IMonitorAwareCapturer, IScreenC
             IntPtr hdc, IntPtr hbmp, uint nStartScan, uint cScanLines,
             IntPtr lpvBits, ref BITMAPINFOHEADER lpbmiClr, uint wUsage);
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern bool GetMonitorInfo(IntPtr hmonitor, ref MONITORINFOEX lpmi);
 
         [DllImport("user32.dll")]

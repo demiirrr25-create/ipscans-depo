@@ -105,7 +105,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
     }
-    public IReadOnlyList<string> StreamingModes { get; } = ["Balanced", "Speed", "Quality"];
+    public IReadOnlyList<string> StreamingModes { get; } = ["Auto", "Balanced", "Speed", "Quality"];
     [ObservableProperty] private string _streamingMode = "Balanced";
     partial void OnStreamingModeChanged(string value) => SavePreferences();
     public bool IsLaunchAtStartupSupported => OperatingSystem.IsWindows();

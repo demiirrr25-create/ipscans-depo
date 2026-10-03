@@ -140,140 +140,67 @@ public sealed class RemoteDesktopSession : IDisposable
         }
     }
 
-    /// <summary>Starts capturing and streaming this device's screen to the peer, and applies input events the peer sends back.</summary>
     private async Task RunCaptureLoopAsync(IScreenCapturer capturer, TimeSpan frameInterval, int jpegQuality, int maxDimension, int maxBytesPerSecond, CancellationToken ct)
     {
         try
         {
             CapturedFrame? previous = null;
-            var lastSent = Stopwatch.StartNew();
-            int consecutiveUnchangedFrames = 0;
-            const int MaxUnchangedFramesBeforeFullRefresh = 100; // Send full frame every 100 frames to prevent drift
-            
-            // Adaptive quality state
-            int effectiveJpegQuality = jpegQuality;
             string? previousMonitorName = null;
-            
+            var lastSent = Stopwatch.StartNew();
+            var adaptiveQuality = new AdaptiveQualityController();
+            var unchangedFrames = 0;
             while (!ct.IsCancellationRequested)
             {
                 var started = Stopwatch.GetTimestamp();
                 var budget = frameInterval;
-                
-                // Capture frame from the selected monitor
-                var (frame, monitorName) = await CaptureFrameAsync(capturer, ct);
-                if (frame == null) continue; // Skip if capture failed
+                var (frame, monitorName) = await CaptureFrameAsync(capturer, ct).ConfigureAwait(false);
+                if (frame is null) throw new InvalidOperationException("Unable to capture the selected screen.");
                 lock (_inputLock)
                 {
                     if (monitorName != _currentMonitor?.DeviceName) continue;
                 }
                 if (monitorName != previousMonitorName) previous = null;
                 previousMonitorName = monitorName;
-                
-                // Apply display mode transformations
-                var displayFrame = ApplyDisplayMode(frame);
-                
-                // Do not encode/send an unchanged desktop repeatedly. A periodic full
-                // refresh retains compatibility with older clients and avoids drift.
-                bool isUnchanged = previous != null && 
-                                  previous.Width == displayFrame.Width && 
-                                  previous.Height == displayFrame.Height &&
-                                  displayFrame.Bgra.AsSpan().SequenceEqual(previous.Bgra);
-                                  
-                bool needsFullRefresh = consecutiveUnchangedFrames >= MaxUnchangedFramesBeforeFullRefresh;
-                
-                if (previous == null || !isUnchanged || needsFullRefresh)
+                var unchanged = previous is not null && previous.Width == frame.Width &&
+                    previous.Height == frame.Height && frame.Bgra.AsSpan().SequenceEqual(previous.Bgra);
+                if (!unchanged || lastSent.Elapsed >= TimeSpan.FromSeconds(1))
                 {
-                    // Calculate effective quality (adaptive or fixed)
-                    if (effectiveJpegQuality < 0)
-                    {
-                        // For adaptive quality, we'd need bandwidth feedback from the network layer
-                        // This would be implemented by updating effectiveJpegQuality based on network metrics
-                        // For now, use the base adaptive quality calculation
-                        effectiveJpegQuality = FrameCodec.Adaptive.GetCurrentQuality();
-                    }
-                    
-                    var jpeg = FrameCodec.EncodeJpeg(displayFrame, effectiveJpegQuality, maxDimension);
-                    
-                    // Apply display mode scaling to the frame dimensions sent to receiver
-                    var (displayWidth, displayHeight) = ApplyDisplayModeScaling(displayFrame.Width, displayFrame.Height);
-                    
-                    await _loop.SendAsync(MessageType.ScreenFrame, new ScreenFrameMessage(displayWidth, displayHeight, "jpeg", jpeg), ct).ConfigureAwait(false);
+                    var quality = jpegQuality < 0 ? adaptiveQuality.Quality : jpegQuality;
+                    var jpeg = FrameCodec.EncodeJpeg(frame, quality, maxDimension);
+                    var scale = maxDimension > 0 ? Math.Min(1d, (double)maxDimension / Math.Max(frame.Width, frame.Height)) : 1d;
+                    var width = Math.Max(1, (int)(frame.Width * scale));
+                    var height = Math.Max(1, (int)(frame.Height * scale));
+                    var writeStarted = Stopwatch.GetTimestamp();
+                    await _loop.SendAsync(MessageType.ScreenFrame, new ScreenFrameMessage(width, height, "jpeg", jpeg), ct).ConfigureAwait(false);
+                    adaptiveQuality.ObserveWrite(Stopwatch.GetElapsedTime(writeStarted), frameInterval);
+                    budget = StreamingProfile.FrameBudget(frameInterval, jpeg.Length, maxBytesPerSecond);
                     lastSent.Restart();
-                    consecutiveUnchangedFrames = 0; // Reset counter when we send a frame
+                    unchangedFrames = 0;
                 }
                 else
                 {
-                    consecutiveUnchangedFrames++;
-                    // Still need to account for time even when not sending
+                    unchangedFrames++;
+                    budget = TimeSpan.FromMilliseconds(Math.Max(frameInterval.TotalMilliseconds,
+                        Math.Min(100, frameInterval.TotalMilliseconds * (1 + unchangedFrames / 5))));
                 }
-                
-                previous = displayFrame;
-                
-                // Encoding and transport time count toward the frame budget. Awaiting
-                // each write prevents an unbounded outgoing frame queue.
+                previous = frame;
                 var remaining = budget - Stopwatch.GetElapsedTime(started);
                 if (remaining > TimeSpan.Zero) await Task.Delay(remaining, ct).ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException)
-        {
-            // Normal shutdown via Dispose.
-        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         catch (Exception ex) { Faulted?.Invoke(ex); }
         finally { capturer.Dispose(); }
     }
 
-    /// <summary>
-    /// Captures a frame from the specified monitor.
-    /// </summary>
     private async Task<(CapturedFrame? Frame, string? MonitorName)> CaptureFrameAsync(IScreenCapturer capturer, CancellationToken ct)
     {
         MonitorInfo? selectedMonitor;
         lock (_inputLock) selectedMonitor = _currentMonitor;
-        try
-        {
-            if (capturer is IMonitorAwareCapturer monitorAware && selectedMonitor is not null)
-            {
-                return (await monitorAware.CaptureFrameAsync(selectedMonitor, ct), selectedMonitor.DeviceName);
-            }
-            else
-            {
-                return (await Task.Run(() => capturer.CaptureFrame(), ct), selectedMonitor?.DeviceName);
-            }
-        }
-        catch (Exception)
-        {
-            return (null, selectedMonitor?.DeviceName);
-        }
-    }
-
-    /// <summary>
-    /// Applies display mode transformations to a frame.
-    /// </summary>
-    private CapturedFrame ApplyDisplayMode(CapturedFrame frame)
-    {
-        // In a full implementation, this would apply transformations like:
-        // - Original: No change
-        // - Fit: Scale to fit within view while maintaining aspect ratio
-        // - Stretch: Stretch to fill view (may distort aspect ratio)
-        // - Auto Adapt: Automatically choose best fit based on content and view size
-        // - Fullscreen: Fill entire view, possibly cropping
-        // 
-        // For now, we return the frame as-is and handle scaling in the network layer
-        // via the scale factor in ScreenFrameMessage
-        return frame;
-    }
-
-    /// <summary>
-    /// Applies display mode scaling to frame dimensions for network transmission.
-    /// Returns the dimensions that should be sent in the ScreenFrameMessage.
-    /// </summary>
-    private (int width, int height) ApplyDisplayModeScaling(int width, int height)
-    {
-        // Apply display mode scaling logic here
-        // For now, return original dimensions - actual scaling would be handled
-        // by the receiver based on display mode and view size
-        return (width, height);
+        ct.ThrowIfCancellationRequested();
+        if (capturer is IMonitorAwareCapturer monitorAware && selectedMonitor is not null)
+            return (await monitorAware.CaptureFrameAsync(selectedMonitor, ct).ConfigureAwait(false), selectedMonitor.DeviceName);
+        return (capturer.CaptureFrame(), selectedMonitor?.DeviceName);
     }
 
     private void OnMessageReceived(MessageType type, JsonElement payload)

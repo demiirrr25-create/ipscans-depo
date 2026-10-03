@@ -23,6 +23,7 @@ public partial class RemoteScreenWindow : Window
     private CapturedFrame? _pendingFrame;
     private readonly DispatcherTimer _renderTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly HashSet<int> _pressedKeys = [];
+    private readonly HashSet<int> _pressedButtons = [];
     private bool _suppressEscapeKeyUp;
     private bool _updatingMonitors;
 
@@ -50,10 +51,9 @@ public partial class RemoteScreenWindow : Window
         ScreenImage.PointerWheelChanged += OnPointerWheelChanged;
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
-        Deactivated += async (_, _) => {
-            foreach (var key in _pressedKeys.ToArray()) await SendSafely(() => _desktop.SendKeyEventAsync(key, false));
-            _pressedKeys.Clear();
-        };
+        Deactivated += async (_, _) => await ReleaseInputAsync();
+        ScreenImage.LostFocus += async (_, _) => await ReleaseInputAsync();
+        ScreenImage.PointerCaptureLost += async (_, _) => await ReleaseInputAsync();
         Closed += (_, _) => { _closed = true; _renderTimer.Stop(); Interlocked.Exchange(ref _pendingFrame, null); _desktop.FrameReceived -= OnFrameReceived; _desktop.AvailableMonitorsReceived -= OnAvailableMonitorsReceived; _desktop.Closed -= OnSessionClosed; _bitmap?.Dispose(); };
     }
 
@@ -118,21 +118,27 @@ public partial class RemoteScreenWindow : Window
 
     private async void OnPointerMoved(object? sender, PointerEventArgs e)
     {
+        if (TryGetPointerPosition(e, out var x, out var y))
+            await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
+    }
+
+    private bool TryGetPointerPosition(PointerEventArgs e, out double x, out double y)
+    {
+        x = y = 0;
         var bounds = ScreenImage.Bounds;
         if (bounds.Width <= 0 || bounds.Height <= 0)
         {
-            return;
+            return false;
         }
 
         var pos = e.GetPosition(ScreenImage);
-        if (_bitmap is null) return;
+        if (_bitmap is null) return false;
         var scale = Math.Min(bounds.Width / _bitmap.PixelSize.Width, bounds.Height / _bitmap.PixelSize.Height);
         var width = _bitmap.PixelSize.Width * scale;
         var height = _bitmap.PixelSize.Height * scale;
-        var x = (pos.X - (bounds.Width - width) / 2) / width;
-        var y = (pos.Y - (bounds.Height - height) / 2) / height;
-        if (x < 0 || x > 1 || y < 0 || y > 1) return;
-        await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
+        x = (pos.X - (bounds.Width - width) / 2) / width;
+        y = (pos.Y - (bounds.Height - height) / 2) / height;
+        return x >= 0 && x <= 1 && y >= 0 && y <= 1;
     }
 
     private async void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -145,10 +151,12 @@ public partial class RemoteScreenWindow : Window
             _ => -1,
         };
 
-        if (button >= 0)
+        if (button >= 0 && TryGetPointerPosition(e, out var x, out var y))
         {
             ScreenImage.Focus();
             e.Pointer.Capture(ScreenImage);
+            _pressedButtons.Add(button);
+            await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
             await SendSafely(() => _desktop.SendMouseButtonAsync(button, isDown: true));
             e.Handled = true;
         }
@@ -164,16 +172,31 @@ public partial class RemoteScreenWindow : Window
             _ => -1,
         };
 
-        if (button >= 0)
+        if (button >= 0 && _pressedButtons.Remove(button))
         {
             await SendSafely(() => _desktop.SendMouseButtonAsync(button, isDown: false));
-            e.Pointer.Capture(null);
+            if (_pressedButtons.Count == 0) e.Pointer.Capture(null);
             e.Handled = true;
         }
     }
 
-    private async void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e) =>
+    private async void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (!TryGetPointerPosition(e, out var x, out var y)) return;
+        await SendSafely(() => _desktop.SendMouseMoveAsync(x, y));
         await SendSafely(() => _desktop.SendMouseWheelAsync((int)(e.Delta.Y * 120)));
+        e.Handled = true;
+    }
+
+    private async Task ReleaseInputAsync()
+    {
+        var keys = _pressedKeys.ToArray();
+        var buttons = _pressedButtons.ToArray();
+        _pressedKeys.Clear();
+        _pressedButtons.Clear();
+        foreach (var key in keys) await SendSafely(() => _desktop.SendKeyEventAsync(key, false));
+        foreach (var button in buttons) await SendSafely(() => _desktop.SendMouseButtonAsync(button, false));
+    }
 
     private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
@@ -184,6 +207,7 @@ public partial class RemoteScreenWindow : Window
             e.Handled = true;
             return;
         }
+        if (!ScreenImage.IsFocused) return;
         var key = AvaloniaKeyToVirtualKey(e.Key);
         if (key == 0) return;
         _pressedKeys.Add(key);
@@ -200,8 +224,7 @@ public partial class RemoteScreenWindow : Window
             return;
         }
         var key = AvaloniaKeyToVirtualKey(e.Key);
-        if (key == 0) return;
-        _pressedKeys.Remove(key);
+        if (key == 0 || !_pressedKeys.Remove(key)) return;
         await SendSafely(() => _desktop.SendKeyEventAsync(key, isDown: false));
         e.Handled = true;
     }

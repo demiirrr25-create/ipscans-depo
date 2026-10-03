@@ -158,6 +158,38 @@ public class RemoteDesktopSessionTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task CaptureFailureReportsFaultAndStopsCapture()
+    {
+        var (viewer, sharer, host) = await SessionTestHelper.EstablishSessionAsync(_hostId, _clientId, FullControl);
+        _host = host;
+        using (viewer) using (sharer)
+        {
+            await using var loop = new SessionMessageLoop(sharer);
+            using var desktop = new RemoteDesktopSession(loop, sharer);
+            var fault = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+            desktop.Faulted += ex => fault.TrySetResult(ex);
+            var capturer = new FailingCapturer();
+            desktop.StartSharing(capturer, new RecordingInputInjector(), TimeSpan.FromMilliseconds(20));
+            Assert.IsType<InvalidOperationException>(await fault.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+            await Task.Delay(100);
+            Assert.Equal(1, capturer.Attempts);
+            Assert.True(capturer.Disposed);
+        }
+    }
+
+    private sealed class FailingCapturer : IScreenCapturer
+    {
+        public int Attempts { get; private set; }
+        public bool Disposed { get; private set; }
+        public CapturedFrame CaptureFrame()
+        {
+            Attempts++;
+            throw new InvalidOperationException("Capture unavailable");
+        }
+        public void Dispose() => Disposed = true;
+    }
+
+    [Fact]
     public async Task ViewerCanSelectMonitorAndPointerMapsToVirtualDesktop()
     {
         var (viewer, sharer, host) = await SessionTestHelper.EstablishSessionAsync(_hostId, _clientId, FullControl);
