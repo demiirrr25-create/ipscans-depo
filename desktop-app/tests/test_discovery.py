@@ -165,6 +165,16 @@ class DiscoveryTests(unittest.TestCase):
                                      should_stop=lambda: len(calls) >= 3)
         self.assertLess(len(calls), 200)
 
+    def test_1000_targets_keep_bounded_worker_count(self):
+        targets = [f"10.{i // 250}.{i % 250}.8" for i in range(1000)]
+        progress = []
+        start = time.monotonic()
+        self.assertEqual(network_utils._probe_targets(
+            targets, lambda ip: False, max_workers=16, should_stop=None,
+            on_probe=lambda done, total: progress.append((done, total))), [])
+        self.assertEqual(progress[-1], (1000, 1000))
+        self.assertLess(time.monotonic() - start, 15)
+
     def test_scan_history_ip_change_and_export(self):
         old = [Device("192.168.1.4", mac="aa:bb:cc:dd:ee:ff")]
         new = [Device("192.168.1.8", mac="aa:bb:cc:dd:ee:ff"),
