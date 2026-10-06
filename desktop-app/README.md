@@ -7,7 +7,12 @@ bilgisi ve cihaz türü yalnızca erişilebilen sinyallerden türetilir. SNMPv2c
 yalnızca kullanıcı topluluk bilgisini açıkça girerse çalışır; varsayılan
 `public` denemesi yoktur. Yönetilen cihazların LLDP komşuları yetkili SNMP
 ile okunabiliyorsa IP TREE bunları doğrulanmış bağlantı olarak gösterir.
-Diğer fiziksel bağlantılar kesinmiş gibi gösterilmez. İlk açılışta dil seçimi
+Diğer fiziksel bağlantılar kesinmiş gibi gösterilmez. Tek IPv6 adresi veya
+en fazla 256 adreslik IPv6 CIDR manuel girilebilir; otomatik IPv6 `/64`
+taraması ve link-local arayüz kapsamı desteklenmez. IP TREE geçerli
+filtrelenmiş görünümü SVG veya 250 düğüme kadar PNG olarak dışa aktarır.
+Olasılık olarak doğrulanmamış yüzde değerleri yerine sinyal kaynağı
+gösterilir. İlk açılışta dil seçimi
 (6 dil: EN/TR/DE/FR/ES/RU) → kullanım şartları onayı → gizlilik politikası
 onayı → ana pencere. Her adım ayrı kaydedilir (yalnızca henüz
 tamamlanmamış adımlar gösterilir) ve sözleşmeler kabul edilmeden ana
@@ -81,7 +86,8 @@ gösterilir; aynı IP'deki MAC değişimi **doğrulanmış çatışma değildir*
   `wmi_probe.query_local_machine()` yalnızca çalıştığı makineyi güvenilir şekilde
   zenginleştirir. `query_remote()` açıkça kimlik bilgisi verildiğinde kullanılabilir.
 - **Nmap** yavaş ve bazı ortamlarda yönetici yetkisi gerektirir; otomatik
-  taramada kapalıdır. Uygulama yalnızca aktif IPv4 aralığını tarar. IPv6,
+  taramada kapalıdır. Otomatik keşif aktif IPv4 aralığı içindir; IPv6 yalnızca
+  elle belirlenen tek IP veya küçük CIDR aralığında ICMP/TCP ile taranır.
   CDP/FDB, DHCP sunucu kayıtları ve kimlik doğrulama isteyen ONVIF ayrıntıları
   henüz mevcut değildir. IP TREE, bu bilgiler olmadan fiziksel port sırası
   veya kamera seri numarası uydurmaz.

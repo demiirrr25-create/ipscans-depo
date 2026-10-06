@@ -18,6 +18,7 @@ CANDIDATE_PORTS = [21, 22, 23, 80, 81, 443, 554, 3389, 8000, 8080, 8899, 37777]
 
 PING_TIMEOUT_MS = 500
 MAX_HOSTS = 65534  # hard cap so a typo like /8 can't lock up the app
+MAX_IPV6_HOSTS = 256  # IPv6 /64 sweeps are impractical and potentially abusive
 DISCOVERY_PORTS = (80, 443, 22, 554, 445)
 
 # A GUI (--windowed) PyInstaller build has no console of its own, so every
@@ -145,14 +146,22 @@ def parse_targets(spec: str) -> list[str]:
     """
     spec = spec.strip()
 
+    def valid_host(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> str:
+        if address.version == 6 and (address.is_link_local or address.is_multicast or address.is_unspecified):
+            raise InvalidTargetError("Use a routable IPv6 address; link-local targets need an interface scope.")
+        return str(address)
+
     if "/" in spec:
         try:
             network = ipaddress.ip_network(spec, strict=False)
         except ValueError as e:
             raise InvalidTargetError(f"Invalid CIDR: {spec}") from e
-        if network.version != 4 or network.num_addresses > MAX_HOSTS + 2:
-            raise InvalidTargetError("This range is too large (max /16 supported).")
-        return [str(h) for h in network.hosts()]
+        limit = MAX_HOSTS + 2 if network.version == 4 else MAX_IPV6_HOSTS
+        if network.num_addresses > limit:
+            raise InvalidTargetError(
+                "This range is too large (IPv4 max /16; IPv6 max 256 addresses)."
+            )
+        return [valid_host(h) for h in network.hosts()]
 
     if "-" in spec:
         start_str, end_str = (p.strip() for p in spec.split("-", 1))
@@ -172,28 +181,28 @@ def parse_targets(spec: str) -> list[str]:
             raise InvalidTargetError(f"Invalid end IP: {end_str}") from e
 
         if start.version != 4 or end.version != 4:
-            raise InvalidTargetError("Use an IPv4 address or IPv4 CIDR.")
+            raise InvalidTargetError("IP ranges require IPv4; use a small IPv6 CIDR.")
         if int(end) < int(start):
             raise InvalidTargetError("End IP cannot be smaller than start IP.")
-        if int(end) - int(start) > MAX_HOSTS:
+        if int(end) - int(start) >= MAX_HOSTS:
             raise InvalidTargetError("This range is too large.")
         return [str(ipaddress.ip_address(i)) for i in range(int(start), int(end) + 1)]
 
     try:
         address = ipaddress.ip_address(spec)
-        if address.version != 4:
-            raise InvalidTargetError("Use an IPv4 address or IPv4 CIDR.")
-        return [str(address)]
     except ValueError as e:
         raise InvalidTargetError(f"Invalid IP address: {spec}") from e
+    return [valid_host(address)]
 
 
 def _ping_once(ip: str) -> bool:
     """Shells out to the OS ping command — no raw sockets, so no admin/root needed."""
+    ipv6 = ipaddress.ip_address(ip).version == 6
     if _IS_WINDOWS:
-        cmd = ["ping", "-n", "1", "-w", str(PING_TIMEOUT_MS), ip]
+        cmd = ["ping", *(["-6"] if ipv6 else []), "-n", "1", "-w", str(PING_TIMEOUT_MS), ip]
     else:
-        cmd = ["ping", "-c", "1", "-W", str(max(1, PING_TIMEOUT_MS // 1000)), ip]
+        cmd = ["ping", *(["-6"] if ipv6 else []), "-c", "1", "-W",
+               str(max(1, PING_TIMEOUT_MS // 1000)), ip]
     try:
         result = subprocess.run(
             cmd,
@@ -307,7 +316,8 @@ def ping_sweep(targets: list[str], max_workers: int = 64,
     alive_set = set(alive)
     remaining = [ip for ip in candidates if ip not in alive_set]
     alive_set.update(_probe_targets(remaining, _tcp_alive, max_workers, should_stop))
-    return sorted(alive_set, key=lambda ip: int(ipaddress.IPv4Address(ip)))
+    return sorted(alive_set, key=lambda ip: (ipaddress.ip_address(ip).version,
+                                             int(ipaddress.ip_address(ip))))
 
 
 def _probe_targets(targets: list[str], probe: Callable[[str], bool], max_workers: int,
@@ -315,6 +325,8 @@ def _probe_targets(targets: list[str], probe: Callable[[str], bool], max_workers
                    on_probe: Callable[[int, int], None] | None = None) -> list[str]:
     if not targets:
         return []
+    if max_workers < 1:
+        raise ValueError("Scan concurrency must be at least one worker")
     found: list[str] = []
     completed = 0
     iterator = iter(targets)
@@ -352,13 +364,14 @@ def resolve_hostname(ip: str) -> str | None:
 
 
 def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3) -> list[int]:
-    ports = ports or CANDIDATE_PORTS
+    ports = CANDIDATE_PORTS if ports is None else ports
     import select
     waiting: dict[socket.socket, int] = {}
     open_ports: list[int] = []
     try:
         for port in ports:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            family = socket.AF_INET6 if ipaddress.ip_address(ip).version == 6 else socket.AF_INET
+            sock = socket.socket(family, socket.SOCK_STREAM)
             sock.setblocking(False)
             try:
                 error = sock.connect_ex((ip, port))
@@ -384,11 +397,8 @@ def resolve_macs(ips: list[str]) -> dict[str, str]:
     return {ip: mac for ip, mac in _read_arp_table().items() if ip in ips}
 
 
-def detect_local_network(prefix_len: int = 24) -> ipaddress.IPv4Network | None:
-    """Finds the machine's own local IPv4 address (via a connect-less UDP
-    "connect", which never actually sends a packet) and derives the /24
-    network it likely belongs to — used to prefill the scan target on launch.
-    """
+def detect_local_network() -> ipaddress.IPv4Network | None:
+    """Match the preferred local IPv4 address to its actual interface netmask."""
     adapters = detect_adapters()
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -405,7 +415,8 @@ def suggest_range_spec() -> str | None:
     network = detect_local_network()
     if network is None:
         return None
-    hosts = list(network.hosts())
-    if not hosts:
+    first = next(network.hosts(), None)
+    if first is None:
         return None
-    return f"{hosts[0]}-{hosts[-1]}"
+    last = network.broadcast_address if network.prefixlen >= 31 else network.broadcast_address - 1
+    return f"{first}-{last}"

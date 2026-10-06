@@ -40,9 +40,9 @@ def parse_response(payload: bytes, address: str) -> OnvifResult | None:
     match = root.find(f".//{_NS}ProbeMatch")
     if match is None:
         return None
-    types = match.findtext(f"{_NS}Types", default="")
+    types = match.findtext(f"{_NS}Types", default="").split()
     scopes = tuple(match.findtext(f"{_NS}Scopes", default="").split())
-    if "NetworkVideoTransmitter" not in types and not any("onvif.org" in scope for scope in scopes):
+    if not any(value.rsplit(":", 1)[-1] == "NetworkVideoTransmitter" for value in types):
         return None
     xaddrs = match.findtext(f"{_NS}XAddrs", default="").split()
     endpoint = next((url for url in xaddrs if url.startswith(("http://", "https://"))), None)

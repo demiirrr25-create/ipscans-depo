@@ -89,7 +89,7 @@ class DeviceTableModel(QAbstractTableModel):
         if column == 6:
             return ", ".join(device.sources) or "—"
         if column == 7:
-            return f"{device.device_type} ({device.confidence}%)" if device.confidence else device.device_type
+            return device.device_type
         return None
 
 
@@ -145,9 +145,9 @@ class TargetInput(QWidget):
 
     MODE_KEYS = ("mode_range", "mode_single", "mode_cidr")
     PLACEHOLDERS = {
-        "mode_single": "192.168.1.50",
+        "mode_single": "192.168.1.50 or 2001:db8::50",
         "mode_range": "192.168.1.10-192.168.1.150",
-        "mode_cidr": "192.168.1.0/24",
+        "mode_cidr": "192.168.1.0/24 or 2001:db8::/120",
     }
 
     def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:

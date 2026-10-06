@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import time
+import socket
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -22,9 +23,29 @@ class DiscoveryTests(unittest.TestCase):
                          ["192.168.1.53", "192.168.1.54"])
         self.assertEqual(network_utils.parse_targets("192.168.1.3-5"),
                          ["192.168.1.3", "192.168.1.4", "192.168.1.5"])
-        for target in ["10.0.0.1-9.0.0.1", "999.1.1.1", "192.168.1.1/8", "2001:db8::/64"]:
+        for target in ["10.0.0.1-9.0.0.1", "999.1.1.1", "192.168.1.1/8",
+                       "2001:db8::/64", "fe80::1", "10.0.0.1-10.1.0.1"]:
             with self.subTest(target=target), self.assertRaises(network_utils.InvalidTargetError):
                 network_utils.parse_targets(target)
+
+    def test_bounded_ipv6_targets_and_url(self):
+        self.assertEqual(network_utils.parse_targets("2001:db8::42"), ["2001:db8::42"])
+        self.assertEqual(len(network_utils.parse_targets("2001:db8::/120")), 255)
+        self.assertEqual(network_utils.parse_targets("2001:db8::1/128"), ["2001:db8::1"])
+        self.assertEqual(Device("2001:db8::42", open_ports=[443]).url, "https://[2001:db8::42]")
+
+    def test_ipv6_tcp_probe_uses_ipv6_socket(self):
+        try:
+            listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+            listener.bind(("::1", 0))
+        except OSError:
+            self.skipTest("IPv6 loopback is unavailable")
+        with listener:
+            listener.listen(1)
+            port = listener.getsockname()[1]
+            self.assertEqual(network_utils.scan_ports("::1", [port], timeout=0.3), [port])
+        self.assertEqual(network_utils.scan_ports("::1", [port], timeout=0.3), [])
+        self.assertEqual(network_utils.scan_ports("::1", [], timeout=0.3), [])
 
     def test_arp_parsing_and_mac_normalization(self):
         arp = "192.168.1.4   AA-BB-CC-DD-EE-FF dynamic\n999.999.1.1 00-11-22-33-44-55\n"
@@ -67,6 +88,11 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(result.model, "M3068-P")
         self.assertIsNone(parse_response(b"<invalid", "192.168.1.8"))
         self.assertIsNone(parse_response(b"<Envelope/>", "192.168.1.8"))
+        only_scopes = (b'<Envelope xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery">'
+                       b'<d:ProbeMatch><d:Types>dn:NetworkVideoStorage</d:Types>'
+                       b'<d:Scopes>onvif://www.onvif.org/manufacturer/Axis</d:Scopes>'
+                       b'</d:ProbeMatch></Envelope>')
+        self.assertIsNone(parse_response(only_scopes, "192.168.1.9"))
 
     def test_mdns_discards_malformed_addresses(self):
         zc = unittest.mock.Mock()
@@ -81,10 +107,11 @@ class DiscoveryTests(unittest.TestCase):
     def test_classification_does_not_infer_from_one_port_or_vendor(self):
         device = Device("192.168.1.8", vendor="Hikvision", open_ports=[554])
         intelligence.classify(device)
-        self.assertEqual((device.device_type, device.confidence), ("Unknown", 0))
+        self.assertEqual((device.device_type, device.classification_evidence), ("Unknown", None))
         device.onvif_endpoint = "http://192.168.1.8/onvif/device_service"
         intelligence.classify(device)
-        self.assertEqual((device.device_type, device.confidence), ("IP Camera", 80))
+        self.assertEqual((device.device_type, device.classification_evidence),
+                         ("IP Camera", "ONVIF discovery announcement"))
         printer = Device("192.168.1.20", mdns_services=["_printer._tcp.local."])
         intelligence.classify(printer)
         self.assertEqual(printer.device_type, "Printer")
@@ -95,8 +122,11 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(topology.build_topology(devices, "192.168.1.1"), [])
         link, = topology.build_topology(devices, "192.168.1.1", "192.168.1.0/24")
         self.assertFalse(link.confirmed)
-        self.assertEqual(link.confidence, 35)
+        self.assertFalse(link.confirmed)
         self.assertIn("physical path unknown", link.evidence)
+        v6 = Device("2001:db8::1")
+        self.assertEqual(len(topology.build_topology([devices[0], v6], "192.168.1.1",
+                                                     "192.168.1.0/24")), 0)
 
     def test_lldp_creates_confirmed_link_only_when_mac_matches(self):
         switch = Device("192.168.1.1", mac="aa:bb:cc:dd:ee:ff",
@@ -111,6 +141,34 @@ class DiscoveryTests(unittest.TestCase):
         self.assertFalse(inferred.confirmed)
         remote = Device("10.8.0.8")
         self.assertEqual(len(topology.build_topology([switch, remote], switch.ip, "192.168.1.0/24")), 0)
+
+    def test_lldp_cycle_keeps_every_device_and_does_not_invent_direction(self):
+        a = Device("192.168.1.1", mac="00:00:00:00:00:01",
+                   lldp_neighbor_macs=["00:00:00:00:00:02"])
+        b = Device("192.168.1.2", mac="00:00:00:00:00:02",
+                   lldp_neighbor_macs=["00:00:00:00:00:03"])
+        c = Device("192.168.1.3", mac="00:00:00:00:00:03",
+                   lldp_neighbor_macs=["00:00:00:00:00:01"])
+        links = topology.build_topology([c, b, a], a.ip, "192.168.1.0/24")
+        self.assertEqual(len(links), 2)
+        self.assertEqual({link.child for link in links}, {b.ip, c.ip})
+        self.assertTrue(all(link.confirmed and "arbitrary" in link.evidence for link in links))
+        self.assertEqual(topology.build_topology([c, b, a], a.ip, "192.168.1.0/24"), links)
+
+    def test_lldp_requires_mac_chassis_subtype_and_matching_index(self):
+        chassis = {"10.2.3": bytes.fromhex("112233445566"), "10.2.4": bytes.fromhex("aabbccddeeff")}
+        self.assertEqual(snmp_probe.verified_lldp_macs({"10.2.3": "7", "10.2.4": "4"}, chassis),
+                         ("aa:bb:cc:dd:ee:ff",))
+        self.assertEqual(snmp_probe.verified_lldp_macs({"10.2.5": "4"}, chassis), ())
+
+    def test_duplicate_mac_never_creates_confirmed_neighbor(self):
+        gateway = Device("192.168.1.1", mac="aa:bb:cc:dd:ee:ff",
+                         lldp_neighbor_macs=["11:22:33:44:55:66"])
+        a = Device("192.168.1.2", mac="11:22:33:44:55:66")
+        b = Device("192.168.1.3", mac="11:22:33:44:55:66")
+        links = topology.build_topology([gateway, a, b], gateway.ip, "192.168.1.0/24")
+        self.assertEqual(len(links), 2)
+        self.assertTrue(all(not link.confirmed for link in links))
 
     def test_snmp_never_uses_default_credentials(self):
         with self.assertRaises(ValueError):
@@ -146,6 +204,23 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(found[0].device_type, "IP Camera")
         self.assertIsNone(found[0].serial_number)
 
+    def test_manual_ipv6_scan_does_not_try_ipv4_only_snmp(self):
+        found = []
+        with patch("app.core.scanner.network_utils.ping_sweep", return_value=["2001:db8::42"]), \
+             patch("app.core.scanner.onvif_probe.discover", return_value={}), \
+             patch("app.core.scanner.mdns_probe.discover", return_value={}), \
+             patch("app.core.scanner.network_utils.resolve_macs", return_value={}), \
+             patch("app.core.scanner.network_utils.scan_ports", return_value=[443]), \
+             patch("app.core.scanner.network_utils.resolve_hostname", return_value=None), \
+             patch("app.core.scanner.vendor_lookup.lookup_vendor", return_value=None), \
+             patch("app.core.scanner.snmp_probe.query") as snmp:
+            run_scan(["2001:db8::42"], ScanOptions(enable_upnp=False, enable_wmi=False,
+                                                    enable_snmp=True, snmp_community="authorized"),
+                     found.append)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0].url, "https://[2001:db8::42]")
+        snmp.assert_not_called()
+
     def test_tcp_host_survives_ping_failure_but_stale_arp_does_not(self):
         with patch("app.core.network_utils._ping_once", return_value=False), \
              patch("app.core.network_utils._read_arp_table", return_value={"192.168.1.8": "aa:bb:cc:dd:ee:ff"}), \
@@ -174,6 +249,8 @@ class DiscoveryTests(unittest.TestCase):
             on_probe=lambda done, total: progress.append((done, total))), [])
         self.assertEqual(progress[-1], (1000, 1000))
         self.assertLess(time.monotonic() - start, 15)
+        with self.assertRaises(ValueError):
+            network_utils._probe_targets(["192.0.2.1"], lambda ip: True, 0, None)
 
     def test_scan_history_ip_change_and_export(self):
         old = [Device("192.168.1.4", mac="aa:bb:cc:dd:ee:ff")]
@@ -202,6 +279,13 @@ class DiscoveryTests(unittest.TestCase):
         self.assertIn("Unmapped", tree.tree.topLevelItem(0).text(0))
         tree.tree.topLevelItem(0).child(0).setSelected(True)
         self.assertIn("Unknown", tree.inspector.toPlainText())
+        with tempfile.TemporaryDirectory() as directory:
+            svg = Path(directory) / "tree.svg"
+            png = Path(directory) / "tree.png"
+            tree.export_graph(svg)
+            tree.export_graph(png)
+            self.assertIn(b"<svg", svg.read_bytes()[:500])
+            self.assertTrue(png.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"))
         tree.close()
 
     def test_confirmed_neighbor_does_not_claim_direction(self):
@@ -250,6 +334,33 @@ class DiscoveryTests(unittest.TestCase):
         tree.refresh(devices)
         self.assertEqual(tree.tree.topLevelItem(0).childCount(), 1000)
         self.assertLess(time.monotonic() - start, 15)
+        with tempfile.TemporaryDirectory() as directory:
+            svg = Path(directory) / "large.svg"
+            tree.export_graph(svg)
+            self.assertIn(b"<svg", svg.read_bytes()[:500])
+            with self.assertRaisesRegex(ValueError, "up to 250"):
+                tree.export_graph(Path(directory) / "large.png")
+        tree.close()
+
+    def test_deep_lldp_path_renders_and_exports_without_recursion(self):
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+        from PyQt6.QtWidgets import QApplication
+        from app.ui.ip_tree import IpTree
+        app = QApplication.instance() or QApplication([])
+        count = 1001
+        macs = [f"02:00:00:00:{index // 256:02x}:{index % 256:02x}"
+                for index in range(count)]
+        devices = [
+            Device(f"10.1.{index // 250}.{index % 250 + 1}", mac=macs[index],
+                   lldp_neighbor_macs=[macs[index + 1]] if index + 1 < count else [])
+            for index in range(count)
+        ]
+        tree = IpTree()
+        tree.refresh(devices, devices[0].ip, "10.1.0.0/16")
+        with tempfile.TemporaryDirectory() as directory:
+            export = Path(directory) / "deep.svg"
+            tree.export_graph(export)
+            self.assertGreater(export.stat().st_size, 1000)
         tree.close()
 
 if __name__ == "__main__":

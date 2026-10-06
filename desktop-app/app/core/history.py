@@ -52,7 +52,7 @@ def load_latest(path: Path = HISTORY_PATH) -> list[Device]:
         if not isinstance(entry, dict) or not isinstance(entry.get("ip"), str):
             raise ValueError("Invalid device in scan history")
         try:
-            ipaddress.IPv4Address(entry["ip"])
+            ipaddress.ip_address(entry["ip"])
         except ipaddress.AddressValueError as exc:
             raise ValueError("Invalid IP in scan history") from exc
         if not isinstance(entry.get("open_ports", []), list) or not isinstance(entry.get("sources", []), list):
@@ -74,7 +74,7 @@ def export_results(devices: list[Device], path: Path) -> None:
     if path.suffix.lower() == ".json":
         path.write_text(json.dumps([asdict(device) for device in devices], ensure_ascii=False, indent=2), encoding="utf-8")
     elif path.suffix.lower() == ".csv":
-        columns = ("ip", "mac", "hostname", "vendor", "device_type", "confidence", "serial_number",
+        columns = ("ip", "mac", "hostname", "vendor", "device_type", "classification_evidence", "serial_number",
                    "onvif_model", "onvif_firmware", "open_ports", "sources", "first_seen", "last_seen")
         with path.open("w", encoding="utf-8-sig", newline="") as file:
             writer = csv.DictWriter(file, fieldnames=columns)

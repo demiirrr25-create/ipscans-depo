@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import logging
+import ipaddress
 from typing import Callable
 
 from app.core import network_utils, vendor_lookup
@@ -33,7 +34,8 @@ def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict,
                  onvif_by_ip: dict, mdns_by_ip: dict, options: ScanOptions) -> Device:
     mac = mac_by_ip.get(ip)
     device = Device(ip=ip, mac=mac)
-    device.sources.append("Network response")
+    if not (ip in onvif_by_ip or ip in mdns_by_ip or ip in upnp_by_ip):
+        device.sources.append("ICMP or TCP")
     device.last_seen = device.first_seen = datetime.now(timezone.utc).isoformat()
 
     # Every enrichment step is independently guarded: a single misbehaving
@@ -54,7 +56,7 @@ def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict,
     except Exception:
         _LOG.exception("Port check failed for %s", ip)
 
-    if options.enable_snmp and options.snmp_community:
+    if options.enable_snmp and options.snmp_community and ipaddress.ip_address(ip).version == 4:
         try:
             snmp_result = snmp_probe.query(ip, options.snmp_community)
         except Exception as exc:
@@ -97,7 +99,7 @@ def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict,
             device.serial_number = device.serial_number or wmi_result.bios_serial_number
             device.sources.append("WMI")
 
-    if options.enable_nmap:
+    if options.enable_nmap and ipaddress.ip_address(ip).version == 4:
         try:
             nmap_result = nmap_probe.query(ip, with_os_detection=options.nmap_os_detection)
         except Exception:
@@ -159,7 +161,8 @@ def run_scan(
     except Exception:
         _LOG.exception("UPnP discovery failed")
         upnp_by_ip = {}
-    alive_hosts = sorted(set(alive_hosts) | (set(targets) & (set(onvif_by_ip) | set(upnp_by_ip) | set(mdns_by_ip))))
+    alive_hosts = sorted(set(alive_hosts) | (set(targets) & (set(onvif_by_ip) | set(upnp_by_ip) | set(mdns_by_ip))),
+                         key=lambda ip: (ipaddress.ip_address(ip).version, int(ipaddress.ip_address(ip))))
     if not alive_hosts:
         return
     if on_phase:

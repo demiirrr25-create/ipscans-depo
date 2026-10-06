@@ -56,12 +56,14 @@ export default async function ApplicationDetail({ params }: Params) {
        "ONVIF kamera keşfi ve cihazın ilan ettiği model/üretici bilgileri",
        "Yalnızca sizin sağladığınız SNMP bilgileriyle LLDP komşuluk kanıtı",
        "IP TREE: doğrulanmış LLDP bağlantıları, çıkarımsal ağ geçidi yolları ve eşlenmemiş cihazlar",
-       "İki dakikalık isteğe bağlı izleme; tarama geçmişi, değişiklik karşılaştırması, CSV/JSON"]
+       "İsteğe bağlı izleme, geçmiş, CSV/JSON ve IP TREE SVG/PNG dışa aktarma",
+       "Elle girilen tek IPv6 adresi veya en fazla 256 adreslik IPv6 CIDR"]
     : ["IPv4 discovery via ICMP/TCP and mDNS/UPnP; ARP, MAC and offline vendor lookup",
        "ONVIF camera discovery with self-advertised manufacturer and model",
        "LLDP neighbor evidence only with the SNMP credentials you provide",
        "IP TREE: verified LLDP links, inferred gateway routes and unmapped devices",
-       "Optional two-minute monitoring, scan history and CSV/JSON export"];
+       "Optional monitoring, scan history, CSV/JSON and IP TREE SVG/PNG export",
+       "Manual single IPv6 address or IPv6 CIDR limited to 256 addresses"];
   const features = app.id === "ipcast" ? dict.ipcast.features
     : scannerFeatures;
   const intro = app.id === "ipcast" ? dict.ipcast.subtitle

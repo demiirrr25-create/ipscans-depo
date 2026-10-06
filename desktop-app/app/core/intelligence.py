@@ -6,7 +6,8 @@ from app.core.models import Device
 
 def classify(device: Device) -> None:
     if device.onvif_endpoint or "ONVIF" in device.sources:
-        device.device_type, device.confidence = "IP Camera", 80
+        device.device_type = "IP Camera"
+        device.classification_evidence = "ONVIF discovery announcement"
         return
     description = " ".join(filter(None, (device.upnp_device_type, device.snmp_sys_descr))).lower()
     signatures = (
@@ -19,10 +20,12 @@ def classify(device: Device) -> None:
     for signature, category in signatures:
         if signature in description:
             device.device_type = category
-            device.confidence = 85 if device.snmp_sys_descr else 75
+            device.classification_evidence = "SNMP device description" if device.snmp_sys_descr else "UPnP device description"
             return
     if device.wmi_os_caption:
-        device.device_type, device.confidence = "Computer", 90
+        device.device_type = "Computer"
+        device.classification_evidence = "Local Windows WMI"
         return
     if "_printer._tcp.local." in device.mdns_services:
-        device.device_type, device.confidence = "Printer", 70
+        device.device_type = "Printer"
+        device.classification_evidence = "mDNS printer service"

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import ipaddress
 
 
 @dataclass
@@ -25,7 +26,7 @@ class Device:
     serial_number: str | None = None
     sources: list[str] = field(default_factory=list)
     device_type: str = "Unknown"
-    confidence: int = 0
+    classification_evidence: str | None = None
     onvif_manufacturer: str | None = None
     onvif_model: str | None = None
     onvif_firmware: str | None = None
@@ -43,4 +44,5 @@ class Device:
 
     @property
     def url(self) -> str:
-        return f"{self.preferred_url_scheme}://{self.ip}"
+        host = f"[{self.ip}]" if ipaddress.ip_address(self.ip).version == 6 else self.ip
+        return f"{self.preferred_url_scheme}://{host}"

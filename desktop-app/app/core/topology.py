@@ -1,8 +1,9 @@
-"""Logical gateway paths. Never claim a physical switch port without LLDP/FDB evidence."""
+"""Logical display paths with undirected LLDP adjacency evidence."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 import ipaddress
+from collections import Counter, deque
 
 from app.core.models import Device
 
@@ -11,7 +12,6 @@ from app.core.models import Device
 class TopologyLink:
     parent: str
     child: str
-    confidence: int
     evidence: str
     confirmed: bool
 
@@ -19,27 +19,46 @@ class TopologyLink:
 def build_topology(devices: list[Device], gateway: str | None,
                    local_network: str | None = None) -> list[TopologyLink]:
     by_ip = {device.ip: device for device in devices}
-    by_mac = {device.mac: device for device in devices if device.mac}
+    counts = Counter(device.mac for device in devices if device.mac)
+    by_mac = {device.mac: device for device in devices if device.mac and counts[device.mac] == 1}
+    adjacent: dict[str, set[str]] = {ip: set() for ip in by_ip}
+    for device in devices:
+        for mac in device.lldp_neighbor_macs:
+            peer = by_mac.get(mac)
+            if peer and peer.ip != device.ip:
+                adjacent[device.ip].add(peer.ip)
+                adjacent[peer.ip].add(device.ip)
+
     links: dict[str, TopologyLink] = {}
-    for parent in devices:
-        for mac in parent.lldp_neighbor_macs:
-            child = by_mac.get(mac)
-            if not child or child.ip == parent.ip:
-                continue
-            # LLDP is symmetric on neighboring switches; orient away from
-            # the gateway where known, otherwise use deterministic IP order.
-            if child.ip == gateway or (parent.ip != gateway and child.lldp_neighbor_macs
-                                        and parent.mac in child.lldp_neighbor_macs
-                                        and parent.ip > child.ip):
-                continue
-            links[child.ip] = TopologyLink(parent.ip, child.ip, 90,
-                                           "Authorized SNMP LLDP neighbor chassis ID", True)
+    visited: set[str] = set()
+    # Layout orientation is arbitrary without port/route evidence. Starting
+    # with the known gateway improves navigation, not the physical claim.
+    roots = sorted(by_ip, key=lambda ip: (ip != gateway, ipaddress.ip_address(ip).version,
+                                          int(ipaddress.ip_address(ip))))
+    for root in roots:
+        if root in visited:
+            continue
+        visited.add(root)
+        queue = deque([root])
+        while queue:
+            parent = queue.popleft()
+            for child in sorted(adjacent[parent], key=lambda ip: (ipaddress.ip_address(ip).version,
+                                                                   int(ipaddress.ip_address(ip)))):
+                if child in visited:
+                    continue
+                visited.add(child)
+                links[child] = TopologyLink(parent, child,
+                                             "Authorized SNMP LLDP adjacency; display direction is arbitrary",
+                                             True)
+                queue.append(child)
+
     subnet = ipaddress.IPv4Network(local_network) if local_network else None
     if gateway and gateway in by_ip and subnet and ipaddress.IPv4Address(gateway) in subnet:
         for child in devices:
             if (child.ip != gateway and child.ip not in links
-                    and ipaddress.IPv4Address(child.ip) in subnet):
-                links[child.ip] = TopologyLink(gateway, child.ip, 35,
+                    and not adjacent[child.ip]
+                    and ipaddress.ip_address(child.ip) in subnet):
+                links[child.ip] = TopologyLink(gateway, child.ip,
                                                 "Shared IP subnet and configured gateway; physical path unknown",
                                                 False)
     return list(links.values())
