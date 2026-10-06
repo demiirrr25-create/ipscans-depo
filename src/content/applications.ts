@@ -23,12 +23,6 @@ export const desktopRelease = {
     installerBytes: 52666771,
     installerSha256: "1f9f5c9ee2a17e45e472aebdb3b106d75ef1a22fee3b3f2acd250a8f47775300",
   },
-  healthPro: {
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/Network-Health-Pro-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/ipscans-network-health-pro.exe",
-    installerBytes: 51680156,
-    installerSha256: "0a65771558d4676a611461f50edae84bf81c0107900184948af0e18aa36593b1",
-  },
 } as const;
 
 export const platformCopy: Record<Locale, {
@@ -96,7 +90,7 @@ export const applications: readonly Application[] = [
     name: "IPscans+",
     description: { tr: "Ağ keşfi, cihaz tanıma, ONVIF kamera keşfi ve kanıta dayalı IP TREE", en: "Network discovery, device intelligence, ONVIF camera discovery and evidence-based IP TREE", de: "Netzwerkerkennung, Geräteanalyse und IP TREE", fr: "Découverte réseau, analyse des appareils et IP TREE", es: "Descubrimiento de red, análisis de dispositivos e IP TREE", it: "Rilevamento della rete, analisi dei dispositivi e IP TREE", pt: "Descoberta de rede, análise de dispositivos e IP TREE", nl: "Netwerkdetectie, apparaatanalyse en IP TREE", pl: "Wykrywanie sieci, analiza urządzeń i IP TREE", ru: "Обнаружение сети, анализ устройств и IP TREE", ar: "اكتشاف الشبكة وتحليل الأجهزة وIP TREE", ja: "ネットワーク検出、デバイス分析、IP TREE", ko: "네트워크 탐색, 장치 분석 및 IP TREE", zh: "网络发现、设备分析和 IP TREE" },
     icon: "/scanner-mark.svg",
-    version: "2.0.0",
+    version: "2.0.1",
     platform: "Windows · x64",
     detailPath: "/download",
     downloadUrl: desktopRelease.scanner.installerUrl,

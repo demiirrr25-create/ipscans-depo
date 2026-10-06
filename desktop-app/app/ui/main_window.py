@@ -477,7 +477,8 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "Scan history", f"Could not save scan history: {exc}")
         self._previous = list(devices)
         adapter = self.adapter_select.currentData()
-        self.ip_tree.refresh(devices, adapter.gateway if adapter else None)
+        self.ip_tree.refresh(devices, adapter.gateway if adapter else None,
+                             adapter.network if adapter else None)
         cameras = sum(device.device_type == "IP Camera" for device in devices)
         network = sum(device.device_type in ("Router", "Switch", "PoE Switch", "Access Point") for device in devices)
         unknown = sum(device.device_type == "Unknown" for device in devices)

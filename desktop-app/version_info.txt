@@ -4,8 +4,8 @@
 # heuristics than ones that carry normal-looking version info.
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 0, 0, 0),
-    prodvers=(2, 0, 0, 0),
+    filevers=(2, 0, 1, 0),
+    prodvers=(2, 0, 1, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -21,12 +21,12 @@ VSVersionInfo(
           [
             StringStruct(u'CompanyName', u'ipscans'),
             StringStruct(u'FileDescription', u'IPscans+ Network Discovery'),
-            StringStruct(u'FileVersion', u'2.0.0.0'),
+            StringStruct(u'FileVersion', u'2.0.1.0'),
             StringStruct(u'InternalName', u'IPscans-Plus'),
             StringStruct(u'LegalCopyright', u'\u00a9 ipscans'),
             StringStruct(u'OriginalFilename', u'IPscans-Plus.exe'),
             StringStruct(u'ProductName', u'IPscans+'),
-            StringStruct(u'ProductVersion', u'2.0.0.0'),
+            StringStruct(u'ProductVersion', u'2.0.1.0'),
           ],
         )
       ]

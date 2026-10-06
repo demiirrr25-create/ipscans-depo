@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ipaddress
 
 from app.core.models import Device
 
@@ -15,7 +16,8 @@ class TopologyLink:
     confirmed: bool
 
 
-def build_topology(devices: list[Device], gateway: str | None) -> list[TopologyLink]:
+def build_topology(devices: list[Device], gateway: str | None,
+                   local_network: str | None = None) -> list[TopologyLink]:
     by_ip = {device.ip: device for device in devices}
     by_mac = {device.mac: device for device in devices if device.mac}
     links: dict[str, TopologyLink] = {}
@@ -32,9 +34,11 @@ def build_topology(devices: list[Device], gateway: str | None) -> list[TopologyL
                 continue
             links[child.ip] = TopologyLink(parent.ip, child.ip, 90,
                                            "Authorized SNMP LLDP neighbor chassis ID", True)
-    if gateway and gateway in by_ip:
+    subnet = ipaddress.IPv4Network(local_network) if local_network else None
+    if gateway and gateway in by_ip and subnet and ipaddress.IPv4Address(gateway) in subnet:
         for child in devices:
-            if child.ip != gateway and child.ip not in links:
+            if (child.ip != gateway and child.ip not in links
+                    and ipaddress.IPv4Address(child.ip) in subnet):
                 links[child.ip] = TopologyLink(gateway, child.ip, 35,
                                                 "Shared IP subnet and configured gateway; physical path unknown",
                                                 False)

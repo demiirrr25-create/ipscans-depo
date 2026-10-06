@@ -92,7 +92,8 @@ class DiscoveryTests(unittest.TestCase):
     def test_topology_never_claims_physical_connection(self):
         devices = [Device("192.168.1.1"), Device("192.168.1.8")]
         self.assertEqual(topology.build_topology(devices, "192.168.1.200"), [])
-        link, = topology.build_topology(devices, "192.168.1.1")
+        self.assertEqual(topology.build_topology(devices, "192.168.1.1"), [])
+        link, = topology.build_topology(devices, "192.168.1.1", "192.168.1.0/24")
         self.assertFalse(link.confirmed)
         self.assertEqual(link.confidence, 35)
         self.assertIn("physical path unknown", link.evidence)
@@ -101,13 +102,15 @@ class DiscoveryTests(unittest.TestCase):
         switch = Device("192.168.1.1", mac="aa:bb:cc:dd:ee:ff",
                         lldp_neighbor_macs=["11:22:33:44:55:66"])
         camera = Device("192.168.1.8", mac="11:22:33:44:55:66")
-        link, = topology.build_topology([switch, camera], switch.ip)
+        link, = topology.build_topology([switch, camera], switch.ip, "192.168.1.0/24")
         self.assertTrue(link.confirmed)
         self.assertEqual(link.parent, switch.ip)
         self.assertIn("LLDP", link.evidence)
         switch.lldp_neighbor_macs = ["de:ad:be:ef:00:00"]
-        inferred, = topology.build_topology([switch, camera], switch.ip)
+        inferred, = topology.build_topology([switch, camera], switch.ip, "192.168.1.0/24")
         self.assertFalse(inferred.confirmed)
+        remote = Device("10.8.0.8")
+        self.assertEqual(len(topology.build_topology([switch, remote], switch.ip, "192.168.1.0/24")), 0)
 
     def test_snmp_never_uses_default_credentials(self):
         with self.assertRaises(ValueError):

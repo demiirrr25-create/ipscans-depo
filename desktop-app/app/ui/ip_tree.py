@@ -20,6 +20,7 @@ class IpTree(QWidget):
         super().__init__(parent)
         self.devices: list[Device] = []
         self.gateway: str | None = None
+        self.local_network: str | None = None
         self._font_size = 12
         self._pan_from: QPoint | None = None
         layout = QVBoxLayout(self)
@@ -77,9 +78,11 @@ class IpTree(QWidget):
                 return True
         return super().eventFilter(watched, event)
 
-    def refresh(self, devices: list[Device], gateway: str | None = None) -> None:
+    def refresh(self, devices: list[Device], gateway: str | None = None,
+                local_network: str | None = None) -> None:
         self.devices = list(devices)
         self.gateway = gateway
+        self.local_network = local_network
         self._filter()
 
     def _zoom(self, step: int) -> None:
@@ -98,7 +101,7 @@ class IpTree(QWidget):
                                                         device.vendor, device.onvif_model))).lower()
                    and category in device.device_type.lower()]
         by_ip = {device.ip: device for device in devices}
-        links = build_topology(devices, self.gateway)
+        links = build_topology(devices, self.gateway, self.local_network)
         children = {link.child: link for link in links if link.parent in by_ip}
         by_parent: dict[str, list] = {}
         for link in children.values():
@@ -154,7 +157,8 @@ class IpTree(QWidget):
         device = next((candidate for candidate in self.devices if candidate.ip == ip), None)
         if not device:
             return
-        link = next((edge for edge in build_topology(self.devices, self.gateway) if edge.child == ip), None)
+        link = next((edge for edge in build_topology(self.devices, self.gateway, self.local_network)
+                     if edge.child == ip), None)
         fields = {
             "IP": device.ip, "MAC": device.mac, "Hostname": device.hostname,
             "Vendor (MAC OUI)": device.vendor, "ONVIF manufacturer": device.onvif_manufacturer,
