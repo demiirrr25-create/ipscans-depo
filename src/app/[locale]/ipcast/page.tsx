@@ -1,9 +1,10 @@
 import Image from "next/image";
-import { isLocale } from "@/i18n/config";
+import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { localizedAlternates } from "@/lib/seo";
 import Link from "next/link";
 import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 import { ipcastRelease } from "@/content/applications";
@@ -15,12 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t.title,
     description: t.subtitle,
-    alternates: { canonical: `/${locale}/ipcast` },
+    alternates: localizedAlternates(locale, "/ipcast"),
     openGraph: { title: `${t.title} — IPScans`, description: t.subtitle, url: `https://ipscans.com/${locale}/ipcast` },
   };
 }
 
-const connectionNotes = {
+const connectionNotes: Partial<Record<Locale, string>> = {
   tr: "Windows 10/11 (64 bit) · 2.1.0 Production. Yeni logo ve daha okunaklı arayüz; dengeli, hız ve kalite modları; değişmeyen ekranlarda daha az veri aktarımı. Relay otomatik ayarlanır. İki bilgisayarda da yeni sürümü açın ve karşı cihazın 9 haneli kimliğiyle bağlanın. İlk bağlantıda sertifikayı doğrulayın ve karşı tarafta erişimi onaylayın. Yavaş ağlarda, ekranı paylaşılan bilgisayarda Settings → Display performance → Speed seçip yeniden bağlanın. Kurumsal kararlı üretim sürümüdür; gerçek hız ağ ve cihazınıza bağlıdır.",
   en: "Windows 10/11 (64-bit) · 2.1.0 Production. New logo and clearer interface; Balanced, Speed and Quality modes; less traffic on unchanged screens. Relay is automatic. Open the new version on both computers and connect with the remote 9-digit ID. Verify the certificate on first connection and approve access on the other device. On slower networks, choose Settings → Display performance → Speed on the shared computer, then reconnect. Enterprise production release; actual performance depends on your devices and network.",
   de: "Windows 10/11 (64 Bit) · 2.1.0 Production. Neues Logo, übersichtlichere Oberfläche, Balanced-, Speed- und Quality-Modi und weniger Daten bei unverändertem Bildschirm. Der Relay ist automatisch eingerichtet. Öffnen Sie die neue Version auf beiden Computern und verbinden Sie sich mit der neunstelligen Geräte-ID. Prüfen Sie das Zertifikat und bestätigen Sie den Zugriff. Bei langsamen Netzen wählen Sie am freigegebenen Computer Settings → Display performance → Speed und verbinden Sie sich erneut. Stabile Enterprise-Produktionsversion; die Leistung hängt von Geräten und Netzwerk ab.",
@@ -51,7 +52,7 @@ export default async function IpCastPage({
             {t.features.map((f) => (
               <li key={f} className="flex items-start gap-3 text-sm text-neutral-200">
                 <svg
-                  className="mt-0.5 shrink-0 text-blue-400"
+                  className="mt-0.5 shrink-0 text-white"
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
@@ -85,8 +86,7 @@ export default async function IpCastPage({
           </Link>
 
           <div id="ipcast-release-notes" className="mt-5 rounded-xl border border-white/15 bg-white/5 p-4 text-sm leading-relaxed text-neutral-200">
-            <p>{connectionNotes[locale]}</p>
-
+            <p>{connectionNotes[locale] ?? t.note}</p>
           </div>
           <p className="mt-4 text-xs text-neutral-400">{t.note}</p>
           <p className="mt-2 text-xs text-neutral-400">{t.safe}</p>

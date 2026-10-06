@@ -8,7 +8,7 @@ import { notFound } from "next/navigation";
 
 export function generateStaticParams() {
   return locales.flatMap((locale) =>
-    posts.map((post) => ({ locale, slug: post.slug }))
+    posts.filter((post) => post.body[locale]).map((post) => ({ locale, slug: post.slug }))
   );
 }
 
@@ -19,16 +19,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   const post = getPost(slug);
-  if (!isLocale(locale) || !post) return {};
+  if (!isLocale(locale) || !post?.body[locale]) return {};
   return {
     title: `${localizedPostText(post.title, locale)} — ipscans`,
     description: localizedPostText(post.excerpt, locale),
     // Only hreflang to locales that actually have a translation for this post.
     alternates: {
+      canonical: `/${locale}/blog/${slug}`,
       languages: Object.fromEntries(
-        locales
+        [...locales
           .filter((l) => post.title[l])
-          .map((l) => [l, `/${l}/blog/${slug}`])
+          .map((l) => [l, `/${l}/blog/${slug}`]), ["x-default", `/en/blog/${slug}`]]
       ),
     },
   };
@@ -42,9 +43,8 @@ export default async function BlogPostPage({
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
   const post = getPost(slug);
-  if (!post) notFound();
+  if (!post?.body[locale]) notFound();
   const dict = getDictionary(locale);
-  const effectiveLocale = post.title[locale] ? locale : "en";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -54,7 +54,7 @@ export default async function BlogPostPage({
         headline: localizedPostText(post.title, locale),
         description: localizedPostText(post.excerpt, locale),
         datePublished: post.date,
-        inLanguage: localeTags[effectiveLocale],
+        inLanguage: localeTags[locale],
         author: { "@type": "Organization", name: "ipscans" },
         publisher: { "@type": "Organization", name: "ipscans" },
       },

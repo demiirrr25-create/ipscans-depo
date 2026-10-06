@@ -5,6 +5,10 @@ of the free [`../desktop-app`](../desktop-app) IP Scanner. Ships as a
 **separate** Windows executable/product with its own download page,
 per product decision — see [`/memories/session/network-health-pro.md`](../.).
 
+The Windows CI also uploads a separate Inno Setup installer with an optional
+desktop shortcut selected by default; the current website download remains
+the portable `.exe`.
+
 ## Why this isn't a fork
 
 This project does not copy or modify a single file from `../desktop-app`.
@@ -42,24 +46,13 @@ QT_QPA_PLATFORM=offscreen python3 main.py --selftest  # boots every tab headless
 
 ## Regenerating assets/icon_pro.ico
 
-`assets/icon_pro.ico` / `icon_pro.png` are committed, pre-baked (PRO-badged)
-copies of the free app's icon — regenerate them if that base icon ever
-changes (requires `pip install Pillow` in addition to the deps above):
+`assets/icon_pro.ico` / `icon_pro.png` are generated from
+`../public/health-pro-mark.svg`, a separate network-health identity. Regenerate
+both files when the SVG changes (ImageMagick `convert`):
 
 ```bash
-QT_QPA_PLATFORM=offscreen python3 -c "
-from PyQt6.QtWidgets import QApplication; import sys
-app = QApplication(sys.argv)
-from ui.pro_resources import _with_pro_badge
-from app.ui.resources import load_app_icon
-from PIL import Image
-badged = _with_pro_badge(load_app_icon().pixmap(256, 256))
-badged.save('/tmp/_master.png')
-master = Image.open('/tmp/_master.png').convert('RGBA')
-master.save('assets/icon_pro.png')
-master.save('assets/icon_pro.ico', format='ICO',
-             sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])
-"
+convert -background none ../public/health-pro-mark.svg -resize 256x256 assets/icon_pro.png
+convert -background none ../public/health-pro-mark.svg -define icon:auto-resize=256,128,64,48,32,16 assets/icon_pro.ico
 ```
 
 ## What's NOT built yet (see session memory for the full plan)

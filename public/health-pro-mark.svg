@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <title>Network Health Pro — monitored network and conflict alert</title>
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="#0b0b0b" stroke="#555" stroke-width="2"/>
+  <path d="M62 76h132M62 180h132M80 76v104m96-104v104" stroke="#777" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="62" cy="76" r="12" fill="#fff"/>
+  <circle cx="194" cy="76" r="12" fill="#fff"/>
+  <circle cx="62" cy="180" r="12" fill="#fff"/>
+  <circle cx="194" cy="180" r="12" fill="#fff"/>
+  <path d="m90 130 24 22 49-53" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

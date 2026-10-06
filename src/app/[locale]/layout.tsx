@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
-import { isLocale, locales, defaultLocale, ogLocales, localeTags } from "@/i18n/config";
+import { isLocale, locales, ogLocales, localeTags } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { GoogleTag } from "@/components/GoogleTag";
 import { CookieConsent } from "@/components/CookieConsent";
+import { localizedAlternates } from "@/lib/seo";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -48,13 +49,7 @@ export async function generateMetadata({
     description: dict.meta.description,
     applicationName: "ipscans",
     metadataBase: new URL("https://ipscans.com"),
-    alternates: {
-      canonical: `/${locale}`,
-      languages: {
-        ...Object.fromEntries(locales.map((l) => [l, `/${l}`])),
-        "x-default": `/${defaultLocale}`,
-      },
-    },
+    alternates: localizedAlternates(locale, ""),
     // Explicit opt-in to larger snippet/image previews in Google results,
     // which improves click-through rate (an indirect ranking signal).
     robots: {
@@ -149,6 +144,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col text-white">

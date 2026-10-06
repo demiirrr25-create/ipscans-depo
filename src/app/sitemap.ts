@@ -7,56 +7,48 @@ const BASE_URL = "https://ipscans.com";
 
 function altLanguages(pathFor: (locale: Locale) => string) {
   return {
-    ...Object.fromEntries(locales.map((l) => [l, `${BASE_URL}${pathFor(l)}`])),
+    ...Object.fromEntries(locales.map((locale) => [locale, `${BASE_URL}${pathFor(locale)}`])),
     "x-default": `${BASE_URL}${pathFor(defaultLocale)}`,
   };
 }
 
-// One sitemap file per locale/region (Next.js emits a /sitemap.xml index
-// that links to /sitemap/0.xml, /sitemap/1.xml, ...), as recommended for
-// international SEO instead of a single mixed-locale file.
-export function generateSitemaps() {
-  return locales.map((_, id) => ({ id }));
-}
-
-export default async function sitemap({
-  id,
-}: {
-  id: Promise<string>;
-}): Promise<MetadataRoute.Sitemap> {
-  const locale = locales[Number(await id)];
-  const staticPaths = ["", "/scan", "/download", "/download/ipcast", "/ipcast", "/pro", "/blog", "/shop", "/privacy", "/terms"];
+export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
+  for (const locale of locales) {
+    const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast", "/pro"];
+    if (posts.some((post) => post.body[locale])) staticPaths.push("/blog");
+    if (locale === "en" || locale === "tr") staticPaths.push("/privacy", "/terms");
 
-  for (const path of staticPaths) {
-    entries.push({
-      url: `${BASE_URL}/${locale}${path}`,
-      lastModified: new Date(),
-      alternates: { languages: altLanguages((l) => `/${l}${path}`) },
-    });
+    for (const path of staticPaths) {
+      const languages = ["/privacy", "/terms", "/blog"].includes(path)
+        ? {
+            en: `${BASE_URL}/en${path}`,
+            tr: `${BASE_URL}/tr${path}`,
+            "x-default": `${BASE_URL}/en${path}`,
+          }
+        : altLanguages((l) => `/${l}${path}`);
+      entries.push({ url: `${BASE_URL}/${locale}${path}`, alternates: { languages } });
+    }
+    for (const key of toolKeys) {
+      entries.push({
+        url: `${BASE_URL}/${locale}/${toolSlugs[key][locale]}`,
+        alternates: { languages: altLanguages((l) => `/${l}/${toolSlugs[key][l]}`) },
+      });
+    }
+    for (const post of posts) {
+      if (!post.body[locale]) continue;
+      const translated = locales.filter((l) => post.body[l]);
+      entries.push({
+        url: `${BASE_URL}/${locale}/blog/${post.slug}`,
+        lastModified: new Date(post.date),
+        alternates: {
+          languages: {
+            ...Object.fromEntries(translated.map((l) => [l, `${BASE_URL}/${l}/blog/${post.slug}`])),
+            "x-default": `${BASE_URL}/en/blog/${post.slug}`,
+          },
+        },
+      });
+    }
   }
-  for (const key of toolKeys) {
-    entries.push({
-      url: `${BASE_URL}/${locale}/${toolSlugs[key][locale]}`,
-      lastModified: new Date(),
-      alternates: {
-        languages: altLanguages((l) => `/${l}/${toolSlugs[key][l]}`),
-      },
-    });
-  }
-  for (const post of posts) {
-    // Only include hreflang for locales that actually have this post translated.
-    const translated = locales.filter((l) => post.title[l]);
-    entries.push({
-      url: `${BASE_URL}/${locale}/blog/${post.slug}`,
-      lastModified: new Date(post.date),
-      alternates: {
-        languages: Object.fromEntries(
-          translated.map((l) => [l, `${BASE_URL}/${l}/blog/${post.slug}`])
-        ),
-      },
-    });
-  }
-
   return entries;
 }

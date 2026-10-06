@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { platformCopy, ipcastRelease } from "@/content/applications";
 import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 import { PageShell } from "@/components/PageShell";
+import { localizedAlternates } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${product.title} ${ipcastRelease.version}`,
     description: product.subtitle,
-    alternates: { canonical: `/${locale}/download/ipcast` },
+    alternates: localizedAlternates(locale, "/download/ipcast"),
     openGraph: { title: `${product.title} ${ipcastRelease.version} — IPScans`, description: product.subtitle, url: `https://ipscans.com/${locale}/download/ipcast` },
   };
 }

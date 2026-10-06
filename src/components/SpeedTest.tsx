@@ -282,6 +282,15 @@ export function SpeedTest({
           de: "Der Test konnte nicht abgeschlossen werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
           fr: "Le test n’a pas abouti. Vérifiez votre connexion et réessayez.",
           es: "No se pudo completar la prueba. Comprueba tu conexión e inténtalo de nuevo.",
+          it: "Impossibile completare il test. Controlla la connessione e riprova.",
+          pt: "Não foi possível concluir o teste. Verifique a ligação e tente novamente.",
+          nl: "De test kon niet worden voltooid. Controleer je verbinding en probeer het opnieuw.",
+          pl: "Nie udało się ukończyć testu. Sprawdź połączenie i spróbuj ponownie.",
+          ru: "Не удалось завершить тест. Проверьте подключение и повторите попытку.",
+          ar: "تعذر إكمال الاختبار. تحقق من اتصالك وحاول مرة أخرى.",
+          ja: "テストを完了できませんでした。接続を確認して再試行してください。",
+          ko: "테스트를 완료하지 못했습니다. 연결을 확인한 후 다시 시도하세요.",
+          zh: "测试未能完成。请检查网络连接后重试。",
         }[locale]}</p>}
         <button
           onClick={run}

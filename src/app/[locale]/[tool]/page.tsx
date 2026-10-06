@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { isLocale, locales, localeTags } from "@/i18n/config";
+import { isLocale, locales, localeTags, defaultLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { ToolRenderer, toolMeta } from "@/components/tools/ToolRenderer";
@@ -32,9 +32,11 @@ export async function generateMetadata({
     alternates: {
       canonical: toolPath(key, locale),
       languages: Object.fromEntries(
-        locales.map((l) => [l, toolPath(key, l)])
+        [...locales.map((l) => [l, toolPath(key, l)]), ["x-default", toolPath(key, defaultLocale)]]
       ),
     },
+    openGraph: { title, description: subtitle, url: `${BASE_URL}${toolPath(key, locale)}`, locale: localeTags[locale] },
+    twitter: { card: "summary", title, description: subtitle },
   };
 }
 

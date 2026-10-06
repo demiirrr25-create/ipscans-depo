@@ -3,6 +3,7 @@ import { isLocale, locales, localeTags } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { notFound } from "next/navigation";
+import { localizedAlternates } from "@/lib/seo";
 
 const BASE_URL = "https://ipscans.com";
 
@@ -21,10 +22,7 @@ export async function generateMetadata({
   return {
     title: dict.pro.title,
     description: dict.pro.subtitle,
-    alternates: {
-      canonical: `/${locale}/pro`,
-      languages: Object.fromEntries(locales.map((l) => [l, `/${l}/pro`])),
-    },
+    alternates: localizedAlternates(locale, "/pro"),
   };
 }
 

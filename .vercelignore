@@ -1,0 +1,11 @@
+/ipcast/
+/desktop-app/
+/desktop-app-pro/
+/.github/
+/tools/
+/.next/
+/node_modules/
+.env*
+/.vercel/
+/.git/
+*.tsbuildinfo

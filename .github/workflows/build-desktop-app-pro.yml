@@ -38,7 +38,7 @@ jobs:
           # repo never copies that source into desktop-app-pro — see README).
           # --noupx / --version-file: same Defender/SmartScreen-heuristic
           # rationale as the free app's own build step.
-          # --icon: the PRE-BAKED PRO-badged icon (assets/icon_pro.ico) —
+          # --icon: the product-specific icon (assets/icon_pro.ico) —
           # this is what Explorer/taskbar/"pin to desktop" actually shows,
           # since that's read from the .exe's own Win32 resources, not the
           # QIcon set at runtime. Both assets dirs are added so the runtime
@@ -55,6 +55,27 @@ jobs:
       - name: Smoke test the packaged .exe
         run: |
           .\dist\ipscans-network-health-pro.exe --selftest
+
+      - name: Install Inno Setup and build installer
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          & $iscc installer\HealthPro.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
+
+      - name: Smoke test installer and desktop shortcut
+        run: |
+          $setup = (Resolve-Path "dist\installer\Network-Health-Pro-Setup.exe").Path
+          $installDir = Join-Path $env:RUNNER_TEMP "HealthProInstallTest"
+          $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "Network Health Pro.lnk"
+          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=desktopicon", "/DIR=`"$installDir`"" -Wait -PassThru
+          if ($process.ExitCode -ne 0 -or -not (Test-Path (Join-Path $installDir "ipscans-network-health-pro.exe")) -or -not (Test-Path $shortcut)) {
+            throw "Health Pro install or desktop shortcut failed"
+          }
+          $uninstaller = Join-Path $installDir "unins000.exe"
+          $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
+          if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "Health Pro uninstall failed" }
 
       - name: Publish built .exe to the website's download folder
         run: |
@@ -91,4 +112,10 @@ jobs:
         with:
           name: ipscans-network-health-pro-windows
           path: desktop-app-pro/dist/ipscans-network-health-pro.exe
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Network-Health-Pro-Setup
+          path: desktop-app-pro/dist/installer/Network-Health-Pro-Setup.exe
           if-no-files-found: error

@@ -3,6 +3,15 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { localizedAlternates } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const t = getDictionary(locale).scan;
+  return { title: t.title, description: t.subtitle, alternates: localizedAlternates(locale, "/scan") };
+}
 
 const COMMON_PORTS = [
   { port: 20, name: "FTP (data)" },

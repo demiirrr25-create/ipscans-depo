@@ -21,8 +21,9 @@ export async function generateMetadata({
     title: dict.footer.terms,
     alternates: {
       canonical: `/${locale}/terms`,
-      languages: Object.fromEntries(locales.map((l) => [l, `/${l}/terms`])),
+      languages: { en: "/en/terms", tr: "/tr/terms", "x-default": "/en/terms" },
     },
+    robots: termsOfService[locale] ? undefined : { index: false, follow: true },
   };
 }
 

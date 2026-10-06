@@ -23,6 +23,8 @@ export const toolSlugs: Record<ToolKey, Record<Locale, string>> = {
     de: "ip-suche",
     fr: "recherche-ip",
     es: "buscar-ip",
+    it: "ip-lookup", pt: "ip-lookup", nl: "ip-lookup", pl: "ip-lookup",
+    ru: "ip-lookup", ar: "ip-lookup", ja: "ip-lookup", ko: "ip-lookup", zh: "ip-lookup",
   },
   dns: {
     tr: "dns-sorgulama",
@@ -30,6 +32,8 @@ export const toolSlugs: Record<ToolKey, Record<Locale, string>> = {
     de: "dns-abfrage",
     fr: "recherche-dns",
     es: "buscar-dns",
+    it: "dns-lookup", pt: "dns-lookup", nl: "dns-lookup", pl: "dns-lookup",
+    ru: "dns-lookup", ar: "dns-lookup", ja: "dns-lookup", ko: "dns-lookup", zh: "dns-lookup",
   },
   whois: {
     tr: "whois-sorgulama",
@@ -37,6 +41,8 @@ export const toolSlugs: Record<ToolKey, Record<Locale, string>> = {
     de: "whois-abfrage",
     fr: "recherche-whois",
     es: "buscar-whois",
+    it: "whois-lookup", pt: "whois-lookup", nl: "whois-lookup", pl: "whois-lookup",
+    ru: "whois-lookup", ar: "whois-lookup", ja: "whois-lookup", ko: "whois-lookup", zh: "whois-lookup",
   },
   ports: {
     tr: "port-kontrol",
@@ -44,6 +50,8 @@ export const toolSlugs: Record<ToolKey, Record<Locale, string>> = {
     de: "port-pruefung",
     fr: "verification-port",
     es: "verificar-puerto",
+    it: "port-check", pt: "port-check", nl: "port-check", pl: "port-check",
+    ru: "port-check", ar: "port-check", ja: "port-check", ko: "port-check", zh: "port-check",
   },
   speedTest: {
     tr: "hiz-testi",
@@ -51,6 +59,8 @@ export const toolSlugs: Record<ToolKey, Record<Locale, string>> = {
     de: "geschwindigkeitstest",
     fr: "test-de-vitesse",
     es: "test-de-velocidad",
+    it: "speed-test", pt: "speed-test", nl: "speed-test", pl: "speed-test",
+    ru: "speed-test", ar: "speed-test", ja: "speed-test", ko: "speed-test", zh: "speed-test",
   },
 };
 

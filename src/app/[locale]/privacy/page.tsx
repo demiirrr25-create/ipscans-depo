@@ -21,8 +21,9 @@ export async function generateMetadata({
     title: dict.footer.privacy,
     alternates: {
       canonical: `/${locale}/privacy`,
-      languages: Object.fromEntries(locales.map((l) => [l, `/${l}/privacy`])),
+      languages: { en: "/en/privacy", tr: "/tr/privacy", "x-default": "/en/privacy" },
     },
+    robots: privacyPolicy[locale] ? undefined : { index: false, follow: true },
   };
 }
 

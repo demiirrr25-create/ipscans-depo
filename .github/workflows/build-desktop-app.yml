@@ -47,6 +47,27 @@ jobs:
         run: |
           .\dist\ipscans-network-scanner.exe --selftest
 
+      - name: Install Inno Setup and build installer
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          & $iscc installer\Scanner.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
+
+      - name: Smoke test installer and desktop shortcut
+        run: |
+          $setup = (Resolve-Path "dist\installer\IP-Scanner-Setup.exe").Path
+          $installDir = Join-Path $env:RUNNER_TEMP "IPScannerInstallTest"
+          $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "IP Scanner.lnk"
+          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=desktopicon", "/DIR=`"$installDir`"" -Wait -PassThru
+          if ($process.ExitCode -ne 0 -or -not (Test-Path (Join-Path $installDir "ipscans-network-scanner.exe")) -or -not (Test-Path $shortcut)) {
+            throw "Scanner install or desktop shortcut failed"
+          }
+          $uninstaller = Join-Path $installDir "unins000.exe"
+          $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
+          if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "Scanner uninstall failed" }
+
       - name: Publish built .exe to the website's download folder
         run: |
           New-Item -ItemType Directory -Force -Path "..\public\downloads" | Out-Null
@@ -86,4 +107,10 @@ jobs:
         with:
           name: ipscans-network-scanner-windows
           path: desktop-app/dist/ipscans-network-scanner.exe
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IP-Scanner-Setup
+          path: desktop-app/dist/installer/IP-Scanner-Setup.exe
           if-no-files-found: error

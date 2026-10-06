@@ -12,6 +12,11 @@ pencereye erişilemez.
 
 ## Kurulum
 
+`assets/icon.png` ve `assets/icon.ico`, `../public/scanner-mark.svg`
+kaynağından üretilir. Windows CI, taşınabilir `.exe` yanında varsayılan
+masaüstü kısayolu seçeneği sunan Inno Setup yükleyicisini de artefakt olarak
+oluşturur. Web sitesindeki mevcut `.exe` indirmesi taşınabilir sürümdür.
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate

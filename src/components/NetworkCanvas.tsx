@@ -13,9 +13,7 @@ export function NetworkCanvas() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const reduce = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce), (max-width: 639px)").matches;
 
     let width = 0;
     let height = 0;
@@ -33,7 +31,7 @@ export function NetworkCanvas() {
       canvas!.style.height = `${height}px`;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const count = Math.min(70, Math.floor((width * height) / 16000));
+      const count = Math.min(42, Math.floor((width * height) / 24000));
       nodes = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -72,7 +70,7 @@ export function NetworkCanvas() {
         ctx!.arc(n.x, n.y, 1.6, 0, Math.PI * 2);
         ctx!.fill();
       }
-      raf = requestAnimationFrame(draw);
+      if (!reduce && !document.hidden) raf = requestAnimationFrame(draw);
     }
 
     resize();
@@ -82,10 +80,20 @@ export function NetworkCanvas() {
       draw();
       cancelAnimationFrame(raf);
     }
-    window.addEventListener("resize", resize);
+    function onResize() {
+      resize();
+      if (reduce) draw();
+    }
+    window.addEventListener("resize", onResize);
+    function visibility() {
+      cancelAnimationFrame(raf);
+      if (!document.hidden && !reduce) draw();
+    }
+    document.addEventListener("visibilitychange", visibility);
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", visibility);
     };
   }, []);
 

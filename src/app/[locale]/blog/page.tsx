@@ -4,6 +4,19 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { posts, localizedPostText } from "@/content/posts";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const t = getDictionary(locale).blog;
+  return {
+    title: t.title,
+    description: t.subtitle,
+    alternates: { canonical: `/${locale}/blog`, languages: { en: "/en/blog", tr: "/tr/blog", "x-default": "/en/blog" } },
+    robots: posts.some((post) => post.body[locale]) ? undefined : { index: false, follow: true },
+  };
+}
 
 export default async function BlogPage({
   params,
@@ -16,11 +29,11 @@ export default async function BlogPage({
 
   return (
     <PageShell title={dict.blog.title} subtitle={dict.blog.subtitle}>
-      {posts.length === 0 ? (
+      {posts.filter((post) => post.body[locale]).length === 0 ? (
         <p className="text-center text-neutral-400">{dict.blog.empty}</p>
       ) : (
         <div className="mx-auto grid max-w-4xl gap-5 sm:grid-cols-2">
-          {posts.map((post) => (
+          {posts.filter((post) => post.body[locale]).map((post) => (
             <Link
               key={post.slug}
               href={`/${locale}/blog/${post.slug}`}

@@ -8,6 +8,15 @@
 
 :root {
   --bg: #000000;
+  --surface: #0c0c0c;
+  --surface-hover: #181818;
+  --foreground: #ffffff;
+  --muted: #b5b5b5;
+  --border: rgba(255, 255, 255, 0.15);
+  --radius: 12px;
+  --shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  --spacing: 0.25rem;
+  --transition: 180ms ease;
 }
 
 html {
@@ -148,6 +157,41 @@ body {
 
 main { scroll-margin-top: 6rem; }
 input, select, textarea { min-width: 0; }
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #cfcfcf;
+  transition: background var(--transition), color var(--transition);
+}
+.nav-link:hover, .nav-link[aria-current="page"] {
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+.hero-stage {
+  background: radial-gradient(ellipse 60% 65% at 80% 30%, #1c1c1c, transparent 70%), #000;
+}
+.hero-grid {
+  background-image: linear-gradient(#ffffff0c 1px, transparent 1px), linear-gradient(90deg, #ffffff0c 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, #000, transparent);
+}
+.hero-terminal, .product-card {
+  box-shadow: var(--shadow);
+}
+@media (max-width: 639px) {
+  .hero-stage h1 { overflow-wrap: anywhere; }
+  .hero-grid { background-size: 48px 48px; }
+  .site-header > div:first-child { align-items: flex-start; padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .site-header > div:first-child > a { margin-top: 0.3rem; }
+  .site-header > div:first-child > div:last-child { flex: 1; flex-wrap: wrap; justify-content: flex-end; }
+  .site-search { order: 3; width: 100%; }
+  .site-search input { width: 100%; }
+  #mobile-navigation { max-height: calc(100dvh - 116px); }
+}
 @media (max-width: 639px) {
   input, select, textarea { font-size: 16px; }
 }
