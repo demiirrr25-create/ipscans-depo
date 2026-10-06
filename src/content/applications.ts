@@ -18,10 +18,10 @@ export const ipcastRelease = {
 
 export const desktopRelease = {
   scanner: {
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.0/IPscans-Plus-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.0/IPscans-Plus.exe",
-    installerBytes: 52666771,
-    installerSha256: "1f9f5c9ee2a17e45e472aebdb3b106d75ef1a22fee3b3f2acd250a8f47775300",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.1/IPscans-Plus-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.1/IPscans-Plus.exe",
+    installerBytes: 52667870,
+    installerSha256: "1f446d101f323ca96417aceafcb0dab2db8e447503e549c3809382517e7abb9f",
   },
 } as const;
 
