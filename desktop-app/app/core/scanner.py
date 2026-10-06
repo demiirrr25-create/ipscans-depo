@@ -136,7 +136,8 @@ def run_scan(
     so the UI can switch between an indeterminate spinner and a real progress bar.
     """
     if on_phase:
-        on_phase("discovering")
+        on_phase("discovering network")
+        on_phase("scanning hosts")
     alive_hosts = network_utils.ping_sweep(
         targets, max_workers=options.max_workers, should_stop=should_stop, on_probe=on_progress
     )
@@ -161,12 +162,14 @@ def run_scan(
     alive_hosts = sorted(set(alive_hosts) | (set(targets) & (set(onvif_by_ip) | set(upnp_by_ip) | set(mdns_by_ip))))
     if not alive_hosts:
         return
+    if on_phase:
+        on_phase("resolving MAC addresses")
     mac_by_ip = network_utils.resolve_macs(alive_hosts)
 
     total = len(alive_hosts)
     completed = 0
     if on_phase:
-        on_phase("enriching")
+        on_phase("identifying devices")
     with ThreadPoolExecutor(max_workers=options.max_workers) as pool:
         futures = {
             pool.submit(_enrich_host, ip, mac_by_ip, upnp_by_ip, onvif_by_ip, mdns_by_ip, options): ip
@@ -188,3 +191,5 @@ def run_scan(
             completed += 1
             if on_progress:
                 on_progress(completed, total)
+    if on_phase and not (should_stop and should_stop()):
+        on_phase("building network topology")

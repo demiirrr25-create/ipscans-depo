@@ -44,12 +44,13 @@ class MainWindow(QWidget):
         self._vendor_worker: VendorUpdateWorker | None = None
         self._close_pending = False
         self._cancelled = False
+        self._scan_from_monitor = False
         self._previous: list[Device] = []
         self._history_error: str | None = None
         self._adapters: list[network_utils.NetworkAdapter] = []
         self._monitor = QTimer(self)
         self._monitor.setInterval(120_000)
-        self._monitor.timeout.connect(self._start_scan)
+        self._monitor.timeout.connect(lambda: self._start_scan(monitor=True))
         self._adapter_timer = QTimer(self)
         self._adapter_timer.setInterval(15_000)
         self._adapter_timer.timeout.connect(self._check_adapters)
@@ -334,6 +335,17 @@ class MainWindow(QWidget):
 
     def _toggle_monitor(self, enabled: bool) -> None:
         if enabled:
+            try:
+                count = len(network_utils.parse_targets(self.target_input.spec()))
+            except InvalidTargetError as exc:
+                self.monitor_toggle.setChecked(False)
+                QMessageBox.warning(self, "Live monitoring", str(exc))
+                return
+            if count > 4096:
+                self.monitor_toggle.setChecked(False)
+                QMessageBox.warning(self, "Live monitoring",
+                                    "Choose a target of 4096 IPv4 addresses or fewer to avoid continuous traffic.")
+                return
             self._monitor.start()
         else:
             self._monitor.stop()
@@ -379,9 +391,10 @@ class MainWindow(QWidget):
         self.status_label.setText("Vendor update failed; offline database remains available.")
 
     # ------------------------------------------------------------- actions
-    def _start_scan(self) -> None:
+    def _start_scan(self, monitor: bool = False) -> None:
         if self._worker and self._worker.isRunning():
             return
+        self._scan_from_monitor = monitor
         spec = self.target_input.spec()
         try:
             targets = network_utils.parse_targets(spec)
@@ -473,8 +486,14 @@ class MainWindow(QWidget):
             f"+{change.added} new · {change.missing} missing · {change.ip_changes} IP changes · "
             f"{change.mac_changes} IP/MAC identity changes (not confirmed conflicts)"
         )
-        self.status_label.setText(t(self.lang, "status_done", count=self.model.rowCount()))
-        self.tabs.setCurrentWidget(self.ip_tree)
+        if self._scan_from_monitor and change.added:
+            self.status_label.setText(f"NEW DEVICE DETECTED · +{change.added} since previous scan")
+        elif self._scan_from_monitor and change.missing:
+            self.status_label.setText(f"{change.missing} previously seen devices did not respond")
+        else:
+            self.status_label.setText(t(self.lang, "status_done", count=self.model.rowCount()))
+        if not self._scan_from_monitor:
+            self.tabs.setCurrentWidget(self.ip_tree)
 
     def _on_scan_failed(self, message: str) -> None:
         self.spinner.stop()

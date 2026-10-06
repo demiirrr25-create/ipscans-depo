@@ -6,7 +6,7 @@ import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
-import { platformCopy } from "@/content/applications";
+import { platformCopy, scannerApplication } from "@/content/applications";
 
 export default async function HomePage({
   params,
@@ -70,7 +70,7 @@ export default async function HomePage({
         </div>
         <div className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3">
           {[
-            { href: `/${locale}/ip-scanner`, title: "IPscans+", description: platformCopy[locale].applicationsIntro },
+            { href: `/${locale}/ip-scanner`, title: "IPscans+", description: scannerApplication.description[locale] },
             { href: toolPath("ipLookup", locale), title: dict.ipLookup.title, description: dict.ipLookup.subtitle },
             { href: toolPath("speedTest", locale), title: dict.speedTest.title, description: dict.speedTest.subtitle },
           ].map((item) => (

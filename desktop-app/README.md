@@ -70,7 +70,8 @@ app/
 
 Tarama sonuçları iş parçacığından GUI'ye sinyal ile aktarılır. STOP SCAN yeni
 işleri iptal eder; çalışan ağ çağrıları sınırlı zaman aşımında biter. İsteğe
-bağlı Live Monitoring iki dakika aralıkla tekrar tarar. Tek önceki tarama
+bağlı Live Monitoring iki dakika aralıkla tekrar tarar (en fazla 4096 hedef
+IPv4 adresi; daha büyük ağlar manuel taranabilir). Tek önceki tarama
 yerel JSON dosyasında tutulur. Aynı MAC'in IP değiştirmesi değişiklik olarak
 gösterilir; aynı IP'deki MAC değişimi **doğrulanmış çatışma değildir**.
 

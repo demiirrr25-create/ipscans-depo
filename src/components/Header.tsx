@@ -52,8 +52,6 @@ export function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
       name: dict[key].title, description: dict[key].subtitle,
       href: toolPath(key, locale), group: dict.experience.networkTools, icon: "",
     })),
-    { name: "IPscans+", description: dict.experience.scanner.intro,
-      href: `/${locale}/ip-scanner`, group: dict.experience.networkTools, icon: "" },
   ];
   const results = query.trim()
     ? items.filter((item) => `${item.name} ${item.description} ${item.group}`.toLocaleLowerCase(locale).includes(query.trim().toLocaleLowerCase(locale))).slice(0, 8)
