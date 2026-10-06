@@ -68,7 +68,7 @@ export const applications: readonly Application[] = [
     version: ipcastRelease.version,
     platform: ipcastRelease.platform,
     detailPath: "/ipcast",
-    downloadUrl: ipcastRelease.url,
+    downloadUrl: ipcastRelease.installerUrl,
   },
   {
     id: "scanner",

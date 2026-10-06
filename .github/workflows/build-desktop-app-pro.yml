@@ -69,20 +69,24 @@ jobs:
           $setup = (Resolve-Path "dist\installer\Network-Health-Pro-Setup.exe").Path
           $installDir = Join-Path $env:RUNNER_TEMP "HealthProInstallTest"
           $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "Network Health Pro.lnk"
-          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=desktopicon", "/DIR=`"$installDir`"" -Wait -PassThru
+          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" -Wait -PassThru
           if ($process.ExitCode -ne 0 -or -not (Test-Path (Join-Path $installDir "ipscans-network-health-pro.exe")) -or -not (Test-Path $shortcut)) {
             throw "Health Pro install or desktop shortcut failed"
           }
+          $target = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath
+          if ($target -ne (Join-Path $installDir "ipscans-network-health-pro.exe")) { throw "Health Pro shortcut points to $target" }
           $uninstaller = Join-Path $installDir "unins000.exe"
           $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
           if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "Health Pro uninstall failed" }
 
       - name: Publish built .exe to the website's download folder
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           New-Item -ItemType Directory -Force -Path "..\public\downloads" | Out-Null
           Copy-Item -Path "dist\ipscans-network-health-pro.exe" -Destination "..\public\downloads\ipscans-network-health-pro.exe" -Force
 
       - name: Commit updated .exe
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: .
         run: |
           git config user.name "github-actions[bot]"
