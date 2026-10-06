@@ -1,17 +1,17 @@
-#define MyAppName "IP Scanner"
-#define MyAppVersion "1.0.0"
-#define MyAppExeName "ipscans-network-scanner.exe"
+#define MyAppName "IPscans+"
+#define MyAppVersion "2.0.0"
+#define MyAppExeName "IPscans-Plus.exe"
 
 [Setup]
 AppId={{8E97A926-5E3A-4A45-A536-D1DCA9D08703}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher=IPScans
-DefaultDirName={localappdata}\Programs\IPScans\IP Scanner
+DefaultDirName={localappdata}\Programs\IPScans\IPscans+
 DefaultGroupName=IPScans
 PrivilegesRequired=lowest
 OutputDir=..\dist\installer
-OutputBaseFilename=IP-Scanner-Setup
+OutputBaseFilename=IPscans-Plus-Setup
 SetupIconFile=..\assets\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma

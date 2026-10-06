@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { localizedAlternates } from "@/lib/seo";
+import { scannerApplication, platformCopy } from "@/content/applications";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -49,17 +50,17 @@ export default async function ScanPage({
         <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center">
           <div>
             <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-white">
-              {dict.download.title}
+              IPscans+
             </h2>
             <p className="mt-1 text-sm text-neutral-400">
-              {dict.download.subtitle}
+              {scannerApplication.description[locale]}
             </p>
           </div>
           <Link
             href={`/${locale}/download`}
             className="btn-primary shrink-0 rounded-xl px-5 py-2.5 text-sm font-semibold"
           >
-            {dict.download.button}
+            {platformCopy[locale].downloadApp} IPscans+
           </Link>
         </div>
 

@@ -42,7 +42,7 @@ export default async function HomePage({
                 href={`/${locale}/ip-scanner`}
                 className="btn-primary inline-flex min-h-12 items-center rounded-lg px-6 font-semibold"
               >
-                IP Scanner <span aria-hidden="true" className="ms-8">↗</span>
+                IPscans+ <span aria-hidden="true" className="ms-8">↗</span>
               </Link>
               <Link href="#applications" className="btn-ghost inline-flex min-h-12 items-center rounded-lg px-6 font-semibold">
                 {platform.explore} <span aria-hidden="true" className="ms-5">↓</span>
@@ -70,12 +70,12 @@ export default async function HomePage({
         </div>
         <div className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3">
           {[
-            { href: `/${locale}/ip-scanner`, title: "IP Scanner", description: dict.experience.scanner.intro },
+            { href: `/${locale}/ip-scanner`, title: "IPscans+", description: platformCopy[locale].applicationsIntro },
             { href: toolPath("ipLookup", locale), title: dict.ipLookup.title, description: dict.ipLookup.subtitle },
             { href: toolPath("speedTest", locale), title: dict.speedTest.title, description: dict.speedTest.subtitle },
           ].map((item) => (
             <Link key={item.href} href={item.href} className="group flex min-h-56 flex-col bg-black p-7 transition-colors hover:bg-neutral-900">
-              <span aria-hidden="true" className="font-mono text-xs text-neutral-400">◈ / {String(["IP Scanner", dict.ipLookup.title, dict.speedTest.title].indexOf(item.title) + 1).padStart(2, "0")}</span>
+              <span aria-hidden="true" className="font-mono text-xs text-neutral-400">◈ / {String(["IPscans+", dict.ipLookup.title, dict.speedTest.title].indexOf(item.title) + 1).padStart(2, "0")}</span>
               <h3 className="mt-auto pt-8 text-xl font-semibold">{item.title} <span aria-hidden="true" className="float-end text-neutral-400 transition-transform group-hover:translate-x-1 group-hover:text-white">↗</span></h3>
               <p className="mt-2 text-sm text-neutral-300">{item.description}</p>
             </Link>

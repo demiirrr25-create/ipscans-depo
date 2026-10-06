@@ -26,8 +26,8 @@ LANGUAGES: list[tuple[str, str]] = [
 
 _STRINGS: dict[str, dict[str, str]] = {
     "en": {
-        "app_title": "ipscans — Network Scanner",
-        "app_subtitle": "Deep Network Scanning Tool",
+        "app_title": "IPscans+",
+        "app_subtitle": "Network Discovery · Device Intelligence · IP TREE",
         "lang_title": "Welcome to ipscans",
         "lang_subtitle": "Choose your language to continue",
         "lang_continue": "Continue",
@@ -45,6 +45,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "col_ports": "Open Ports",
         "col_serial": "Serial No",
         "col_source": "Source",
+        "col_device_type": "Device Type",
         "status_ready": "Ready.",
         "status_detected": "Detected local network: {value}",
         "status_discovering": "Discovering hosts among {count} addresses...",
@@ -66,8 +67,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "wizard_back": "Back",
     },
     "tr": {
-        "app_title": "ipscans — Ağ Tarayıcı",
-        "app_subtitle": "Derinlemesine Ağ Tarama Aracı",
+        "app_title": "IPscans+",
+        "app_subtitle": "Ağ Keşfi · Cihaz Analizi · IP TREE",
+        "col_device_type": "Cihaz Türü",
         "lang_title": "ipscans'e Hoş Geldiniz",
         "lang_subtitle": "Devam etmek için dilinizi seçin",
         "lang_continue": "Devam Et",
@@ -284,6 +286,8 @@ def save_language(code: str) -> None:
 
 
 def t(lang: str, key: str, **kwargs) -> str:
+    if key == "app_title":
+        return "IPscans+"
     table = _STRINGS.get(lang) or _STRINGS[DEFAULT_LANGUAGE]
     text = table.get(key) or _STRINGS[DEFAULT_LANGUAGE].get(key, key)
     return text.format(**kwargs) if kwargs else text
@@ -292,7 +296,7 @@ def t(lang: str, key: str, **kwargs) -> str:
 TERMS_BODY: dict[str, str] = {
     "en": """
 <h3>Terms of Use</h3>
-<p><b>What this app does:</b> ipscans Network Scanner discovers devices on
+<p><b>What this app does:</b> IPscans+ discovers devices on
 the local network you point it at (via ICMP ping, ARP, and optional SNMP /
 WMI / UPnP queries) and displays their IP, MAC address, vendor, hostname,
 open ports and, where available, serial number.</p>
@@ -310,7 +314,7 @@ to scan.</p>
 """,
     "tr": """
 <h3>Kullanım Şartları</h3>
-<p><b>Bu uygulama ne yapar:</b> ipscans Network Scanner, yönelttiğiniz yerel
+<p><b>Bu uygulama ne yapar:</b> IPscans+, yönelttiğiniz yerel
 ağdaki cihazları (ICMP ping, ARP ve isteğe bağlı SNMP / WMI / UPnP sorguları
 ile) keşfeder; IP, MAC adresi, üretici, ana bilgisayar adı, açık portlar ve
 varsa seri numarasını gösterir.</p>
@@ -328,7 +332,7 @@ onaylarsınız.</p>
 """,
     "de": """
 <h3>Nutzungsbedingungen</h3>
-<p><b>Was diese App tut:</b> ipscans Network Scanner findet Geräte im
+<p><b>Was diese App tut:</b> IPscans+ findet Geräte im
 lokalen Netzwerk, das Sie angeben (per ICMP-Ping, ARP und optionalen
 SNMP-/WMI-/UPnP-Abfragen), und zeigt deren IP, MAC-Adresse, Hersteller,
 Hostname, offene Ports und, falls verfügbar, Seriennummer an.</p>
@@ -347,7 +351,7 @@ Netzwerken verwenden, für deren Scan Sie berechtigt sind.</p>
 """,
     "fr": """
 <h3>Conditions d'utilisation</h3>
-<p><b>Ce que fait cette application :</b> ipscans Network Scanner détecte
+<p><b>Ce que fait cette application :</b> IPscans+ détecte
 les appareils du réseau local que vous ciblez (via ping ICMP, ARP et,
 en option, des requêtes SNMP / WMI / UPnP) et affiche leur IP, adresse
 MAC, fabricant, nom d'hôte, ports ouverts et, si disponible, numéro de
@@ -367,7 +371,7 @@ vous êtes autorisé à scanner.</p>
 """,
     "es": """
 <h3>Condiciones de uso</h3>
-<p><b>Qué hace esta aplicación:</b> ipscans Network Scanner detecta
+<p><b>Qué hace esta aplicación:</b> IPscans+ detecta
 dispositivos en la red local que indiques (mediante ping ICMP, ARP y,
 opcionalmente, consultas SNMP / WMI / UPnP) y muestra su IP, dirección
 MAC, fabricante, nombre de host, puertos abiertos y, si está disponible,
@@ -386,7 +390,7 @@ autorizado a escanear.</p>
 """,
     "ru": """
 <h3>Условия использования</h3>
-<p><b>Что делает это приложение:</b> ipscans Network Scanner обнаруживает
+<p><b>Что делает это приложение:</b> IPscans+ обнаруживает
 устройства в указанной вами локальной сети (через ICMP ping, ARP и,
 опционально, запросы SNMP / WMI / UPnP) и показывает их IP, MAC-адрес,
 производителя, имя хоста, открытые порты и, если доступно, серийный

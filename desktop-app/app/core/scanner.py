@@ -6,17 +6,22 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import logging
 from typing import Callable
 
 from app.core import network_utils, vendor_lookup
 from app.core.models import Device
-from app.core.protocols import nmap_probe, snmp_probe, upnp_probe, wmi_probe
+from app.core import intelligence
+from app.core.protocols import nmap_probe, onvif_probe, snmp_probe, upnp_probe, wmi_probe
+
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass
 class ScanOptions:
-    enable_snmp: bool = True
-    snmp_community: str = "public"
+    enable_snmp: bool = False
+    snmp_community: str | None = None
     enable_wmi: bool = True
     enable_upnp: bool = True
     enable_nmap: bool = False  # off by default: nmap is comparatively slow
@@ -24,9 +29,12 @@ class ScanOptions:
     max_workers: int = 32
 
 
-def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict, options: ScanOptions) -> Device:
+def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict,
+                 onvif_by_ip: dict, options: ScanOptions) -> Device:
     mac = mac_by_ip.get(ip)
     device = Device(ip=ip, mac=mac)
+    device.sources.append("Network response")
+    device.last_seen = device.first_seen = datetime.now(timezone.utc).isoformat()
 
     # Every enrichment step is independently guarded: a single misbehaving
     # protocol (e.g. an incompatible SNMP/WMI library on this machine) must
@@ -34,27 +42,29 @@ def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict, options: 
     try:
         device.vendor = vendor_lookup.lookup_vendor(mac)
     except Exception:
-        pass
+        _LOG.exception("Vendor lookup failed for %s", ip)
 
     try:
         device.hostname = network_utils.resolve_hostname(ip)
     except Exception:
-        pass
+        _LOG.exception("Hostname lookup failed for %s", ip)
 
     try:
         device.open_ports = network_utils.scan_ports(ip)
     except Exception:
-        pass
+        _LOG.exception("Port check failed for %s", ip)
 
-    if options.enable_snmp:
+    if options.enable_snmp and options.snmp_community:
         try:
             snmp_result = snmp_probe.query(ip, options.snmp_community)
-        except Exception:
+        except Exception as exc:
+            _LOG.warning("SNMP failed for %s (%s)", ip, type(exc).__name__)
             snmp_result = None
         if snmp_result:
             device.snmp_sys_descr = snmp_result.sys_descr
             device.snmp_sys_name = snmp_result.sys_name
             device.serial_number = device.serial_number or snmp_result.serial_number
+            device.lldp_neighbor_macs = list(snmp_result.lldp_neighbor_macs)
             device.sources.append("SNMP")
 
     upnp_result = upnp_by_ip.get(ip)
@@ -62,11 +72,19 @@ def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict, options: 
         device.upnp_friendly_name = upnp_result.friendly_name
         device.upnp_device_type = upnp_result.device_type
         device.sources.append("UPnP")
+    onvif_result = onvif_by_ip.get(ip)
+    if onvif_result:
+        device.onvif_endpoint = onvif_result.endpoint
+        device.onvif_manufacturer = onvif_result.manufacturer
+        device.onvif_model = onvif_result.model
+        device.upnp_friendly_name = device.upnp_friendly_name or onvif_result.name
+        device.sources.append("ONVIF")
 
     if options.enable_wmi:
         try:
             wmi_result = wmi_probe.query_local_machine() if _looks_like_self(ip) else None
         except Exception:
+            _LOG.exception("WMI failed for %s", ip)
             wmi_result = None
         if wmi_result:
             device.wmi_computer_name = wmi_result.computer_name
@@ -78,12 +96,14 @@ def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict, options: 
         try:
             nmap_result = nmap_probe.query(ip, with_os_detection=options.nmap_os_detection)
         except Exception:
+            _LOG.exception("Nmap failed for %s", ip)
             nmap_result = None
         if nmap_result:
             device.nmap_os_guess = nmap_result.os_guess
             device.nmap_services = nmap_result.services
             device.sources.append("Nmap")
 
+    intelligence.classify(device)
     return device
 
 
@@ -112,12 +132,26 @@ def run_scan(
     """
     if on_phase:
         on_phase("discovering")
-    alive_hosts = network_utils.ping_sweep(targets)
-    if not alive_hosts:
+    alive_hosts = network_utils.ping_sweep(
+        targets, max_workers=options.max_workers, should_stop=should_stop, on_probe=on_progress
+    )
+    if should_stop and should_stop():
         return
 
+    if on_phase:
+        on_phase("discovering cameras")
+    onvif_by_ip = onvif_probe.discover(should_stop=should_stop)
+    if should_stop and should_stop():
+        return
+    try:
+        upnp_by_ip = upnp_probe.discover() if options.enable_upnp else {}
+    except Exception:
+        _LOG.exception("UPnP discovery failed")
+        upnp_by_ip = {}
+    alive_hosts = sorted(set(alive_hosts) | (set(targets) & (set(onvif_by_ip) | set(upnp_by_ip))))
+    if not alive_hosts:
+        return
     mac_by_ip = network_utils.resolve_macs(alive_hosts)
-    upnp_by_ip = upnp_probe.discover() if options.enable_upnp else {}
 
     total = len(alive_hosts)
     completed = 0
@@ -125,7 +159,7 @@ def run_scan(
         on_phase("enriching")
     with ThreadPoolExecutor(max_workers=options.max_workers) as pool:
         futures = {
-            pool.submit(_enrich_host, ip, mac_by_ip, upnp_by_ip, options): ip
+            pool.submit(_enrich_host, ip, mac_by_ip, upnp_by_ip, onvif_by_ip, options): ip
             for ip in alive_hosts
         }
         for future in as_completed(futures):
@@ -135,6 +169,7 @@ def run_scan(
             try:
                 device = future.result()
             except Exception:
+                _LOG.exception("Host enrichment failed for %s", futures[future])
                 # _enrich_host already guards its own steps, but this is a
                 # last-resort net so one bad host can never abort the scan.
                 ip = futures[future]

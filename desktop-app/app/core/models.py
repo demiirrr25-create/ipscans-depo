@@ -24,6 +24,16 @@ class Device:
 
     serial_number: str | None = None
     sources: list[str] = field(default_factory=list)
+    device_type: str = "Unknown"
+    confidence: int = 0
+    onvif_manufacturer: str | None = None
+    onvif_model: str | None = None
+    onvif_firmware: str | None = None
+    onvif_endpoint: str | None = None
+    first_seen: str | None = None
+    last_seen: str | None = None
+    latency_ms: float | None = None
+    lldp_neighbor_macs: list[str] = field(default_factory=list)
 
     @property
     def preferred_url_scheme(self) -> str:

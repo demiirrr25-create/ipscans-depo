@@ -5,6 +5,7 @@ import { isLocale, locales, defaultLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { toolPath } from "@/lib/tool-routes";
+import { scannerApplication, platformCopy } from "@/content/applications";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -13,10 +14,9 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const t = getDictionary(locale).experience.scanner;
   return {
-    title: "IP Scanner",
-    description: t.intro,
+    title: "IPscans+ — Advanced Network Discovery",
+    description: scannerApplication.description[locale],
     alternates: {
       canonical: `/${locale}/ip-scanner`,
       languages: {
@@ -24,8 +24,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         "x-default": `/${defaultLocale}/ip-scanner`,
       },
     },
-    openGraph: { title: "IP Scanner | IPScans", description: t.intro, url: `https://ipscans.com/${locale}/ip-scanner` },
-    twitter: { title: "IP Scanner | IPScans", description: t.intro },
+    openGraph: { title: "IPscans+ | IPScans", description: scannerApplication.description[locale], url: `https://ipscans.com/${locale}/ip-scanner` },
+    twitter: { title: "IPscans+ | IPScans", description: scannerApplication.description[locale] },
   };
 }
 
@@ -33,34 +33,30 @@ export default async function IpScannerPage({ params }: { params: Promise<{ loca
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
-  const t = dict.experience.scanner;
   const breadcrumbs = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "IPScans", item: `https://ipscans.com/${locale}` },
-      { "@type": "ListItem", position: 2, name: "IP Scanner", item: `https://ipscans.com/${locale}/ip-scanner` },
+      { "@type": "ListItem", position: 2, name: "IPscans+", item: `https://ipscans.com/${locale}/ip-scanner` },
     ],
   };
   return (
-    <PageShell title="IP Scanner" subtitle={t.intro}>
+    <PageShell title="IPscans+" subtitle={scannerApplication.description[locale]}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
-      <div className="mx-auto max-w-3xl space-y-12 pb-12">
+      <div className="mx-auto max-w-4xl space-y-12 pb-12">
         <div className="flex flex-wrap gap-3">
-          <Link href={`/${locale}/download`} className="btn-primary inline-flex min-h-12 items-center rounded-xl px-6 font-semibold">{dict.download.button}</Link>
+          <Link href={`/${locale}/applications/scanner`} className="btn-primary inline-flex min-h-12 items-center rounded-xl px-6 font-semibold">{platformCopy[locale].details} ↗</Link>
           <Link href={toolPath("ipLookup", locale)} className="btn-ghost inline-flex min-h-12 items-center rounded-xl px-6 font-semibold">{dict.nav.ipLookup}</Link>
         </div>
-        <section><h2 className="text-2xl font-bold">{t.whatTitle}</h2><p className="mt-4 leading-relaxed text-neutral-300">{t.whatBody}</p></section>
-        <section><h2 className="text-2xl font-bold">{t.howTitle}</h2><p className="mt-4 leading-relaxed text-neutral-300">{t.howBody}</p></section>
-        <section><h2 className="text-2xl font-bold">{t.stepsTitle}</h2>
-          <ol className="mt-5 grid gap-4">
-            {t.steps.map((step, index) => <li key={step} className="flex gap-4 rounded-xl border border-white/15 bg-white/[0.03] p-5"><span className="font-mono text-neutral-400">0{index + 1}</span><span>{step}</span></li>)}
-          </ol>
+        <section className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3">
+          {["Network Discovery", "Device Intelligence", "IP TREE"].map((name, index) =>
+            <div key={name} className="bg-black p-7"><span className="font-mono text-xs text-neutral-400">0{index + 1} / IPscans+</span>
+              <h2 className="mt-6 text-xl font-bold">{name}</h2></div>)}
         </section>
-        <section><h2 className="text-2xl font-bold">{t.downloadTitle}</h2><p className="mt-4 leading-relaxed text-neutral-300">{t.downloadBody}</p>
-          <Link href={`/${locale}/download`} className="mt-5 inline-block underline underline-offset-4">{dict.download.button} ↗</Link>
-        </section>
-        <section className="rounded-xl border border-white/20 p-6"><h2 className="text-xl font-bold">{t.safetyTitle}</h2><p className="mt-3 text-sm leading-relaxed text-neutral-300">{t.safetyBody}</p></section>
+        <p className="rounded-xl border border-white/15 p-6 leading-relaxed text-neutral-300">{locale === "tr"
+          ? "Ağdaki her cihaz yanıt vermez. IP TREE yalnızca SNMP/LLDP kanıtlı bağlantıları doğrulanmış gösterir. Kanıtı olmayan cihazlar eşlenmemiş kalır. Yalnızca yetkili olduğunuz ağları tarayın."
+          : "Not every device responds to probing. IP TREE marks only SNMP/LLDP-backed relationships as verified and keeps others unmapped. Scan only networks you are authorized to administer."}</p>
       </div>
     </PageShell>
   );

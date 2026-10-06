@@ -8,7 +8,7 @@ import { platformCopy } from "@/content/applications";
 export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const columns = [
     { title: dict.nav.tools, links: [
-      { href: `/${locale}/ip-scanner`, label: "IP Scanner" },
+      { href: `/${locale}/ip-scanner`, label: "IPscans+" },
       { href: toolPath("ipLookup", locale), label: dict.nav.ipLookup },
       { href: toolPath("dns", locale), label: dict.nav.dns },
       { href: toolPath("whois", locale), label: dict.nav.whois },
@@ -17,8 +17,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
     ] },
     { title: platformCopy[locale].applications, links: [
       { href: `/${locale}/applications/ipcast`, label: "IPCast" },
-      { href: `/${locale}/applications/scanner`, label: "IP Scanner" },
-      { href: `/${locale}/applications/health-pro`, label: "Network Health Pro" },
+      { href: `/${locale}/applications/scanner`, label: "IPscans+" },
       { href: `/${locale}/download`, label: dict.nav.appDownload },
     ] },
     { title: dict.experience.resources, links: [

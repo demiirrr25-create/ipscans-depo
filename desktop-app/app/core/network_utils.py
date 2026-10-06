@@ -6,7 +6,11 @@ import platform
 import re
 import socket
 import subprocess
+from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable
+
+import psutil
 
 # Ports worth probing while fingerprinting a device — hints at device type
 # (camera RTSP/ONVIF, router/switch admin UI, Windows SMB/RDP, etc).
@@ -14,6 +18,7 @@ CANDIDATE_PORTS = [21, 22, 23, 80, 81, 443, 554, 3389, 8000, 8080, 8899, 37777]
 
 PING_TIMEOUT_MS = 500
 MAX_HOSTS = 65534  # hard cap so a typo like /8 can't lock up the app
+DISCOVERY_PORTS = (80, 443, 22, 554, 445)
 
 # A GUI (--windowed) PyInstaller build has no console of its own, so every
 # subprocess.run() would otherwise pop up its own flashing console window on
@@ -32,6 +37,96 @@ class InvalidTargetError(ValueError):
     pass
 
 
+@dataclass(frozen=True)
+class NetworkAdapter:
+    name: str
+    ip: str
+    netmask: str
+    network: str
+    gateway: str | None
+    dns: tuple[str, ...]
+    mac: str | None
+    speed_mbps: int | None
+
+
+def _windows_network_details() -> tuple[dict[str, str], tuple[str, ...]]:
+    if not _IS_WINDOWS:
+        return {}, ()
+    try:
+        result = subprocess.run(
+            ["ipconfig", "/all"], capture_output=True, text=True, timeout=5, **_NO_WINDOW_KWARGS
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return {}, ()
+    gateways: dict[str, str] = {}
+    dns: set[str] = set()
+    current: str | None = None
+    for line in result.stdout.splitlines():
+        if line and not line.startswith(" ") and line.endswith(":"):
+            current = line.split("adapter ", 1)[-1].rstrip(":")
+        elif "Default Gateway" in line and ":" in line and current:
+            value = line.split(":", 1)[1].strip()
+            try:
+                gateways[current] = str(ipaddress.IPv4Address(value))
+            except ipaddress.AddressValueError:
+                continue
+        elif "DNS Servers" in line and ":" in line:
+            value = line.split(":", 1)[1].strip()
+            try:
+                dns.add(str(ipaddress.IPv4Address(value)))
+            except ipaddress.AddressValueError:
+                continue
+    return gateways, tuple(sorted(dns))
+
+
+def _windows_gateway_by_ip() -> dict[str, str]:
+    if not _IS_WINDOWS:
+        return {}
+    try:
+        output = subprocess.run(["route", "print", "-4"], capture_output=True, text=True,
+                                timeout=5, **_NO_WINDOW_KWARGS).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return {}
+    result: dict[str, str] = {}
+    for line in output.splitlines():
+        fields = line.split()
+        if len(fields) < 4 or fields[:2] != ["0.0.0.0", "0.0.0.0"]:
+            continue
+        try:
+            gateway = str(ipaddress.IPv4Address(fields[2]))
+            local_ip = str(ipaddress.IPv4Address(fields[3]))
+        except ipaddress.AddressValueError:
+            continue
+        result[local_ip] = gateway
+    return result
+
+
+def detect_adapters() -> list[NetworkAdapter]:
+    gateways, dns = _windows_network_details()
+    gateway_by_ip = _windows_gateway_by_ip()
+    adapters: list[NetworkAdapter] = []
+    stats = psutil.net_if_stats()
+    for name, addresses in psutil.net_if_addrs().items():
+        status = stats.get(name)
+        if not status or not status.isup:
+            continue
+        mac = next((a.address for a in addresses if a.family == psutil.AF_LINK), None)
+        for address in addresses:
+            if address.family != socket.AF_INET or not address.netmask:
+                continue
+            try:
+                ip = ipaddress.IPv4Address(address.address)
+                network = ipaddress.IPv4Network(f"{ip}/{address.netmask}", strict=False)
+            except (ipaddress.AddressValueError, ipaddress.NetmaskValueError):
+                continue
+            if ip.is_loopback or ip.is_link_local:
+                continue
+            adapters.append(NetworkAdapter(name, str(ip), address.netmask, str(network),
+                                           gateway_by_ip.get(str(ip)) or gateways.get(name), dns,
+                                           mac, status.speed if status.speed > 0 else None))
+    return adapters
+
+
 def parse_targets(spec: str) -> list[str]:
     """Accepts a single IP ("192.168.1.50"), a range ("192.168.1.10-192.168.1.150"
     or "192.168.1.10-150"), or CIDR ("192.168.1.0/24") and returns the list of
@@ -44,10 +139,9 @@ def parse_targets(spec: str) -> list[str]:
             network = ipaddress.ip_network(spec, strict=False)
         except ValueError as e:
             raise InvalidTargetError(f"Invalid CIDR: {spec}") from e
-        hosts = [str(h) for h in network.hosts()]
-        if len(hosts) > MAX_HOSTS:
+        if network.version != 4 or network.num_addresses > MAX_HOSTS + 2:
             raise InvalidTargetError("This range is too large (max /16 supported).")
-        return hosts
+        return [str(h) for h in network.hosts()]
 
     if "-" in spec:
         start_str, end_str = (p.strip() for p in spec.split("-", 1))
@@ -66,6 +160,8 @@ def parse_targets(spec: str) -> list[str]:
         except ValueError as e:
             raise InvalidTargetError(f"Invalid end IP: {end_str}") from e
 
+        if start.version != 4 or end.version != 4:
+            raise InvalidTargetError("Use an IPv4 address or IPv4 CIDR.")
         if int(end) < int(start):
             raise InvalidTargetError("End IP cannot be smaller than start IP.")
         if int(end) - int(start) > MAX_HOSTS:
@@ -73,7 +169,10 @@ def parse_targets(spec: str) -> list[str]:
         return [str(ipaddress.ip_address(i)) for i in range(int(start), int(end) + 1)]
 
     try:
-        return [str(ipaddress.ip_address(spec))]
+        address = ipaddress.ip_address(spec)
+        if address.version != 4:
+            raise InvalidTargetError("Use an IPv4 address or IPv4 CIDR.")
+        return [str(address)]
     except ValueError as e:
         raise InvalidTargetError(f"Invalid IP address: {spec}") from e
 
@@ -107,17 +206,34 @@ def _read_arp_table() -> dict[str, str]:
             timeout=5,
             **_NO_WINDOW_KWARGS,
         ).stdout
-    except OSError:
+    except (OSError, subprocess.TimeoutExpired):
         return {}
 
+    return parse_arp_table(output)
+
+
+def normalize_mac(value: str) -> str | None:
+    digits = re.sub(r"[^0-9a-fA-F]", "", value)
+    if len(digits) != 12 or set(digits) == {"0"}:
+        return None
+    return ":".join(digits[i:i + 2].lower() for i in range(0, 12, 2))
+
+
+def parse_arp_table(output: str) -> dict[str, str]:
     mac_by_ip: dict[str, str] = {}
-    ip_re = re.compile(r"(\d{1,3}(?:\.\d{1,3}){3})")
-    mac_re = re.compile(r"([0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5})")
+    ip_re = re.compile(r"\b(\d{1,3}(?:\.\d{1,3}){3})\b")
+    mac_re = re.compile(r"\b([0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5})\b")
     for line in output.splitlines():
         ip_match = ip_re.search(line)
         mac_match = mac_re.search(line)
         if ip_match and mac_match:
-            mac_by_ip[ip_match.group(1)] = mac_match.group(1).replace("-", ":").lower()
+            try:
+                ip = str(ipaddress.IPv4Address(ip_match.group(1)))
+            except ipaddress.AddressValueError:
+                continue
+            mac = normalize_mac(mac_match.group(1))
+            if mac:
+                mac_by_ip[ip] = mac
     return mac_by_ip
 
 
@@ -159,19 +275,60 @@ def clear_arp_entry(ip: str) -> None:
         pass
 
 
-def ping_sweep(targets: list[str], max_workers: int = 128) -> list[str]:
-    """Pings every target concurrently and returns the ones that answered."""
+def _tcp_alive(ip: str) -> bool:
+    for port in DISCOVERY_PORTS:
+        try:
+            with socket.create_connection((ip, port), timeout=0.18):
+                return True
+        except (OSError, TimeoutError):
+            continue
+    return False
+
+
+def ping_sweep(targets: list[str], max_workers: int = 64,
+               should_stop: Callable[[], bool] | None = None,
+               on_probe: Callable[[int, int], None] | None = None) -> list[str]:
+    """Bounded active ICMP/TCP sweep; stale ARP entries alone do not prove liveness."""
     alive: list[str] = []
+    candidates = list(targets)
+    if not candidates:
+        return alive
+    completed = 0
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {pool.submit(_ping_once, ip): ip for ip in targets}
+        futures = {pool.submit(_ping_once, ip): ip for ip in candidates}
         for future in as_completed(futures):
+            if should_stop and should_stop():
+                for remaining in futures:
+                    remaining.cancel()
+                pool.shutdown(wait=False, cancel_futures=True)
+                return alive
             ip = futures[future]
             try:
                 if future.result():
                     alive.append(ip)
             except Exception:
+                pass
+            completed += 1
+            if on_probe:
+                on_probe(completed, len(candidates))
+    if should_stop and should_stop():
+        return alive
+    alive_set = set(alive)
+    remaining = [ip for ip in candidates if ip not in alive_set]
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(_tcp_alive, ip): ip for ip in remaining}
+        for future in as_completed(futures):
+            if should_stop and should_stop():
+                for pending in futures:
+                    pending.cancel()
+                pool.shutdown(wait=False, cancel_futures=True)
+                break
+            try:
+                if future.result():
+                    alive_set.add(futures[future])
+            except OSError:
                 continue
-    return alive
+    return sorted(alive_set, key=lambda ip: int(ipaddress.IPv4Address(ip)))
 
 
 def resolve_hostname(ip: str) -> str | None:
@@ -183,18 +340,31 @@ def resolve_hostname(ip: str) -> str | None:
 
 def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3) -> list[int]:
     ports = ports or CANDIDATE_PORTS
-
-    def _check(port: int) -> int | None:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(timeout)
-            return port if sock.connect_ex((ip, port)) == 0 else None
-
-    # Ports for a single host are checked concurrently too — with 11
-    # candidate ports at up to 0.3s each, a serial loop could take ~3.3s per
-    # host; in parallel it's bounded by the single slowest port instead.
-    with ThreadPoolExecutor(max_workers=len(ports)) as pool:
-        results = pool.map(_check, ports)
-    return sorted(p for p in results if p is not None)
+    import select
+    waiting: dict[socket.socket, int] = {}
+    open_ports: list[int] = []
+    try:
+        for port in ports:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setblocking(False)
+            try:
+                error = sock.connect_ex((ip, port))
+                if error == 0:
+                    open_ports.append(port)
+                    sock.close()
+                else:
+                    waiting[sock] = port
+            except OSError:
+                sock.close()
+        if waiting:
+            _, writable, _ = select.select([], list(waiting), [], timeout)
+            for sock in writable:
+                if sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR) == 0:
+                    open_ports.append(waiting[sock])
+    finally:
+        for sock in waiting:
+            sock.close()
+    return sorted(open_ports)
 
 
 def resolve_macs(ips: list[str]) -> dict[str, str]:
@@ -206,13 +376,15 @@ def detect_local_network(prefix_len: int = 24) -> ipaddress.IPv4Network | None:
     "connect", which never actually sends a packet) and derives the /24
     network it likely belongs to — used to prefill the scan target on launch.
     """
+    adapters = detect_adapters()
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.connect(("8.8.8.8", 80))
             local_ip = sock.getsockname()[0]
-        return ipaddress.ip_network(f"{local_ip}/{prefix_len}", strict=False)
+        selected = next((adapter for adapter in adapters if adapter.ip == local_ip), None)
+        return ipaddress.ip_network(selected.network) if selected else None
     except OSError:
-        return None
+        return ipaddress.ip_network(adapters[0].network) if len(adapters) == 1 else None
 
 
 def suggest_range_spec() -> str | None:

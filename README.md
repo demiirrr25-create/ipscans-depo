@@ -1,6 +1,6 @@
 # IPScans
 
-IPScans is a Next.js network-tools platform. The web tools include IP lookup, DNS, WHOIS, port checking and a browser-based speed test. Local network discovery requires the downloadable Windows IP Scanner; a browser cannot directly scan a local network.
+IPScans is a Next.js network-tools platform. The web tools include IP lookup, DNS, WHOIS, port checking and a browser-based speed test. Local network discovery requires the downloadable Windows IPscans+ application; a browser cannot directly scan a local network.
 
 ## Development
 

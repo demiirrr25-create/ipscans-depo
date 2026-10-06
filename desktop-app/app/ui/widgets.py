@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 
 from app.core.models import Device
 from app.i18n import t
+from app.ui.device_icons import icon_for_type
 
 COLUMN_KEYS = [
     "col_ip",
@@ -26,6 +27,7 @@ COLUMN_KEYS = [
     "col_ports",
     "col_serial",
     "col_source",
+    "col_device_type",
 ]
 
 
@@ -64,7 +66,11 @@ class DeviceTableModel(QAbstractTableModel):
         return None
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole):
-        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
+        if not index.isValid():
+            return None
+        if role == Qt.ItemDataRole.DecorationRole and index.column() == 7:
+            return icon_for_type(self._devices[index.row()].device_type)
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
         device = self._devices[index.row()]
         column = index.column()
@@ -82,6 +88,8 @@ class DeviceTableModel(QAbstractTableModel):
             return device.serial_number or "—"
         if column == 6:
             return ", ".join(device.sources) or "—"
+        if column == 7:
+            return f"{device.device_type} ({device.confidence}%)" if device.confidence else device.device_type
         return None
 
 
@@ -104,7 +112,8 @@ class DeviceFilterProxyModel(QSortFilterProxyModel):
         if device is None:
             return False
         haystack = " ".join(
-            filter(None, [device.ip, device.mac, device.vendor, device.hostname])
+            filter(None, [device.ip, device.mac, device.vendor, device.hostname,
+                          device.device_type, device.onvif_model])
         ).lower()
         return self._needle in haystack
 

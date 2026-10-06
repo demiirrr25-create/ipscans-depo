@@ -1,6 +1,7 @@
-"""ipscans Network Scanner — PyQt6 desktop app entry point."""
+"""IPscans+ — PyQt6 desktop app entry point."""
 import sys
 import traceback
+import logging
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
@@ -14,7 +15,7 @@ from app.ui.styles import DARK_QSS
 
 # Written next to every run (not just on crash) so a support request can
 # include real diagnostics even without a crash — see _log().
-_LOG_PATH = Path.home() / "ipscans-network-scanner.log"
+_LOG_PATH = Path.home() / "IPscans-Plus.log"
 
 
 def _log(message: str) -> None:
@@ -37,7 +38,7 @@ def _install_crash_handler() -> None:
         try:
             QMessageBox.critical(
                 None,
-                "ipscans — Startup error",
+                "IPscans+ — Startup error",
                 "The application hit an unexpected error and needs to close.\n\n"
                 f"Details were saved to:\n{_LOG_PATH}\n\n{exc_value}",
             )
@@ -81,6 +82,8 @@ def main() -> None:
 
     _install_crash_handler()
     _log("--- startup ---")
+    logging.basicConfig(filename=_LOG_PATH, level=logging.WARNING,
+                        format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
@@ -140,8 +143,3 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
 
 if __name__ == "__main__":
     main()
-
-
-if __name__ == "__main__":
-    main()
-

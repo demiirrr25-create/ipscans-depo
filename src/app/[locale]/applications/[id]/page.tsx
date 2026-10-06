@@ -51,12 +51,21 @@ export default async function ApplicationDetail({ params }: Params) {
   const dict = getDictionary(locale);
   const copy = platformCopy[locale];
   const install = installCopy[locale];
+  const scannerFeatures = locale === "tr"
+    ? ["ICMP ve TCP yanıtlarıyla aktif IPv4 keşfi; ARP, MAC ve çevrimdışı üretici eşleştirmesi",
+       "ONVIF kamera keşfi ve cihazın ilan ettiği model/üretici bilgileri",
+       "Yalnızca sizin sağladığınız SNMP bilgileriyle LLDP komşuluk kanıtı",
+       "IP TREE: doğrulanmış LLDP bağlantıları, çıkarımsal ağ geçidi yolları ve eşlenmemiş cihazlar",
+       "İki dakikalık isteğe bağlı izleme; tarama geçmişi, değişiklik karşılaştırması, CSV/JSON"]
+    : ["Active IPv4 discovery via ICMP and TCP; ARP, MAC and offline vendor lookup",
+       "ONVIF camera discovery with self-advertised manufacturer and model",
+       "LLDP neighbor evidence only with the SNMP credentials you provide",
+       "IP TREE: verified LLDP links, inferred gateway routes and unmapped devices",
+       "Optional two-minute monitoring, scan history and CSV/JSON export"];
   const features = app.id === "ipcast" ? dict.ipcast.features
-    : app.id === "scanner" ? dict.download.features
-    : dict.pro.plans[0].features;
+    : scannerFeatures;
   const intro = app.id === "ipcast" ? dict.ipcast.subtitle
-    : app.id === "scanner" ? dict.experience.scanner.intro
-    : dict.pro.subtitle;
+    : "Advanced Network Discovery & Visual Topology Scanner";
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:py-20">
       <Link href={`/${locale}/download`} className="text-sm text-neutral-300 underline underline-offset-4 hover:text-white">← {copy.applications}</Link>
@@ -88,9 +97,30 @@ export default async function ApplicationDetail({ params }: Params) {
             <div><dt className="text-neutral-400">{copy.size}</dt><dd className="mt-2">{(app.installerBytes / 1024 / 1024).toFixed(1)} MiB</dd></div>
           </dl>
           <dl className="mt-6 font-mono text-xs"><dt className="text-neutral-400">{copy.checksum} · Windows installer</dt><dd className="mt-2 break-all select-all text-neutral-200">{app.installerSha256}</dd></dl>
-          <p className="mt-8 text-sm leading-relaxed text-neutral-400">{app.id === "scanner" ? dict.download.note : app.id === "ipcast" ? dict.ipcast.note : dict.pro.note}</p>
+          <p className="mt-8 text-sm leading-relaxed text-neutral-400">{app.id === "scanner" ? (locale === "tr"
+            ? "Cihazlar ICMP'yi engelleyebilir. Fiziksel bağlantı kanıtlanamazsa bilinmiyor görünür; SNMP kimlik bilgileri isteğe bağlıdır."
+            : "Devices may block ICMP. Unverified physical links stay unknown; SNMP credentials are optional.")
+            : dict.ipcast.note}</p>
         </aside>
       </div>
+      {app.id === "scanner" && <section className="py-16 sm:py-24" aria-labelledby="tree-preview-title">
+        <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPscans+ / network evidence</p>
+        <h2 id="tree-preview-title" className="mt-4 max-w-2xl font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">IP TREE<span className="text-neutral-500">.</span></h2>
+        <p className="mt-5 max-w-2xl leading-relaxed text-neutral-300">{locale === "tr"
+          ? "Ağınızı sahte fiziksel bağlantılarla değil, elde edilen kanıtlarla görüntüleyin. LLDP komşuları doğrulanmış; ağ geçidi yolları çıkarımsal; diğer cihazlar eşlenmemiş olarak işaretlenir."
+          : "Explore your network without invented physical connections. LLDP neighbors are verified, gateway paths are inferred, and devices without connection evidence remain unmapped."}</p>
+        <div className="mt-10 grid gap-px border border-white/15 bg-white/15 md:grid-cols-3">
+          {[
+            { code: "01 / VERIFIED", title: "LLDP", description: locale === "tr" ? "Yetkili SNMP ile ilan edilmiş komşu MAC eşleşmesi" : "Neighbor MAC announced through authorized SNMP" },
+            { code: "02 / INFERRED", title: "Gateway path", description: locale === "tr" ? "Ortak ağ geçidi; fiziksel anahtar portu bilinmiyor" : "Shared gateway; physical switch port unknown" },
+            { code: "03 / UNKNOWN", title: "Unmapped", description: locale === "tr" ? "Kanıt yoksa bağlantı uydurulmaz" : "No connection is invented without evidence" },
+          ].map((entry) => <div key={entry.code} className="bg-black p-7">
+            <span className="font-mono text-xs tracking-widest text-neutral-400">{entry.code}</span>
+            <h3 className="mt-8 text-2xl font-semibold">{entry.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-300">{entry.description}</p>
+          </div>)}
+        </div>
+      </section>}
     </div>
   );
 }

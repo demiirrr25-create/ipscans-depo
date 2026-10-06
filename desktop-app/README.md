@@ -1,10 +1,13 @@
-# ipscans Network Scanner (desktop)
+# IPscans+ (desktop)
 
 PyQt6 tabanlı, ipscans.com ile aynı siyah/beyaz/gri temaya sahip masaüstü ağ
-tarama uygulaması. Normal, yeniden boyutlandırılabilir pencere; ARP/ping ile
-hızlı host keşfi + SNMP/WMI/UPnP ile derinlemesine cihaz bilgisi (Nmap
-opsiyonel, varsayılan kapalı). İlk açılışta akış şu şekildedir: animasyonlu
-tek bir animasyonlu karşılama sihirbazı (`OnboardingWizard`): dil seçimi
+keşif uygulaması. Aktif IPv4 arabirimini ve gerçek ağ maskesini algılar;
+ICMP ve TCP yanıtlarını, UPnP ve ONVIF ilanlarını birleştirir. MAC/üretici
+bilgisi ve cihaz türü yalnızca erişilebilen sinyallerden türetilir. SNMPv2c
+yalnızca kullanıcı topluluk bilgisini açıkça girerse çalışır; varsayılan
+`public` denemesi yoktur. Yönetilen cihazların LLDP komşuları yetkili SNMP
+ile okunabiliyorsa IP TREE bunları doğrulanmış bağlantı olarak gösterir.
+Diğer fiziksel bağlantılar kesinmiş gibi gösterilmez. İlk açılışta dil seçimi
 (6 dil: EN/TR/DE/FR/ES/RU) → kullanım şartları onayı → gizlilik politikası
 onayı → ana pencere. Her adım ayrı kaydedilir (yalnızca henüz
 tamamlanmamış adımlar gösterilir) ve sözleşmeler kabul edilmeden ana
@@ -13,9 +16,10 @@ pencereye erişilemez.
 ## Kurulum
 
 `assets/icon.png` ve `assets/icon.ico`, `../public/scanner-mark.svg`
-kaynağından üretilir. Windows CI, taşınabilir `.exe` yanında varsayılan
-masaüstü kısayolu seçeneği sunan Inno Setup yükleyicisini de artefakt olarak
-oluşturur. Web sitesindeki ana indirme kurulum dosyasıdır; taşınabilir `.exe` ayrı sunulur.
+kaynağından üretilir. Windows CI, `IPscans-Plus.exe` yanında isteğe bağlı
+masaüstü kısayolu sunan `IPscans-Plus-Setup.exe` yükleyicisini de oluşturur.
+Doğrulanmış sürüm yayınlanmadan web sitesindeki indirme bağlantıları
+değiştirilmemelidir.
 
 ```bash
 python -m venv .venv
@@ -28,6 +32,11 @@ Nmap desteği için `nmap` komut satırı aracının ayrıca kurulu ve PATH'te
 olması gerekir (https://nmap.org/download.html). WMI yalnızca Windows'ta
 etkindir.
 
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -v
+QT_QPA_PLATFORM=offscreen python main.py --selftest
+```
+
 ## Mimari
 
 ```
@@ -38,8 +47,12 @@ app/
                           ARP tablosu okuma, hostname çözümleme, port tarama
     vendor_lookup.py     MAC -> üretici (OUI) çevrimdışı sözlük
     scanner.py            Tüm protokolleri birleştiren orkestrasyon (ThreadPoolExecutor)
+    intelligence.py       Kanıta dayalı cihaz sınıflandırması
+    topology.py           LLDP bağlantıları ve ayrı işaretli çıkarımsal L3 yollar
+    history.py            Yerel tekil tarama geçmişi ve CSV/JSON dışa aktarma
     protocols/
-      snmp_probe.py       SNMP v2c GET (sysDescr, sysName, seri no OID'i)
+      snmp_probe.py       Kullanıcı izniyle SNMPv2c / LLDP bilgileri
+      onvif_probe.py      Yerel ağda ONVIF WS-Discovery ilanları
       wmi_probe.py        Windows WMI (Win32_OperatingSystem, Win32_BIOS)
       upnp_probe.py       SSDP/UPnP keşfi
       nmap_probe.py       python-nmap ile servis/OS parmak izi
@@ -54,10 +67,11 @@ app/
   i18n.py                  Arayüz metinleri için çeviri tablosu (6 dil)
 ```
 
-Tarama ekranında artık protokol bazlı (SNMP/UPnP/WMI/Nmap) açma-kapama
-kutucukları yok — sadeleştirme kapsamında kaldırıldı; SNMP/UPnP/WMI her
-taramada varsayılan olarak etkin çalışır, Nmap ise hız nedeniyle varsayılan
-kapalı kalır (`ScanOptions` içinde sabit).
+Tarama sonuçları iş parçacığından GUI'ye sinyal ile aktarılır. STOP SCAN yeni
+işleri iptal eder; çalışan ağ çağrıları sınırlı zaman aşımında biter. İsteğe
+bağlı Live Monitoring iki dakika aralıkla tekrar tarar. Tek önceki tarama
+yerel JSON dosyasında tutulur. Aynı MAC'in IP değiştirmesi değişiklik olarak
+gösterilir; aynı IP'deki MAC değişimi **doğrulanmış çatışma değildir**.
 
 ## Bilinen sınırlamalar
 
@@ -65,8 +79,11 @@ kapalı kalır (`ScanOptions` içinde sabit).
   kimlik bilgisi gerektirir ve modern güvenlik duvarlarında varsayılan kapalıdır;
   `wmi_probe.query_local_machine()` yalnızca çalıştığı makineyi güvenilir şekilde
   zenginleştirir. `query_remote()` açıkça kimlik bilgisi verildiğinde kullanılabilir.
-- **Nmap** taraması diğer protokollere göre yavaştır, bu yüzden varsayılan
-  olarak kapalıdır (arayüzden açılabilir).
+- **Nmap** yavaş ve bazı ortamlarda yönetici yetkisi gerektirir; otomatik
+  taramada kapalıdır. Uygulama yalnızca aktif IPv4 aralığını tarar. IPv6,
+  CDP/FDB, DHCP sunucu kayıtları ve kimlik doğrulama isteyen ONVIF ayrıntıları
+  henüz mevcut değildir. IP TREE, bu bilgiler olmadan fiziksel port sırası
+  veya kamera seri numarası uydurmaz.
 - Ping, ham soket yerine işletim sisteminin `ping`/`arp` komutlarını
   kullanır — böylece yönetici/root yetkisi gerekmez, ama bazı güvenlik
   duvarları ICMP'yi engelleyen cihazları "kapalı" gösterebilir.

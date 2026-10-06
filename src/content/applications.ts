@@ -64,7 +64,7 @@ export const platformCopy: Record<Locale, {
 };
 
 export type Application = {
-  id: "ipcast" | "scanner" | "health-pro";
+  id: "ipcast" | "scanner";
   name: string;
   description: Localized;
   icon: string;
@@ -93,10 +93,10 @@ export const applications: readonly Application[] = [
   },
   {
     id: "scanner",
-    name: "IP Scanner",
-    description: { tr: "ARP ve ping ile cihazları keşfedin; SNMP ve UPnP ile bilgileri zenginleştirin", en: "Discover devices with ARP and ping; enrich results with SNMP and UPnP", de: "Netzwerkerkennung und IP-Scanner", fr: "Découverte réseau et scanner IP", es: "Descubrimiento de red y escáner IP", it: "Rilevamento della rete e scansione IP", pt: "Descoberta de rede e análise de IP", nl: "Netwerkdetectie en IP-scanner", pl: "Wykrywanie sieci i skanowanie IP", ru: "Обнаружение сети и сканирование IP", ar: "اكتشاف الشبكة وفحص عناوين IP", ja: "ネットワーク検出と IP スキャン", ko: "네트워크 탐색 및 IP 스캔", zh: "网络发现与 IP 扫描" },
+    name: "IPscans+",
+    description: { tr: "Ağ keşfi, cihaz tanıma, ONVIF kamera keşfi ve kanıta dayalı IP TREE", en: "Network discovery, device intelligence, ONVIF camera discovery and evidence-based IP TREE", de: "Netzwerkerkennung, Geräteanalyse und IP TREE", fr: "Découverte réseau, analyse des appareils et IP TREE", es: "Descubrimiento de red, análisis de dispositivos e IP TREE", it: "Rilevamento della rete, analisi dei dispositivi e IP TREE", pt: "Descoberta de rede, análise de dispositivos e IP TREE", nl: "Netwerkdetectie, apparaatanalyse en IP TREE", pl: "Wykrywanie sieci, analiza urządzeń i IP TREE", ru: "Обнаружение сети, анализ устройств и IP TREE", ar: "اكتشاف الشبكة وتحليل الأجهزة وIP TREE", ja: "ネットワーク検出、デバイス分析、IP TREE", ko: "네트워크 탐색, 장치 분석 및 IP TREE", zh: "网络发现、设备分析和 IP TREE" },
     icon: "/scanner-mark.svg",
-    version: "1.0.0",
+    version: "2.0.0",
     platform: "Windows · x64",
     detailPath: "/download",
     downloadUrl: desktopRelease.scanner.installerUrl,
@@ -104,17 +104,10 @@ export const applications: readonly Application[] = [
     installerBytes: desktopRelease.scanner.installerBytes,
     installerSha256: desktopRelease.scanner.installerSha256,
   },
-  {
-    id: "health-pro",
-    name: "Network Health Pro",
-    description: { tr: "IP çakışmalarını, cihaz envanterini ve ağ sağlığı olaylarını izleyin", en: "Monitor IP conflicts, device inventory and network health events", de: "Netzwerküberwachung und IP-Konflikterkennung", fr: "Surveillance réseau et détection des conflits IP", es: "Supervisión de red y detección de conflictos IP", it: "Monitoraggio della rete e rilevamento dei conflitti IP", pt: "Monitorização de rede e deteção de conflitos de IP", nl: "Netwerkbewaking en detectie van IP-conflicten", pl: "Monitorowanie sieci i wykrywanie konfliktów IP", ru: "Мониторинг сети и обнаружение конфликтов IP", ar: "مراقبة الشبكة واكتشاف تعارض عناوين IP", ja: "ネットワーク監視と IP アドレスの競合検出", ko: "네트워크 모니터링 및 IP 충돌 감지", zh: "网络监控与 IP 冲突检测" },
-    icon: "/health-pro-mark.svg",
-    version: "1.2.1",
-    platform: "Windows · x64",
-    detailPath: "/pro",
-    downloadUrl: desktopRelease.healthPro.installerUrl,
-    portableUrl: desktopRelease.healthPro.portableUrl,
-    installerBytes: desktopRelease.healthPro.installerBytes,
-    installerSha256: desktopRelease.healthPro.installerSha256,
-  },
 ];
+
+export const scannerApplication: Application = (() => {
+  const app = applications.find((entry) => entry.id === "scanner");
+  if (!app) throw new Error("IPscans+ product is missing from the catalog");
+  return app;
+})();

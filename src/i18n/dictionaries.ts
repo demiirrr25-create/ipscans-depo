@@ -8,7 +8,7 @@ const existingDictionaries = {
     meta: {
       title: "IPScans — Ağ Araçları ve Uzaktan Erişim Platformu",
       description:
-        "IPCast uzak masaüstü, IP Scanner, ağ analizi ve IP yönetimi araçlarını tek platformda keşfedin.",
+        "IPCast uzak masaüstü, IPscans+ ağ keşfi, ağ analizi ve IP yönetimi araçlarını tek platformda keşfedin.",
     },
     nav: {
       home: "Ana Sayfa",
@@ -32,7 +32,7 @@ const existingDictionaries = {
         "IP analizi, ağ keşfi ve uzaktan erişim araçlarını tek bir platformda bul.",
       ctaPrimary: "Uygulamaları Keşfet",
       ctaSecondary: "IPCast'i Keşfet",
-      ctaDownload: "IP Scanner'ı İndir",
+      ctaDownload: "IPscans+'ı İndir",
       yourIp: "Senin IP adresin",
     },
     stats: {
@@ -301,7 +301,7 @@ const existingDictionaries = {
     meta: {
       title: "IPScans — Network Tools and Remote Access",
       description:
-        "Explore IPCast remote desktop, IP Scanner, network analysis and IP management tools on one platform.",
+        "Explore IPCast remote desktop, IPscans+ network discovery, network analysis and IP management tools on one platform.",
     },
     nav: {
       home: "Home",
@@ -325,7 +325,7 @@ const existingDictionaries = {
         "IP analysis, network discovery and remote-access tools, brought together in one platform.",
       ctaPrimary: "Explore Applications",
       ctaSecondary: "Explore IPCast",
-      ctaDownload: "Download IP Scanner",
+      ctaDownload: "Download IPscans+",
       yourIp: "Your IP address",
     },
     stats: {

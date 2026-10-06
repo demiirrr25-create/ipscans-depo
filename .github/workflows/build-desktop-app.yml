@@ -1,4 +1,4 @@
-name: Build Windows desktop app
+name: Build IPscans+ for Windows
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-windows:
@@ -19,7 +19,6 @@ jobs:
         working-directory: desktop-app
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -27,25 +26,21 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
+          pip install -r requirements.txt pyinstaller
 
-      - name: Build one-file .exe
+      - name: Test discovery and topology
+        run: python -m unittest discover -s tests -v
+
+      - name: Build Windows EXE
         run: |
-          # --noupx: UPX-compressed executables are one of the most common
-          # patterns Defender/SmartScreen heuristics flag on unsigned
-          # binaries ("packed executable"), so compression is disabled.
-          # --version-file: embeds normal-looking publisher/product metadata,
-          # which unsigned-but-metadata-less exes lack and heuristics dislike.
-          pyinstaller --name ipscans-network-scanner --onefile --windowed --noupx `
+          pyinstaller --name IPscans-Plus --onefile --windowed --noupx `
             --icon=assets/icon.ico `
             --version-file=version_info.txt `
             --add-data "assets;assets" `
             main.py
 
-      - name: Smoke test the packaged .exe
-        run: |
-          .\dist\ipscans-network-scanner.exe --selftest
+      - name: Smoke test EXE
+        run: .\dist\IPscans-Plus.exe --selftest
 
       - name: Install Inno Setup and build installer
         run: |
@@ -57,64 +52,26 @@ jobs:
 
       - name: Smoke test installer and desktop shortcut
         run: |
-          $setup = (Resolve-Path "dist\installer\IP-Scanner-Setup.exe").Path
-          $installDir = Join-Path $env:RUNNER_TEMP "IPScannerInstallTest"
-          $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "IP Scanner.lnk"
+          $setup = (Resolve-Path "dist\installer\IPscans-Plus-Setup.exe").Path
+          $installDir = Join-Path $env:RUNNER_TEMP "IPscansPlusInstallTest"
+          $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "IPscans+.lnk"
           $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" -Wait -PassThru
-          if ($process.ExitCode -ne 0 -or -not (Test-Path (Join-Path $installDir "ipscans-network-scanner.exe")) -or -not (Test-Path $shortcut)) {
-            throw "Scanner install or desktop shortcut failed"
+          if ($process.ExitCode -ne 0 -or -not (Test-Path (Join-Path $installDir "IPscans-Plus.exe")) -or -not (Test-Path $shortcut)) {
+            throw "IPscans+ install or desktop shortcut failed"
           }
           $target = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath
-          if ($target -ne (Join-Path $installDir "ipscans-network-scanner.exe")) { throw "Scanner shortcut points to $target" }
+          if ($target -ne (Join-Path $installDir "IPscans-Plus.exe")) { throw "Shortcut points to $target" }
           $uninstaller = Join-Path $installDir "unins000.exe"
           $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
-          if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "Scanner uninstall failed" }
-
-      - name: Publish built .exe to the website's download folder
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          New-Item -ItemType Directory -Force -Path "..\public\downloads" | Out-Null
-          Copy-Item -Path "dist\ipscans-network-scanner.exe" -Destination "..\public\downloads\ipscans-network-scanner.exe" -Force
-
-      - name: Commit updated .exe
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        working-directory: .
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/downloads/ipscans-network-scanner.exe
-          if (Test-Path "public\downloads\ipscans-network-scanner.zip") {
-            git rm --cached public/downloads/ipscans-network-scanner.zip
-            Remove-Item "public\downloads\ipscans-network-scanner.zip"
-          }
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) {
-            echo "No changes to commit"
-          } else {
-            git commit -m "chore: publish rebuilt desktop app .exe [skip ci]"
-            # The Pro-app workflow also watches desktop-app/** and can run
-            # concurrently on the same push, racing to push this branch —
-            # retry with a rebase onto whatever landed first instead of
-            # failing the whole job over a lost push race.
-            $pushed = $false
-            for ($i = 1; $i -le 5; $i++) {
-              git push
-              if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
-              git fetch origin main
-              git rebase origin/main
-            }
-            if (-not $pushed) { throw "git push failed after retries" }
-          }
-
+          if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "IPscans+ uninstall failed" }
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ipscans-network-scanner-windows
-          path: desktop-app/dist/ipscans-network-scanner.exe
+          name: IPscans-Plus-portable
+          path: desktop-app/dist/IPscans-Plus.exe
           if-no-files-found: error
-
       - uses: actions/upload-artifact@v4
         with:
-          name: IP-Scanner-Setup
-          path: desktop-app/dist/installer/IP-Scanner-Setup.exe
+          name: IPscans-Plus-Setup
+          path: desktop-app/dist/installer/IPscans-Plus-Setup.exe
           if-no-files-found: error

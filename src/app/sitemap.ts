@@ -16,7 +16,7 @@ function altLanguages(pathFor: (locale: Locale) => string) {
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
   for (const locale of locales) {
-    const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast", "/pro",
+    const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast",
       ...applications.map((app) => `/applications/${app.id}`)];
     if (posts.some((post) => post.body[locale])) staticPaths.push("/blog");
     if (locale === "en" || locale === "tr") staticPaths.push("/privacy", "/terms");

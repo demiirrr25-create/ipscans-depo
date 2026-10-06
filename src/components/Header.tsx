@@ -52,7 +52,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
       name: dict[key].title, description: dict[key].subtitle,
       href: toolPath(key, locale), group: dict.experience.networkTools, icon: "",
     })),
-    { name: "IP Scanner", description: dict.experience.scanner.intro,
+    { name: "IPscans+", description: dict.experience.scanner.intro,
       href: `/${locale}/ip-scanner`, group: dict.experience.networkTools, icon: "" },
   ];
   const results = query.trim()
@@ -61,7 +61,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const nav = [
     { href: `/${locale}`, name: dict.nav.home },
     { href: `/${locale}/download`, name: platformCopy[locale].applications },
-    { href: `/${locale}/ip-scanner`, name: "IP Scanner" },
+    { href: `/${locale}/ip-scanner`, name: "IPscans+" },
     { href: `/${locale}/scan`, name: dict.experience.networkTools },
     { href: `/${locale}/blog`, name: dict.experience.resources },
   ];

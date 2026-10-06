@@ -239,13 +239,60 @@ QPushButton#GhostButton:hover {
     border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
+QPushButton {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border: 1px solid #414141;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+QPushButton:hover { background-color: #303030; }
+QPushButton:disabled { color: #999999; background-color: #151515; }
+
+QTabWidget::pane {
+    background-color: #0c0c0c;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+QTabBar::tab {
+    background-color: #191919;
+    color: #bdbdbd;
+    border: 1px solid #333333;
+    border-bottom: none;
+    padding: 9px 20px;
+    min-width: 90px;
+}
+QTabBar::tab:selected {
+    background-color: #0c0c0c;
+    color: #ffffff;
+    border-top: 2px solid #ffffff;
+}
+QTabBar::tab:hover { color: #ffffff; }
+
 QTableView {
-    background: rgba(255, 255, 255, 0.02);
-    alternate-background-color: rgba(255, 255, 255, 0.035);
+    background-color: #101010;
+    alternate-background-color: #171717;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     gridline-color: rgba(255, 255, 255, 0.06);
     font-size: 12px;
+}
+QTableView QAbstractScrollArea, QTreeWidget QAbstractScrollArea {
+    background-color: #101010;
+}
+QTreeWidget {
+    background-color: #101010;
+    alternate-background-color: #171717;
+    color: #ffffff;
+    border: 1px solid #333333;
+}
+QTreeWidget::item {
+    padding: 7px;
+    min-height: 22px;
+}
+QTreeWidget::item:selected {
+    background-color: #353535;
+    color: #ffffff;
 }
 QTableView::item {
     padding: 8px 10px;
@@ -308,7 +355,7 @@ QProgressBar::chunk {
 }
 
 QTextEdit {
-    background: rgba(255, 255, 255, 0.03);
+    background-color: #141414;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 10px;
     padding: 10px;
