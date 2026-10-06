@@ -18,10 +18,10 @@ export const ipcastRelease = {
 
 export const desktopRelease = {
   scanner: {
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.1/IPscans-Plus-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.1/IPscans-Plus.exe",
-    installerBytes: 52667870,
-    installerSha256: "1f446d101f323ca96417aceafcb0dab2db8e447503e549c3809382517e7abb9f",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.2/IPscans-Plus-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.2/IPscans-Plus.exe",
+    installerBytes: 52674080,
+    installerSha256: "fe4c8c7535a8e2d1939060d38e95a21f9227a827114fb9cbebcd485f05ddf2f5",
   },
 } as const;
 
@@ -90,7 +90,7 @@ export const applications: readonly Application[] = [
     name: "IPscans+",
     description: { tr: "Ağ keşfi, cihaz tanıma, ONVIF kamera keşfi ve kanıta dayalı IP TREE", en: "Network discovery, device intelligence, ONVIF camera discovery and evidence-based IP TREE", de: "Netzwerkerkennung, Geräteanalyse und IP TREE", fr: "Découverte réseau, analyse des appareils et IP TREE", es: "Descubrimiento de red, análisis de dispositivos e IP TREE", it: "Rilevamento della rete, analisi dei dispositivi e IP TREE", pt: "Descoberta de rede, análise de dispositivos e IP TREE", nl: "Netwerkdetectie, apparaatanalyse en IP TREE", pl: "Wykrywanie sieci, analiza urządzeń i IP TREE", ru: "Обнаружение сети, анализ устройств и IP TREE", ar: "اكتشاف الشبكة وتحليل الأجهزة وIP TREE", ja: "ネットワーク検出、デバイス分析、IP TREE", ko: "네트워크 탐색, 장치 분석 및 IP TREE", zh: "网络发现、设备分析和 IP TREE" },
     icon: "/scanner-mark.svg",
-    version: "2.0.1",
+    version: "2.0.2",
     platform: "Windows · x64",
     detailPath: "/download",
     downloadUrl: desktopRelease.scanner.installerUrl,
