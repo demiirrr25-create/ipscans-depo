@@ -18,8 +18,7 @@ pencereye erişilemez.
 `assets/icon.png` ve `assets/icon.ico`, `../public/scanner-mark.svg`
 kaynağından üretilir. Windows CI, `IPscans-Plus.exe` yanında isteğe bağlı
 masaüstü kısayolu sunan `IPscans-Plus-Setup.exe` yükleyicisini de oluşturur.
-Doğrulanmış sürüm yayınlanmadan web sitesindeki indirme bağlantıları
-değiştirilmemelidir.
+Doğrulanmış 2.0.0 sürüm: https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v2.0.0 .
 
 ```bash
 python -m venv .venv

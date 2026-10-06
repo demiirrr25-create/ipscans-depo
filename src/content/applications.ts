@@ -18,10 +18,10 @@ export const ipcastRelease = {
 
 export const desktopRelease = {
   scanner: {
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/IP-Scanner-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/ipscans-network-scanner.exe",
-    installerBytes: 50652381,
-    installerSha256: "0fa4cf2cb8f314a5144711ca7dff4219ec9c7d47e19848c0517c3dabd02ac187",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.0/IPscans-Plus-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.0/IPscans-Plus.exe",
+    installerBytes: 52666771,
+    installerSha256: "1f9f5c9ee2a17e45e472aebdb3b106d75ef1a22fee3b3f2acd250a8f47775300",
   },
   healthPro: {
     installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/Network-Health-Pro-Setup.exe",
