@@ -45,7 +45,7 @@ export function ApplicationsSection({ locale, dict }: { locale: Locale; dict: Di
         <h2 id="applications-title" className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight sm:text-6xl">{copy.applications}<span className="text-neutral-500">.</span></h2>
         <p className="mt-3 max-w-2xl text-neutral-400">{copy.applicationsIntro}</p>
         </div>
-        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-500 sm:block">EXPLORE / 01—{String(applications.length + tools.length).padStart(2, "0")}</span>
+        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-400 sm:block">EXPLORE / 01—{String(applications.length + tools.length).padStart(2, "0")}</span>
       </div>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <label className="block w-full sm:max-w-sm">

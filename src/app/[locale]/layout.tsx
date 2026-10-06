@@ -12,6 +12,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { localizedAlternates } from "@/lib/seo";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -148,6 +149,21 @@ export default async function LocaleLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col text-white">
+        {(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GOOGLE_ADS_ID) && (
+          <Script id="google-consent-default" strategy="beforeInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('consent', 'default', {
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied',
+                analytics_storage: 'denied',
+                wait_for_update: 500
+              });
+            `}
+          </Script>
+        )}
         <script
           type="application/ld+json"
           // Static, code-defined structured data — safe to inject directly.

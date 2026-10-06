@@ -66,7 +66,7 @@ export default async function HomePage({
         <div className="mb-8 flex items-end justify-between gap-4 border-b border-white/15 pb-6">
           <div><p className="font-mono text-xs uppercase tracking-[0.2em] text-neutral-400">01 / START HERE</p>
           <h2 id="popular-title" className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">{dict.experience.popular}</h2></div>
-          <span aria-hidden="true" className="hidden font-mono text-xs text-neutral-500 sm:block">NETWORK / INTELLIGENCE</span>
+          <span aria-hidden="true" className="hidden font-mono text-xs text-neutral-400 sm:block">NETWORK / INTELLIGENCE</span>
         </div>
         <div className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3">
           {[
