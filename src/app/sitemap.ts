@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { locales, defaultLocale, type Locale } from "@/i18n/config";
 import { posts } from "@/content/posts";
 import { toolSlugs, toolKeys } from "@/lib/tool-routes";
+import { applications } from "@/content/applications";
 
 const BASE_URL = "https://ipscans.com";
 
@@ -15,7 +16,8 @@ function altLanguages(pathFor: (locale: Locale) => string) {
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
   for (const locale of locales) {
-    const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast", "/pro"];
+    const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast", "/pro",
+      ...applications.map((app) => `/applications/${app.id}`)];
     if (posts.some((post) => post.body[locale])) staticPaths.push("/blog");
     if (locale === "en" || locale === "tr") staticPaths.push("/privacy", "/terms");
 

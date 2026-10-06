@@ -17,7 +17,7 @@ Open `/en` or another supported locale. Locale-prefixed URLs are canonical; `/` 
 
 The product directory and inline header search share application and tool definitions. `Ctrl+K` / `Cmd+K` focuses the search field; results appear underneath it and support the arrow keys, Enter and Escape. Each desktop product has an isolated `/[locale]/applications/[id]` detail page. `/[locale]/ip-scanner` explains local discovery and links to the Windows download; `/[locale]/scan` contains general network-scanning guidance.
 
-The current website downloads are portable executables. The Windows desktop workflows also build and smoke-test optional Inno Setup installers with a default-on, user-toggleable desktop shortcut task; these are uploaded as separate CI artifacts. Do not describe the portable downloads as installers or link to installer files until they have actually been published.
+The primary desktop downloads link to verified Windows installers in the [desktop-apps-2026.10.06 release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/desktop-apps-2026.10.06). Each product detail page also offers a portable executable, installer size and SHA-256 hash. The Windows workflows build and smoke-test default-on, user-toggleable desktop shortcuts; installers and portable builds are uploaded as separate CI artifacts. IPCast 2.5's installer and portable EXE are published in [its release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.5.0).
 
 ## Search and deployment
 

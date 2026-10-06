@@ -5,9 +5,9 @@ of the free [`../desktop-app`](../desktop-app) IP Scanner. Ships as a
 **separate** Windows executable/product with its own download page,
 per product decision — see [`/memories/session/network-health-pro.md`](../.).
 
-The Windows CI also uploads a separate Inno Setup installer with an optional
-desktop shortcut selected by default; the current website download remains
-the portable `.exe`.
+The Windows CI also uploads an Inno Setup installer with an optional desktop
+shortcut selected by default. The primary website download is the installer;
+the portable `.exe` remains available separately.
 
 ## Why this isn't a fork
 

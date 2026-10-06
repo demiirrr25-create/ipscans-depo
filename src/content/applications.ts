@@ -16,6 +16,21 @@ export const ipcastRelease = {
   releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.5.0",
 } as const;
 
+export const desktopRelease = {
+  scanner: {
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/IP-Scanner-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/ipscans-network-scanner.exe",
+    installerBytes: 50652381,
+    installerSha256: "0fa4cf2cb8f314a5144711ca7dff4219ec9c7d47e19848c0517c3dabd02ac187",
+  },
+  healthPro: {
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/Network-Health-Pro-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-apps-2026.10.06/ipscans-network-health-pro.exe",
+    installerBytes: 51680156,
+    installerSha256: "0a65771558d4676a611461f50edae84bf81c0107900184948af0e18aa36593b1",
+  },
+} as const;
+
 export const platformCopy: Record<Locale, {
   eyebrow: string;
   title: string;
@@ -57,6 +72,9 @@ export type Application = {
   platform: string;
   detailPath: string;
   downloadUrl: string;
+  portableUrl: string;
+  installerBytes: number;
+  installerSha256: string;
 };
 
 export const applications: readonly Application[] = [
@@ -69,6 +87,9 @@ export const applications: readonly Application[] = [
     platform: ipcastRelease.platform,
     detailPath: "/ipcast",
     downloadUrl: ipcastRelease.installerUrl,
+    portableUrl: ipcastRelease.url,
+    installerBytes: ipcastRelease.installerBytes,
+    installerSha256: ipcastRelease.installerSha256,
   },
   {
     id: "scanner",
@@ -78,7 +99,10 @@ export const applications: readonly Application[] = [
     version: "1.0.0",
     platform: "Windows · x64",
     detailPath: "/download",
-    downloadUrl: "/downloads/ipscans-network-scanner.exe",
+    downloadUrl: desktopRelease.scanner.installerUrl,
+    portableUrl: desktopRelease.scanner.portableUrl,
+    installerBytes: desktopRelease.scanner.installerBytes,
+    installerSha256: desktopRelease.scanner.installerSha256,
   },
   {
     id: "health-pro",
@@ -88,6 +112,9 @@ export const applications: readonly Application[] = [
     version: "1.2.1",
     platform: "Windows · x64",
     detailPath: "/pro",
-    downloadUrl: "/downloads/ipscans-network-health-pro.exe",
+    downloadUrl: desktopRelease.healthPro.installerUrl,
+    portableUrl: desktopRelease.healthPro.portableUrl,
+    installerBytes: desktopRelease.healthPro.installerBytes,
+    installerSha256: desktopRelease.healthPro.installerSha256,
   },
 ];

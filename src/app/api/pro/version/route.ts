@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { desktopRelease } from "@/content/applications";
 
 export const runtime = "nodejs";
 
@@ -8,8 +9,8 @@ export const runtime = "nodejs";
  */
 const LATEST = {
   version: "1.2.1",
-  downloadUrl: "https://ipscans.com/downloads/ipscans-network-health-pro.exe",
-  notes: "Fixed a critical IP conflict detection gap: a second device taking over another device's static IP (with no prior history either way) is now correctly flagged as a conflict instead of a silent MAC-changed notice. Fixed invisible white-on-white text in dropdown menus and the tray right-click menu. Fixed the PRO badge on the app icon being too small to see once Windows shrinks it to a real desktop-icon size.",
+  downloadUrl: desktopRelease.healthPro.portableUrl,
+  notes: "Fixed IP conflict detection and dropdown contrast. The desktop app has a new monochrome network-health icon; an optional installer with a desktop shortcut is available on the IPScans website.",
 };
 
 export async function GET() {

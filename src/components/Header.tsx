@@ -109,7 +109,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
           <div ref={searchBox} className="site-search relative">
             <div className="flex min-h-11 items-center rounded-lg border border-white/20 bg-white/[0.04] px-3 focus-within:border-white/70">
               <span aria-hidden="true" className="text-neutral-400">⌕</span>
-              <input ref={searchInput} type="text" inputMode="search" value={query} role="combobox"
+              <input id="site-search-input" ref={searchInput} type="text" inputMode="search" value={query} role="combobox"
                 aria-label={dict.experience.searchPlaceholder} aria-expanded={searchOpen}
                 aria-controls="site-search-results" aria-autocomplete="list"
                 aria-activedescendant={searchOpen && results[active] ? `site-result-${active}` : undefined}
