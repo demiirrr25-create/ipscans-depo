@@ -194,6 +194,20 @@ class DiscoveryTests(unittest.TestCase):
         self.assertIn("Unknown", tree.inspector.toPlainText())
         tree.close()
 
+    def test_confirmed_neighbor_does_not_claim_direction(self):
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+        from PyQt6.QtWidgets import QApplication
+        from app.ui.ip_tree import IpTree
+        app = QApplication.instance() or QApplication([])
+        switch = Device("192.168.1.1", mac="aa:bb:cc:dd:ee:ff",
+                        lldp_neighbor_macs=["11:22:33:44:55:66"])
+        camera = Device("192.168.1.8", mac="11:22:33:44:55:66")
+        tree = IpTree()
+        tree.refresh([switch, camera], switch.ip, "192.168.1.0/24")
+        tree.tree.topLevelItem(0).child(0).setSelected(True)
+        self.assertIn("direction unknown", tree.inspector.toPlainText())
+        tree.close()
+
     def test_ui_scan_updates_table_summary_and_ip_tree(self):
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         from PyQt6.QtWidgets import QApplication

@@ -21,6 +21,8 @@ The homepage hero is server-rendered without an animation-library hydration cost
 
 The primary IPscans+ download links to its [Windows 2.0.1 release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v2.0.1). The product detail page also offers a portable executable, installer size and SHA-256 hash. The Windows workflow builds and smoke-tests the user-toggleable desktop shortcut, installed EXE and uninstall process. IPCast 2.5's installer and portable EXE are published in [its release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.5.0).
 
+Network Health Pro is no longer published on the website; its standalone source and historical GitHub release remain in the repository. Its old website download and update endpoint are retired. The old scanner download URL redirects to the current IPscans+ installer for existing bookmarks.
+
 ## Search and deployment
 
 Route metadata provides localized canonical URLs and language alternatives. `src/app/sitemap.ts` produces a multilingual `/sitemap.xml` and `src/app/robots.ts` advertises it. Legal policies currently have English and Turkish bodies; untranslated copies are excluded from the sitemap and marked `noindex`. Blog articles are available only in languages with authored content.

@@ -171,6 +171,8 @@ class IpTree(QWidget):
             "Discovery": ", ".join(device.sources), "First seen": device.first_seen,
             "mDNS services": ", ".join(device.mdns_services),
             "Last seen": device.last_seen,
-            "Connection path": f"{link.parent} → {ip} (Inferred; {link.evidence})" if link else None,
+            "Connection path": (f"LLDP neighbor: {link.parent} ↔ {ip} (physical adjacency confirmed; direction unknown)"
+                                if link.confirmed else f"Inferred L3 path: {link.parent} → {ip} ({link.evidence})")
+            if link else None,
         }
         self.inspector.setPlainText("\n\n".join(f"{key}\n{value or 'Unknown'}" for key, value in fields.items()))
