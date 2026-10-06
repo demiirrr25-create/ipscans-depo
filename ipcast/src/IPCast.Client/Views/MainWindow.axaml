@@ -1,214 +1,159 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:IPCast.Client.ViewModels"
-        xmlns:conv="using:IPCast.Client.Converters"
-        xmlns:persistence="using:IPCast.Client.Persistence"
-        x:Class="IPCast.Client.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Title="IPCast — Secure Remote Access"
-        Icon="/Assets/ipcast.ico"
-        Width="1120" Height="780"
-        MinWidth="860" MinHeight="580"
-        Background="{DynamicResource AppBackgroundBrush}">
-
-    <Window.Resources>
-        <conv:EnumEqualsConverter x:Key="EnumEquals" />
-    </Window.Resources>
-
-    <Grid ColumnDefinitions="248,*">
-
-        <!-- ============ Sidebar ============ -->
-        <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}"
-                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0" Padding="18">
-            <DockPanel LastChildFill="False">
-                <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="6,2,6,26">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Image Source="/Assets/ipcast-mark.png" Width="38" Height="38"
-                               VerticalAlignment="Center" AutomationProperties.Name="IPCast logo" />
-                        <StackPanel VerticalAlignment="Center" Spacing="1">
-                            <TextBlock Text="IPCast" FontSize="20" FontWeight="Bold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="SECURE REMOTE ACCESS" Classes="eyebrow" FontSize="9" />
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-
-                <ListBox DockPanel.Dock="Top" Classes="nav"
-                         ItemsSource="{Binding NavItems}"
-                         SelectedItem="{Binding SelectedNavItem}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:NavItem">
-                            <TextBlock Text="{Binding Label}" FontSize="14" />
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <Border DockPanel.Dock="Bottom" Classes="device" Padding="12" Margin="2,0,2,6">
-                    <StackPanel Spacing="6">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                                     Fill="{DynamicResource StatusOnlineBrush}" />
-                            <TextBlock Text="{Binding DeviceStatusText}" FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       TextWrapping="Wrap" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Text="Unattended access ON" FontSize="10"
-                                   Foreground="{DynamicResource AccentBrush}"
-                                   IsVisible="{Binding IsUnattendedAccessEnabled}" />
-                        <TextBlock Text="v1.1 Preview · Auto Relay" FontSize="10"
-                                   Foreground="{DynamicResource TextMutedBrush}" />
-                    </StackPanel>
-                </Border>
-            </DockPanel>
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:IPCast.Client.ViewModels" xmlns:conv="using:IPCast.Client.Converters" xmlns:persistence="using:IPCast.Client.Persistence" xmlns:network="using:IPCast.Network" x:Class="IPCast.Client.Views.MainWindow" x:DataType="vm:MainWindowViewModel" Title="IPCast 2.5" Icon="/Assets/ipcast.ico" Width="1180" Height="780" MinWidth="880" MinHeight="560" Background="{DynamicResource AppBackgroundBrush}">
+<Window.Resources><conv:EnumEqualsConverter x:Key="EnumEquals" /></Window.Resources>
+<Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Border Background="{DynamicResource SidebarBrush}" Padding="18,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"><Image Source="/Assets/ipcast-mark.png" Width="26" Height="26"/><TextBlock Text="IPCast" FontSize="21" FontWeight="Bold" VerticalAlignment="Center"/></StackPanel>
+            <ListBox Grid.Column="1" Classes="nav" ItemsSource="{Binding NavItems}" SelectedItem="{Binding SelectedNavItem}" AutomationProperties.Name="Workspace tabs">
+                <ListBox.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                <ListBox.ItemTemplate><DataTemplate x:DataType="vm:NavItem"><TextBlock Text="{Binding Label}" FontSize="12" /></DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+            <Button Grid.Column="2" Content="☰" Classes="ghost" ToolTip.Tip="Menu" AutomationProperties.Name="Application menu">
+                <Button.Flyout><MenuFlyout><MenuItem Header="New session" Click="OnHomeClick"/><MenuItem Header="Address book" Click="OnAddressBookClick"/><MenuItem Header="Session recordings" Click="OnOpenRecordingsClick"/><Separator/><MenuItem Header="Settings" Click="OnSettingsClick"/><MenuItem Header="Check for updates" Click="OnCheckUpdatesClick"/></MenuFlyout></Button.Flyout>
+            </Button>
+        </Grid>
+    </Border>
+    <Border Grid.Row="1" Padding="20,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource SidebarBrush}">
+        <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                <TextBlock Text="→" FontSize="24" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBox Grid.Column="1" Name="RemoteIdTextBox" PlaceholderText="Enter remote address" Text="{Binding RemoteIdInput}" KeyDown="OnRemoteIdKeyDown" FontSize="15" AutomationProperties.Name="Remote device ID or direct IP address and port"/>
+                <Button Grid.Column="2" Content="Connect →" Classes="primary" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnecting}"/>
+                <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelConnectCommand}" IsVisible="{Binding IsConnecting}"/>
+                <ToggleButton Grid.Column="3" Content="Options" IsChecked="{Binding ShowConnectionOptions}" Padding="14,6" AutomationProperties.Name="Connection options"/>
+            </Grid>
+            <Grid ColumnDefinitions="220,*,160" ColumnSpacing="12" IsVisible="{Binding ShowConnectionOptions}"><ComboBox ItemsSource="{Binding PermissionProfileNames}" SelectedItem="{Binding SelectedPermissionProfile}" HorizontalAlignment="Stretch" AutomationProperties.Name="Requested permission profile"/><TextBox Grid.Column="1" Text="{Binding RemotePasswordInput}" PasswordChar="●" PlaceholderText="Unattended access password (optional)" AutomationProperties.Name="Unattended access password, optional"/><TextBox Grid.Column="2" Text="{Binding RemoteOneTimeCode}" MaxLength="6" PlaceholderText="Authenticator code" AutomationProperties.Name="Authenticator one time code"/></Grid>
+            <TextBlock Text="{Binding RemoteIdValidationMessage}" IsVisible="{Binding HasRemoteIdValidationMessage}" Classes="hint" />
+        </StackPanel>
+    </Border>
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*">
+        <Border Width="210" Padding="16,22" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0" IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
+            <StackPanel Spacing="16"><TextBlock Text="Settings" FontSize="22" Margin="10,0"/><TextBlock Text="APPLICATION &amp; SESSION" Classes="eyebrow" Margin="10,0"/><ListBox Classes="nav" ItemsSource="{Binding SettingsCategories}" SelectedItem="{Binding SettingsCategory}" AutomationProperties.Name="Settings categories" /></StackPanel>
         </Border>
-
-        <!-- ============ Content ============ -->
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="32,28">
-
-            <!-- ======== Home ======== -->
-            <StackPanel Spacing="18" MaxWidth="880" HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Home}">
-
-                <StackPanel Spacing="6" Margin="0,0,0,2">
-                    <TextBlock Text="Remote access, made simple." Classes="display" TextWrapping="Wrap" />
-                    <TextBlock Text="Share your ID to receive a connection, or enter another device's ID to connect."
-                               Classes="hint" />
-                </StackPanel>
-
-                <!-- Your IPCast ID -->
-                <Border Classes="card">
-                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="10">
-                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="YOUR IPCAST ID" Classes="eyebrow" />
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding DeviceIdFormatted}"
-                                   FontSize="38" FontWeight="Bold" FontFamily="Consolas, monospace"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                        <Button Grid.Row="1" Grid.Column="1" Content="Copy ID" HorizontalAlignment="Right"
-                                VerticalAlignment="Center" Click="OnCopyIdClick"
-                                ToolTip.Tip="Copy your IPCast ID to the clipboard"
-                                AutomationProperties.Name="Copy your IPCast ID" />
-                        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8">
-                            <Ellipse Width="9" Height="9" Fill="{DynamicResource StatusOnlineBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding DeviceStatusText}" FontSize="13"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Spacing="8">
-                            <TextBlock Text="{Binding LocalConnectionInfo}" Classes="hint" />
-                            <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
-                            <Button Content="Disconnect current session" Classes="danger" HorizontalAlignment="Left"
-                                    Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
-                        </StackPanel>
-                    </Grid>
+        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"><Grid Margin="30,22"><StackPanel Spacing="22" IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Home}">
+    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="32" Margin="0,8,0,8">
+        <TextBlock Text="Your address" FontSize="21" />
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="18" Margin="0,14,0,12">
+            <TextBlock Text="{Binding DeviceIdFormatted}" FontSize="40" FontFamily="Consolas" FontWeight="SemiBold" />
+            <Button Content="Copy" Click="OnCopyIdClick" VerticalAlignment="Center" AutomationProperties.Name="Copy your IPCast ID" />
+        </StackPanel>
+        <TextBlock Grid.Row="2" Text="Share this address to let someone connect to this device." Classes="hint" />
+        <StackPanel Grid.Column="1" Grid.RowSpan="3" VerticalAlignment="Center" Spacing="8" MaxWidth="285">
+            <TextBlock Text="{Binding DeviceStatusText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding LocalConnectionInfo}" Classes="hint" />
+            <Button Content="Set up unattended access" Click="OnAccessSettingsClick" HorizontalAlignment="Left" />
+        </StackPanel>
+    </Grid>
+    <Separator />
+    <Border IsVisible="{Binding IsConnected}" Classes="device">
+        <StackPanel Spacing="10">
+            <TextBlock Text="Session active" FontWeight="SemiBold" />
+            <TextBlock Text="REC · The remote viewer is recording" IsVisible="{Binding IsPeerRecording}" />
+            <TextBlock Text="System audio is being shared" IsVisible="{Binding IsSystemAudioShared}" />
+            <WrapPanel><Button Content="Chat" Click="OnChatClick" IsVisible="{Binding IsChatAvailable}" Margin="0,0,8,0" /><Button Content="Files" Click="OnFileManagerClick" IsVisible="{Binding IsFileManagerAvailable}" Margin="0,0,8,0" /><Button Content="Disconnect" Command="{Binding DisconnectCommand}" Classes="primary" /></WrapPanel>
+        </StackPanel>
+    </Border>
+    <TabControl>
+        <TabItem Header="Recent sessions">
+            <StackPanel Spacing="14" Margin="0,16,0,0">
+                <Border Classes="device" IsVisible="{Binding !DashboardRecentConnections.Count}" Padding="30">
+                    <StackPanel Spacing="12" HorizontalAlignment="Center"><Path Data="M2,2 L30,2 L30,21 L2,21 Z M16,21 L16,27 M8,27 L24,27" Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.4" Width="32" Height="30" Stretch="Uniform" /><TextBlock Text="Your next connection starts here" FontSize="18" HorizontalAlignment="Center" /><TextBlock Text="Enter a remote address above. Your recent sessions will appear here." Classes="hint" /></StackPanel>
                 </Border>
-
-                <!-- Connect to a device -->
-                <Border Classes="card">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="CONNECT TO A DEVICE" Classes="eyebrow" />
-                        <TextBlock Text="Remote IPCast ID" FontWeight="SemiBold" />
-                        <TextBox Name="RemoteIdTextBox" FontSize="16" PlaceholderText="123 456 789"
-                                 Text="{Binding RemoteIdInput}" KeyDown="OnRemoteIdKeyDown"
-                                 AutomationProperties.Name="Remote device ID or direct IP address and port" />
-                        <TextBlock Text="{Binding RemoteIdValidationMessage}" FontSize="12"
-                                   Foreground="{DynamicResource DangerBrush}"
-                                   IsVisible="{Binding HasRemoteIdValidationMessage}" TextWrapping="Wrap" />
-                        <TextBox PlaceholderText="Password (only for unattended access)" PasswordChar="●"
-                                 Text="{Binding RemotePasswordInput}"
-                                 AutomationProperties.Name="Unattended access password, optional" />
-                        <Button Content="CONNECT" Classes="primary" HorizontalAlignment="Stretch" FontSize="15"
-                                MinHeight="48" Command="{Binding ConnectCommand}"
-                                IsVisible="{Binding !IsConnecting}" />
-                        <Button Content="Cancel connection" Classes="danger" HorizontalAlignment="Stretch"
-                                MinHeight="48" Command="{Binding CancelConnectCommand}"
-                                IsVisible="{Binding IsConnecting}" />
-                        <TextBlock Text="{Binding StatusMessage}" Classes="hint"
-                                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    </StackPanel>
-                </Border>
-
-                <!-- Favorites -->
-                <StackPanel Spacing="10" IsVisible="{Binding DashboardFavoriteDevices.Count}">
-                    <TextBlock Text="FAVORITES" Classes="eyebrow" />
-                    <ItemsControl ItemsSource="{Binding DashboardFavoriteDevices}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="persistence:FavoriteDevice">
-                                <Border Classes="device" Margin="0,0,0,8">
-                                    <Border.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
-                                            <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
-                                            <Separator />
-                                            <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
-                                        </ContextMenu>
-                                    </Border.ContextMenu>
-                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20"
-                                                Background="{DynamicResource SubtleFillBrush}"
-                                                VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name[0]}" FontWeight="Bold" FontSize="16"
-                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                                            <TextBlock Text="{Binding FormattedId}" FontSize="12"
-                                                       FontFamily="Consolas, monospace"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
-                                                <Run Text="Last connected: " /><Run Text="{Binding LastConnectedDisplay}" />
-                                            </TextBlock>
-                                        </StackPanel>
-                                        <Button Grid.Column="2" Content="Connect" Classes="primary" VerticalAlignment="Center"
-                                                Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToFavoriteCommand}"
-                                                CommandParameter="{Binding}" />
-                                        <Button Grid.Column="3" Content="⋯" Classes="ghost" VerticalAlignment="Center"
-                                                Padding="10,6" ToolTip.Tip="More actions"
-                                                AutomationProperties.Name="More actions">
-                                            <Button.Flyout>
-                                                <MenuFlyout>
-                                                    <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
-                                                    <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
-                                                    <Separator />
-                                                    <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
-                                                </MenuFlyout>
-                                            </Button.Flyout>
-                                        </Button>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
-                <!-- Recent sessions -->
-                <StackPanel Spacing="10" IsVisible="{Binding DashboardRecentConnections.Count}">
-                    <TextBlock Text="RECENT SESSIONS" Classes="eyebrow" />
-                    <ItemsControl ItemsSource="{Binding DashboardRecentConnections}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="persistence:ConnectionHistoryEntry">
-                                <Border Classes="device" Margin="0,0,0,8">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                            <TextBlock FontWeight="SemiBold" FontFamily="Consolas, monospace"
-                                                       Foreground="{DynamicResource TextPrimaryBrush}">
-                                                <Run Text="{Binding RemoteId}" /><Run Text="  ·  " /><Run Text="{Binding Direction}" />
-                                            </TextBlock>
-                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
-                                                <Run Text="{Binding DisplayTimestamp}" /><Run Text="  ·  " /><Run Text="{Binding Status}" />
-                                            </TextBlock>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Content="Connect" VerticalAlignment="Center"
-                                                Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToRecentCommand}"
-                                                CommandParameter="{Binding}" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                <ItemsControl ItemsSource="{Binding DashboardRecentConnections}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="persistence:ConnectionHistoryEntry"><Border Classes="device" Width="240" Margin="0,0,14,14"><StackPanel Spacing="12"><Path Data="M2,2 L30,2 L30,21 L2,21 Z M16,21 L16,27 M8,27 L24,27" Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.4" Width="32" Height="30" Stretch="Uniform" /><TextBlock Text="{Binding RemoteId}" FontFamily="Consolas" FontSize="18"/><TextBlock Text="{Binding DisplayTimestamp}" Classes="hint"/><TextBlock Text="{Binding Status}" Classes="hint"/><Button Content="Connect" Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToRecentCommand}" CommandParameter="{Binding}" /></StackPanel></Border></DataTemplate>
+                </ItemsControl.ItemTemplate></ItemsControl>
             </StackPanel>
-
-            <!-- ======== File Transfer ======== -->
+        </TabItem>
+        <TabItem Header="Favorites"><StackPanel Margin="0,16,0,0" Spacing="12"><TextBlock Text="Save devices in the address book for quick access." Classes="hint" IsVisible="{Binding !DashboardFavoriteDevices.Count}" /><ItemsControl ItemsSource="{Binding DashboardFavoriteDevices}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="persistence:FavoriteDevice">
+    <Border Classes="device" Width="238" Margin="0,0,14,14" Padding="0" DoubleTapped="OnDeviceDoubleTapped">
+        <Border.ContextMenu><ContextMenu>
+            <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
+            <MenuItem Header="Browse files" Click="OnFavoriteFilesClick" />
+            <MenuItem Header="Copy address" Click="OnCopyDeviceClick" />
+            <MenuItem Header="Edit group, tags and notes…" Click="OnDeviceDetailsClick" />
+            <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+            <MenuItem Header="Wake device…" Click="OnFavoriteWake" />
+            <Separator/><MenuItem Header="Remove device" Click="OnFavoriteContextRemove" />
+        </ContextMenu></Border.ContextMenu>
+        <StackPanel>
+            <Border Background="{DynamicResource SubtleFillBrush}" Height="100">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"><Path Data="M2,2 L30,2 L30,21 L2,21 Z M16,21 L16,27 M8,27 L24,27" Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.4" Width="32" Height="30" Stretch="Uniform" /><TextBlock Text="{Binding Group}" FontSize="11" HorizontalAlignment="Center" /></StackPanel>
+            </Border>
+            <StackPanel Margin="14,12" Spacing="7">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding FormattedId}" FontSize="15" FontFamily="Consolas" />
+                <TextBlock Text="{Binding Tags}" Classes="hint" MaxLines="1" TextTrimming="CharacterEllipsis" />
+                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                    <Button Content="Connect" Classes="primary" Click="OnFavoriteContextConnect" Padding="12,5" MinHeight="32" />
+                    <Button Grid.Column="1" Content="•••" MinHeight="32" Padding="10,5" AutomationProperties.Name="Device actions">
+                        <Button.Flyout><MenuFlyout>
+                            <MenuItem Header="Browse files" Click="OnFavoriteFilesClick" />
+                            <MenuItem Header="Copy address" Click="OnCopyDeviceClick" />
+                            <MenuItem Header="Edit group, tags and notes…" Click="OnDeviceDetailsClick" />
+                            <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+                            <MenuItem Header="Wake device…" Click="OnFavoriteWake" />
+                            <Separator/><MenuItem Header="Remove device" Click="OnFavoriteContextRemove" />
+                        </MenuFlyout></Button.Flyout>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</DataTemplate></ItemsControl.ItemTemplate></ItemsControl></StackPanel></TabItem>
+        <TabItem Header="Discovered"><StackPanel Margin="0,16,0,0" Spacing="12">
+            <TextBlock Text="Devices on your local network · refreshed every 30 seconds" Classes="hint" />
+            <Button Content="Refresh discovery" Click="OnRefreshDiscoveryClick" HorizontalAlignment="Left" />
+            <TextBlock Text="No other devices found on this network." IsVisible="{Binding !DiscoveredDevices.Count}" Classes="hint" />
+            <ItemsControl ItemsSource="{Binding DiscoveredDevices}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="network:DiscoveredDevice"><Border Classes="device" Margin="0,0,0,10"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Description}" TextWrapping="Wrap" VerticalAlignment="Center"/><Button Grid.Column="1" Content="Connect" Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectDiscoveredCommand}" CommandParameter="{Binding}" /></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+        </StackPanel></TabItem>
+    </TabControl>
+</StackPanel><StackPanel Spacing="18" IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=MyDevices}">
+    <Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="6"><TextBlock Text="Address book" FontSize="26"/><TextBlock Text="{Binding DeviceCountLabel}" Classes="hint" /></StackPanel>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"><Button Content="Import" Click="OnImportDevicesClick"/><Button Content="Export" Click="OnExportDevicesClick"/></StackPanel></Grid>
+    <Grid ColumnDefinitions="*,175,175" ColumnSpacing="10"><TextBox Text="{Binding DeviceQuery}" PlaceholderText="Search name, address, tags or notes" AutomationProperties.Name="Search devices"/><ComboBox Grid.Column="1" ItemsSource="{Binding DeviceGroups}" SelectedItem="{Binding SelectedDeviceGroup}" HorizontalAlignment="Stretch" AutomationProperties.Name="Device group"/><ComboBox Grid.Column="2" ItemsSource="{Binding DeviceSortOptions}" SelectedItem="{Binding DeviceSort}" HorizontalAlignment="Stretch" AutomationProperties.Name="Sort devices"/></Grid>
+    <Expander Header="+ Add a device" HorizontalAlignment="Stretch">
+        <StackPanel Spacing="12" Margin="0,12"><Grid ColumnDefinitions="*,*" ColumnSpacing="12"><TextBox Text="{Binding NewFavoriteName}" PlaceholderText="Device name" AutomationProperties.Name="Device name"/><TextBox Grid.Column="1" Text="{Binding NewFavoriteIdInput}" PlaceholderText="IPCast address" AutomationProperties.Name="Device address"/></Grid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12"><TextBox Text="{Binding NewFavoriteGroup}" PlaceholderText="Group" AutomationProperties.Name="New device group"/><TextBox Grid.Column="1" Text="{Binding NewFavoriteTags}" PlaceholderText="Tags, separated by commas" AutomationProperties.Name="New device tags"/></Grid><Button Content="Save device" Command="{Binding AddFavoriteCommand}" Classes="primary"/></StackPanel>
+    </Expander>
+    <TextBlock Text="{Binding FavoritesMessage}" Classes="hint" />
+    <TextBlock Text="No devices match. Add a device or change your search." IsVisible="{Binding !HasFilteredDevices}" Classes="hint" />
+    <ItemsControl ItemsSource="{Binding FilteredDevices}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="persistence:FavoriteDevice">
+    <Border Classes="device" Width="238" Margin="0,0,14,14" Padding="0" DoubleTapped="OnDeviceDoubleTapped">
+        <Border.ContextMenu><ContextMenu>
+            <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
+            <MenuItem Header="Browse files" Click="OnFavoriteFilesClick" />
+            <MenuItem Header="Copy address" Click="OnCopyDeviceClick" />
+            <MenuItem Header="Edit group, tags and notes…" Click="OnDeviceDetailsClick" />
+            <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+            <MenuItem Header="Wake device…" Click="OnFavoriteWake" />
+            <Separator/><MenuItem Header="Remove device" Click="OnFavoriteContextRemove" />
+        </ContextMenu></Border.ContextMenu>
+        <StackPanel>
+            <Border Background="{DynamicResource SubtleFillBrush}" Height="100">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"><Path Data="M2,2 L30,2 L30,21 L2,21 Z M16,21 L16,27 M8,27 L24,27" Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.4" Width="32" Height="30" Stretch="Uniform" /><TextBlock Text="{Binding Group}" FontSize="11" HorizontalAlignment="Center" /></StackPanel>
+            </Border>
+            <StackPanel Margin="14,12" Spacing="7">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding FormattedId}" FontSize="15" FontFamily="Consolas" />
+                <TextBlock Text="{Binding Tags}" Classes="hint" MaxLines="1" TextTrimming="CharacterEllipsis" />
+                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                    <Button Content="Connect" Classes="primary" Click="OnFavoriteContextConnect" Padding="12,5" MinHeight="32" />
+                    <Button Grid.Column="1" Content="•••" MinHeight="32" Padding="10,5" AutomationProperties.Name="Device actions">
+                        <Button.Flyout><MenuFlyout>
+                            <MenuItem Header="Browse files" Click="OnFavoriteFilesClick" />
+                            <MenuItem Header="Copy address" Click="OnCopyDeviceClick" />
+                            <MenuItem Header="Edit group, tags and notes…" Click="OnDeviceDetailsClick" />
+                            <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
+                            <MenuItem Header="Wake device…" Click="OnFavoriteWake" />
+                            <Separator/><MenuItem Header="Remove device" Click="OnFavoriteContextRemove" />
+                        </MenuFlyout></Button.Flyout>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+</StackPanel>            <!-- ======== File Transfer ======== -->
             <StackPanel Spacing="16" MaxWidth="620" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=FileTransfer}">
                 <TextBlock Text="File Transfer" Classes="display" FontSize="26" />
@@ -217,6 +162,7 @@
                 <Border Classes="card">
                     <StackPanel Spacing="12">
                         <TextBlock Text="SEND A FILE" Classes="eyebrow" />
+                        <Button Content="Open two-panel file manager" Click="OnFileManagerClick" IsVisible="{Binding IsFileManagerAvailable}" />
                         <TextBox Text="{Binding SelectedFilePath}" PlaceholderText="Choose a file or enter its full path" />
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Button Content="Choose file…" Click="OnChooseFileClick" />
@@ -235,80 +181,13 @@
                 </Border>
             </StackPanel>
 
-            <!-- ======== My Devices ======== -->
-            <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                        IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=MyDevices}">
-                <TextBlock Text="My Devices" Classes="display" FontSize="26" />
-                <Border Classes="card">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="SAVE A DEVICE" Classes="eyebrow" />
-                        <TextBox PlaceholderText="Name (e.g. Office PC)" Text="{Binding NewFavoriteName}" />
-                        <TextBox PlaceholderText="IPCast ID" FontFamily="Consolas, monospace" Text="{Binding NewFavoriteIdInput}" />
-                        <Button Content="Save device" Classes="primary" HorizontalAlignment="Left"
-                                Command="{Binding AddFavoriteCommand}" />
-                        <TextBlock Text="{Binding FavoritesMessage}" Classes="hint"
-                                   IsVisible="{Binding FavoritesMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    </StackPanel>
-                </Border>
-
-                <TextBlock Text="SAVED DEVICES" Classes="eyebrow" />
-                <TextBlock Text="No saved devices yet." Classes="hint muted"
-                           IsVisible="{Binding !FavoriteDevices.Count}" />
-                <ItemsControl ItemsSource="{Binding FavoriteDevices}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="persistence:FavoriteDevice">
-                            <Border Classes="device" Margin="0,0,0,8">
-                                <Border.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
-                                        <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
-                                        <Separator />
-                                        <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
-                                    </ContextMenu>
-                                </Border.ContextMenu>
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20"
-                                            Background="{DynamicResource SubtleFillBrush}" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name[0]}" FontWeight="Bold" FontSize="16"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                                        <TextBlock Text="{Binding FormattedId}" FontSize="12"
-                                                   FontFamily="Consolas, monospace"
-                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
-                                            <Run Text="Last connected: " /><Run Text="{Binding LastConnectedDisplay}" />
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <Button Grid.Column="2" Content="Connect" Classes="primary" VerticalAlignment="Center"
-                                            Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).ConnectToFavoriteCommand}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Grid.Column="3" Content="⋯" Classes="ghost" VerticalAlignment="Center"
-                                            Padding="10,6" ToolTip.Tip="More actions" AutomationProperties.Name="More actions">
-                                        <Button.Flyout>
-                                            <MenuFlyout>
-                                                <MenuItem Header="Connect" Click="OnFavoriteContextConnect" />
-                                                <MenuItem Header="Rename…" Click="OnFavoriteContextRename" />
-                                                <Separator />
-                                                <MenuItem Header="Remove from favorites" Click="OnFavoriteContextRemove" />
-                                            </MenuFlyout>
-                                        </Button.Flyout>
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-
             <!-- ======== Recent Connections ======== -->
-            <StackPanel Spacing="14" MaxWidth="620" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+            <StackPanel Spacing="14" MaxWidth="1000" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=RecentConnections}">
-                <Grid ColumnDefinitions="*,Auto">
+                <Grid ColumnDefinitions="*,Auto,Auto">
                     <TextBlock Grid.Column="0" Text="Recent Connections" Classes="display" FontSize="26" VerticalAlignment="Center" />
-                    <Button Grid.Column="1" Content="Clear history" Classes="danger" VerticalAlignment="Center"
+                    <Button Grid.Column="1" Content="Export CSV" Click="OnExportHistoryClick" Margin="0,0,8,0" />
+                    <Button Grid.Column="2" Content="Clear history" Classes="danger" VerticalAlignment="Center"
                             Command="{Binding ClearHistoryCommand}" IsVisible="{Binding ConnectionHistory.Count}" />
                 </Grid>
                 <TextBlock Text="No connections yet." Classes="hint muted"
@@ -338,9 +217,10 @@
             </StackPanel>
 
             <!-- ======== Settings ======== -->
-            <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+            <StackPanel Spacing="16" MaxWidth="800" HorizontalAlignment="Stretch" VerticalAlignment="Top"
                         IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
                 <TextBlock Text="Settings" Classes="display" FontSize="26" />
+                <TextBlock Text="System audio is being shared with the connected device" IsVisible="{Binding IsSystemAudioShared}" Classes="hint" />
                 <TextBox PlaceholderText="Search settings…" Text="{Binding SettingsQuery}"
                          AutomationProperties.Name="Search settings" />
 
@@ -351,6 +231,10 @@
                 <Border Classes="card" IsVisible="{Binding ShowGeneralSettings}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="General" Classes="h2" />
+                        <TextBlock Text="Appearance" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" HorizontalAlignment="Stretch" AutomationProperties.Name="Appearance theme" />
+                        <CheckBox Content="Open address book when IPCast starts" IsChecked="{Binding OpenAddressBookOnStartup}" />
+                        <CheckBox Content="Keep my display awake while viewing a remote screen" IsChecked="{Binding PreventDisplaySleep}" />
                         <CheckBox Content="Start IPCast when I sign in to Windows"
                                   IsChecked="{Binding LaunchAtStartup}"
                                   IsEnabled="{Binding IsLaunchAtStartupSupported}" />
@@ -377,12 +261,21 @@
                         <TextBlock Text="IPCast relay is configured automatically. Open this version on both computers, enter the other computer's 9-digit ID and accept the connection there. No relay address or setup code is needed."
                                    Classes="hint" />
                         <TextBlock Text="{Binding RelayServerMessage}" Classes="hint" />
+                        <CheckBox Content="Retry after network interruption (up to 3 attempts)" IsChecked="{Binding AutomaticReconnect}" />
+                        <TextBlock Text="A new connection asks the remote owner for permission again." Classes="hint" />
+                        <TextBlock Text="Disconnect an idle viewing session after (minutes)" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding IdleTimeoutOptions}" SelectedItem="{Binding SessionIdleMinutes}" AutomationProperties.Name="Session idle timeout in minutes" />
+                        <TextBlock Text="0 keeps the session open. Applies to new outgoing screen sessions." Classes="hint" />
                     </StackPanel>
                 </Border>
 
                 <!-- Unattended Access -->
                 <Border Classes="card" IsVisible="{Binding ShowUnattendedSettings}">
                     <StackPanel Spacing="12">
+                        <TextBlock Text="Interactive access" Classes="h2" />
+                        <ComboBox ItemsSource="{Binding InteractiveAccessModes}" SelectedItem="{Binding InteractiveAccess}" HorizontalAlignment="Stretch" AutomationProperties.Name="Interactive access policy" />
+                        <TextBlock Text="Password access remains available when configured. Interactive requests always require your approval." Classes="hint" />
+                        <Separator />
                         <TextBlock Text="Unattended access" Classes="h2" />
                         <TextBlock Text="Let authorized devices connect to this computer using its ID and a password, bypassing the interactive Accept prompt."
                                    Classes="hint" />
@@ -408,6 +301,7 @@
                         <Button Content="Disable unattended access" Classes="danger" HorizontalAlignment="Left"
                                 Command="{Binding DisableUnattendedAccessCommand}"
                                 IsVisible="{Binding IsUnattendedAccessEnabled}" />
+                        <Button Content="Configure two-factor authentication…" Click="OnTwoFactorClick" IsVisible="{Binding IsUnattendedAccessEnabled}" HorizontalAlignment="Left" />
                         <TextBlock Text="{Binding UnattendedAccessMessage}" Classes="hint"
                                    IsVisible="{Binding UnattendedAccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
@@ -422,10 +316,34 @@
                     </StackPanel>
                 </Border>
 
+                <Border Classes="card" IsVisible="{Binding ShowRecordingSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Recording" Classes="h2" />
+                        <TextBox Text="{Binding RecordingDirectory}" PlaceholderText="Choose a recording folder" IsReadOnly="True" />
+                        <Button Content="Choose recording folder" Click="OnRecordingDirectoryClick" />
+                        <CheckBox Content="Automatically record new sessions when the host permits recording"
+                                  IsChecked="{Binding AutomaticRecording}" />
+                        <TextBlock Text="REC is shown on both devices. AVI recordings stop at a resolution change or 1.8 GB." Classes="hint" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="card" IsVisible="{Binding ShowDiagnosticsSettings}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{Binding VersionLabel}" Classes="h2" />
+                        <Button Content="Check for updates" Click="OnCheckUpdatesClick" />
+                        <CheckBox Content="Check for updates when IPCast starts" IsChecked="{Binding CheckUpdatesOnStartup}" />
+                        <TextBlock Text="{Binding UpdateStatus}" Classes="hint" />
+                        <TextBlock Text="Diagnostics contain audit events, device IDs, app and OS versions. They exclude passwords, clipboard contents and file contents." Classes="hint" />
+                        <WrapPanel>
+                            <Button Content="Open Logs Folder" Click="OnOpenLogsClick" Margin="0,0,8,8" />
+                            <Button Content="Export Diagnostics" Click="OnExportDiagnosticsClick" Margin="0,0,8,8" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
                 <!-- Security -->
                 <Border Classes="card" IsVisible="{Binding ShowSecuritySettings}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Security" Classes="h2" />
+                        <TextBlock Text="This release runs in the signed-in user session. Secure-desktop control (Ctrl+Alt+Del/UAC), privacy-screen blanking and virtual printer redirection require a trusted service or driver and are unavailable. Transfer a document with Files and print it locally instead." Classes="hint" />
                         <TextBlock Text="This device's TLS certificate fingerprint (SHA-256). Compare it out-of-band the first time a new device connects."
                                    Classes="hint" />
                         <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap"
@@ -461,7 +379,8 @@
                 </Border>
             </StackPanel>
 
-        </Grid>
-        </ScrollViewer>
-    </Grid>
-</Window>
+</Grid></ScrollViewer></Grid>
+    <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardBorderBrush}" Padding="20,9" Background="{DynamicResource SidebarBrush}">
+        <Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="3"><TextBlock Text="{Binding StatusMessage}" Classes="hint" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/><TextBlock Text="{Binding RelayServerMessage}" Classes="hint"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding VersionLabel}" Classes="hint" VerticalAlignment="Center" Margin="12,0,0,0"/></Grid>
+    </Border>
+</Grid></Window>

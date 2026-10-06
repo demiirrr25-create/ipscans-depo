@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="IPCast.Client.Views.SessionChatWindow" Title="IPCast — Session chat" Icon="/Assets/ipcast.ico"
+        Width="440" Height="520" MinWidth="340" MinHeight="360" ShowActivated="False"
+        Background="{DynamicResource AppBackgroundBrush}">
+    <Grid Margin="20" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="14">
+        <StackPanel Spacing="4">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Session chat" Classes="h2" VerticalAlignment="Center" /><Button Grid.Column="1" Content="Save transcript" Click="OnSaveTranscriptClick" /></Grid>
+            <TextBlock Name="PeerText" Classes="hint" />
+        </StackPanel>
+        <TextBox Name="Transcript" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Chat messages. Select text to copy." />
+        <TextBlock Name="StatusText" Grid.Row="2" Classes="hint" Text="Encrypted session • Messages stay in memory" />
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBox Name="MessageInput" PlaceholderText="Write a message" MaxLength="4000" KeyDown="OnInputKeyDown"
+                     AutomationProperties.Name="Chat message" />
+            <Button Name="SendButton" Grid.Column="1" Content="Send" Classes="primary" Click="OnSendClick" />
+        </Grid>
+    </Grid>
+</Window>

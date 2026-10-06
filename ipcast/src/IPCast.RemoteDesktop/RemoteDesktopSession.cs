@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using IPCast.Network;
 using IPCast.Network.Protocol;
 
@@ -20,10 +21,53 @@ public sealed class RemoteDesktopSession : IDisposable
     private CancellationTokenSource? _captureCts;
     private Task? _captureLoop;
     private int _disposed;
+    private readonly Stopwatch _duration = Stopwatch.StartNew();
+    private long _receivedFrames;
+    private long _receivedVideoBytes;
+    private StreamingProfile? _requestedStreamingProfile;
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _qualityRequests = new();
+
+    public async Task SetStreamingQualityAsync(string profile, CancellationToken ct = default)
+    {
+        if (!_session.IsInitiator || !_session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
+            throw new UnauthorizedAccessException("Only an authorized viewer can change stream quality.");
+        if (profile is not ("Auto" or "Balanced" or "Speed" or "Quality")) throw new ArgumentException("Unknown streaming profile.");
+        if (_qualityRequests.Count >= 4) throw new InvalidOperationException("Wait for the previous quality change.");
+        var id = Guid.NewGuid().ToString("N"); var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _qualityRequests[id] = completion;
+        try
+        {
+            await _loop.SendAsync(MessageType.StreamQualityRequest, new StreamQualityMessage(id, profile), ct);
+            if (!await completion.Task.WaitAsync(TimeSpan.FromSeconds(5), ct)) throw new IOException("The remote device declined the quality change.");
+        }
+        finally { _qualityRequests.TryRemove(id, out _); }
+    }
+    private int _frameWidth, _frameHeight;
+    public string RemoteDeviceId => _session.RemoteDeviceId.Formatted;
+    public string GrantedPermissionsDescription => _session.GrantedPermissions.ToString();
+    public ConnectionKind ConnectionKind => _session.ConnectionKind;
+    public string Encryption => _session.Stream is System.Net.Security.SslStream tls && tls.IsEncrypted
+        ? tls.SslProtocol.ToString() : "Not encrypted";
+    public TimeSpan Duration => _duration.Elapsed;
+    public long ReceivedFrames => Interlocked.Read(ref _receivedFrames);
+    public long ReceivedVideoBytes => Interlocked.Read(ref _receivedVideoBytes);
+    public (int Width, int Height) Resolution => (Volatile.Read(ref _frameWidth), Volatile.Read(ref _frameHeight));
+    public Task<TimeSpan> MeasureLatencyAsync(CancellationToken ct = default) => _loop.MeasureLatencyAsync(ct);
     private readonly Lock _inputLock = new();
     private readonly HashSet<int> _heldKeys = [];
     private readonly HashSet<int> _heldButtons = [];
     public event Action? Closed;
+    public event Action<bool>? RecordingStateChanged;
+    public bool CanRecord => _session.GrantedPermissions.HasFlag(ConnectionPermissions.Recording);
+    public Task NotifyRecordingAsync(bool recording) => CanRecord
+        ? _loop.SendAsync(MessageType.RecordingState, new RecordingStateMessage(recording))
+        : throw new UnauthorizedAccessException("Recording permission was not granted.");
+    
+    // Enhanced properties for multi-monitor and display modes
+    private MonitorInfo? _currentMonitor;
+    private MonitorInfo? _virtualMonitor;
+    private DisplayMode _displayMode = DisplayMode.AutoAdapt;
+    private readonly Dictionary<string, MonitorInfo> _availableMonitors = new Dictionary<string, MonitorInfo>();
 
     public RemoteDesktopSession(SessionMessageLoop loop, RemoteSession session)
     {
@@ -35,10 +79,31 @@ public sealed class RemoteDesktopSession : IDisposable
     /// <summary>Raised on the viewer side with each decoded frame from the peer.</summary>
     public event Action<CapturedFrame>? FrameReceived;
     public event Action<Exception>? Faulted;
+    
+    /// <summary>Raised when monitor information is updated</summary>
+    public event Action<MonitorInfo>? MonitorChanged;
+    public event Action<IReadOnlyList<MonitorInfo>>? AvailableMonitorsReceived;
+    /// <summary>Raised when display mode is changed</summary>
+    public event Action<DisplayMode>? DisplayModeChanged;
 
-    /// <summary>Starts capturing and streaming this device's screen to the peer, and applies input events the peer sends back.</summary>
-    public void StartSharing(IScreenCapturer capturer, IInputInjector injector, TimeSpan frameInterval, int jpegQuality = 70, int maxDimension = 0, int maxBytesPerSecond = 0)
+    /// <summary>
+    /// Starts capturing and streaming this device's screen to the peer, and applies input events the peer sends back.
+    /// </summary>
+    /// <param name="capturer">The screen capturer to use</param>
+    /// <param name="injector">The input injector to use</param>
+    /// <param name="frameInterval">Target time between frames</param>
+    /// <param name="jpegQuality">JPEG quality (0-100). Use negative values for adaptive quality.</param>
+    /// <param name="maxDimension">Maximum dimension for scaling (0 = no scaling)</param>
+    /// <param name="maxBytesPerSecond">Maximum bandwidth to use for video (0 = no limit)</param>
+    /// <param name="monitorInfo">Specific monitor to capture (null = primary monitor)</param>
+    /// <param name="displayMode">How to display the captured frame</param>
+    public void StartSharing(IScreenCapturer capturer, IInputInjector injector, TimeSpan frameInterval, int jpegQuality = 70, int maxDimension = 0, int maxBytesPerSecond = 0, MonitorInfo? monitorInfo = null, DisplayMode displayMode = DisplayMode.AutoAdapt)
     {
+        ObjectDisposedException.ThrowIf(_disposed != 0, this);
+        ArgumentNullException.ThrowIfNull(capturer);
+        ArgumentNullException.ThrowIfNull(injector);
+        if (frameInterval <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(frameInterval));
+        if (_captureLoop is not null) throw new InvalidOperationException("Screen sharing has already started.");
         if (!_session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen))
         {
             throw new InvalidOperationException("This session wasn't granted ViewScreen.");
@@ -46,9 +111,75 @@ public sealed class RemoteDesktopSession : IDisposable
 
         _sharingCapturer = capturer;
         _sharingInjector = injector;
+        if (capturer is IMonitorAwareCapturer monitorAware)
+        {
+            UpdateAvailableMonitors(monitorAware.GetAvailableMonitors());
+            if (monitorInfo is not null && !SetCurrentMonitor(monitorInfo.DeviceName))
+                throw new ArgumentException("The selected monitor is not available.", nameof(monitorInfo));
+        }
+        _displayMode = displayMode;
         _captureCts = new CancellationTokenSource();
         var token = _captureCts.Token;
         _captureLoop = Task.Run(() => RunCaptureLoopAsync(capturer, frameInterval, jpegQuality, maxDimension, maxBytesPerSecond, token));
+    }
+
+    /// <summary>
+    /// Gets the list of available monitors on the system.
+    /// </summary>
+    public IReadOnlyDictionary<string, MonitorInfo> AvailableMonitors
+    {
+        get { lock (_inputLock) return new Dictionary<string, MonitorInfo>(_availableMonitors); }
+    }
+
+    /// <summary>
+    /// Updates the list of available monitors. Call this when monitor configuration changes.
+    /// </summary>
+    public void UpdateAvailableMonitors(IEnumerable<MonitorInfo> monitors)
+    {
+        lock (_inputLock)
+        {
+            _availableMonitors.Clear();
+            foreach (var monitor in monitors)
+            {
+                _availableMonitors[monitor.DeviceName] = monitor;
+            }
+            
+            _virtualMonitor = _availableMonitors.GetValueOrDefault(MonitorInfo.VirtualDesktopDeviceName);
+            if (_currentMonitor is null || !_availableMonitors.ContainsKey(_currentMonitor.DeviceName))
+            {
+                _currentMonitor = _virtualMonitor ?? _availableMonitors.Values.FirstOrDefault();
+            }
+            if (_currentMonitor is not null) MonitorChanged?.Invoke(_currentMonitor);
+        }
+    }
+
+    /// <summary>
+    /// Sets the current monitor to capture.
+    /// </summary>
+    public bool SetCurrentMonitor(string deviceName)
+    {
+        lock (_inputLock)
+        {
+            if (_availableMonitors.TryGetValue(deviceName, out var monitor))
+            {
+                _currentMonitor = monitor;
+                MonitorChanged?.Invoke(monitor);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Sets the display mode for how frames should be presented.
+    /// </summary>
+    public void SetDisplayMode(DisplayMode mode)
+    {
+        lock (_inputLock)
+        {
+            _displayMode = mode;
+            DisplayModeChanged?.Invoke(_displayMode);
+        }
     }
 
     private async Task RunCaptureLoopAsync(IScreenCapturer capturer, TimeSpan frameInterval, int jpegQuality, int maxDimension, int maxBytesPerSecond, CancellationToken ct)
@@ -56,36 +187,67 @@ public sealed class RemoteDesktopSession : IDisposable
         try
         {
             CapturedFrame? previous = null;
+            string? previousMonitorName = null;
             var lastSent = Stopwatch.StartNew();
+            var adaptiveQuality = new AdaptiveQualityController();
+            var unchangedFrames = 0;
             while (!ct.IsCancellationRequested)
             {
+                if (Volatile.Read(ref _requestedStreamingProfile) is { } requested)
+                {
+                    frameInterval = TimeSpan.FromSeconds(1d / requested.FramesPerSecond);
+                    jpegQuality = requested.Quality; maxDimension = requested.MaxDimension; maxBytesPerSecond = requested.BytesPerSecond;
+                }
                 var started = Stopwatch.GetTimestamp();
                 var budget = frameInterval;
-                var frame = capturer.CaptureFrame();
-                // Do not encode/send an unchanged desktop repeatedly. A periodic full
-                // refresh retains compatibility with older clients and avoids drift.
-                if (previous is null || previous.Width != frame.Width || previous.Height != frame.Height ||
-                    !frame.Bgra.AsSpan().SequenceEqual(previous.Bgra) || lastSent.Elapsed >= TimeSpan.FromSeconds(1))
+                var (frame, monitorName) = await CaptureFrameAsync(capturer, ct).ConfigureAwait(false);
+                if (frame is null) throw new InvalidOperationException("Unable to capture the selected screen.");
+                lock (_inputLock)
                 {
-                    var jpeg = FrameCodec.EncodeJpeg(frame, jpegQuality, maxDimension);
-                    budget = StreamingProfile.FrameBudget(frameInterval, jpeg.Length, maxBytesPerSecond);
+                    if (monitorName != _currentMonitor?.DeviceName) continue;
+                }
+                if (monitorName != previousMonitorName) previous = null;
+                previousMonitorName = monitorName;
+                var unchanged = previous is not null && previous.Width == frame.Width &&
+                    previous.Height == frame.Height && frame.Bgra.AsSpan().SequenceEqual(previous.Bgra);
+                if (!unchanged || lastSent.Elapsed >= TimeSpan.FromSeconds(1))
+                {
+                    var quality = jpegQuality < 0 ? adaptiveQuality.Quality : jpegQuality;
+                    var jpeg = FrameCodec.EncodeJpeg(frame, quality, maxDimension);
                     var scale = maxDimension > 0 ? Math.Min(1d, (double)maxDimension / Math.Max(frame.Width, frame.Height)) : 1d;
-                    await _loop.SendAsync(MessageType.ScreenFrame, new ScreenFrameMessage(Math.Max(1, (int)(frame.Width * scale)), Math.Max(1, (int)(frame.Height * scale)), "jpeg", jpeg), ct).ConfigureAwait(false);
+                    var width = Math.Max(1, (int)(frame.Width * scale));
+                    var height = Math.Max(1, (int)(frame.Height * scale));
+                    var writeStarted = Stopwatch.GetTimestamp();
+                    await _loop.SendAsync(MessageType.ScreenFrame, new ScreenFrameMessage(width, height, "jpeg", jpeg), ct).ConfigureAwait(false);
+                    adaptiveQuality.ObserveWrite(Stopwatch.GetElapsedTime(writeStarted), frameInterval);
+                    budget = StreamingProfile.FrameBudget(frameInterval, jpeg.Length, maxBytesPerSecond);
                     lastSent.Restart();
+                    unchangedFrames = 0;
+                }
+                else
+                {
+                    unchangedFrames++;
+                    budget = TimeSpan.FromMilliseconds(Math.Max(frameInterval.TotalMilliseconds,
+                        Math.Min(100, frameInterval.TotalMilliseconds * (1 + unchangedFrames / 5))));
                 }
                 previous = frame;
-                // Encoding and transport time count toward the frame budget. Awaiting
-                // each write prevents an unbounded outgoing frame queue.
                 var remaining = budget - Stopwatch.GetElapsedTime(started);
                 if (remaining > TimeSpan.Zero) await Task.Delay(remaining, ct).ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException)
-        {
-            // Normal shutdown via Dispose.
-        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         catch (Exception ex) { Faulted?.Invoke(ex); }
         finally { capturer.Dispose(); }
+    }
+
+    private async Task<(CapturedFrame? Frame, string? MonitorName)> CaptureFrameAsync(IScreenCapturer capturer, CancellationToken ct)
+    {
+        MonitorInfo? selectedMonitor;
+        lock (_inputLock) selectedMonitor = _currentMonitor;
+        ct.ThrowIfCancellationRequested();
+        if (capturer is IMonitorAwareCapturer monitorAware && selectedMonitor is not null)
+            return (await monitorAware.CaptureFrameAsync(selectedMonitor, ct).ConfigureAwait(false), selectedMonitor.DeviceName);
+        return (capturer.CaptureFrame(), selectedMonitor?.DeviceName);
     }
 
     private void OnMessageReceived(MessageType type, JsonElement payload)
@@ -95,27 +257,57 @@ public sealed class RemoteDesktopSession : IDisposable
         if (_disposed != 0) return;
         switch (type)
         {
+            case MessageType.StreamQualityRequest when !_session.IsInitiator && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
+                var qualityRequest = payload.Deserialize<StreamQualityMessage>();
+                if (qualityRequest is null || qualityRequest.RequestId is null || qualityRequest.RequestId.Length > 64) throw new InvalidDataException("Invalid stream quality request.");
+                var valid = qualityRequest.Profile is "Auto" or "Balanced" or "Speed" or "Quality";
+                if (valid) Volatile.Write(ref _requestedStreamingProfile, StreamingProfile.FromName(qualityRequest.Profile));
+                _ = ReplyQualityAsync(qualityRequest with { Accepted = valid });
+                break;
+            case MessageType.StreamQualityResponse when _session.IsInitiator:
+                var qualityResponse = payload.Deserialize<StreamQualityMessage>();
+                if (qualityResponse?.RequestId is { } qualityId && _qualityRequests.TryGetValue(qualityId, out var pendingQuality)) pendingQuality.TrySetResult(qualityResponse.Accepted);
+                break;
+            case MessageType.TextInput when CanControlKeyboard():
+                var inputText = payload.Deserialize<ClipboardTextMessage>()?.Text;
+                if (inputText is null || inputText.Length > 4000) throw new InvalidDataException("Invalid text input.");
+                _sharingInjector!.SendString(inputText);
+                break;
+            case MessageType.RecordingState when !_session.IsInitiator && CanRecord:
+                var recording = payload.Deserialize<RecordingStateMessage>();
+                if (recording is not null) RecordingStateChanged?.Invoke(recording.IsRecording);
+                break;
             case MessageType.ScreenFrame when _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
                 var frameMessage = payload.Deserialize<ScreenFrameMessage>();
                 if (frameMessage is not null)
                 {
-                    FrameReceived?.Invoke(FrameCodec.DecodeJpeg(frameMessage.Data));
+                    if (!string.Equals(frameMessage.Codec, "jpeg", StringComparison.Ordinal))
+                        throw new InvalidDataException("Unsupported screen codec.");
+                    var frame = FrameCodec.DecodeJpeg(frameMessage.Data);
+                    Interlocked.Increment(ref _receivedFrames);
+                    Interlocked.Add(ref _receivedVideoBytes, frameMessage.Data.Length);
+                    Volatile.Write(ref _frameWidth, frame.Width);
+                    Volatile.Write(ref _frameHeight, frame.Height);
+                    FrameReceived?.Invoke(frame);
                 }
 
                 break;
 
             case MessageType.MouseMove when CanControlMouse():
                 var moveMessage = payload.Deserialize<MouseMoveMessage>();
-                if (moveMessage is not null)
+                if (moveMessage is not null &&
+                    double.IsFinite(moveMessage.NormalizedX) && double.IsFinite(moveMessage.NormalizedY) &&
+                    moveMessage.NormalizedX is >= 0 and <= 1 && moveMessage.NormalizedY is >= 0 and <= 1)
                 {
-                    _sharingInjector!.MoveMouse(moveMessage.NormalizedX, moveMessage.NormalizedY);
+                    var (x, y) = MapPointerToVirtualDesktop(moveMessage.NormalizedX, moveMessage.NormalizedY);
+                    _sharingInjector!.MoveMouse(x, y);
                 }
 
                 break;
 
             case MessageType.MouseButton when CanControlMouse():
                 var buttonMessage = payload.Deserialize<MouseButtonMessage>();
-                if (buttonMessage is not null)
+                if (buttonMessage is not null && buttonMessage.Button is >= 0 and <= 2)
                 {
                     _sharingInjector!.MouseButton(buttonMessage.Button, buttonMessage.IsDown);
                     if (buttonMessage.IsDown) _heldButtons.Add(buttonMessage.Button); else _heldButtons.Remove(buttonMessage.Button);
@@ -134,12 +326,61 @@ public sealed class RemoteDesktopSession : IDisposable
 
             case MessageType.KeyEvent when CanControlKeyboard():
                 var keyMessage = payload.Deserialize<KeyEventMessage>();
-                if (keyMessage is not null)
+                if (keyMessage is not null && keyMessage.VirtualKeyCode is >= 1 and <= 255)
                 {
                     _sharingInjector!.KeyEvent(keyMessage.VirtualKeyCode, keyMessage.IsDown);
                     if (keyMessage.IsDown) _heldKeys.Add(keyMessage.VirtualKeyCode); else _heldKeys.Remove(keyMessage.VirtualKeyCode);
                 }
 
+                break;
+                
+                // Handle monitor and display mode messages from viewer
+            case MessageType.MonitorRequest when _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
+                var monitorRequest = payload.Deserialize<MonitorRequestMessage>();
+                if (monitorRequest is not null && SetCurrentMonitor(monitorRequest.MonitorId))
+                {
+                    // Acknowledge the monitor change
+                    _ = _loop.SendAsync(MessageType.MonitorResponse, new MonitorResponseMessage(true, _currentMonitor!.DeviceName), default);
+                }
+                else
+                {
+                    // Failed to set monitor
+                    _ = _loop.SendAsync(MessageType.MonitorResponse, new MonitorResponseMessage(false, null), default);
+                }
+                break;
+
+            case MessageType.AvailableMonitorsRequest when !_session.IsInitiator &&
+                _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
+                var descriptors = _availableMonitors.Values.Select(m =>
+                    new MonitorDescriptor(m.DeviceName, m.FriendlyName, m.X, m.Y, m.Width, m.Height)).ToArray();
+                _ = _loop.SendAsync(MessageType.AvailableMonitorsResponse,
+                    new AvailableMonitorsResponseMessage(descriptors), default);
+                break;
+
+            case MessageType.AvailableMonitorsResponse when _session.IsInitiator:
+                var response = payload.Deserialize<AvailableMonitorsResponseMessage>();
+                if (response?.Monitors is { } available)
+                {
+                    var monitors = available.Where(m => m.Width > 0 && m.Height > 0)
+                        .Select(m => new MonitorInfo(m.DeviceName, m.FriendlyName, m.X, m.Y, m.Width, m.Height))
+                        .ToArray();
+                    AvailableMonitorsReceived?.Invoke(monitors);
+                }
+                break;
+                
+            case MessageType.DisplayModeRequest when _session.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen):
+                var displayModeRequest = payload.Deserialize<DisplayModeRequestMessage>();
+                if (displayModeRequest is not null)
+                {
+                    SetDisplayMode(displayModeRequest.Mode);
+                    // Acknowledge the display mode change
+                    _ = _loop.SendAsync(MessageType.DisplayModeResponse, new DisplayModeResponseMessage(true, _displayMode), default);
+                }
+                else
+                {
+                    // Failed to set display mode
+                    _ = _loop.SendAsync(MessageType.DisplayModeResponse, new DisplayModeResponseMessage(false, DisplayMode.Original), default);
+                }
                 break;
         }
         }
@@ -147,9 +388,30 @@ public sealed class RemoteDesktopSession : IDisposable
 
     private bool CanControlMouse() => _sharingInjector is not null && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlMouse);
 
+    private (double X, double Y) MapPointerToVirtualDesktop(double x, double y)
+    {
+        if (_currentMonitor is not { } selected || _virtualMonitor is not { } virtualDesktop ||
+            virtualDesktop.Width <= 0 || virtualDesktop.Height <= 0)
+            return (x, y);
+        return (
+            Math.Clamp((selected.X - virtualDesktop.X + x * selected.Width) / virtualDesktop.Width, 0, 1),
+            Math.Clamp((selected.Y - virtualDesktop.Y + y * selected.Height) / virtualDesktop.Height, 0, 1));
+    }
+
     private bool CanControlKeyboard() => _sharingInjector is not null && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard);
+    private async Task ReplyQualityAsync(StreamQualityMessage response)
+    {
+        try { await _loop.SendAsync(MessageType.StreamQualityResponse, response); }
+        catch (Exception ex) { if (_disposed == 0) Faulted?.Invoke(ex); }
+    }
+
+    public Task SendTextAsync(string text, CancellationToken ct = default) =>
+        _session.IsInitiator && text.Length <= 4000 && _session.GrantedPermissions.HasFlag(ConnectionPermissions.ControlKeyboard)
+            ? _loop.SendAsync(MessageType.TextInput, new ClipboardTextMessage(text), ct)
+            : throw new UnauthorizedAccessException("Keyboard control was not granted or the text is too long.");
 
     public Task SendMouseMoveAsync(double normalizedX, double normalizedY, CancellationToken ct = default) =>
+
         _loop.SendAsync(MessageType.MouseMove, new MouseMoveMessage(normalizedX, normalizedY), ct);
 
     public Task SendMouseButtonAsync(int button, bool isDown, CancellationToken ct = default) =>
@@ -160,6 +422,16 @@ public sealed class RemoteDesktopSession : IDisposable
 
     public Task SendKeyEventAsync(int virtualKeyCode, bool isDown, CancellationToken ct = default) =>
         _loop.SendAsync(MessageType.KeyEvent, new KeyEventMessage(virtualKeyCode, isDown), ct);
+
+    // New methods for monitor and display mode control
+    public Task RequestMonitorInfoAsync(CancellationToken ct = default) =>
+        _loop.SendAsync(MessageType.MonitorInfoRequest, new MonitorInfoRequestMessage(), ct);
+
+    public Task RequestAvailableMonitorsAsync(CancellationToken ct = default) =>
+        _loop.SendAsync(MessageType.AvailableMonitorsRequest, new AvailableMonitorsRequestMessage(), ct);
+
+    public Task SelectMonitorAsync(string deviceName, CancellationToken ct = default) =>
+        _loop.SendAsync(MessageType.MonitorRequest, new MonitorRequestMessage(deviceName), ct);
 
     public void Dispose()
     {
@@ -176,4 +448,72 @@ public sealed class RemoteDesktopSession : IDisposable
         }
         Closed?.Invoke();
     }
+}
+
+// Message definitions for monitor and display mode control
+public sealed record MonitorInfoRequestMessage();
+public sealed record MonitorInfoResponseMessage(string JsonMonitors);
+public sealed record AvailableMonitorsRequestMessage();
+public sealed record MonitorDescriptor(string DeviceName, string FriendlyName, int X, int Y, int Width, int Height);
+public sealed record AvailableMonitorsResponseMessage(MonitorDescriptor[] Monitors);
+public sealed record MonitorRequestMessage(string MonitorId);
+public sealed record MonitorResponseMessage(bool Success, string? MonitorId);
+public sealed record DisplayModeRequestMessage(DisplayMode Mode);
+public sealed record DisplayModeResponseMessage(bool Success, DisplayMode Mode);
+
+// Monitor information structure
+public sealed record MonitorInfo
+{
+    public const string VirtualDesktopDeviceName = "\\\\.\\DISPLAY_VIRTUAL";
+    
+    public MonitorInfo(string deviceName, string friendlyName, int x, int y, int width, int height)
+    {
+        DeviceName = deviceName;
+        FriendlyName = friendlyName;
+        Bounds = new Rectangle(x, y, width, height);
+    }
+    
+    public string DeviceName { get; }
+    public string FriendlyName { get; }
+    public Rectangle Bounds { get; }
+    public int Width => Bounds.Width;
+    public int Height => Bounds.Height;
+    public int X => Bounds.X;
+    public int Y => Bounds.Y;
+}
+
+// Simple rectangle structure
+public sealed record Rectangle
+{
+    public Rectangle(int x, int y, int width, int height)
+    {
+        X = x;
+        Y = y;
+        Width = width;
+        Height = height;
+    }
+    
+    public int X { get; }
+    public int Y { get; }
+    public int Width { get; }
+    public int Height { get; }
+    public int Right => X + Width;
+    public int Bottom => Y + Height;
+}
+
+// Interface for monitor-aware capturers
+public interface IMonitorAwareCapturer
+{
+    IEnumerable<MonitorInfo> GetAvailableMonitors();
+    Task<CapturedFrame?> CaptureFrameAsync(MonitorInfo monitor, CancellationToken ct);
+}
+
+// Display mode enumeration
+public enum DisplayMode
+{
+    Original,      // No scaling, actual size
+    Fit,           // Scale to fit within view while maintaining aspect ratio
+    Stretch,       // Stretch to fill view (may distort aspect ratio)
+    AutoAdapt,     // Automatically choose best fit
+    Fullscreen     // Fill entire view, possibly cropping
 }

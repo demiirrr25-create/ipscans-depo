@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Diagnostics;
 using IPCast.Network.Protocol;
 
 namespace IPCast.Network;
@@ -13,6 +14,10 @@ public sealed class SessionMessageLoop : IAsyncDisposable
     private readonly RemoteSession _session;
     private readonly CancellationTokenSource _cts = new();
     private Task? _loopTask;
+    private int _started;
+    private readonly SemaphoreSlim _probeGate = new(1, 1);
+    private TaskCompletionSource<long>? _probe;
+    private long _probeSequence;
 
     public SessionMessageLoop(RemoteSession session)
     {
@@ -35,7 +40,10 @@ public sealed class SessionMessageLoop : IAsyncDisposable
 
     public void Start()
     {
-        _loopTask = RunAsync(_cts.Token);
+        if (Interlocked.Exchange(ref _started, 1) != 0)
+            throw new InvalidOperationException("The session receive loop has already started.");
+        var token = _cts.Token;
+        _loopTask = Task.Run(() => RunAsync(token));
     }
 
     private async Task RunAsync(CancellationToken ct)
@@ -45,7 +53,7 @@ public sealed class SessionMessageLoop : IAsyncDisposable
             while (!ct.IsCancellationRequested)
             {
                 var (type, payload) = await MessageStream.ReadAsync(_session.Stream, ct).ConfigureAwait(false);
-                Dispatch(type, payload);
+                await DispatchAsync(type, payload, ct).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -56,10 +64,20 @@ public sealed class SessionMessageLoop : IAsyncDisposable
         finally { Ended?.Invoke(); }
     }
 
-    private void Dispatch(MessageType type, JsonElement payload)
+    private async Task DispatchAsync(MessageType type, JsonElement payload, CancellationToken ct)
     {
         switch (type)
         {
+            case MessageType.Ping:
+                var ping = payload.Deserialize<PingMessage>();
+                if (ping is not null)
+                    await SendAsync(MessageType.Pong, new PongMessage(ping.Sequence), ct).ConfigureAwait(false);
+                return;
+            case MessageType.Pong:
+                var pong = payload.Deserialize<PongMessage>();
+                if (pong?.Sequence == Interlocked.Read(ref _probeSequence))
+                    Volatile.Read(ref _probe)?.TrySetResult(Stopwatch.GetTimestamp());
+                return;
             case MessageType.ClipboardText:
                 if (_session.GrantedPermissions.HasFlag(ConnectionPermissions.Clipboard))
                 {
@@ -83,6 +101,28 @@ public sealed class SessionMessageLoop : IAsyncDisposable
     /// <summary>Sends any message type on this session's stream - used by features layered on top (file transfer, etc.).</summary>
     public Task SendAsync(MessageType type, object payload, CancellationToken ct = default) =>
         MessageStream.WriteAsync(_session.Stream, type, payload, ct);
+
+    public async Task<TimeSpan> MeasureLatencyAsync(CancellationToken ct = default)
+    {
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts.Token);
+        lifetime.CancelAfter(TimeSpan.FromSeconds(5));
+        await _probeGate.WaitAsync(lifetime.Token).ConfigureAwait(false);
+        try
+        {
+            var probe = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Interlocked.Increment(ref _probeSequence);
+            Volatile.Write(ref _probe, probe);
+            var started = Stopwatch.GetTimestamp();
+            await SendAsync(MessageType.Ping, new PingMessage(Interlocked.Read(ref _probeSequence), DateTimeOffset.UtcNow), lifetime.Token).ConfigureAwait(false);
+            var received = await probe.Task.WaitAsync(lifetime.Token).ConfigureAwait(false);
+            return Stopwatch.GetElapsedTime(started, received);
+        }
+        finally
+        {
+            Volatile.Write(ref _probe, null);
+            _probeGate.Release();
+        }
+    }
 
     public Task SendClipboardTextAsync(string text, CancellationToken ct = default) =>
         _session.GrantedPermissions.HasFlag(ConnectionPermissions.Clipboard)

@@ -49,6 +49,25 @@ public class SessionMessageLoopTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task LatencyProbeRoundTripsAndCanBeRepeated()
+    {
+        var (initiator, acceptor) = await EstablishSessionAsync(ConnectionPermissions.ViewScreen);
+        using (initiator) using (acceptor)
+        {
+            await using var sender = new SessionMessageLoop(initiator);
+            await using var receiver = new SessionMessageLoop(acceptor);
+            sender.Start(); receiver.Start();
+            Assert.Equal(ConnectionKind.Direct, initiator.ConnectionKind);
+            for (var i = 0; i < 2; i++)
+            {
+                var latency = await sender.MeasureLatencyAsync();
+                Assert.True(latency > TimeSpan.Zero);
+                Assert.True(latency < TimeSpan.FromSeconds(5));
+            }
+        }
+    }
+
+    [Fact]
     public async Task ClipboardText_IsIgnored_WhenPermissionNotGranted()
     {
         var (initiator, acceptor) = await EstablishSessionAsync(ConnectionPermissions.ViewScreen);

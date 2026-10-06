@@ -98,7 +98,7 @@ public sealed class IPCastService : IAsyncDisposable
         ConnectionPermissions requestedPermissions,
         string? password = null,
         TimeSpan? discoveryTimeout = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, string? oneTimeCode = null)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(45));
@@ -110,13 +110,13 @@ public sealed class IPCastService : IAsyncDisposable
 
         if (DeviceId.TryParse(targetInput, out var targetId))
         {
-            return await ConnectAsync(targetId, requestedPermissions, password, discoveryTimeout, ct).ConfigureAwait(false);
+            return await ConnectAsync(targetId, requestedPermissions, password, discoveryTimeout, ct, oneTimeCode).ConfigureAwait(false);
         }
 
         if (TryParseEndpoint(targetInput, 0, out var directEndpoint) && directEndpoint is not null)
         {
             var dummyTargetId = _localDeviceId; // direct IP connection
-            return await _connector.ConnectAsync(directEndpoint, dummyTargetId, requestedPermissions, password, ct).ConfigureAwait(false);
+            return await _connector.ConnectAsync(directEndpoint, dummyTargetId, requestedPermissions, password, ct, oneTimeCode).ConfigureAwait(false);
         }
 
         return ConnectResult.Failed("Enter a valid 9-digit IPCast ID or IP:port address (e.g. 192.168.1.50:9876).");
@@ -127,7 +127,7 @@ public sealed class IPCastService : IAsyncDisposable
         ConnectionPermissions requestedPermissions,
         string? password = null,
         TimeSpan? discoveryTimeout = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, string? oneTimeCode = null)
     {
         if (targetId == _localDeviceId)
         {
@@ -140,7 +140,9 @@ public sealed class IPCastService : IAsyncDisposable
 
         if (endpoint is not null)
         {
-            return await _connector.ConnectAsync(endpoint, targetId, requestedPermissions, password, ct).ConfigureAwait(false);
+            var direct = await _connector.ConnectAsync(endpoint, targetId, requestedPermissions, password, ct, oneTimeCode).ConfigureAwait(false);
+            if (direct.Success || direct.Rejected || ct.IsCancellationRequested || RelayServerAddress is null)
+                return direct;
         }
 
         if (RelayServerAddress is { } relayAddress)
@@ -151,7 +153,7 @@ public sealed class IPCastService : IAsyncDisposable
                     relayAddress, _localDeviceId.Raw, targetId.Raw, ct).ConfigureAwait(false);
 
                 return await _connector.ConnectAsync(
-                    relayStream, targetId, requestedPermissions, password, ct: ct).ConfigureAwait(false);
+                    relayStream, targetId, requestedPermissions, password, ct: ct, connectionKind: ConnectionKind.Relay, oneTimeCode: oneTimeCode).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

@@ -3,12 +3,13 @@
         x:Class="IPCast.Client.Views.IncomingConnectionWindow"
         Title="IPCast — Incoming connection"
         Icon="/Assets/ipcast.ico"
-        Width="440"
+        Width="600"
         SizeToContent="Height"
+        MaxHeight="800"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppBackgroundBrush}">
-    <StackPanel Margin="28" Spacing="18">
+    <ScrollViewer><StackPanel Margin="28" Spacing="18">
 
         <StackPanel Spacing="4">
             <TextBlock Text="INCOMING CONNECTION" Classes="eyebrow" />
@@ -25,14 +26,21 @@
         </Border>
 
         <StackPanel Spacing="8">
-            <TextBlock Text="ALLOW ONLY WHAT YOU WANT" Classes="eyebrow" />
+            <TextBlock Text="Session permissions" Classes="h2" />
+            <ComboBox Name="ProfileSelector" SelectionChanged="OnProfileChanged" AutomationProperties.Name="Permission profile" />
+            <WrapPanel ItemWidth="260" Orientation="Horizontal">
             <CheckBox Name="ViewScreenCheck" Content="View screen" />
             <CheckBox Name="ControlMouseCheck" Content="Control mouse" />
             <CheckBox Name="ControlKeyboardCheck" Content="Control keyboard" />
             <CheckBox Name="ClipboardCheck" Content="Clipboard sync" />
             <CheckBox Name="FileTransferCheck" Content="File transfer" />
-            <CheckBox Name="SystemInfoCheck" Content="System information" IsVisible="False" IsEnabled="False" />
-            <CheckBox Name="RemoteRestartCheck" Content="Remote restart" IsVisible="False" IsEnabled="False" />
+            <CheckBox Name="ChatCheck" Content="Session chat" />
+            <CheckBox Name="RecordingCheck" Content="Session recording" />
+            <CheckBox Name="TunnelCheck" Content="TCP tunnels" ToolTip.Tip="Each route requires approval" />
+            <CheckBox Name="AudioCheck" Content="System audio" />
+            <CheckBox Name="SystemInfoCheck" Content="System information" />
+            <CheckBox Name="RemoteRestartCheck" Content="Remote restart" ToolTip.Tip="Requires separate confirmation" />
+            </WrapPanel>
         </StackPanel>
 
         <Border Background="{DynamicResource SubtleFillBrush}" CornerRadius="8" Padding="12">
@@ -46,5 +54,5 @@
             <Button Grid.Column="1" Content="Accept" Classes="primary" HorizontalAlignment="Stretch"
                     MinHeight="46" Click="OnAcceptClick" />
         </Grid>
-    </StackPanel>
+    </StackPanel></ScrollViewer>
 </Window>

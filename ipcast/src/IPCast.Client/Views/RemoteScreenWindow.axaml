@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:IPCast.Client.Views"
         x:Class="IPCast.Client.Views.RemoteScreenWindow"
         Title="IPCast — Remote Screen"
         Icon="/Assets/ipcast.ico"
@@ -10,28 +11,78 @@
             <!-- Collapsible session toolbar (spec §5) -->
             <Border Name="Toolbar" Grid.Row="0" Background="{DynamicResource SidebarBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Ellipse Width="8" Height="8" Fill="{DynamicResource StatusOnlineBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="IPCast" FontWeight="Bold" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" TextWrapping="NoWrap"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="Live view — click or type here to control (only if the remote device granted it)." />
-                    <Button Grid.Column="2" Classes="toolbar" Content="Hide bar" Click="OnToggleToolbarClick"
-                            ToolTip.Tip="Hide the toolbar for a cleaner view" AutomationProperties.Name="Hide toolbar" />
-                    <Button Grid.Column="3" Name="FullScreenButton" Classes="toolbar" Content="Full screen"
-                            Click="OnToggleFullScreenClick" ToolTip.Tip="Toggle full screen (F11)"
-                            AutomationProperties.Name="Toggle full screen" />
-                    <Button Grid.Column="4" Classes="danger" Content="Disconnect" MinHeight="34" Padding="14,6"
-                            Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
-                </Grid>
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Name="SessionAddressText" Text="Remote session" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Name="SessionStatusText" Text="TLS encrypted" Classes="hint" VerticalAlignment="Center" />
+                    </Grid>
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Classes="toolbar" Content="Information" Click="OnInformationClick" AutomationProperties.Name="Connection information" />
+                        <Button Name="FilesButton" IsVisible="False" Classes="toolbar" Content="Files" Click="OnFilesClick" />
+                        <ComboBox Name="MonitorSelector" MinWidth="130" IsVisible="False" SelectionChanged="OnMonitorSelectionChanged" AutomationProperties.Name="Remote monitor" />
+                        <Button Classes="toolbar" Content="Display ▾"><Button.Flyout><Flyout><StackPanel Spacing="10" Width="230">
+                            <TextBlock Text="Display" Classes="h2" />
+                            <TextBlock Text="Stream quality" Classes="hint" />
+                            <ComboBox Name="QualitySelector" HorizontalAlignment="Stretch" SelectionChanged="OnQualitySelectionChanged" AutomationProperties.Name="Live stream quality" />
+                            <TextBlock Text="Image scaling" Classes="hint" />
+                            <ComboBox Name="DisplaySelector" HorizontalAlignment="Stretch" SelectionChanged="OnDisplaySelectionChanged" AutomationProperties.Name="Display scaling" />
+                            <Button Name="FullScreenButton" Classes="toolbar" Content="Full screen" Click="OnToggleFullScreenClick" ToolTip.Tip="F11" />
+                            <Button Classes="toolbar" Content="Save screenshot…" Click="OnScreenshotClick" />
+                            <Button Classes="toolbar" Content="Hide toolbar" Click="OnToggleToolbarClick" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Name="ChatButton" IsVisible="False" Classes="toolbar" Content="Chat" Click="OnChatClick" AutomationProperties.Name="Open session chat" />
+                        <Button Classes="toolbar" Content="Actions ▾"><Button.Flyout><Flyout><StackPanel Spacing="6" Width="230">
+                            <TextBlock Text="Session actions" Classes="h2" />
+                            <Button Name="DeviceInfoButton" IsVisible="False" Content="System information" Click="OnDeviceInfoClick" />
+                            <Button Name="TunnelsButton" IsVisible="False" Content="TCP tunnels" Click="OnTunnelsClick" />
+                            <Button Name="RestartButton" IsVisible="False" Content="Request remote restart…" Click="OnRestartClick" />
+                            <Button Content="Save screenshot…" Click="OnScreenshotClick" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Classes="toolbar" Content="Keyboard ▾"><Button.Flyout><Flyout><StackPanel Spacing="6" Width="230">
+                            <Button Content="Send Alt+Tab" Click="OnAltTabClick" />
+                            <Button Content="Send Windows key" Click="OnWindowsKeyClick" />
+                            <Button Content="Type text…" Click="OnTypeTextClick" />
+                            <Button Name="InputToggleButton" Content="Pause remote control" Click="OnToggleInputClick" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Classes="toolbar" Content="Permissions" Click="OnPermissionsClick" />
+                        <Button Classes="toolbar" Content="Audio ▾"><Button.Flyout><Flyout><StackPanel Spacing="8" Width="220">
+                            <Button Name="AudioButton" IsVisible="False" Content="Audio off · enable" Click="OnAudioClick" />
+                            <Slider Name="AudioVolume" IsVisible="False" Minimum="0" Maximum="100" Value="100" AutomationProperties.Name="Remote audio volume" />
+                            <TextBlock Text="Audio requires the remote owner's permission." Classes="hint" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Name="RecordButton" IsVisible="False" Classes="toolbar" Content="Record" Click="OnRecordClick" />
+                        <Button Classes="toolbar" Content="Draw ▾"><Button.Flyout><Flyout><StackPanel Spacing="8" Width="230">
+                            <Button Name="AnnotationButton" Content="Annotate" Click="OnAnnotateClick" />
+                            <ComboBox Name="AnnotationTool" IsVisible="False" SelectionChanged="OnAnnotationToolChanged" />
+                            <TextBox Name="AnnotationText" IsVisible="False" Text="Note" MaxLength="200" TextChanged="OnAnnotationTextChanged" />
+                            <Button Name="ClearAnnotationsButton" IsVisible="False" Content="Clear annotations" Click="OnClearAnnotationsClick" />
+                            <TextBlock Text="Drawings appear in your viewer. Input is paused while drawing." Classes="hint" />
+                        </StackPanel></Flyout></Button.Flyout></Button>
+                        <Button Classes="primary" Content="Disconnect" MinHeight="34" Padding="12,6" Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
+                    </WrapPanel>
+                </StackPanel>
             </Border>
 
-            <Image Name="ScreenImage" Grid.Row="1" Stretch="Uniform" Focusable="True"
-                   AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
+            <ScrollViewer Name="ScreenViewport" Grid.Row="1"
+                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"
+                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Image Name="ScreenImage" Stretch="Uniform" StretchDirection="DownOnly" Focusable="True"
+                       AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
+            </ScrollViewer>
+            <views:AnnotationSurface Name="Annotations" Grid.Row="1" IsVisible="False" />
         </Grid>
+
+        <Border Name="InformationPanel" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="16,70,16,16" MaxWidth="340" Padding="20"
+                Background="{DynamicResource CardBrushElevated}" BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1" CornerRadius="8">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Connection information" Classes="h2" />
+                <TextBlock Name="InformationText" TextWrapping="Wrap" />
+                <TextBlock Text="Video rate measures received JPEG data. Transport overhead and file transfers are excluded." Classes="hint" />
+                <Button Content="Close" Click="OnInformationClick" />
+            </StackPanel>
+        </Border>
 
         <!-- Floating affordance to restore a hidden toolbar -->
         <Button Name="ShowToolbarButton" Classes="toolbar" Content="▾ Show toolbar"

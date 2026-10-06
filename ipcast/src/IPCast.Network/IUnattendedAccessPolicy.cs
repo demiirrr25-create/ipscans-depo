@@ -9,4 +9,5 @@ public interface IUnattendedAccessPolicy
 {
     /// <summary>Returns the permissions to grant if <paramref name="password"/> is correct and unattended access is enabled; otherwise null.</summary>
     ConnectionPermissions? TryAuthenticate(string password);
+    ConnectionPermissions? TryAuthenticate(string password, string? oneTimeCode) => TryAuthenticate(password);
 }

@@ -53,11 +53,27 @@ public class UnattendedAccessTests : IAsyncDisposable
 
         var connector = new IPCastConnector(_clientId);
         var result = await connector.ConnectAsync(
-            new IPEndPoint(IPAddress.Loopback, host.Port), _hostId, ConnectionPermissions.None,
+            new IPEndPoint(IPAddress.Loopback, host.Port), _hostId, ConnectionPermissions.ViewScreen,
             password: "correct horse battery staple");
 
         Assert.True(result.Success, result.Error);
         Assert.True(result.Session!.GrantedPermissions.HasFlag(ConnectionPermissions.ViewScreen));
+        result.Session.Dispose();
+    }
+
+    [Fact]
+    public async Task ConnectAsync_UnattendedAccessGrantsOnlyRequestedPermissions()
+    {
+        var store = new UnattendedAccessStore(_tempDirectory);
+        store.Enable("correct horse battery staple");
+        var host = CreateHostWithPolicy(store);
+
+        var result = await new IPCastConnector(_clientId).ConnectAsync(
+            new IPEndPoint(IPAddress.Loopback, host.Port), _hostId,
+            ConnectionPermissions.ViewScreen, password: "correct horse battery staple");
+
+        Assert.True(result.Success, result.Error);
+        Assert.Equal(ConnectionPermissions.ViewScreen, result.Session!.GrantedPermissions);
         result.Session.Dispose();
     }
 
