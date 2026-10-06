@@ -42,8 +42,10 @@ class MainWindow(QWidget):
         super().__init__()
         self._worker: ScanWorker | None = None
         self._vendor_worker: VendorUpdateWorker | None = None
+        self._close_pending = False
         self._cancelled = False
         self._previous: list[Device] = []
+        self._history_error: str | None = None
         self._adapters: list[network_utils.NetworkAdapter] = []
         self._monitor = QTimer(self)
         self._monitor.setInterval(120_000)
@@ -56,6 +58,7 @@ class MainWindow(QWidget):
             self._previous = history.load_latest()
         except (OSError, ValueError, TypeError) as exc:
             logging.getLogger(__name__).warning("Cannot read scan history: %s", exc)
+            self._history_error = str(exc)
         self.lang = lang
 
         self.setObjectName("AppRoot")
@@ -70,6 +73,8 @@ class MainWindow(QWidget):
         self._build_ui()
         self._wire_signals()
         self._prefill_detected_network()
+        if self._history_error:
+            self.status_label.setText(f"Scan history unavailable: {self._history_error}")
 
         self._fade_in = QPropertyAnimation(self, b"windowOpacity")
         self._fade_in.setDuration(320)
@@ -79,6 +84,24 @@ class MainWindow(QWidget):
     def showEvent(self, event) -> None:  # noqa: N802 (Qt override)
         super().showEvent(event)
         self._fade_in.start()
+
+    def closeEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        scanning = self._worker is not None and self._worker.isRunning()
+        updating = self._vendor_worker is not None and self._vendor_worker.isRunning()
+        if scanning or updating:
+            self._close_pending = True
+            self._monitor.stop()
+            if scanning:
+                self._cancelled = True
+                self._worker.stop()
+            self.status_label.setText("Finishing background work before closing…")
+            event.ignore()
+            return
+        super().closeEvent(event)
+
+    def _close_when_idle(self) -> None:
+        if self._close_pending:
+            self.close()
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self) -> None:
@@ -343,6 +366,7 @@ class MainWindow(QWidget):
         self._vendor_worker = VendorUpdateWorker(self)
         self._vendor_worker.completed.connect(self._vendor_update_done)
         self._vendor_worker.failed.connect(self._vendor_update_failed)
+        self._vendor_worker.finished.connect(self._close_when_idle)
         self._vendor_worker.start()
 
     def _vendor_update_done(self) -> None:
@@ -395,6 +419,7 @@ class MainWindow(QWidget):
         self._worker.phase_changed.connect(self._on_phase_changed)
         self._worker.finished_ok.connect(self._on_scan_finished)
         self._worker.failed.connect(self._on_scan_failed)
+        self._worker.finished.connect(self._close_when_idle)
         self._worker.start()
 
     def _stop_scan(self) -> None:

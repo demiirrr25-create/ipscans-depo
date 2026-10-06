@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import ipaddress
 import json
 import os
 from dataclasses import asdict, dataclass
@@ -46,8 +47,18 @@ def load_latest(path: Path = HISTORY_PATH) -> list[Device]:
     if not isinstance(data, dict) or not isinstance(data.get("devices"), list):
         raise ValueError("Invalid scan history format")
     valid_keys = set(Device.__dataclass_fields__)
-    return [Device(**{key: value for key, value in entry.items() if key in valid_keys})
-            for entry in data["devices"] if isinstance(entry, dict) and isinstance(entry.get("ip"), str)]
+    devices: list[Device] = []
+    for entry in data["devices"]:
+        if not isinstance(entry, dict) or not isinstance(entry.get("ip"), str):
+            raise ValueError("Invalid device in scan history")
+        try:
+            ipaddress.IPv4Address(entry["ip"])
+        except ipaddress.AddressValueError as exc:
+            raise ValueError("Invalid IP in scan history") from exc
+        if not isinstance(entry.get("open_ports", []), list) or not isinstance(entry.get("sources", []), list):
+            raise ValueError("Invalid ports or sources in scan history")
+        devices.append(Device(**{key: value for key, value in entry.items() if key in valid_keys}))
+    return devices
 
 
 def save_snapshot(devices: list[Device], path: Path = HISTORY_PATH) -> None:

@@ -49,34 +49,44 @@ class NetworkAdapter:
     speed_mbps: int | None
 
 
-def _windows_network_details() -> tuple[dict[str, str], tuple[str, ...]]:
+def _windows_network_details() -> tuple[dict[str, str], dict[str, tuple[str, ...]]]:
     if not _IS_WINDOWS:
-        return {}, ()
+        return {}, {}
     try:
         result = subprocess.run(
             ["ipconfig", "/all"], capture_output=True, text=True, timeout=5, **_NO_WINDOW_KWARGS
         )
     except (OSError, subprocess.TimeoutExpired):
-        return {}, ()
+        return {}, {}
     gateways: dict[str, str] = {}
-    dns: set[str] = set()
+    dns_by_interface: dict[str, set[str]] = {}
     current: str | None = None
+    reading_dns = False
     for line in result.stdout.splitlines():
         if line and not line.startswith(" ") and line.endswith(":"):
             current = line.split("adapter ", 1)[-1].rstrip(":")
+            reading_dns = False
         elif "Default Gateway" in line and ":" in line and current:
+            reading_dns = False
             value = line.split(":", 1)[1].strip()
             try:
                 gateways[current] = str(ipaddress.IPv4Address(value))
             except ipaddress.AddressValueError:
                 continue
-        elif "DNS Servers" in line and ":" in line:
-            value = line.split(":", 1)[1].strip()
-            try:
-                dns.add(str(ipaddress.IPv4Address(value)))
-            except ipaddress.AddressValueError:
+        elif current and ("DNS Servers" in line or reading_dns):
+            if "DNS Servers" in line and ":" in line:
+                value = line.split(":", 1)[1].strip()
+                reading_dns = True
+            elif ":" not in line and line.strip():
+                value = line.strip()
+            else:
+                reading_dns = False
                 continue
-    return gateways, tuple(sorted(dns))
+            try:
+                dns_by_interface.setdefault(current, set()).add(str(ipaddress.IPv4Address(value)))
+            except ipaddress.AddressValueError:
+                reading_dns = False
+    return gateways, {name: tuple(sorted(values)) for name, values in dns_by_interface.items()}
 
 
 def _windows_gateway_by_ip() -> dict[str, str]:
@@ -102,7 +112,7 @@ def _windows_gateway_by_ip() -> dict[str, str]:
 
 
 def detect_adapters() -> list[NetworkAdapter]:
-    gateways, dns = _windows_network_details()
+    gateways, dns_by_interface = _windows_network_details()
     gateway_by_ip = _windows_gateway_by_ip()
     adapters: list[NetworkAdapter] = []
     stats = psutil.net_if_stats()
@@ -122,7 +132,8 @@ def detect_adapters() -> list[NetworkAdapter]:
             if ip.is_loopback or ip.is_link_local:
                 continue
             adapters.append(NetworkAdapter(name, str(ip), address.netmask, str(network),
-                                           gateway_by_ip.get(str(ip)) or gateways.get(name), dns,
+                                           gateway_by_ip.get(str(ip)) or gateways.get(name),
+                                           dns_by_interface.get(name, ()),
                                            mac, status.speed if status.speed > 0 else None))
     return adapters
 
