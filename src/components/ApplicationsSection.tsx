@@ -71,7 +71,7 @@ export function ApplicationsSection({ locale, dict }: { locale: Locale; dict: Di
             <div className="flex items-start justify-between">
               {"icon" in item && item.icon ? <Image src={item.icon} alt="" width={64} height={64} className="rounded-2xl" /> :
                 <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/20 font-mono text-2xl">⌁</span>}
-              <span className="font-mono text-xs text-neutral-500">{String(index + 1).padStart(2, "0")} / {item.category.toUpperCase()}</span>
+              <span className="font-mono text-xs text-neutral-400">{String(index + 1).padStart(2, "0")} / {item.category.toUpperCase()}</span>
             </div>
             <h3 className="mt-8 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-white">{item.name}</h3>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-neutral-300">{item.description}</p>

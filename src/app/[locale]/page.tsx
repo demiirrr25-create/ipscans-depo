@@ -3,7 +3,6 @@ import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { LiveIp } from "@/components/LiveIp";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
-import { Reveal } from "@/components/Reveal";
 import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
@@ -28,23 +27,16 @@ export default async function HomePage({
         <div className="hero-grid pointer-events-none absolute inset-0" />
         <div className="relative mx-auto grid max-w-7xl gap-12 px-4 pb-14 pt-16 sm:pt-24 lg:min-h-[720px] lg:grid-cols-[1.4fr_0.6fr] lg:items-end lg:pb-24">
           <div>
-          <Reveal>
             <p className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.2em] text-neutral-300"><span className="h-2 w-2 rounded-full bg-white" /> {platform.eyebrow} <span aria-hidden="true" className="text-neutral-500">/ 001</span></p>
-          </Reveal>
 
-          <Reveal index={1}>
             <h1 className="mt-10 max-w-5xl font-[family-name:var(--font-display)] text-[clamp(3.6rem,9vw,9rem)] font-semibold leading-[0.94] tracking-[-0.075em]">
               {platform.title}
             </h1>
-          </Reveal>
 
-          <Reveal index={2}>
             <p className="mt-10 max-w-xl text-lg leading-relaxed text-neutral-300">
               {platform.subtitle}
             </p>
-          </Reveal>
 
-          <Reveal index={3}>
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link
                 href={`/${locale}/ip-scanner`}
@@ -56,7 +48,6 @@ export default async function HomePage({
                 {platform.explore} <span aria-hidden="true" className="ms-5">↓</span>
               </Link>
             </div>
-          </Reveal>
           </div>
           <div className="hero-terminal self-end border border-white/20 bg-black/80 p-5 backdrop-blur-md sm:p-7">
             <div className="flex items-center justify-between border-b border-white/15 pb-4 font-mono text-[11px] uppercase tracking-widest text-neutral-400"><span>IPSCANS / LIVE</span><span className="text-white">● ONLINE</span></div>
@@ -84,7 +75,7 @@ export default async function HomePage({
             { href: toolPath("speedTest", locale), title: dict.speedTest.title, description: dict.speedTest.subtitle },
           ].map((item) => (
             <Link key={item.href} href={item.href} className="group flex min-h-56 flex-col bg-black p-7 transition-colors hover:bg-neutral-900">
-              <span aria-hidden="true" className="font-mono text-xs text-neutral-500">◈ / {String(["IP Scanner", dict.ipLookup.title, dict.speedTest.title].indexOf(item.title) + 1).padStart(2, "0")}</span>
+              <span aria-hidden="true" className="font-mono text-xs text-neutral-400">◈ / {String(["IP Scanner", dict.ipLookup.title, dict.speedTest.title].indexOf(item.title) + 1).padStart(2, "0")}</span>
               <h3 className="mt-auto pt-8 text-xl font-semibold">{item.title} <span aria-hidden="true" className="float-end text-neutral-400 transition-transform group-hover:translate-x-1 group-hover:text-white">↗</span></h3>
               <p className="mt-2 text-sm text-neutral-300">{item.description}</p>
             </Link>
@@ -119,8 +110,7 @@ export default async function HomePage({
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-24">
-        <Reveal>
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-14 text-center">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-14 text-center">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_50%_0%,rgba(255,255,255,0.08),transparent)]" />
             <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold sm:text-4xl">
               {dict.cta.title}
@@ -134,8 +124,7 @@ export default async function HomePage({
             >
               {dict.cta.button}
             </Link>
-          </div>
-        </Reveal>
+        </div>
       </section>
     </div>
   );
