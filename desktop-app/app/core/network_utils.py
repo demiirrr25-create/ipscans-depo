@@ -7,7 +7,7 @@ import re
 import socket
 import subprocess
 from dataclasses import dataclass
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Callable
 
 import psutil
@@ -289,46 +289,48 @@ def ping_sweep(targets: list[str], max_workers: int = 64,
                should_stop: Callable[[], bool] | None = None,
                on_probe: Callable[[int, int], None] | None = None) -> list[str]:
     """Bounded active ICMP/TCP sweep; stale ARP entries alone do not prove liveness."""
-    alive: list[str] = []
     candidates = list(targets)
-    if not candidates:
-        return alive
-    completed = 0
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {pool.submit(_ping_once, ip): ip for ip in candidates}
-        for future in as_completed(futures):
-            if should_stop and should_stop():
-                for remaining in futures:
-                    remaining.cancel()
-                pool.shutdown(wait=False, cancel_futures=True)
-                return alive
-            ip = futures[future]
-            try:
-                if future.result():
-                    alive.append(ip)
-            except Exception:
-                pass
-            completed += 1
-            if on_probe:
-                on_probe(completed, len(candidates))
+    alive = _probe_targets(candidates, _ping_once, max_workers, should_stop, on_probe)
     if should_stop and should_stop():
         return alive
     alive_set = set(alive)
     remaining = [ip for ip in candidates if ip not in alive_set]
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {pool.submit(_tcp_alive, ip): ip for ip in remaining}
-        for future in as_completed(futures):
-            if should_stop and should_stop():
-                for pending in futures:
-                    pending.cancel()
-                pool.shutdown(wait=False, cancel_futures=True)
-                break
-            try:
-                if future.result():
-                    alive_set.add(futures[future])
-            except OSError:
-                continue
+    alive_set.update(_probe_targets(remaining, _tcp_alive, max_workers, should_stop))
     return sorted(alive_set, key=lambda ip: int(ipaddress.IPv4Address(ip)))
+
+
+def _probe_targets(targets: list[str], probe: Callable[[str], bool], max_workers: int,
+                   should_stop: Callable[[], bool] | None,
+                   on_probe: Callable[[int, int], None] | None = None) -> list[str]:
+    if not targets:
+        return []
+    found: list[str] = []
+    completed = 0
+    iterator = iter(targets)
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        pending = {pool.submit(probe, ip): ip for ip in
+                   [next(iterator, None) for _ in range(min(len(targets), max_workers * 2))]
+                   if ip is not None}
+        while pending:
+            if should_stop and should_stop():
+                for future in pending:
+                    future.cancel()
+                break
+            finished, _ = wait(pending, timeout=0.1, return_when=FIRST_COMPLETED)
+            for future in finished:
+                ip = pending.pop(future)
+                completed += 1
+                if on_probe:
+                    on_probe(completed, len(targets))
+                try:
+                    if future.result():
+                        found.append(ip)
+                except Exception:
+                    pass
+                next_ip = next(iterator, None)
+                if next_ip is not None and not (should_stop and should_stop()):
+                    pending[pool.submit(probe, next_ip)] = next_ip
+    return found
 
 
 def resolve_hostname(ip: str) -> str | None:

@@ -2,7 +2,7 @@
 
 PyQt6 tabanlı, ipscans.com ile aynı siyah/beyaz/gri temaya sahip masaüstü ağ
 keşif uygulaması. Aktif IPv4 arabirimini ve gerçek ağ maskesini algılar;
-ICMP ve TCP yanıtlarını, UPnP ve ONVIF ilanlarını birleştirir. MAC/üretici
+ICMP ve TCP yanıtlarını, mDNS, UPnP ve ONVIF ilanlarını birleştirir. MAC/üretici
 bilgisi ve cihaz türü yalnızca erişilebilen sinyallerden türetilir. SNMPv2c
 yalnızca kullanıcı topluluk bilgisini açıkça girerse çalışır; varsayılan
 `public` denemesi yoktur. Yönetilen cihazların LLDP komşuları yetkili SNMP
@@ -53,6 +53,7 @@ app/
     protocols/
       snmp_probe.py       Kullanıcı izniyle SNMPv2c / LLDP bilgileri
       onvif_probe.py      Yerel ağda ONVIF WS-Discovery ilanları
+      mdns_probe.py       Yerel mDNS servis ilanları
       wmi_probe.py        Windows WMI (Win32_OperatingSystem, Win32_BIOS)
       upnp_probe.py       SSDP/UPnP keşfi
       nmap_probe.py       python-nmap ile servis/OS parmak izi

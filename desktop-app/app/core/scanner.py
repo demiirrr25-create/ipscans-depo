@@ -13,7 +13,7 @@ from typing import Callable
 from app.core import network_utils, vendor_lookup
 from app.core.models import Device
 from app.core import intelligence
-from app.core.protocols import nmap_probe, onvif_probe, snmp_probe, upnp_probe, wmi_probe
+from app.core.protocols import mdns_probe, nmap_probe, onvif_probe, snmp_probe, upnp_probe, wmi_probe
 
 _LOG = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class ScanOptions:
 
 
 def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict,
-                 onvif_by_ip: dict, options: ScanOptions) -> Device:
+                 onvif_by_ip: dict, mdns_by_ip: dict, options: ScanOptions) -> Device:
     mac = mac_by_ip.get(ip)
     device = Device(ip=ip, mac=mac)
     device.sources.append("Network response")
@@ -79,6 +79,11 @@ def _enrich_host(ip: str, mac_by_ip: dict[str, str], upnp_by_ip: dict,
         device.onvif_model = onvif_result.model
         device.upnp_friendly_name = device.upnp_friendly_name or onvif_result.name
         device.sources.append("ONVIF")
+    mdns_result = mdns_by_ip.get(ip)
+    if mdns_result:
+        device.hostname = device.hostname or mdns_result.hostname
+        device.mdns_services = sorted(mdns_result.service_types)
+        device.sources.append("mDNS")
 
     if options.enable_wmi:
         try:
@@ -143,12 +148,17 @@ def run_scan(
     onvif_by_ip = onvif_probe.discover(should_stop=should_stop)
     if should_stop and should_stop():
         return
+    if on_phase:
+        on_phase("discovering services")
+    mdns_by_ip = mdns_probe.discover(should_stop=should_stop)
+    if should_stop and should_stop():
+        return
     try:
         upnp_by_ip = upnp_probe.discover() if options.enable_upnp else {}
     except Exception:
         _LOG.exception("UPnP discovery failed")
         upnp_by_ip = {}
-    alive_hosts = sorted(set(alive_hosts) | (set(targets) & (set(onvif_by_ip) | set(upnp_by_ip))))
+    alive_hosts = sorted(set(alive_hosts) | (set(targets) & (set(onvif_by_ip) | set(upnp_by_ip) | set(mdns_by_ip))))
     if not alive_hosts:
         return
     mac_by_ip = network_utils.resolve_macs(alive_hosts)
@@ -159,7 +169,7 @@ def run_scan(
         on_phase("enriching")
     with ThreadPoolExecutor(max_workers=options.max_workers) as pool:
         futures = {
-            pool.submit(_enrich_host, ip, mac_by_ip, upnp_by_ip, onvif_by_ip, options): ip
+            pool.submit(_enrich_host, ip, mac_by_ip, upnp_by_ip, onvif_by_ip, mdns_by_ip, options): ip
             for ip in alive_hosts
         }
         for future in as_completed(futures):

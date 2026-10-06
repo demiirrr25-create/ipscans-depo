@@ -34,12 +34,14 @@ from app.ui.spinner import Spinner
 from app.ui.styles import DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput, section_label
 from app.workers.scan_worker import ScanWorker
+from app.workers.vendor_update_worker import VendorUpdateWorker
 
 
 class MainWindow(QWidget):
     def __init__(self, lang: str = DEFAULT_LANGUAGE) -> None:
         super().__init__()
         self._worker: ScanWorker | None = None
+        self._vendor_worker: VendorUpdateWorker | None = None
         self._cancelled = False
         self._previous: list[Device] = []
         self._adapters: list[network_utils.NetworkAdapter] = []
@@ -177,6 +179,9 @@ class MainWindow(QWidget):
         extra.addWidget(self.monitor_toggle)
         self.export_btn = QPushButton("Export CSV / JSON")
         extra.addWidget(self.export_btn)
+        self.update_vendor_btn = QPushButton("Update OUI database")
+        self.update_vendor_btn.setToolTip("Download the current IEEE OUI vendor list")
+        extra.addWidget(self.update_vendor_btn)
         layout.addLayout(extra)
 
         return card
@@ -245,6 +250,7 @@ class MainWindow(QWidget):
         self.adapter_select.currentIndexChanged.connect(self._adapter_changed)
         self.monitor_toggle.toggled.connect(self._toggle_monitor)
         self.export_btn.clicked.connect(self._export)
+        self.update_vendor_btn.clicked.connect(self._update_vendors)
 
     def _prefill_detected_network(self) -> None:
         """Auto-detects the machine's local /24 and writes a ready-to-scan
@@ -328,6 +334,25 @@ class MainWindow(QWidget):
             QMessageBox.critical(self, "Export failed", str(exc))
         else:
             self.status_label.setText(f"Saved {len(self.model._devices)} devices to {target}")
+
+    def _update_vendors(self) -> None:
+        if self._vendor_worker and self._vendor_worker.isRunning():
+            return
+        self.update_vendor_btn.setEnabled(False)
+        self.status_label.setText("Updating IEEE OUI database…")
+        self._vendor_worker = VendorUpdateWorker(self)
+        self._vendor_worker.completed.connect(self._vendor_update_done)
+        self._vendor_worker.failed.connect(self._vendor_update_failed)
+        self._vendor_worker.start()
+
+    def _vendor_update_done(self) -> None:
+        self.update_vendor_btn.setEnabled(True)
+        self.status_label.setText("IEEE OUI database updated. Rescan to refresh vendor names.")
+
+    def _vendor_update_failed(self, error: str) -> None:
+        self.update_vendor_btn.setEnabled(True)
+        QMessageBox.warning(self, "Vendor update failed", error)
+        self.status_label.setText("Vendor update failed; offline database remains available.")
 
     # ------------------------------------------------------------- actions
     def _start_scan(self) -> None:

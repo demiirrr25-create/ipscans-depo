@@ -591,7 +591,7 @@ const existingDictionaries = {
     meta: {
       title: "IPScans — Netzwerktools und Fernzugriff",
       description:
-        "IPCast Fernzugriff, IP Scanner, Netzwerkanalyse und IP-Verwaltung auf einer Plattform.",
+        "IPCast Fernzugriff, IPscans+ Netzwerkerkennung, Netzwerkanalyse und IP-Verwaltung auf einer Plattform.",
     },
     nav: {
       home: "Startseite",
@@ -884,7 +884,7 @@ const existingDictionaries = {
     meta: {
       title: "IPScans — Outils réseau et accès à distance",
       description:
-        "Découvrez IPCast, IP Scanner, l'analyse réseau et la gestion des IP sur une seule plateforme.",
+        "Découvrez IPCast, IPscans+ pour l'analyse réseau et la gestion des IP sur une seule plateforme.",
     },
     nav: {
       home: "Accueil",
@@ -1177,7 +1177,7 @@ const existingDictionaries = {
     meta: {
       title: "IPScans — Herramientas de red y acceso remoto",
       description:
-        "Descubre IPCast, IP Scanner, análisis de red y gestión de IP en una sola plataforma.",
+        "Descubre IPCast, IPscans+ para el análisis de red y la gestión de IP en una sola plataforma.",
     },
     nav: {
       home: "Inicio",
@@ -1762,7 +1762,7 @@ function makeHomeTranslation(t: HomeTranslation): BaseDictionary {
   return {
     ...en,
     a11y: { skipToContent: t.skip },
-    meta: { title: metaTitle, description: metaDescription },
+    meta: { title: metaTitle, description: metaDescription.replaceAll("IP Scanner", "IPscans+") },
     nav: Object.fromEntries(
       (Object.keys(en.nav) as (keyof typeof en.nav)[]).map((key, i) => [key, nav[i]]),
     ) as BaseDictionary["nav"],

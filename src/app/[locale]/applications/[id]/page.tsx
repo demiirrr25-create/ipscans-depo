@@ -52,12 +52,12 @@ export default async function ApplicationDetail({ params }: Params) {
   const copy = platformCopy[locale];
   const install = installCopy[locale];
   const scannerFeatures = locale === "tr"
-    ? ["ICMP ve TCP yanıtlarıyla aktif IPv4 keşfi; ARP, MAC ve çevrimdışı üretici eşleştirmesi",
+    ? ["ICMP/TCP ve mDNS/UPnP ile IPv4 keşfi; ARP, MAC ve çevrimdışı üretici eşleştirmesi",
        "ONVIF kamera keşfi ve cihazın ilan ettiği model/üretici bilgileri",
        "Yalnızca sizin sağladığınız SNMP bilgileriyle LLDP komşuluk kanıtı",
        "IP TREE: doğrulanmış LLDP bağlantıları, çıkarımsal ağ geçidi yolları ve eşlenmemiş cihazlar",
        "İki dakikalık isteğe bağlı izleme; tarama geçmişi, değişiklik karşılaştırması, CSV/JSON"]
-    : ["Active IPv4 discovery via ICMP and TCP; ARP, MAC and offline vendor lookup",
+    : ["IPv4 discovery via ICMP/TCP and mDNS/UPnP; ARP, MAC and offline vendor lookup",
        "ONVIF camera discovery with self-advertised manufacturer and model",
        "LLDP neighbor evidence only with the SNMP credentials you provide",
        "IP TREE: verified LLDP links, inferred gateway routes and unmapped devices",

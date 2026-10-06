@@ -23,3 +23,6 @@ def classify(device: Device) -> None:
             return
     if device.wmi_os_caption:
         device.device_type, device.confidence = "Computer", 90
+        return
+    if "_printer._tcp.local." in device.mdns_services:
+        device.device_type, device.confidence = "Printer", 70

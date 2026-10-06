@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import ipaddress
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QEvent, QPoint, Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QHBoxLayout, QLabel, QLineEdit, QPushButton, QSplitter,
@@ -21,6 +21,7 @@ class IpTree(QWidget):
         self.devices: list[Device] = []
         self.gateway: str | None = None
         self._font_size = 12
+        self._pan_from: QPoint | None = None
         layout = QVBoxLayout(self)
         heading = QLabel("IP TREE  /  Logical paths only · Physical connections require verified neighbor evidence")
         heading.setWordWrap(True)
@@ -44,6 +45,7 @@ class IpTree(QWidget):
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["Device / evidence"])
         self.tree.itemSelectionChanged.connect(self._inspect)
+        self.tree.viewport().installEventFilter(self)
         self.inspector = QTextEdit()
         self.inspector.setReadOnly(True)
         self.inspector.setPlaceholderText("Select a device to inspect its recorded evidence.")
@@ -52,6 +54,28 @@ class IpTree(QWidget):
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 2)
         layout.addWidget(splitter, stretch=1)
+
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802 (Qt override)
+        if watched is self.tree.viewport():
+            if event.type() == QEvent.Type.Wheel and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+                self._zoom(1 if event.angleDelta().y() > 0 else -1)
+                return True
+            if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.MiddleButton:
+                self._pan_from = event.position().toPoint()
+                self.tree.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
+                return True
+            if event.type() == QEvent.Type.MouseMove and self._pan_from is not None:
+                position = event.position().toPoint()
+                delta = position - self._pan_from
+                self.tree.horizontalScrollBar().setValue(self.tree.horizontalScrollBar().value() - delta.x())
+                self.tree.verticalScrollBar().setValue(self.tree.verticalScrollBar().value() - delta.y())
+                self._pan_from = position
+                return True
+            if event.type() == QEvent.Type.MouseButtonRelease and self._pan_from is not None:
+                self._pan_from = None
+                self.tree.viewport().unsetCursor()
+                return True
+        return super().eventFilter(watched, event)
 
     def refresh(self, devices: list[Device], gateway: str | None = None) -> None:
         self.devices = list(devices)
@@ -141,6 +165,7 @@ class IpTree(QWidget):
             "Operating system": device.wmi_os_caption or device.nmap_os_guess,
             "Open ports": ", ".join(map(str, device.open_ports)) or None,
             "Discovery": ", ".join(device.sources), "First seen": device.first_seen,
+            "mDNS services": ", ".join(device.mdns_services),
             "Last seen": device.last_seen,
             "Connection path": f"{link.parent} → {ip} (Inferred; {link.evidence})" if link else None,
         }

@@ -34,6 +34,7 @@ class Device:
     last_seen: str | None = None
     latency_ms: float | None = None
     lldp_neighbor_macs: list[str] = field(default_factory=list)
+    mdns_services: list[str] = field(default_factory=list)
 
     @property
     def preferred_url_scheme(self) -> str:

@@ -10,6 +10,7 @@ pysnmp>=7.1,<8
 
 # UPnP/SSDP device discovery
 upnpclient>=1.0
+zeroconf>=0.130
 
 # Nmap-backed service/OS fingerprinting (requires the `nmap` binary on PATH)
 python-nmap>=0.7.1

@@ -25,7 +25,7 @@ class OnvifResult:
 
 def _scope(scopes: tuple[str, ...], key: str) -> str | None:
     prefix = f"onvif://www.onvif.org/{key}/"
-    return next((unquote(scope[len(prefix):]).replace("+", " ") for scope in scopes
+    return next((unquote(scope[len(prefix):]) for scope in scopes
                  if scope.startswith(prefix) and scope[len(prefix):]), None)
 
 
