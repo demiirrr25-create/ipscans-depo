@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { isLocale } from "@/i18n/config";
-import { getDictionary } from "@/i18n/dictionaries";
+import { getDictionary, getPublicDictionary } from "@/i18n/dictionaries";
 import { LiveIp } from "@/components/LiveIp";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { ApplicationsSection } from "@/components/ApplicationsSection";
@@ -83,7 +83,7 @@ export default async function HomePage({
         </div>
       </section>
 
-      <ApplicationsSection locale={locale} dict={dict} />
+      <ApplicationsSection locale={locale} dict={getPublicDictionary(locale)} />
 
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-16 md:grid-cols-2">
         <div className="min-w-0 break-words rounded-2xl border border-white/10 bg-white/[0.03] p-8">

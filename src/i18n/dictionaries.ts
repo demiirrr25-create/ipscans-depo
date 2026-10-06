@@ -1470,6 +1470,7 @@ type Widen<T> = T extends string ? string : T extends readonly (infer U)[]
 
 type BaseDictionary = Widen<typeof existingDictionaries.en>;
 export type Dictionary = BaseDictionary & { experience: ReturnType<typeof makeExperience> };
+export type PublicDictionary = Omit<Dictionary, "pro" | "nav"> & { nav: Omit<Dictionary["nav"], "pro"> };
 type NewLocale = Exclude<Locale, keyof typeof existingDictionaries>;
 
 // The ordered phrases below cover every homepage label, feature card, navigation
@@ -1844,4 +1845,12 @@ const dictionaries: Record<Locale, Dictionary> = {
 
 export function getDictionary(locale: Locale): Dictionary {
   return dictionaries[locale];
+}
+
+export function getPublicDictionary(locale: Locale): PublicDictionary {
+  const { pro: _legacyProduct, ...publicDictionary } = getDictionary(locale);
+  void _legacyProduct;
+  const { pro: _legacyNavigation, ...nav } = publicDictionary.nav;
+  void _legacyNavigation;
+  return { ...publicDictionary, nav };
 }

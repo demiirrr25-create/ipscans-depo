@@ -1,5 +1,5 @@
 import { isLocale } from "@/i18n/config";
-import { getDictionary } from "@/i18n/dictionaries";
+import { getPublicDictionary } from "@/i18n/dictionaries";
 import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { notFound } from "next/navigation";
 import { platformCopy } from "@/content/applications";
@@ -23,7 +23,7 @@ export default async function DownloadPage({ params }: { params: Promise<{ local
   if (!isLocale(locale)) notFound();
   return (
     <div className="pt-10">
-      <ApplicationsSection locale={locale} dict={getDictionary(locale)} />
+      <ApplicationsSection locale={locale} dict={getPublicDictionary(locale)} />
     </div>
   );
 }

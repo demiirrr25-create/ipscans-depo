@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
-import type { Dictionary } from "@/i18n/dictionaries";
+import type { PublicDictionary } from "@/i18n/dictionaries";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 import { applications, platformCopy } from "@/content/applications";
 
-export function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionary }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobile, setMobile] = useState(false);

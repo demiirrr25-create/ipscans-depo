@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import { isLocale, locales, ogLocales, localeTags } from "@/i18n/config";
-import { getDictionary } from "@/i18n/dictionaries";
+import { getDictionary, getPublicDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AuroraBackground } from "@/components/AuroraBackground";
@@ -176,7 +176,7 @@ export default async function LocaleLayout({
           {dict.a11y.skipToContent}
         </a>
         <AuroraBackground />
-        <Header locale={locale} dict={dict} />
+        <Header locale={locale} dict={getPublicDictionary(locale)} />
         <main id="main-content" tabIndex={-1} className="min-w-0 flex-1">
           {children}
         </main>
@@ -184,7 +184,7 @@ export default async function LocaleLayout({
         <Analytics />
         <SpeedInsights />
         <GoogleTag />
-        <CookieConsent dict={dict} />
+        <CookieConsent dict={dict.cookieConsent} />
       </body>
     </html>
   );

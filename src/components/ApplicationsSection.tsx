@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import type { Locale } from "@/i18n/config";
-import type { Dictionary } from "@/i18n/dictionaries";
+import type { PublicDictionary } from "@/i18n/dictionaries";
 import { applications, platformCopy } from "@/content/applications";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 
-export function ApplicationsSection({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+export function ApplicationsSection({ locale, dict }: { locale: Locale; dict: PublicDictionary }) {
   const copy = platformCopy[locale];
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");

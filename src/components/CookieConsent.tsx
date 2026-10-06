@@ -51,7 +51,7 @@ function getConsentSnapshot(): ConsentSnapshot {
  * this banner is how a visitor grants it, which Google requires before
  * personalized ads/analytics run for EEA/UK/CH visitors.
  */
-export function CookieConsent({ dict }: { dict: Dictionary }) {
+export function CookieConsent({ dict }: { dict: Dictionary["cookieConsent"] }) {
   const consent = useSyncExternalStore(
     subscribeToConsent,
     getConsentSnapshot,
@@ -75,19 +75,19 @@ export function CookieConsent({ dict }: { dict: Dictionary }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/95 px-4 py-4 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
-        <p className="text-sm text-neutral-300">{dict.cookieConsent.message}</p>
+        <p className="text-sm text-neutral-300">{dict.message}</p>
         <div className="flex shrink-0 gap-2">
           <button
             onClick={() => choose("denied")}
             className="btn-ghost rounded-lg px-4 py-2 text-sm font-semibold"
           >
-            {dict.cookieConsent.reject}
+            {dict.reject}
           </button>
           <button
             onClick={() => choose("granted")}
             className="btn-primary rounded-lg px-4 py-2 text-sm font-semibold"
           >
-            {dict.cookieConsent.accept}
+            {dict.accept}
           </button>
         </div>
       </div>
