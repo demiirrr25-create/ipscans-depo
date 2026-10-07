@@ -49,6 +49,9 @@ jobs:
 
       - name: Smoke test EXE
         run: |
+          $expected = [regex]::Match((Get-Content version_info.txt -Raw), "StringStruct\(u'FileVersion', u'([^']+)'\)").Groups[1].Value
+          $actual = (Get-Item ".\dist\IPscans-Plus.exe").VersionInfo.FileVersion
+          if (-not $expected -or $actual -ne $expected) { throw "Packaged version $actual does not match source $expected" }
           $process = Start-Process -FilePath ".\dist\IPscans-Plus.exe" -ArgumentList "--selftest" -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Packaged IPscans+ selftest failed" }
 

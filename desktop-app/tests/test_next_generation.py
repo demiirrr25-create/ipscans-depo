@@ -135,6 +135,16 @@ class NextGenerationTests(unittest.TestCase):
         self.assertIn("No response", window.model.device_at(0).reachability)
         self.assertEqual(window.model.device_at(0).last_seen, "2026-10-07")
         window.close()
+
+    def test_table_enter_shortcut_does_not_intercept_graph_keyboard_actions(self):
+        from PyQt6.QtGui import QShortcut
+        from app.ui.main_window import MainWindow
+        with patch.object(MainWindow, "_refresh_adapters"), patch.object(MainWindow, "_load_history"):
+            window = MainWindow()
+        enter, = [shortcut for shortcut in window.table.findChildren(QShortcut)
+                  if shortcut.key().toString() == "Return"]
+        self.assertEqual(enter.context(), Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        window.close()
     def test_real_loopback_tcp_discovery_survives_icmp_failure_and_records_connect_time(self):
         found = {}
         callback_threads = []

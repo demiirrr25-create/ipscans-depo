@@ -279,6 +279,7 @@ _WORKSPACE = {
         "scan": "Scan", "network_map": "Network Map", "history": "History", "settings": "Settings",
         "navigation": "Workspace navigation", "workspace_view": "Workspace view",
         "view_table": "Device table", "view_graph": "Node graph",
+        "columns": "Columns",
         "range_start": "Start IP", "range_end": "End IP (optional)",
         "current_adapter": "Current adapter", "refresh_adapters": "Refresh adapters",
         "detecting_adapter": "Detecting active network adapters...", "no_adapter": "No active IPv4 adapter. Enter an authorized range manually.",
@@ -316,6 +317,7 @@ _WORKSPACE = {
         "scan": "Tarama", "network_map": "Ağ Haritası", "history": "Geçmiş", "settings": "Ayarlar",
         "navigation": "Çalışma alanı menüsü", "workspace_view": "Çalışma alanı görünümü",
         "view_table": "Cihaz tablosu", "view_graph": "Düğüm haritası", "range_start": "Başlangıç IP", "range_end": "Bitiş IP (isteğe bağlı)",
+        "columns": "Sütunlar",
         "current_adapter": "Aktif adaptör", "refresh_adapters": "Adaptörleri yenile",
         "detecting_adapter": "Aktif ağ adaptörleri algılanıyor...", "no_adapter": "Aktif IPv4 adaptörü yok. Yetkili olduğunuz aralığı elle girin.",
         "range_hint": "Başlangıç ve bitiş IP girin. Yapıştırılan tek IP ve sınırlı CIDR de desteklenir.",
@@ -375,6 +377,8 @@ for _language, _labels in _WORKSPACE_LABELS.items():
 for _language, _device_label in (("de", "Gerät"), ("fr", "Appareil"), ("es", "Dispositivo"), ("ru", "Устройство")):
     _WORKSPACE[_language]["col_device"] = _device_label
     _WORKSPACE[_language]["app_subtitle"] = "Discover / Identify / Map / Manage"
+for _language, _columns in (("de", "Spalten"), ("fr", "Colonnes"), ("es", "Columnas"), ("ru", "Столбцы")):
+    _WORKSPACE[_language]["columns"] = _columns
 for _language, _translations in _WORKSPACE.items():
     _STRINGS[_language].update(_translations)
 

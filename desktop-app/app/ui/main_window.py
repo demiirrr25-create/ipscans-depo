@@ -136,6 +136,9 @@ class MainWindow(QWidget):
         self.view_select.setAccessibleName(t(self.lang, "workspace_view"))
         self.view_select.currentIndexChanged.connect(self._view_changed)
         filters.addWidget(self.view_select)
+        columns = QPushButton(t(self.lang, "columns"))
+        columns.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
+        filters.addWidget(columns)
         self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
         self.conflicts_button.clicked.connect(self._show_conflicts)
         filters.addWidget(self.conflicts_button)
@@ -191,8 +194,9 @@ class MainWindow(QWidget):
         for column in (4, 5, 6):
             table.setColumnHidden(column, True)
         table.doubleClicked.connect(self._on_row_double_clicked)
-        QShortcut(QKeySequence("Return"), table,
-                  activated=lambda: self._on_row_double_clicked(table.currentIndex()))
+        enter = QShortcut(QKeySequence("Return"), table,
+                          activated=lambda: self._on_row_double_clicked(table.currentIndex()))
+        enter.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         return table
 
     def _column_menu(self, position) -> None:
