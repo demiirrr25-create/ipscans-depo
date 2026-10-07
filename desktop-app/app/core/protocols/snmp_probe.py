@@ -85,7 +85,9 @@ def query(ip: str, community: str, timeout: float = 0.8) -> SnmpResult | None:
     if not community:
         raise ValueError("An authorized SNMP community is required")
     try:
-        return asyncio.run(_query(ip, community, timeout))
+        async def bounded_query():
+            return await asyncio.wait_for(_query(ip, community, timeout), timeout=4.0)
+        return asyncio.run(bounded_query())
     except (OSError, TimeoutError, ValueError) as exc:
         _LOG.warning("SNMP query failed for %s: %s", ip, type(exc).__name__)
         return None

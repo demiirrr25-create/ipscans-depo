@@ -2,6 +2,7 @@
 import sys
 import traceback
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
@@ -19,11 +20,7 @@ _LOG_PATH = Path.home() / "IPscans-Plus.log"
 
 
 def _log(message: str) -> None:
-    try:
-        with _LOG_PATH.open("a", encoding="utf-8") as f:
-            f.write(message.rstrip("\n") + "\n")
-    except OSError:
-        pass
+    logging.getLogger("app.startup").info("%s", message)
 
 
 # A --windowed PyInstaller build has no console, and PyQt6 aborts the whole
@@ -33,17 +30,17 @@ def _log(message: str) -> None:
 # visible (message box) and diagnosable (log file next to the exe).
 def _install_crash_handler() -> None:
     def handle_exception(exc_type, exc_value, exc_tb):
-        message = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
-        _log(message)
+        logging.getLogger("app.startup").error(
+            "Unexpected %s\n%s", exc_type.__name__, "".join(traceback.format_tb(exc_tb)))
         try:
             QMessageBox.critical(
                 None,
                 "IPscans+ — Startup error",
                 "The application hit an unexpected error and needs to close.\n\n"
-                f"Details were saved to:\n{_LOG_PATH}\n\n{exc_value}",
+                f"Diagnostic details were saved to:\n{_LOG_PATH}",
             )
-        except Exception:
-            pass
+        except RuntimeError:
+            logging.getLogger("app.startup").error("Could not display the error dialog")
 
     sys.excepthook = handle_exception
 
@@ -80,10 +77,18 @@ def main() -> None:
     if "--reset-onboarding" in sys.argv:
         _reset_onboarding()
 
+    try:
+        handler = RotatingFileHandler(_LOG_PATH, maxBytes=2 * 1024 * 1024, backupCount=3, encoding="utf-8")
+    except OSError:
+        handler = logging.StreamHandler()
+        print("IPscans+: file logging unavailable; diagnostics will use stderr.", file=sys.stderr)
+    handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
+    logger = logging.getLogger("app")
+    logger.setLevel(logging.DEBUG if "--debug" in sys.argv else logging.INFO)
+    logger.addHandler(handler)
+    logger.propagate = False
     _install_crash_handler()
     _log("--- startup ---")
-    logging.basicConfig(filename=_LOG_PATH, level=logging.WARNING,
-                        format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")

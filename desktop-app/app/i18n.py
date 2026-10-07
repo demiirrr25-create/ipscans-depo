@@ -274,6 +274,111 @@ def available_languages() -> list[tuple[str, str]]:
     return list(LANGUAGES)
 
 
+_WORKSPACE = {
+    "en": {
+        "scan": "Scan", "network_map": "Network Map", "history": "History", "settings": "Settings",
+        "navigation": "Workspace navigation", "workspace_view": "Workspace view",
+        "view_table": "Device table", "view_graph": "Node graph",
+        "range_start": "Start IP", "range_end": "End IP (optional)",
+        "current_adapter": "Current adapter", "refresh_adapters": "Refresh adapters",
+        "detecting_adapter": "Detecting active network adapters...", "no_adapter": "No active IPv4 adapter. Enter an authorized range manually.",
+        "range_hint": "Enter a start and end IP. Pasted single IPs and bounded CIDRs are also accepted.",
+        "range_estimate": "{count:,} target addresses / bounded concurrency / only authorized networks",
+        "large_range": "Confirm large scan", "large_range_notice": "This scan covers {count:,} IPs and can take several minutes. Confirm that you are authorized to scan this entire range.",
+        "scan_cancelled": "Scan stopped / {count} devices observed / partial results were not saved to history.",
+        "overview": "{devices} devices / {cameras} cameras / {routers} routers/AP / {switches} switches / {recorders} NVR/DVR / {conflicts} potential conflicts / {unknown} unknown",
+        "col_status": "Status", "col_parent": "Parent / route", "col_latency": "TCP connect time", "col_confidence": "Confidence", "col_device": "Device",
+        "zoom_out": "Zoom out", "zoom_in": "Zoom in", "fit_screen": "Fit to screen",
+        "collapse_branch": "Collapse branch", "expand_all": "Expand all", "export_map": "Export map",
+        "map_legend": "Solid: confirmed LLDP adjacency (direction unknown). Dashed: inferred logical route, not a physical connection. Other devices remain unmapped.",
+        "graph_accessibility": "Use the device table for screen-reader access. Ctrl+wheel zooms; drag pans; Enter opens a focused device.",
+        "device_details": "Device Control Panel", "refresh_node": "Refresh node", "open_device": "Open web interface",
+        "copy_ip": "Copy IP", "ping_test": "Ping / TCP test", "username": "Username", "password": "Password",
+        "trusted_ca": "Trusted CA bundle (optional)", "choose_ca": "Choose CA",
+        "read_configuration": "Authenticate / read configuration", "apply_changes": "Apply changes",
+        "dhcp": "DHCP / automatic IP", "dns_from_dhcp": "DNS from DHCP",
+        "subnet_mask": "Subnet mask", "gateway": "Gateway", "dns_servers": "DNS servers (comma-separated)",
+        "confirm_change": "Confirm authorized configuration change", "operation_running": "Device operation in progress...",
+        "configuration_loaded": "Authenticated configuration loaded. Only supported IPv4 operations are available.",
+        "credentials_notice": "Credentials are used only in memory for this session; never saved to settings, history or logs.",
+        "conflicts": "IP conflicts", "no_conflicts": "No conflicting MAC observations in this scan. This does not prove the network is conflict-free.",
+        "potential_conflicts": "Different MAC identities were observed. Expand details for evidence; these are potential conflicts, not confirmed duplicates.",
+        "export_results": "Export CSV / JSON", "history_notice": "Up to 20 completed scans, bounded to 32 MiB. Comparisons use matching target ranges; a missing response does not prove a device is offline.",
+        "history_baseline": "Baseline scan: no earlier completed scan for this range.",
+        "authorized_networks": "Scan and manage only networks and devices you are authorized to administer.",
+        "worker_budget": "Worker budget", "snmp_notice": "Your authorized SNMP community (optional, never saved)",
+        "update_vendors": "Update IEEE OUI database", "network_changed": "The selected adapter changed or disconnected. Scan stopped; partial results are not a complete baseline.",
+        "scan_busy": "Stop the active scan before refreshing an individual node.",
+        "scan_read_only": "Configuration changes are disabled while scanning. Stop the scan and reopen this panel to manage the device.",
+        "app_subtitle": "Discover / Identify / Map / Manage",
+    },
+    "tr": {
+        "scan": "Tarama", "network_map": "Ağ Haritası", "history": "Geçmiş", "settings": "Ayarlar",
+        "navigation": "Çalışma alanı menüsü", "workspace_view": "Çalışma alanı görünümü",
+        "view_table": "Cihaz tablosu", "view_graph": "Düğüm haritası", "range_start": "Başlangıç IP", "range_end": "Bitiş IP (isteğe bağlı)",
+        "current_adapter": "Aktif adaptör", "refresh_adapters": "Adaptörleri yenile",
+        "detecting_adapter": "Aktif ağ adaptörleri algılanıyor...", "no_adapter": "Aktif IPv4 adaptörü yok. Yetkili olduğunuz aralığı elle girin.",
+        "range_hint": "Başlangıç ve bitiş IP girin. Yapıştırılan tek IP ve sınırlı CIDR de desteklenir.",
+        "range_estimate": "{count:,} hedef adres / sınırlı eşzamanlılık / yalnızca yetkili ağlar",
+        "large_range": "Geniş taramayı onayla", "large_range_notice": "Bu tarama {count:,} IP içeriyor ve birkaç dakika sürebilir. Tüm aralığı tarama yetkinizi onaylayın.",
+        "scan_cancelled": "Tarama durduruldu / {count} cihaz gözlendi / eksik sonuçlar geçmişe kaydedilmedi.",
+        "overview": "{devices} cihaz / {cameras} kamera / {routers} router/AP / {switches} switch / {recorders} NVR/DVR / {conflicts} olası çakışma / {unknown} bilinmeyen",
+        "col_status": "Durum", "col_parent": "Üst cihaz / rota", "col_latency": "TCP bağlantı süresi", "col_confidence": "Güven düzeyi", "col_device": "Cihaz",
+        "zoom_out": "Uzaklaştır", "zoom_in": "Yakınlaştır", "fit_screen": "Ekrana sığdır",
+        "collapse_branch": "Dalı daralt", "expand_all": "Tümünü genişlet", "export_map": "Haritayı dışa aktar",
+        "map_legend": "Düz çizgi: doğrulanmış LLDP komşuluğu (yön bilinmiyor). Kesikli: çıkarımsal mantıksal rota, fiziksel bağlantı değil. Diğer cihazlar eşlenmemiştir.",
+        "graph_accessibility": "Ekran okuyucu için cihaz tablosunu kullanın. Ctrl+tekerlek yakınlaştırır; sürükleme kaydırır; Enter cihazı açar.",
+        "device_details": "Cihaz Kontrol Paneli", "refresh_node": "Düğümü yenile", "open_device": "Web arayüzünü aç",
+        "copy_ip": "IP kopyala", "ping_test": "Ping / TCP testi", "username": "Kullanıcı adı", "password": "Parola",
+        "trusted_ca": "Güvenilir CA dosyası (isteğe bağlı)", "choose_ca": "CA seç",
+        "read_configuration": "Kimlik doğrula / yapılandırmayı oku", "apply_changes": "Değişiklikleri uygula",
+        "dhcp": "DHCP / otomatik IP", "dns_from_dhcp": "DHCP üzerinden DNS", "subnet_mask": "Alt ağ maskesi",
+        "gateway": "Ağ geçidi", "dns_servers": "DNS sunucuları (virgülle ayır)",
+        "confirm_change": "Yetkili yapılandırma değişikliğini onayla", "operation_running": "Cihaz işlemi devam ediyor...",
+        "configuration_loaded": "Doğrulanmış yapılandırma okundu. Yalnızca desteklenen IPv4 işlemleri kullanılabilir.",
+        "credentials_notice": "Kimlik bilgileri yalnızca oturum belleğinde kullanılır; ayarlara, geçmişe veya loglara kaydedilmez.",
+        "conflicts": "IP çakışmaları", "no_conflicts": "Bu taramada farklı MAC gözlemi yok. Bu, ağda çakışma olmadığını kanıtlamaz.",
+        "potential_conflicts": "Farklı MAC kimlikleri gözlendi. Kanıtlar için ayrıntıları açın; bunlar doğrulanmış değil, olası çakışmalardır.",
+        "export_results": "CSV / JSON dışa aktar", "history_notice": "32 MiB sınırıyla en fazla 20 tamamlanmış tarama. Yalnızca aynı hedef aralıkları karşılaştırılır; yanıt alınamaması çevrimdışı olduğunu kanıtlamaz.",
+        "history_baseline": "Başlangıç taraması: bu aralık için önceki tamamlanmış tarama yok.",
+        "authorized_networks": "Yalnızca yönetmeye yetkili olduğunuz ağ ve cihazlarda kullanın.",
+        "worker_budget": "İş parçacığı bütçesi", "snmp_notice": "Yetkili SNMP community bilgisi (isteğe bağlı, kaydedilmez)",
+        "update_vendors": "IEEE OUI veritabanını güncelle", "network_changed": "Seçili adaptör değişti veya bağlantı kesildi. Tarama durduruldu; eksik sonuçlar tam tarama sayılmaz.",
+        "scan_busy": "Tek düğümü yenilemeden önce aktif taramayı durdurun.",
+        "scan_read_only": "Tarama sırasında yapılandırma değişikliği kapalıdır. Taramayı durdurup cihazı yönetmek için bu paneli yeniden açın.",
+        "app_subtitle": "Keşfet / Tanı / Haritala / Yönet",
+    },
+}
+
+_WORKSPACE_LABELS = {
+    "de": ("Scan", "Netzwerkkarte", "Verlauf", "Einstellungen", "Gerätetabelle", "Knotengraph", "Start-IP", "End-IP (optional)",
+           "Status", "Übergeordnet / Route", "TCP-Verbindungszeit", "Vertrauen", "Verkleinern", "Vergrößern", "Ansicht einpassen", "Zweig einklappen", "Alle ausklappen", "Karte exportieren",
+           "Gerätesteuerung", "Knoten aktualisieren", "Weboberfläche öffnen", "IP kopieren", "Ping / TCP-Test", "Benutzername", "Passwort", "Konfiguration lesen", "Änderungen anwenden"),
+    "fr": ("Scan", "Carte réseau", "Historique", "Paramètres", "Table des appareils", "Graphe", "IP de début", "IP de fin (facultative)",
+           "État", "Parent / route", "Temps de connexion TCP", "Confiance", "Dézoomer", "Zoomer", "Ajuster à l'écran", "Réduire la branche", "Tout développer", "Exporter la carte",
+           "Contrôle de l'appareil", "Actualiser le nœud", "Ouvrir l'interface web", "Copier l'IP", "Test Ping / TCP", "Utilisateur", "Mot de passe", "Lire la configuration", "Appliquer"),
+    "es": ("Escanear", "Mapa de red", "Historial", "Ajustes", "Tabla de dispositivos", "Grafo", "IP inicial", "IP final (opcional)",
+           "Estado", "Padre / ruta", "Tiempo de conexión TCP", "Confianza", "Alejar", "Acercar", "Ajustar a pantalla", "Contraer rama", "Expandir todo", "Exportar mapa",
+           "Control del dispositivo", "Actualizar nodo", "Abrir interfaz web", "Copiar IP", "Prueba Ping / TCP", "Usuario", "Contraseña", "Leer configuración", "Aplicar cambios"),
+    "ru": ("Сканирование", "Карта сети", "История", "Настройки", "Таблица устройств", "Граф", "Начальный IP", "Конечный IP (необязательно)",
+           "Статус", "Родитель / маршрут", "Время TCP-соединения", "Уверенность", "Уменьшить", "Увеличить", "По размеру экрана", "Свернуть ветвь", "Развернуть всё", "Экспорт карты",
+           "Управление устройством", "Обновить узел", "Открыть веб-интерфейс", "Копировать IP", "Тест Ping / TCP", "Имя пользователя", "Пароль", "Читать настройки", "Применить"),
+}
+_LABEL_KEYS = (
+    "scan", "network_map", "history", "settings", "view_table", "view_graph", "range_start", "range_end",
+    "col_status", "col_parent", "col_latency", "col_confidence", "zoom_out", "zoom_in", "fit_screen",
+    "collapse_branch", "expand_all", "export_map", "device_details", "refresh_node", "open_device",
+    "copy_ip", "ping_test", "username", "password", "read_configuration", "apply_changes",
+)
+for _language, _labels in _WORKSPACE_LABELS.items():
+    _WORKSPACE[_language] = dict(zip(_LABEL_KEYS, _labels, strict=True))
+for _language, _device_label in (("de", "Gerät"), ("fr", "Appareil"), ("es", "Dispositivo"), ("ru", "Устройство")):
+    _WORKSPACE[_language]["col_device"] = _device_label
+    _WORKSPACE[_language]["app_subtitle"] = "Discover / Identify / Map / Manage"
+for _language, _translations in _WORKSPACE.items():
+    _STRINGS[_language].update(_translations)
+
+
 def get_saved_language() -> str | None:
     settings = QSettings(_ORG, _APP)
     value = settings.value(_LANGUAGE_KEY, None)
@@ -419,9 +524,14 @@ results, device information, or telemetry to ipscans.com or any third
 party. All scanning happens locally between your computer and the devices
 on your own network. No account, sign-up, or internet connection is
 required for the app to function.</p>
-<p><b>Local storage:</b> The only data this app stores is your chosen
-language, your acceptance of these policies, and your scan settings,
-saved locally on your own machine.</p>
+<p><b>Local storage:</b> Language and policy acceptance are saved locally.
+Up to 20 completed scans (32 MiB maximum) store device IP/MAC addresses,
+hostnames, vendor information and timestamps on your computer. CSV/JSON
+and map exports go only to files you choose. Device credentials and SNMP
+secrets are kept only in session memory, never in history or logs. Logs
+contain diagnostics and IP addresses and rotate locally. OUI updates
+contact IEEE only when requested. Reverse DNS queries use your configured
+DNS resolver. Web interfaces open only at your request.</p>
 <p>By clicking "I Agree", you confirm that you have read and accept this
 Privacy Policy.</p>
 """,
@@ -432,9 +542,15 @@ veya telemetriyi ipscans.com'a ya da üçüncü bir tarafa iletmez. Tüm tarama
 işlemi yalnızca bilgisayarınız ile kendi ağınızdaki cihazlar arasında,
 yerel olarak gerçekleşir. Uygulamanın çalışması için hesap, kayıt veya
 internet bağlantısı gerekmez.</p>
-<p><b>Yerel depolama:</b> Bu uygulamanın sakladığı tek veri, seçtiğiniz dil,
-bu politikaları kabul ettiğiniz bilgisi ve tarama ayarlarınızdır; bunların
-hepsi yalnızca kendi bilgisayarınızda tutulur.</p>
+<p><b>Yerel depolama:</b> Dil ve politika onayları yerelde saklanır.
+En fazla 20 tamamlanmış tarama (32 MiB sınırı) cihaz IP/MAC adreslerini,
+hostname, üretici ve zaman bilgilerini bilgisayarınızda tutar. CSV/JSON
+ve harita dışa aktarmaları seçtiğiniz dosyalara yazılır. Cihaz kimlik
+bilgileri ve SNMP sırları yalnızca oturum belleğinde kullanılır; geçmişe
+veya loglara kaydedilmez. Tanılama logları IP adresi içerebilir ve yerelde
+döndürülür. OUI güncellemesi yalnızca isteğinizle IEEE'ye bağlanır.
+Ters DNS sorguları yapılandırılmış DNS çözümleyicisini kullanır.
+Web arayüzleri yalnızca sizin isteğinizle açılır.</p>
 <p>"Kabul Ediyorum"a tıklayarak bu Gizlilik Politikası'nı okuyup kabul
 ettiğinizi onaylarsınız.</p>
 """,
@@ -445,9 +561,13 @@ Geräteinformationen oder Telemetriedaten an ipscans.com oder Dritte. Der
 gesamte Scan-Vorgang findet lokal zwischen Ihrem Computer und den Geräten
 in Ihrem eigenen Netzwerk statt. Für die Funktion der App ist kein Konto,
 keine Registrierung und keine Internetverbindung erforderlich.</p>
-<p><b>Lokale Speicherung:</b> Die App speichert lediglich Ihre gewählte
-Sprache, Ihre Zustimmung zu diesen Richtlinien und Ihre Scan-Einstellungen
-— alles ausschließlich lokal auf Ihrem eigenen Rechner.</p>
+<p><b>Lokale Speicherung:</b> Sprache und Zustimmung sowie bis zu 20
+abgeschlossene Scans (maximal 32 MiB) mit IP/MAC, Hostnamen, Hersteller
+und Zeitstempeln werden lokal gespeichert. Exporte gehen in gewählte
+Dateien. Zugangsdaten und SNMP-Geheimnisse bleiben nur im Arbeitsspeicher.
+Lokale rotierende Diagnoseprotokolle können IP-Adressen enthalten.
+OUI-Updates kontaktieren IEEE nur auf Wunsch; Reverse-DNS verwendet den
+konfigurierten Resolver. Weboberflächen öffnen nur auf Ihre Anforderung.</p>
 <p>Mit einem Klick auf "Ich stimme zu" bestätigen Sie, dass Sie diese
 Datenschutzrichtlinie gelesen haben und akzeptieren.</p>
 """,
@@ -459,9 +579,14 @@ ipscans.com ou à un tiers. Tout le scan se déroule localement entre votre
 ordinateur et les appareils de votre propre réseau. Aucun compte,
 inscription ou connexion internet n'est requis pour que l'application
 fonctionne.</p>
-<p><b>Stockage local :</b> La seule donnée conservée par l'application est
-la langue choisie, votre acceptation de ces politiques et vos paramètres
-de scan, enregistrés uniquement sur votre propre machine.</p>
+<p><b>Stockage local :</b> La langue, le consentement et jusqu'à 20 scans
+terminés (32 Mio maximum) avec IP/MAC, noms, fabricants et dates sont
+conservés localement. Les exports vont dans les fichiers choisis.
+Les identifiants et secrets SNMP restent uniquement en mémoire.
+Les journaux locaux rotatifs peuvent contenir des adresses IP.
+IEEE est contacté uniquement pour une mise à jour OUI demandée.
+Le DNS inverse utilise votre résolveur ; les interfaces web ne s'ouvrent
+qu'à votre demande.</p>
 <p>En cliquant sur "J'accepte", vous confirmez avoir lu et accepté cette
 politique de confidentialité.</p>
 """,
@@ -472,9 +597,13 @@ de escaneo, información de dispositivos ni telemetría a ipscans.com ni a
 terceros. Todo el escaneo ocurre localmente entre tu ordenador y los
 dispositivos de tu propia red. No se requiere cuenta, registro ni conexión
 a internet para que funcione la aplicación.</p>
-<p><b>Almacenamiento local:</b> Lo único que guarda esta aplicación es el
-idioma elegido, tu aceptación de estas políticas y tus ajustes de escaneo,
-guardados únicamente en tu propio equipo.</p>
+<p><b>Almacenamiento local:</b> El idioma, el consentimiento y hasta 20
+escaneos completos (máximo 32 MiB) con IP/MAC, nombres, fabricante y fechas
+se guardan localmente. Las exportaciones van a los archivos elegidos.
+Las credenciales y secretos SNMP permanecen solo en memoria.
+Los registros locales rotativos pueden incluir direcciones IP.
+IEEE se contacta solo al solicitar una actualización OUI. El DNS inverso
+usa tu resolutor; las interfaces web se abren solo cuando lo solicitas.</p>
 <p>Al hacer clic en "Acepto", confirmas que has leído y aceptas esta
 política de privacidad.</p>
 """,
@@ -485,9 +614,13 @@ política de privacidad.</p>
 лицам. Всё сканирование происходит локально между вашим компьютером и
 устройствами в вашей собственной сети. Для работы приложения не требуется
 учётная запись, регистрация или подключение к интернету.</p>
-<p><b>Локальное хранение:</b> Приложение сохраняет только выбранный вами
-язык, факт согласия с этими политиками и настройки сканирования — всё
-это хранится исключительно на вашем собственном компьютере.</p>
+<p><b>Локальное хранение:</b> Язык, согласие и до 20 завершённых
+сканирований (не более 32 МиБ) с IP/MAC, именами, производителями и датами
+хранятся локально. Экспорт записывается в выбранные файлы.
+Учётные данные и секреты SNMP используются только в памяти сеанса.
+Локальные журналы с ротацией могут содержать IP-адреса.
+Обновление OUI связывается с IEEE только по запросу. Обратный DNS использует
+настроенный резолвер; веб-интерфейсы открываются только по вашему запросу.</p>
 <p>Нажимая «Принимаю», вы подтверждаете, что прочитали и принимаете
 данную Политику конфиденциальности.</p>
 """,

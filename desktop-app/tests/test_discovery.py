@@ -199,10 +199,10 @@ class DiscoveryTests(unittest.TestCase):
              patch("app.core.scanner.vendor_lookup.lookup_vendor", return_value=None):
             run_scan(["192.168.1.8"], ScanOptions(enable_upnp=False, enable_wmi=False),
                      found.append)
-        self.assertEqual(len(found), 1)
-        self.assertEqual(found[0].onvif_model, "M3068-P")
-        self.assertEqual(found[0].device_type, "IP Camera")
-        self.assertIsNone(found[0].serial_number)
+        self.assertEqual({device.ip for device in found}, {response.ip})
+        self.assertEqual(found[-1].onvif_model, "M3068-P")
+        self.assertEqual(found[-1].device_type, "IP Camera")
+        self.assertIsNone(found[-1].serial_number)
 
     def test_manual_ipv6_scan_does_not_try_ipv4_only_snmp(self):
         found = []
@@ -217,8 +217,8 @@ class DiscoveryTests(unittest.TestCase):
             run_scan(["2001:db8::42"], ScanOptions(enable_upnp=False, enable_wmi=False,
                                                     enable_snmp=True, snmp_community="authorized"),
                      found.append)
-        self.assertEqual(len(found), 1)
-        self.assertEqual(found[0].url, "https://[2001:db8::42]")
+        self.assertEqual({device.ip for device in found}, {"2001:db8::42"})
+        self.assertEqual(found[-1].url, "https://[2001:db8::42]")
         snmp.assert_not_called()
 
     def test_tcp_host_survives_ping_failure_but_stale_arp_does_not(self):
@@ -302,25 +302,31 @@ class DiscoveryTests(unittest.TestCase):
         self.assertIn("direction unknown", tree.inspector.toPlainText())
         tree.close()
 
-    def test_ui_scan_updates_table_summary_and_ip_tree(self):
+    def test_ui_scan_updates_table_summary_and_network_map(self):
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         from PyQt6.QtWidgets import QApplication
         from app.ui.main_window import MainWindow
         app = QApplication.instance() or QApplication([])
         window = MainWindow("en")
         window.target_input.set_value("192.168.1.8")
-        def fake_scan(targets, options, on_device_found, on_progress, should_stop, on_phase):
+        def fake_scan(targets, options, on_device_found, on_progress, should_stop, on_phase, **callbacks):
             on_phase("enriching")
             on_device_found(Device("192.168.1.8", device_type="IP Camera", sources=["ONVIF"]))
             on_progress(1, 1)
         with patch("app.workers.scan_worker.run_scan", fake_scan), \
-             patch("app.ui.main_window.history.save_snapshot"):
+             patch("app.ui.main_window.MainWindow._save_history", return_value=[]), \
+             patch("app.ui.main_window.network_utils.detect_adapters", return_value=[]), \
+             patch("app.ui.main_window.history.load_snapshots", return_value=[]):
             window._start_scan()
             self.assertTrue(window._worker.wait(2000))
             app.processEvents()
+            for worker in list(window._jobs):
+                self.assertTrue(worker.wait(2000))
+            app.processEvents()
         self.assertEqual(window.model.rowCount(), 1)
         self.assertIn("1 cameras", window.summary_label.text())
-        self.assertEqual(window.tabs.currentWidget(), window.ip_tree)
+        self.assertEqual(window.views.currentWidget(), window.network_map)
+        self.assertIn("192.168.1.8", window.network_map.nodes)
         window.close()
 
     def test_1000_devices_render_without_recursive_links(self):

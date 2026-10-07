@@ -31,6 +31,14 @@ jobs:
       - name: Test discovery and topology
         run: python -m unittest discover -s tests -v
 
+      - name: Check Python syntax and source UI
+        run: |
+          python -m compileall -q app tests benchmarks
+          python main.py --selftest
+
+      - name: Benchmark bounded scheduling and UI responsiveness
+        run: python benchmarks/scanner_benchmark.py --output scanner-benchmark.json
+
       - name: Build Windows EXE
         run: |
           pyinstaller --name IPscans-Plus --onefile --windowed --noupx `
@@ -40,7 +48,9 @@ jobs:
             main.py
 
       - name: Smoke test EXE
-        run: .\dist\IPscans-Plus.exe --selftest
+        run: |
+          $process = Start-Process -FilePath ".\dist\IPscans-Plus.exe" -ArgumentList "--selftest" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Packaged IPscans+ selftest failed" }
 
       - name: Install Inno Setup and build installer
         run: |
@@ -61,9 +71,24 @@ jobs:
           }
           $target = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath
           if ($target -ne (Join-Path $installDir "IPscans-Plus.exe")) { throw "Shortcut points to $target" }
+          $process = Start-Process -FilePath (Join-Path $installDir "IPscans-Plus.exe") -ArgumentList "--selftest" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installed application selftest failed" }
           $uninstaller = Join-Path $installDir "unins000.exe"
           $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
           if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "IPscans+ uninstall failed" }
+
+      - name: Record package checksums
+        run: |
+          Get-FileHash dist\IPscans-Plus.exe, dist\installer\IPscans-Plus-Setup.exe -Algorithm SHA256 |
+            Select-Object Path, Hash | ConvertTo-Json | Set-Content dist\checksums.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IPscans-Plus-validation
+          path: |
+            desktop-app/scanner-benchmark.json
+            desktop-app/dist/checksums.json
+          if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
         with:

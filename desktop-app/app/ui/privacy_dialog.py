@@ -9,7 +9,7 @@ from PyQt6.QtCore import QSettings
 
 _ORG, _APP = "ipscans", "NetworkScanner"
 _TERMS_KEY = "terms_accepted_v1"
-_PRIVACY_KEY = "privacy_accepted_v1"
+_PRIVACY_KEY = "privacy_accepted_v2"
 
 
 def has_accepted_terms() -> bool:
@@ -33,5 +33,4 @@ def accept_privacy() -> None:
 def _remember(key: str) -> None:
     settings = QSettings(_ORG, _APP)
     settings.setValue(key, True)
-
 

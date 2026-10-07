@@ -1,5 +1,5 @@
 #define MyAppName "IPscans+"
-#define MyAppVersion "2.0.2"
+#define MyAppVersion "3.0.0"
 #define MyAppExeName "IPscans-Plus.exe"
 
 [Setup]

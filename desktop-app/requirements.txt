@@ -1,6 +1,9 @@
 # GUI
 PyQt6>=6.6
 psutil>=5.9
+dnspython>=2.6,<3
+requests>=2.32,<3
+defusedxml>=0.7,<1
 
 # MAC vendor (OUI) lookup — bundled offline database, no network calls
 mac-vendor-lookup>=0.1.12
@@ -8,8 +11,7 @@ mac-vendor-lookup>=0.1.12
 # Used only when a network administrator explicitly supplies credentials.
 pysnmp>=7.1,<8
 
-# UPnP/SSDP device discovery
-upnpclient>=1.0
+# mDNS service discovery (SSDP uses bounded requests directly)
 zeroconf>=0.130
 
 # Nmap-backed service/OS fingerprinting (requires the `nmap` binary on PATH)

@@ -46,12 +46,12 @@ class _Listener(ServiceListener):
         self.add_service(zc, type_, name)
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
-        pass
+        _LOG.debug("mDNS service withdrawn during discovery")
 
 
-def discover(timeout: float = 2.0, should_stop=None) -> dict[str, MdnsResult]:
+def discover(timeout: float = 2.0, should_stop=None, interface_ip: str | None = None) -> dict[str, MdnsResult]:
     try:
-        with Zeroconf() as zc:
+        with Zeroconf(**({"interfaces": [interface_ip]} if interface_ip else {})) as zc:
             listener = _Listener(zc)
             browsers = [ServiceBrowser(zc, service, listener) for service in _SERVICE_TYPES]
             try:
@@ -62,7 +62,8 @@ def discover(timeout: float = 2.0, should_stop=None) -> dict[str, MdnsResult]:
                 for browser in browsers:
                     browser.cancel()
             with listener.lock:
-                return dict(listener.results)
+                return {ip: MdnsResult(result.hostname, set(result.service_types))
+                        for ip, result in listener.results.items()}
     except OSError as exc:
         _LOG.warning("mDNS discovery unavailable: %s", exc)
         return {}

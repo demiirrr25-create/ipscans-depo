@@ -7,6 +7,7 @@ is what we rely on by default.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import logging
 
 try:
     import nmap
@@ -39,7 +40,8 @@ def query(ip: str, with_os_detection: bool = False) -> NmapResult | None:
     try:
         scanner = nmap.PortScanner()  # raises if the `nmap` binary isn't on PATH
         scanner.scan(hosts=ip, arguments=arguments, timeout=20)
-    except Exception:
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Optional Nmap probe unavailable (%s)", type(exc).__name__)
         return None
 
     if ip not in scanner.all_hosts():

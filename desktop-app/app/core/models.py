@@ -36,6 +36,12 @@ class Device:
     latency_ms: float | None = None
     lldp_neighbor_macs: list[str] = field(default_factory=list)
     mdns_services: list[str] = field(default_factory=list)
+    classification_confidence: str = "Low"
+    reachability: str = "Online"
+    parent_ip: str | None = None
+    connection_evidence: str | None = None
+    onvif_types: list[str] = field(default_factory=list)
+    discovery_id: str | None = None
 
     @property
     def preferred_url_scheme(self) -> str:

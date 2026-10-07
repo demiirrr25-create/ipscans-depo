@@ -6,11 +6,17 @@ import platform
 import re
 import socket
 import subprocess
+import logging
+import time
+import json
+from pathlib import Path
 from dataclasses import dataclass
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Callable
 
 import psutil
+import dns.resolver
+import dns.reversename
 
 # Ports worth probing while fingerprinting a device — hints at device type
 # (camera RTSP/ONVIF, router/switch admin UI, Windows SMB/RDP, etc).
@@ -31,7 +37,7 @@ _NO_WINDOW_KWARGS = {"creationflags": subprocess.CREATE_NO_WINDOW} if _IS_WINDOW
 # Reverse DNS lookups have no per-call timeout in the socket module; without
 # a default, a single unreachable DNS server could stall a host for a long
 # time. This bounds every blocking socket call made from this module.
-socket.setdefaulttimeout(1.5)
+_LOG = logging.getLogger(__name__)
 
 
 class InvalidTargetError(ValueError):
@@ -55,39 +61,39 @@ def _windows_network_details() -> tuple[dict[str, str], dict[str, tuple[str, ...
         return {}, {}
     try:
         result = subprocess.run(
-            ["ipconfig", "/all"], capture_output=True, text=True, timeout=5, **_NO_WINDOW_KWARGS
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             "Get-NetIPConfiguration | Select-Object "
+             "InterfaceAlias,IPv4DefaultGateway,DNSServer | ConvertTo-Json -Depth 4 -Compress"],
+            capture_output=True, text=True, timeout=5, **_NO_WINDOW_KWARGS
         )
-    except (OSError, subprocess.TimeoutExpired):
+        if result.returncode:
+            raise OSError("Windows network configuration query failed")
+        data = json.loads(result.stdout or "[]")
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        _LOG.warning("Cannot read adapter gateway/DNS metadata (%s)", type(exc).__name__)
         return {}, {}
     gateways: dict[str, str] = {}
-    dns_by_interface: dict[str, set[str]] = {}
-    current: str | None = None
-    reading_dns = False
-    for line in result.stdout.splitlines():
-        if line and not line.startswith(" ") and line.endswith(":"):
-            current = line.split("adapter ", 1)[-1].rstrip(":")
-            reading_dns = False
-        elif "Default Gateway" in line and ":" in line and current:
-            reading_dns = False
-            value = line.split(":", 1)[1].strip()
+    dns_by_interface: dict[str, tuple[str, ...]] = {}
+    for entry in ([data] if isinstance(data, dict) else data):
+        name = entry["InterfaceAlias"]
+        gateway = entry.get("IPv4DefaultGateway")
+        if gateway:
             try:
-                gateways[current] = str(ipaddress.IPv4Address(value))
+                gateways[name] = str(ipaddress.IPv4Address(gateway["NextHop"]))
             except ipaddress.AddressValueError:
-                continue
-        elif current and ("DNS Servers" in line or reading_dns):
-            if "DNS Servers" in line and ":" in line:
-                value = line.split(":", 1)[1].strip()
-                reading_dns = True
-            elif ":" not in line and line.strip():
-                value = line.strip()
-            else:
-                reading_dns = False
-                continue
-            try:
-                dns_by_interface.setdefault(current, set()).add(str(ipaddress.IPv4Address(value)))
-            except ipaddress.AddressValueError:
-                reading_dns = False
-    return gateways, {name: tuple(sorted(values)) for name, values in dns_by_interface.items()}
+                _LOG.debug("Ignored non-IPv4 gateway on %s", name)
+        servers = entry.get("DNSServer") or []
+        if isinstance(servers, dict):
+            servers = [servers]
+        values = []
+        for server in servers:
+            for value in server.get("ServerAddresses", []):
+                try:
+                    values.append(str(ipaddress.ip_address(value)))
+                except ValueError:
+                    _LOG.debug("Ignored invalid DNS address on %s", name)
+        dns_by_interface[name] = tuple(values)
+    return gateways, dns_by_interface
 
 
 def _windows_gateway_by_ip() -> dict[str, str]:
@@ -96,7 +102,8 @@ def _windows_gateway_by_ip() -> dict[str, str]:
     try:
         output = subprocess.run(["route", "print", "-4"], capture_output=True, text=True,
                                 timeout=5, **_NO_WINDOW_KWARGS).stdout
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _LOG.warning("Cannot read Windows default routes (%s)", type(exc).__name__)
         return {}
     result: dict[str, str] = {}
     for line in output.splitlines():
@@ -112,9 +119,29 @@ def _windows_gateway_by_ip() -> dict[str, str]:
     return result
 
 
+def _linux_network_details() -> tuple[dict[str, str], tuple[str, ...]]:
+    gateways: dict[str, str] = {}
+    servers: list[str] = []
+    if platform.system() != "Linux":
+        return gateways, ()
+    try:
+        for line in Path("/proc/net/route").read_text().splitlines()[1:]:
+            fields = line.split()
+            if len(fields) >= 8 and fields[1] == "00000000" and int(fields[3], 16) & 2:
+                gateways[fields[0]] = socket.inet_ntoa(bytes.fromhex(fields[2])[::-1])
+        for line in Path("/etc/resolv.conf").read_text().splitlines():
+            fields = line.split()
+            if len(fields) >= 2 and fields[0] == "nameserver":
+                servers.append(str(ipaddress.ip_address(fields[1])))
+    except (OSError, ValueError) as exc:
+        _LOG.warning("Cannot read Linux default route/DNS (%s)", type(exc).__name__)
+    return gateways, tuple(servers)
+
+
 def detect_adapters() -> list[NetworkAdapter]:
     gateways, dns_by_interface = _windows_network_details()
     gateway_by_ip = _windows_gateway_by_ip()
+    linux_gateways, linux_dns = _linux_network_details()
     adapters: list[NetworkAdapter] = []
     stats = psutil.net_if_stats()
     for name, addresses in psutil.net_if_addrs().items():
@@ -133,10 +160,10 @@ def detect_adapters() -> list[NetworkAdapter]:
             if ip.is_loopback or ip.is_link_local:
                 continue
             adapters.append(NetworkAdapter(name, str(ip), address.netmask, str(network),
-                                           gateway_by_ip.get(str(ip)) or gateways.get(name),
-                                           dns_by_interface.get(name, ()),
+                                           gateway_by_ip.get(str(ip)) or gateways.get(name) or linux_gateways.get(name),
+                                           dns_by_interface.get(name, linux_dns),
                                            mac, status.speed if status.speed > 0 else None))
-    return adapters
+    return sorted(adapters, key=lambda adapter: adapter.gateway is None)
 
 
 def parse_targets(spec: str) -> list[str]:
@@ -147,8 +174,10 @@ def parse_targets(spec: str) -> list[str]:
     spec = spec.strip()
 
     def valid_host(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> str:
-        if address.version == 6 and (address.is_link_local or address.is_multicast or address.is_unspecified):
-            raise InvalidTargetError("Use a routable IPv6 address; link-local targets need an interface scope.")
+        if address.is_multicast or address.is_unspecified:
+            raise InvalidTargetError("Multicast and unspecified addresses cannot be scanned as devices.")
+        if address.version == 6 and address.is_link_local:
+            raise InvalidTargetError("IPv6 link-local targets need an interface scope.")
         return str(address)
 
     if "/" in spec:
@@ -186,7 +215,7 @@ def parse_targets(spec: str) -> list[str]:
             raise InvalidTargetError("End IP cannot be smaller than start IP.")
         if int(end) - int(start) >= MAX_HOSTS:
             raise InvalidTargetError("This range is too large.")
-        return [str(ipaddress.ip_address(i)) for i in range(int(start), int(end) + 1)]
+        return [valid_host(ipaddress.ip_address(i)) for i in range(int(start), int(end) + 1)]
 
     try:
         address = ipaddress.ip_address(spec)
@@ -216,7 +245,7 @@ def _ping_once(ip: str) -> bool:
         return False
 
 
-def _read_arp_table() -> dict[str, str]:
+def _read_arp_table(interface_ip: str | None = None) -> dict[str, str]:
     """Reads the OS's already-populated ARP/neighbor cache (post-ping) for MACs."""
     try:
         output = subprocess.run(
@@ -226,10 +255,11 @@ def _read_arp_table() -> dict[str, str]:
             timeout=5,
             **_NO_WINDOW_KWARGS,
         ).stdout
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _LOG.debug("Neighbor table unavailable (%s)", type(exc).__name__)
         return {}
 
-    return parse_arp_table(output)
+    return parse_arp_table(output, interface_ip)
 
 
 def normalize_mac(value: str) -> str | None:
@@ -239,11 +269,17 @@ def normalize_mac(value: str) -> str | None:
     return ":".join(digits[i:i + 2].lower() for i in range(0, 12, 2))
 
 
-def parse_arp_table(output: str) -> dict[str, str]:
+def parse_arp_table(output: str, interface_ip: str | None = None) -> dict[str, str]:
     mac_by_ip: dict[str, str] = {}
     ip_re = re.compile(r"\b(\d{1,3}(?:\.\d{1,3}){3})\b")
     mac_re = re.compile(r"\b([0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5})\b")
+    selected = not interface_ip or not _IS_WINDOWS
     for line in output.splitlines():
+        if _IS_WINDOWS and interface_ip and "---" in line and ip_re.search(line):
+            selected = ip_re.search(line).group(1) == interface_ip
+            continue
+        if not selected:
+            continue
         ip_match = ip_re.search(line)
         mac_match = mac_re.search(line)
         if ip_match and mac_match:
@@ -291,8 +327,8 @@ def clear_arp_entry(ip: str) -> None:
             timeout=2,
             **_NO_WINDOW_KWARGS,
         )
-    except OSError:
-        pass
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _LOG.debug("Could not clear neighbor entry for %s (%s)", ip, type(exc).__name__)
 
 
 def _tcp_alive(ip: str) -> bool:
@@ -307,22 +343,31 @@ def _tcp_alive(ip: str) -> bool:
 
 def ping_sweep(targets: list[str], max_workers: int = 64,
                should_stop: Callable[[], bool] | None = None,
-               on_probe: Callable[[int, int], None] | None = None) -> list[str]:
+               on_probe: Callable[[int, int], None] | None = None,
+               on_alive: Callable[[str, str], None] | None = None) -> list[str]:
     """Bounded active ICMP/TCP sweep; stale ARP entries alone do not prove liveness."""
     candidates = list(targets)
-    alive = _probe_targets(candidates, _ping_once, max_workers, should_stop, on_probe)
-    if should_stop and should_stop():
-        return alive
-    alive_set = set(alive)
-    remaining = [ip for ip in candidates if ip not in alive_set]
-    alive_set.update(_probe_targets(remaining, _tcp_alive, max_workers, should_stop))
-    return sorted(alive_set, key=lambda ip: (ipaddress.ip_address(ip).version,
-                                             int(ipaddress.ip_address(ip))))
+    sources: dict[str, str] = {}
+
+    def probe(ip: str) -> bool:
+        if should_stop and should_stop():
+            return False
+        if _ping_once(ip):
+            sources[ip] = "ICMP"
+            return True
+        if not (should_stop and should_stop()) and _tcp_alive(ip):
+            sources[ip] = "TCP"
+            return True
+        return False
+
+    return _probe_targets(candidates, probe, max_workers, should_stop, on_probe,
+                          on_found=lambda ip: on_alive(ip, sources[ip]) if on_alive else None)
 
 
 def _probe_targets(targets: list[str], probe: Callable[[str], bool], max_workers: int,
                    should_stop: Callable[[], bool] | None,
-                   on_probe: Callable[[int, int], None] | None = None) -> list[str]:
+                   on_probe: Callable[[int, int], None] | None = None,
+                   on_found: Callable[[str], None] | None = None) -> list[str]:
     if not targets:
         return []
     if max_workers < 1:
@@ -348,8 +393,10 @@ def _probe_targets(targets: list[str], probe: Callable[[str], bool], max_workers
                 try:
                     if future.result():
                         found.append(ip)
-                except Exception:
-                    pass
+                        if on_found:
+                            on_found(ip)
+                except (OSError, TimeoutError) as exc:
+                    _LOG.warning("Host probe failed for %s (%s)", ip, type(exc).__name__)
                 next_ip = next(iterator, None)
                 if next_ip is not None and not (should_stop and should_stop()):
                     pending[pool.submit(probe, next_ip)] = next_ip
@@ -358,16 +405,22 @@ def _probe_targets(targets: list[str], probe: Callable[[str], bool], max_workers
 
 def resolve_hostname(ip: str) -> str | None:
     try:
-        return socket.gethostbyaddr(ip)[0]
-    except (socket.herror, socket.gaierror, OSError):
+        result = dns.resolver.resolve(dns.reversename.from_address(ip), "PTR", lifetime=1.0)
+        return str(result[0]).rstrip(".") if result else None
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers,
+            dns.resolver.LifetimeTimeout, OSError) as exc:
+        _LOG.debug("Reverse DNS unavailable for %s (%s)", ip, type(exc).__name__)
         return None
 
 
-def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3) -> list[int]:
+def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3,
+               on_latency: Callable[[float], None] | None = None) -> list[int]:
     ports = CANDIDATE_PORTS if ports is None else ports
     import select
     waiting: dict[socket.socket, int] = {}
     open_ports: list[int] = []
+    started = time.monotonic()
+    latencies: list[float] = []
     try:
         for port in ports:
             family = socket.AF_INET6 if ipaddress.ip_address(ip).version == 6 else socket.AF_INET
@@ -377,6 +430,7 @@ def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3) ->
                 error = sock.connect_ex((ip, port))
                 if error == 0:
                     open_ports.append(port)
+                    latencies.append((time.monotonic() - started) * 1000)
                     sock.close()
                 else:
                     waiting[sock] = port
@@ -387,27 +441,26 @@ def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3) ->
             for sock in writable:
                 if sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR) == 0:
                     open_ports.append(waiting[sock])
+                    latencies.append((time.monotonic() - started) * 1000)
     finally:
         for sock in waiting:
             sock.close()
+    if latencies and on_latency:
+        on_latency(min(latencies))
     return sorted(open_ports)
 
 
-def resolve_macs(ips: list[str]) -> dict[str, str]:
-    return {ip: mac for ip, mac in _read_arp_table().items() if ip in ips}
+def resolve_macs(ips: list[str], interface_ip: str | None = None) -> dict[str, str]:
+    selected = set(ips)
+    return {ip: mac for ip, mac in _read_arp_table(interface_ip).items() if ip in selected}
 
 
 def detect_local_network() -> ipaddress.IPv4Network | None:
     """Match the preferred local IPv4 address to its actual interface netmask."""
     adapters = detect_adapters()
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.connect(("8.8.8.8", 80))
-            local_ip = sock.getsockname()[0]
-        selected = next((adapter for adapter in adapters if adapter.ip == local_ip), None)
-        return ipaddress.ip_network(selected.network) if selected else None
-    except OSError:
-        return ipaddress.ip_network(adapters[0].network) if len(adapters) == 1 else None
+    selected = next((adapter for adapter in adapters if adapter.gateway), None)
+    selected = selected or (adapters[0] if len(adapters) == 1 else None)
+    return ipaddress.IPv4Network(selected.network) if selected else None
 
 
 def suggest_range_spec() -> str | None:

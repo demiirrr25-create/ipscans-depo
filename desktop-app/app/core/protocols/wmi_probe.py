@@ -8,6 +8,7 @@ a remote host are supplied.
 from __future__ import annotations
 
 import platform
+import logging
 from dataclasses import dataclass
 
 _IS_WINDOWS = platform.system().lower() == "windows"
@@ -15,6 +16,7 @@ _IS_WINDOWS = platform.system().lower() == "windows"
 if _IS_WINDOWS:
     try:
         import wmi as _wmi
+        import pythoncom as _pythoncom
 
         _HAS_WMI = True
     except ImportError:
@@ -33,12 +35,19 @@ class WmiResult:
 def query_local_machine() -> WmiResult | None:
     if not _HAS_WMI:
         return None
+    initialized = False
     try:
+        _pythoncom.CoInitialize()
+        initialized = True
         connection = _wmi.WMI()
         os_info = next(iter(connection.Win32_OperatingSystem()), None)
         bios_info = next(iter(connection.Win32_BIOS()), None)
-    except Exception:
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Local WMI unavailable (%s)", type(exc).__name__)
         return None
+    finally:
+        if initialized:
+            _pythoncom.CoUninitialize()
     if os_info is None and bios_info is None:
         return None
     return WmiResult(
@@ -54,7 +63,8 @@ def query_remote(ip: str, username: str, password: str) -> WmiResult | None:
         return None
     try:
         connection = _wmi.WMI(computer=ip, user=username, password=password)
-    except Exception:
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Authorized remote WMI unavailable (%s)", type(exc).__name__)
         return None
     os_info = next(iter(connection.Win32_OperatingSystem()), None)
     bios_info = next(iter(connection.Win32_BIOS()), None)

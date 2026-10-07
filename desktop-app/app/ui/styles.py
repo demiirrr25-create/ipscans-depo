@@ -13,6 +13,25 @@ DARK_QSS = """
 #AppRoot {
     background-color: #000000;
 }
+QPushButton:focus, QListWidget:focus, QTableView:focus, QCheckBox:focus {
+    border: 2px solid #ffffff;
+}
+QListWidget {
+    background: #121212;
+    border: 1px solid #555555;
+    padding: 6px;
+}
+QListWidget::item {
+    padding: 12px 6px;
+}
+QListWidget::item:selected {
+    background: #ffffff;
+    color: #000000;
+}
+QGraphicsView, QStackedWidget {
+    border: none;
+    background: #0a0a0a;
+}
 
 #RootCard {
     background-color: #0a0a0a;
@@ -206,11 +225,10 @@ QMenu::separator {
 }
 
 QPushButton#PrimaryButton {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #ffffff, stop:1 #e2e2e2);
+    background: #ffffff;
     color: #000000;
     border: none;
-    border-radius: 11px;
+    border-radius: 5px;
     padding: 9px 20px;
     font-weight: 600;
     font-size: 13px;
@@ -350,8 +368,7 @@ QProgressBar {
 }
 QProgressBar::chunk {
     border-radius: 4px;
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-        stop:0 #8a8a8a, stop:0.5 #ffffff, stop:1 #8a8a8a);
+    background: #ffffff;
 }
 
 QTextEdit {

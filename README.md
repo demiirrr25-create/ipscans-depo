@@ -21,6 +21,15 @@ The homepage hero is server-rendered without an animation-library hydration cost
 
 The primary IPscans+ download links to its [Windows 2.0.2 release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v2.0.2). The product detail page also offers a portable executable, installer size and SHA-256 hash. The Windows workflow builds and smoke-tests the user-toggleable desktop shortcut, installed EXE and uninstall process. IPCast 2.5's installer and portable EXE are published in [its release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.5.0).
 
+The [desktop source](desktop-app/README.md) now contains the IPscans+ 3.0.0
+Next Generation candidate: progressive discovery, a unified Network Map,
+capability-driven verified-HTTPS ONVIF management, potential conflict
+evidence and bounded scan history. [Release notes](desktop-app/RELEASE_NOTES.md)
+describe compatibility, unsupported capabilities and publication gates.
+Keep the production download metadata at 2.0.2 until the candidate's Windows
+installer and device-management validation are complete; source changes
+alone do not constitute a published release.
+
 Network Health Pro is no longer published on the website; its standalone source and historical GitHub release remain in the repository. Its old website download and update endpoint are retired. The old scanner download URL redirects to the current IPscans+ installer for existing bookmarks.
 
 ## Search and deployment
