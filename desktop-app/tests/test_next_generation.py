@@ -101,6 +101,40 @@ class NextGenerationTests(unittest.TestCase):
             self.assertEqual(network_utils.parse_arp_table(output, "192.168.1.54"),
                              {"192.168.1.8": "aa:bb:cc:dd:ee:ff"})
 
+    def test_windows_adapter_metadata_accepts_array_or_object_gateways(self):
+        import json
+        from types import SimpleNamespace
+        for gateway in ({"NextHop": "192.168.1.1"}, [{"NextHop": "192.168.1.1"}]):
+            data = {"InterfaceAlias": "Ethernet", "IPv4DefaultGateway": gateway,
+                    "DNSServer": {"ServerAddresses": "192.168.1.1"}}
+            with patch.object(network_utils, "_IS_WINDOWS", True), \
+                    patch("app.core.network_utils.subprocess.run",
+                          return_value=SimpleNamespace(returncode=0, stdout=json.dumps(data))):
+                gateways, dns = network_utils._windows_network_details()
+            self.assertEqual(gateways, {"Ethernet": "192.168.1.1"})
+            self.assertEqual(dns, {"Ethernet": ("192.168.1.1",)})
+
+    def test_progress_delivery_is_throttled_but_always_reports_completion(self):
+        from app.workers.scan_worker import ScanWorker
+        worker = ScanWorker([], ScanOptions())
+        updates = []
+        worker.progress.connect(lambda done, total: updates.append((done, total)))
+        with patch("app.workers.scan_worker.time.monotonic", return_value=1.0):
+            for index in range(1, 10001):
+                worker._emit_progress(index, 10000)
+        self.assertEqual(updates, [(1, 10000), (10000, 10000)])
+
+    def test_node_without_a_new_response_does_not_keep_online_status(self):
+        from app.ui.main_window import MainWindow
+        with patch.object(MainWindow, "_refresh_adapters"), patch.object(MainWindow, "_load_history"):
+            window = MainWindow()
+            window._on_device_found(Device("192.168.1.8", last_seen="2026-10-07"))
+            window._flush_results(all_results=True)
+            window._on_node_finished("192.168.1.8")
+            window._flush_results(all_results=True)
+        self.assertIn("No response", window.model.device_at(0).reachability)
+        self.assertEqual(window.model.device_at(0).last_seen, "2026-10-07")
+        window.close()
     def test_real_loopback_tcp_discovery_survives_icmp_failure_and_records_connect_time(self):
         found = {}
         callback_threads = []
@@ -122,6 +156,19 @@ class NextGenerationTests(unittest.TestCase):
         self.assertEqual(found["127.0.0.1"].open_ports, [port])
         self.assertIsNotNone(found["127.0.0.1"].latency_ms)
         self.assertTrue(all(ident == threading.get_ident() for ident in callback_threads))
+
+    def test_port_probe_does_not_drop_later_connections_after_an_early_refusal(self):
+        from unittest.mock import Mock
+        rejected, connected = Mock(), Mock()
+        rejected.connect_ex.return_value = connected.connect_ex.return_value = 115
+        rejected.getsockopt.return_value = 111
+        connected.getsockopt.return_value = 0
+        with patch("app.core.network_utils.socket.socket", side_effect=[rejected, connected]), \
+                patch("select.select", side_effect=[([], [rejected], []), ([], [connected], [])]) as selected:
+            self.assertEqual(network_utils.scan_ports("192.168.1.8", [80, 443]), [443])
+        self.assertEqual(selected.call_count, 2)
+        rejected.close.assert_called_once()
+        connected.close.assert_called_once()
 
     def test_cancellation_is_bounded_and_does_not_enqueue_every_host(self):
         targets = network_utils.parse_targets("10.0.0.0/20")

@@ -207,6 +207,16 @@ class AdapterTests(unittest.TestCase):
             change_network_configuration(adapter, updated, [], "192.168.1.0/24")
         write.assert_not_called()
 
+    def test_new_neighbor_response_after_probing_prevents_static_ip_collision(self):
+        adapter = self.ready_adapter()
+        with patch("app.core.adapters.network_utils.read_arp_entry",
+                   side_effect=[None, "aa:bb:cc:dd:ee:ff"]), \
+                patch("app.core.adapters.network_utils.ping_once", return_value=False), \
+                patch("app.core.adapters.network_utils.scan_ports", return_value=[]), \
+                patch.object(adapter, "set_network_configuration") as write, \
+                self.assertRaisesRegex(ManagementError, "in use"):
+            change_network_configuration(adapter, replace(CONFIG, ip="192.168.1.120"), [], "192.168.1.0/24")
+        write.assert_not_called()
     def test_cancelled_change_never_writes(self):
         adapter = self.ready_adapter()
         with patch.object(adapter, "set_network_configuration") as write, self.assertRaisesRegex(ManagementError, "cancelled"):

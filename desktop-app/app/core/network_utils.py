@@ -62,9 +62,10 @@ def _windows_network_details() -> tuple[dict[str, str], dict[str, tuple[str, ...
     try:
         result = subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
              "Get-NetIPConfiguration | Select-Object "
              "InterfaceAlias,IPv4DefaultGateway,DNSServer | ConvertTo-Json -Depth 4 -Compress"],
-            capture_output=True, text=True, timeout=5, **_NO_WINDOW_KWARGS
+            capture_output=True, text=True, encoding="utf-8-sig", timeout=5, **_NO_WINDOW_KWARGS
         )
         if result.returncode:
             raise OSError("Windows network configuration query failed")
@@ -74,20 +75,45 @@ def _windows_network_details() -> tuple[dict[str, str], dict[str, tuple[str, ...
         return {}, {}
     gateways: dict[str, str] = {}
     dns_by_interface: dict[str, tuple[str, ...]] = {}
-    for entry in ([data] if isinstance(data, dict) else data):
+    entries = [data] if isinstance(data, dict) else data or []
+    if not isinstance(entries, list):
+        _LOG.warning("Windows adapter query returned invalid metadata")
+        return {}, {}
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("InterfaceAlias"), str):
+            _LOG.warning("Windows adapter query returned an invalid interface entry")
+            continue
         name = entry["InterfaceAlias"]
-        gateway = entry.get("IPv4DefaultGateway")
-        if gateway:
+        routes = entry.get("IPv4DefaultGateway") or []
+        if isinstance(routes, dict):
+            routes = [routes]
+        if not isinstance(routes, list):
+            _LOG.warning("Windows adapter query returned invalid gateway metadata for %s", name)
+            routes = []
+        for gateway in routes:
+            if not isinstance(gateway, dict) or not isinstance(gateway.get("NextHop"), str):
+                _LOG.debug("Ignored an incomplete gateway on %s", name)
+                continue
             try:
                 gateways[name] = str(ipaddress.IPv4Address(gateway["NextHop"]))
+                break
             except ipaddress.AddressValueError:
                 _LOG.debug("Ignored non-IPv4 gateway on %s", name)
         servers = entry.get("DNSServer") or []
         if isinstance(servers, dict):
             servers = [servers]
+        if not isinstance(servers, list):
+            _LOG.warning("Windows adapter query returned invalid DNS metadata for %s", name)
+            servers = []
         values = []
         for server in servers:
-            for value in server.get("ServerAddresses", []):
+            if not isinstance(server, dict):
+                _LOG.debug("Ignored incomplete DNS metadata on %s", name)
+                continue
+            addresses = server.get("ServerAddresses") or []
+            if isinstance(addresses, str):
+                addresses = [addresses]
+            for value in addresses:
                 try:
                     values.append(str(ipaddress.ip_address(value)))
                 except ValueError:
@@ -163,7 +189,15 @@ def detect_adapters() -> list[NetworkAdapter]:
                                            gateway_by_ip.get(str(ip)) or gateways.get(name) or linux_gateways.get(name),
                                            dns_by_interface.get(name, linux_dns),
                                            mac, status.speed if status.speed > 0 else None))
-    return sorted(adapters, key=lambda adapter: adapter.gateway is None)
+    preferred_ip = None
+    try:
+        # UDP connect selects a local route without transmitting a packet.
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as route:
+            route.connect(("192.0.2.1", 9))
+            preferred_ip = route.getsockname()[0]
+    except OSError as exc:
+        _LOG.debug("Preferred local route unavailable (%s)", type(exc).__name__)
+    return sorted(adapters, key=lambda adapter: (adapter.ip != preferred_ip, adapter.gateway is None))
 
 
 def parse_targets(spec: str) -> list[str]:
@@ -420,6 +454,7 @@ def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3,
     waiting: dict[socket.socket, int] = {}
     open_ports: list[int] = []
     started = time.monotonic()
+    deadline = started + timeout
     latencies: list[float] = []
     try:
         for port in ports:
@@ -436,12 +471,14 @@ def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3,
                     waiting[sock] = port
             except OSError:
                 sock.close()
-        if waiting:
-            _, writable, _ = select.select([], list(waiting), [], timeout)
+        while waiting and (remaining := deadline - time.monotonic()) > 0:
+            _, writable, _ = select.select([], list(waiting), [], remaining)
             for sock in writable:
                 if sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR) == 0:
                     open_ports.append(waiting[sock])
                     latencies.append((time.monotonic() - started) * 1000)
+                waiting.pop(sock)
+                sock.close()
     finally:
         for sock in waiting:
             sock.close()

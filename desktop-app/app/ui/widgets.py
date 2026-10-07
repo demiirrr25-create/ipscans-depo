@@ -5,10 +5,12 @@ import ipaddress
 
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel, QTimer
 from PyQt6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QVBoxLayout,
+    QStyle,
     QWidget,
 )
 
@@ -142,6 +144,11 @@ class DeviceTableModel(QAbstractTableModel):
             return self.data(index, Qt.ItemDataRole.DisplayRole)
         if role == Qt.ItemDataRole.DecorationRole and index.column() == 7:
             return icon_for_type(self._devices[index.row()].device_type)
+        if role == Qt.ItemDataRole.DecorationRole and index.column() == 8:
+            symbol = (QStyle.StandardPixmap.SP_DialogApplyButton
+                      if self._devices[index.row()].reachability == "Online"
+                      else QStyle.StandardPixmap.SP_MessageBoxWarning)
+            return QApplication.style().standardIcon(symbol)
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         device = self._devices[index.row()]

@@ -1,7 +1,8 @@
 # IPscans+ 3.0.0 / Next Generation
 
-Status: release candidate; production downloads remain at verified 2.0.2
-until the new Windows artifacts pass all gates.
+Windows release: source, packaged application, installed application,
+installer/shortcut/uninstall, protocol tests and performance gates must
+pass before publication. Previous 2.0.2 assets are retained.
 
 - Progressive, bounded multi-layer discovery with concurrent enrichment.
 - Adapter-bound ONVIF, mDNS and SSDP providers; ICMP/TCP fallback.
@@ -20,6 +21,23 @@ until the new Windows artifacts pass all gates.
   and secret-free rotating diagnostics.
 - Engine, protocol, adapter, management safety, table, graph and UI tests;
   synthetic `/24`, `/22`, `/20` and 10,000-row performance gates.
+- Route-aware adapter selection, localized Windows metadata handling,
+  progress throttling and port probes that preserve slower responses.
+- Expanded packaged selftest checks all workspace views, actual adapter
+  startup, a real loopback TCP connection and unsupported management gating.
+
+## Validation scope
+
+Automated tests cover discovery, IP/subnet/range parsing, duplicate updates,
+potential conflicts, vendor evidence, authenticated adapter operations,
+configuration validation, collision refusal, partial writes, identity
+read-back, graph/table/history behavior and UI smoke tests. Network
+protocol tests use test doubles and real loopback sockets; physical camera
+interoperability and real-network identification accuracy have not been
+measured. No universal hardware compatibility or flawless operation is claimed.
+
+These binaries are unsigned. SHA-256 verifies integrity, not publisher
+identity; Windows SmartScreen may display a warning.
 
 ## Compatibility and unsupported operations
 
@@ -44,9 +62,10 @@ accuracy are not represented by synthetic benchmark timings.
    performance gates, installation/shortcut and uninstall checks on Windows.
 2. Verify installer/portable sizes and SHA-256 against downloaded bytes;
    retain the previous 2.0.2 assets. Keep candidate binaries separate.
-3. On an authorized test device, validate HTTPS trust, role gating, read-back,
+3. For device commissioning, on an authorized test device validate HTTPS trust, role gating, read-back,
    collision refusal, a static-IP change, DHCP rediscovery and pending reboot.
    Record actual device/firmware support rather than asserting universal support.
+   This is recommended commissioning validation, not a test performed here.
 4. Publish the validated versioned GitHub release, then update the scanner
    release metadata and product copy on the website, including limitations.
 5. Run website lint/type/tests/production build, deploy through the existing

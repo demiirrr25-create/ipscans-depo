@@ -4,6 +4,7 @@ never blocks — this is what keeps the window responsive during a scan.
 from __future__ import annotations
 import logging
 from threading import Event
+import time
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
@@ -25,9 +26,16 @@ class ScanWorker(QThread):
         self._targets = targets
         self._options = options
         self._stop_requested = Event()
+        self._last_progress = 0.0
 
     def stop(self) -> None:
         self._stop_requested.set()
+
+    def _emit_progress(self, done: int, total: int) -> None:
+        now = time.monotonic()
+        if done == total or now - self._last_progress >= 0.05:
+            self._last_progress = now
+            self.progress.emit(done, total)
 
     def run(self) -> None:  # noqa: D102 (QThread override)
         try:
@@ -35,7 +43,7 @@ class ScanWorker(QThread):
                 self._targets,
                 self._options,
                 on_device_found=lambda device: self.device_found.emit(device),
-                on_progress=lambda done, total: self.progress.emit(done, total),
+                on_progress=self._emit_progress,
                 should_stop=self._stop_requested.is_set,
                 on_phase=lambda phase: self.phase_changed.emit(phase),
                 on_conflicts=self.conflicts_found.emit,
@@ -47,3 +55,4 @@ class ScanWorker(QThread):
             self.failed.emit("The scan could not finish. Check the network adapter and application log.")
         finally:
             self._options.snmp_community = None
+            self._targets = []

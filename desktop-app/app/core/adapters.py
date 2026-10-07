@@ -381,7 +381,7 @@ def change_network_configuration(
         if any(device.ip == configuration.ip for device in known_devices):
             raise ManagementError("The requested IP is already present in the current scan.")
         if network_utils.read_arp_entry(configuration.ip) or network_utils.ping_once(configuration.ip) \
-                or network_utils.scan_ports(configuration.ip):
+                or network_utils.scan_ports(configuration.ip) or network_utils.read_arp_entry(configuration.ip):
             raise ManagementError("The requested IP may be in use. Choose another address.")
     if stopped():
         raise ManagementError("Configuration cancelled before any write.")

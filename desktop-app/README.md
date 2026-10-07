@@ -1,10 +1,9 @@
-# IPscans+ / Next Generation (3.0.0 candidate)
+# IPscans+ / Next Generation (3.0.0)
 
-PyQt6 desktop network discovery and authorized management. The published
-Windows download remains the verified
-[2.0.2 release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v2.0.2)
-until a new Windows installer passes packaging and installation tests.
-The website must not advertise unreleased binaries or fabricated hashes.
+PyQt6 desktop network discovery and authorized management. Windows releases
+are published only after the source, packaged application, installer and
+uninstaller pass CI. The previous 2.0.2 assets remain available; downloads
+are never replaced with untested binaries or fabricated hashes.
 
 ## Run and validate
 
@@ -77,6 +76,9 @@ full sweep ends and enrichment becomes an upsert, not a duplicate row.
 UI delivery batches at most 256 upserts every 100 ms; graph rebuilds are
 limited to once per second during scanning. Source sorting avoids a
 Qt/Python comparator call for every pair of rows.
+Progress delivery is limited to 20 updates per second, with completion
+always emitted. Port probes continue waiting for pending connections after
+an early refusal rather than dropping slower successful connections.
 
 Selected adapters bind multicast ONVIF, SSDP and mDNS discovery. ARP data
 is identity evidence, not proof of current reachability. ICMP failures
@@ -160,6 +162,10 @@ through proprietary Hikvision SADP/ISAPI, CDP/FDB topology, password guessing,
 cloud management, image streaming or automatic credential persistence.
 New vendor providers/adapters must add protocol-specific tests before
 their capabilities are enabled.
+Automated protocol tests use test doubles and real loopback sockets.
+Physical camera/firmware interoperability and real-network timing have
+not been measured in this environment; advertised protocol support does
+not guarantee compatibility with every model.
 
 Diagnostics rotate at 2 MiB with three backups. `--debug` enables DEBUG;
 normal logs include INFO/WARNING/ERROR without third-party HTTP debug logs.
@@ -169,4 +175,4 @@ Navigation and core controls retain six languages; full new explanatory
 copy is provided in English/Turkish, with the existing English fallback
 for other languages and technical protocol errors.
 
-See [release notes](RELEASE_NOTES.md) for the candidate and release checklist.
+See [release notes](RELEASE_NOTES.md) for changes and the release checklist.

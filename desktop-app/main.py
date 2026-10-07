@@ -2,6 +2,8 @@
 import sys
 import traceback
 import logging
+import socket
+import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -87,7 +89,8 @@ def main() -> None:
     logger.setLevel(logging.DEBUG if "--debug" in sys.argv else logging.INFO)
     logger.addHandler(handler)
     logger.propagate = False
-    _install_crash_handler()
+    if not selftest:
+        _install_crash_handler()
     _log("--- startup ---")
 
     app = QApplication(sys.argv)
@@ -110,6 +113,31 @@ def main() -> None:
         # something actually gets painted, which a bare constructor call
         # never triggers.
         window.grab()
+        for index in range(window.navigation.count()):
+            window.navigation.setCurrentRow(index)
+            window.grab()
+        deadline = time.monotonic() + 15
+        app.processEvents()
+        while window._jobs and time.monotonic() < deadline:
+            app.processEvents()
+            time.sleep(0.01)
+        app.processEvents()
+        if window._jobs or window._warnings:
+            raise RuntimeError("Selftest could not complete adapter/history startup checks")
+        from app.core import network_utils
+        from app.core.models import Device
+        from app.ui.device_panel import DeviceControlPanel
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(1)
+            port = listener.getsockname()[1]
+            if network_utils.scan_ports("127.0.0.1", [port]) != [port]:
+                raise RuntimeError("Packaged TCP probe selftest failed")
+        panel = DeviceControlPanel(Device("127.0.0.1"), [], None, DEFAULT_LANGUAGE, window)
+        panel.grab()
+        if panel.read_button.isEnabled() or panel.apply_button.isEnabled():
+            raise RuntimeError("Unsupported device management was incorrectly enabled")
+        panel.close()
         wizard = OnboardingWizard(["language", "terms", "privacy"], DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()  # paints every step, not just the first one shown
@@ -117,6 +145,7 @@ def main() -> None:
                 wizard.step_index += 1
                 wizard._refresh_step()
         print("selftest: window created OK")
+        window.close()
         sys.exit(0)
 
     try:

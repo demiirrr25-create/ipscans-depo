@@ -35,6 +35,7 @@ class MainWindow(QWidget):
         self.lang = lang
         self._worker: ScanWorker | None = None
         self._node_worker: ScanWorker | None = None
+        self._node_observed: set[str] = set()
         self._vendor_worker: VendorUpdateWorker | None = None
         self._jobs: set[TaskWorker] = set()
         self._panels: list[DeviceControlPanel] = []
@@ -500,12 +501,26 @@ class MainWindow(QWidget):
             self._warning(t(self.lang, "scan_busy"))
             return
         adapter = self._scan_adapter or self.adapter_select.currentData()
+        self._node_observed.clear()
         self._node_worker = ScanWorker([ip], ScanOptions(interface_ip=adapter.ip if adapter else None), self)
-        self._node_worker.device_found.connect(self._on_device_found)
+        self._node_worker.device_found.connect(self._on_node_found)
         self._node_worker.failed.connect(self._warning)
+        self._node_worker.warning.connect(self._warning)
+        self._node_worker.finished_ok.connect(lambda: self._on_node_finished(ip))
         self._node_worker.finished.connect(lambda: self._flush_results(all_results=True))
         self._node_worker.finished.connect(self._close_when_idle)
         self._node_worker.start()
+
+    def _on_node_found(self, device: Device) -> None:
+        self._node_observed.add(device.ip)
+        self._on_device_found(device)
+
+    def _on_node_finished(self, ip: str) -> None:
+        if self._close_pending or ip in self._node_observed:
+            return
+        device = self._observations.devices.get(ip)
+        if device:
+            self._on_device_found(replace(device, reachability="No response (offline unconfirmed)"))
 
     def _on_row_double_clicked(self, index) -> None:
         if index.isValid():

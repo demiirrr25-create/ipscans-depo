@@ -99,6 +99,7 @@ def run_scan(
     stopped = should_stop or (lambda: False)
     target_set = set(targets)
     registry = DeviceRegistry()
+    reported_conflicts: list[PotentialConflict] = []
     scheduled: set[str] = set()
     initial_macs = network_utils.resolve_macs(targets, options.interface_ip) if not stopped() else {}
     providers = options.providers
@@ -120,6 +121,7 @@ def run_scan(
         pending: dict[Future[Device], str] = {}
 
         def emit(device: Device) -> None:
+            nonlocal reported_conflicts
             if stopped():
                 return
             merged = registry.merge(device)
@@ -128,8 +130,10 @@ def run_scan(
                 merged.classification_confidence = "Low"
                 merged.classification_evidence = "Potential IP conflict; device identity is ambiguous"
             on_device_found(merged)
-            if on_conflicts:
-                on_conflicts(registry.conflicts)
+            conflicts = registry.conflicts
+            if on_conflicts and conflicts != reported_conflicts:
+                reported_conflicts = conflicts
+                on_conflicts(conflicts)
 
         def finish_enrichment(block: bool = False) -> None:
             if not pending:
