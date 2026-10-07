@@ -18,10 +18,14 @@ export const ipcastRelease = {
 
 export const desktopRelease = {
   scanner: {
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.2/IPscans-Plus-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v2.0.2/IPscans-Plus.exe",
-    installerBytes: 52674080,
-    installerSha256: "fe4c8c7535a8e2d1939060d38e95a21f9227a827114fb9cbebcd485f05ddf2f5",
+    version: "3.0.0",
+    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v3.0.0",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v3.0.0/IPscans-Plus-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v3.0.0/IPscans-Plus.exe",
+    installerBytes: 49249349,
+    installerSha256: "bcddb3135ae0156e64fd755b5db3c323b7299fd4f1e499c0a2d2a90053834501",
+    portableBytes: 47303735,
+    portableSha256: "cb854725dd6c0b9a10fc2680c3c14857bba8ad31c1004a0d58bc002daab6b6c1",
   },
 } as const;
 
@@ -69,6 +73,9 @@ export type Application = {
   portableUrl: string;
   installerBytes: number;
   installerSha256: string;
+  portableBytes: number;
+  portableSha256: string;
+  releaseUrl: string;
 };
 
 export const applications: readonly Application[] = [
@@ -84,19 +91,25 @@ export const applications: readonly Application[] = [
     portableUrl: ipcastRelease.url,
     installerBytes: ipcastRelease.installerBytes,
     installerSha256: ipcastRelease.installerSha256,
+    portableBytes: ipcastRelease.bytes,
+    portableSha256: ipcastRelease.sha256,
+    releaseUrl: ipcastRelease.releaseUrl,
   },
   {
     id: "scanner",
     name: "IPscans+",
-    description: { tr: "Ağ keşfi, cihaz tanıma, ONVIF kamera keşfi ve kanıta dayalı IP TREE", en: "Network discovery, device intelligence, ONVIF camera discovery and evidence-based IP TREE", de: "Netzwerkerkennung, Geräteanalyse und IP TREE", fr: "Découverte réseau, analyse des appareils et IP TREE", es: "Descubrimiento de red, análisis de dispositivos e IP TREE", it: "Rilevamento della rete, analisi dei dispositivi e IP TREE", pt: "Descoberta de rede, análise de dispositivos e IP TREE", nl: "Netwerkdetectie, apparaatanalyse en IP TREE", pl: "Wykrywanie sieci, analiza urządzeń i IP TREE", ru: "Обнаружение сети, анализ устройств и IP TREE", ar: "اكتشاف الشبكة وتحليل الأجهزة وIP TREE", ja: "ネットワーク検出、デバイス分析、IP TREE", ko: "네트워크 탐색, 장치 분석 및 IP TREE", zh: "网络发现、设备分析和 IP TREE" },
+    description: { tr: "İlerlemeli ağ keşfi, birleşik Network Map ve yetkili ONVIF cihaz yönetimi", en: "Progressive network discovery, unified Network Map and authorized ONVIF device management", de: "Fortlaufende Netzwerkerkennung, Netzwerkkarte und autorisierte ONVIF-Geräteverwaltung", fr: "Découverte réseau progressive, carte unifiée et gestion ONVIF autorisée", es: "Descubrimiento progresivo, mapa de red unificado y gestión ONVIF autorizada", it: "Rilevamento progressivo, mappa di rete unificata e gestione ONVIF autorizzata", pt: "Descoberta progressiva, mapa de rede unificado e gestão ONVIF autorizada", nl: "Progressieve netwerkdetectie, uniforme netwerkkaart en bevoegd ONVIF-beheer", pl: "Stopniowe wykrywanie sieci, wspólna mapa i autoryzowane zarządzanie ONVIF", ru: "Постепенное обнаружение сети, единая карта и разрешённое управление ONVIF", ar: "اكتشاف شبكة تدريجي وخريطة موحدة وإدارة ONVIF مصرح بها", ja: "段階的ネットワーク検出、統合ネットワークマップ、権限に基づく ONVIF 管理", ko: "점진적 네트워크 탐색, 통합 네트워크 맵 및 권한 기반 ONVIF 관리", zh: "渐进式网络发现、统一网络地图与授权 ONVIF 设备管理" },
     icon: "/scanner-mark.svg",
-    version: "2.0.2",
-    platform: "Windows · x64",
+    version: desktopRelease.scanner.version,
+    platform: "Windows 10/11 · x64",
     detailPath: "/download",
     downloadUrl: desktopRelease.scanner.installerUrl,
     portableUrl: desktopRelease.scanner.portableUrl,
     installerBytes: desktopRelease.scanner.installerBytes,
     installerSha256: desktopRelease.scanner.installerSha256,
+    portableBytes: desktopRelease.scanner.portableBytes,
+    portableSha256: desktopRelease.scanner.portableSha256,
+    releaseUrl: desktopRelease.scanner.releaseUrl,
   },
 ];
 

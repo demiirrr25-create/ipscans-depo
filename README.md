@@ -19,16 +19,25 @@ The product directory and inline header search share application and tool defini
 
 The homepage hero is server-rendered without an animation-library hydration cost. Its Canvas network decoration renders a static frame on small screens and when reduced motion is requested; primary content remains visible without JavaScript.
 
-The primary IPscans+ download links to its [Windows 2.0.2 release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v2.0.2). The product detail page also offers a portable executable, installer size and SHA-256 hash. The Windows workflow builds and smoke-tests the user-toggleable desktop shortcut, installed EXE and uninstall process. IPCast 2.5's installer and portable EXE are published in [its release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.5.0).
+The primary IPscans+ download links to its [Windows 3.0.0 release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v3.0.0). The product detail page also offers a portable executable, both sizes and SHA-256 hashes, and release notes. The Windows workflow builds and smoke-tests the user-toggleable desktop shortcut, source/packaged/installed EXE, embedded version metadata and uninstall process. IPCast 2.5's installer and portable EXE are published in [its release](https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.5.0).
 
-The [desktop source](desktop-app/README.md) now contains the IPscans+ 3.0.0
-Next Generation candidate: progressive discovery, a unified Network Map,
+The [desktop source](desktop-app/README.md) contains IPscans+ 3.0.0
+Next Generation: progressive discovery, a unified Network Map,
 capability-driven verified-HTTPS ONVIF management, potential conflict
 evidence and bounded scan history. [Release notes](desktop-app/RELEASE_NOTES.md)
-describe compatibility, unsupported capabilities and publication gates.
-Keep the production download metadata at 2.0.2 until the candidate's Windows
-installer and device-management validation are complete; source changes
-alone do not constitute a published release.
+describe compatibility, unsupported capabilities and validation scope.
+The website's 14 locales use shared feature/limitation copy. Previous
+2.0.2 assets remain available. Physical camera interoperability and
+real-network accuracy have not been measured; in-app changes require
+supported verified-HTTPS ONVIF and confirmed administrator permission.
+
+Prepare scanner releases with `node tools/scanner-release.mjs --directory
+<artifact-directory> --checksums <Windows-CI-checksums.json> --version
+<version> --commit <verified-full-commit> --run <Windows-run-id>`. The helper
+refuses binaries that differ from CI or do not have valid Windows PE
+headers, and generates the release manifest and hash sidecars. Publish
+as a draft first; verify uploaded sizes/digests before making it public
+and updating production download metadata.
 
 Network Health Pro is no longer published on the website; its standalone source and historical GitHub release remain in the repository. Its old website download and update endpoint are retired. The old scanner download URL redirects to the current IPscans+ installer for existing bookmarks.
 

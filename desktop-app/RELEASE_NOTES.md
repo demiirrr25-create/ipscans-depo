@@ -4,6 +4,13 @@ Windows release: source, packaged application, installed application,
 installer/shortcut/uninstall, protocol tests and performance gates must
 pass before publication. Previous 2.0.2 assets are retained.
 
+All automated Windows gates passed for commit
+`4d67f67001dc395a5fbe8fcdccd6fec3133fa7b4`, including **77 tests**,
+source/packaged/installed smoke tests and the EXE version check.
+[Verified Windows build](https://github.com/demiirrr25-create/ipscans-depo/actions/runs/37675287323).
+The release includes both binaries, SHA-256 sidecars, the build manifest
+and the measured synthetic benchmark report.
+
 - Progressive, bounded multi-layer discovery with concurrent enrichment.
 - Adapter-bound ONVIF, mDNS and SSDP providers; ICMP/TCP fallback.
 - Deduplicated updates, source-backed classification and qualitative confidence.

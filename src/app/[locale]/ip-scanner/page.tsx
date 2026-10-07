@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { toolPath } from "@/lib/tool-routes";
 import { scannerApplication, platformCopy } from "@/content/applications";
+import { scannerCopy } from "@/content/scanner";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -50,13 +51,12 @@ export default async function IpScannerPage({ params }: { params: Promise<{ loca
           <Link href={toolPath("ipLookup", locale)} className="btn-ghost inline-flex min-h-12 items-center rounded-xl px-6 font-semibold">{dict.nav.ipLookup}</Link>
         </div>
         <section className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3">
-          {["Network Discovery", "Device Intelligence", "IP TREE"].map((name, index) =>
+          {["Network Discovery", "Network Map", "Device Control Panel"].map((name, index) =>
             <div key={name} className="bg-black p-7"><span className="font-mono text-xs text-neutral-400">0{index + 1} / IPscans+</span>
               <h2 className="mt-6 text-xl font-bold">{name}</h2></div>)}
         </section>
-        <p className="rounded-xl border border-white/15 p-6 leading-relaxed text-neutral-300">{locale === "tr"
-          ? "Ağdaki her cihaz yanıt vermez. IP TREE yalnızca SNMP/LLDP kanıtlı bağlantıları doğrulanmış gösterir. Kanıtı olmayan cihazlar eşlenmemiş kalır. Yalnızca yetkili olduğunuz ağları tarayın."
-          : "Not every device responds to probing. IP TREE marks only SNMP/LLDP-backed relationships as verified and keeps others unmapped. Scan only networks you are authorized to administer."}</p>
+        <p className="rounded-xl border border-white/15 p-6 leading-relaxed text-neutral-300">{scannerCopy[locale].mapIntro}</p>
+        <p className="border-t border-white/15 pt-6 text-sm leading-relaxed text-neutral-400">{scannerCopy[locale].limitations}</p>
       </div>
     </PageShell>
   );

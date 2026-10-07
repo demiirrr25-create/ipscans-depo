@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test tools/speed-upload.test.mjs"
+    "test": "node --experimental-strip-types --test tools/*.test.mjs tools/*.test.cjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
