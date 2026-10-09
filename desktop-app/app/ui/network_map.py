@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from pathlib import Path
-import webbrowser
 
 from PyQt6.QtCore import QRectF, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPen
@@ -40,9 +39,9 @@ class DeviceNode(QGraphicsObject):
         return QRectF(0, 0, 240, 90)
 
     def paint(self, painter: QPainter, option, widget=None) -> None:
-        painter.setPen(QPen(QColor("#ffffff" if self.isSelected() or self.hasFocus() else "#555555"), 2))
-        painter.setBrush(QColor("#171717"))
-        painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 5, 5)
+        painter.setPen(QPen(QColor("#ffffff" if self.isSelected() or self.hasFocus() else "#383a40"), 1))
+        painter.setBrush(QColor("#15161a"))
+        painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 14, 14)
         icon_for_type(self.device.device_type).paint(painter, 12, 14, 28, 28)
         painter.setPen(QColor("#ffffff"))
         painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
@@ -66,20 +65,17 @@ class DeviceNode(QGraphicsObject):
 
     def contextMenuEvent(self, event) -> None:
         menu = QMenu()
-        details = menu.addAction(t(self.lang, "device_details"))
         refresh = menu.addAction(t(self.lang, "refresh_node"))
         collapse = menu.addAction(t(self.lang, "collapse_branch"))
         open_device = menu.addAction(t(self.lang, "open_device"))
         copy = menu.addAction(t(self.lang, "copy_ip"))
         chosen = menu.exec(event.screenPos())
-        if chosen == details:
-            self.activated.emit(self.device)
-        elif chosen == refresh:
+        if chosen == refresh:
             self.refresh_requested.emit(self.device.ip)
         elif chosen == collapse:
             self.collapse_requested.emit(self.device.ip)
         elif chosen == open_device:
-            webbrowser.open(self.device.url)
+            self.activated.emit(self.device)
         elif chosen == copy:
             QApplication.clipboard().setText(self.device.ip)
 
@@ -99,7 +95,7 @@ class GroupNode(QGraphicsObject):
     def paint(self, painter, option, widget=None):
         painter.setPen(QPen(QColor('#aaaaaa'), 1, Qt.PenStyle.DashLine))
         painter.setBrush(QColor('#171717'))
-        painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 5, 5)
+        painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 14, 14)
         painter.drawText(self.boundingRect(), Qt.AlignmentFlag.AlignCenter, self.label)
 
     def mouseDoubleClickEvent(self, event):

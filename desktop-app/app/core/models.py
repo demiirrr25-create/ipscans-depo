@@ -53,9 +53,12 @@ class Device:
     @property
     def preferred_url_scheme(self) -> str:
         """https if a secure web port is open, otherwise plain http."""
-        return "https" if 443 in self.open_ports else "http"
+        return "https" if 443 in self.open_ports or (8443 in self.open_ports and 80 not in self.open_ports) else "http"
 
     @property
     def url(self) -> str:
         host = f"[{self.ip}]" if ipaddress.ip_address(self.ip).version == 6 else self.ip
-        return f"{self.preferred_url_scheme}://{host}"
+        scheme = self.preferred_url_scheme
+        port = ':8443' if scheme == 'https' and 443 not in self.open_ports else (
+            ':8080' if scheme == 'http' and 80 not in self.open_ports and 8080 in self.open_ports else '')
+        return f"{scheme}://{host}{port}"

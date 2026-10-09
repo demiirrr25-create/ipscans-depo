@@ -154,18 +154,14 @@ def main() -> None:
         if '127.0.0.1' not in window.network_map.nodes:
             raise RuntimeError('Packaged Network Map scan result missing')
         window.grab()
-        from app.ui.device_panel import DeviceControlPanel
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             listener.listen(1)
             port = listener.getsockname()[1]
             if network_utils.scan_ports("127.0.0.1", [port]) != [port]:
                 raise RuntimeError("Packaged TCP probe selftest failed")
-        panel = DeviceControlPanel(Device("127.0.0.1"), [], None, DEFAULT_LANGUAGE, window)
-        panel.grab()
-        if panel.read_button.isEnabled() or panel.apply_button.isEnabled():
-            raise RuntimeError("Unsupported device management was incorrectly enabled")
-        panel.close()
+        if hasattr(window, '_panels') or hasattr(window, '_configuration_verified'):
+            raise RuntimeError("Removed device configuration UI is still reachable")
         wizard = OnboardingWizard(["language", "terms", "privacy"], DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()  # paints every step, not just the first one shown

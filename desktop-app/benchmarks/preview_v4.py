@@ -20,6 +20,7 @@ app.setStyle('Fusion')
 with patch.object(MainWindow, '_refresh_adapters'):
     window = MainWindow('en')
     window.resize(1440, 900)
+    window.adapter_select.addItem('Example Ethernet  /  192.168.10.100')
     window.adapter_details.setText('INTERFACE PREVIEW  /  Example office network  /  192.168.10.0/24')
     window.target_input.set_value('192.168.10.0/24')
     fixture = [
@@ -41,6 +42,13 @@ with patch.object(MainWindow, '_refresh_adapters'):
     target.parent.mkdir(parents=True, exist_ok=True)
     if not window.grab().save(str(target)):
         raise RuntimeError('Screenshot save failed')
+    if len(sys.argv) > 3:
+        from PyQt6.QtTest import QTest
+        window._set_scanning(True)
+        window._on_progress(168, 254)
+        QTest.qWait(600)
+        window.grab().save(sys.argv[3])
+        window._set_scanning(False)
     if len(sys.argv) > 2:
         fixture[0].mac = '02:00:00:00:00:01'
         fixture[1].mac = '02:00:00:00:00:02'

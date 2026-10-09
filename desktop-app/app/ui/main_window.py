@@ -1,20 +1,19 @@
-"""Scan -> discover -> map -> manage in one responsive workspace."""
+"""Scan -> discover -> map -> open device web interface in one responsive workspace."""
 from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
 import time
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QAction, QKeySequence, QShortcut
+from PyQt6.QtCore import Qt, QTimer, QUrl
+from PyQt6.QtGui import QAction, QDesktopServices, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFormLayout, QFrame, QHBoxLayout, QHeaderView, QLabel,
-    QLineEdit, QTabBar, QMenu, QMessageBox, QProgressBar, QPushButton,
-    QStackedWidget, QTableView, QTextEdit, QVBoxLayout, QWidget,
+    QComboBox, QFileDialog, QFrame, QHBoxLayout, QHeaderView, QLabel,
+    QLineEdit, QTabBar, QMenu, QMessageBox, QPushButton,
+    QStackedWidget, QTableView, QVBoxLayout, QWidget,
 )
 
 from app.core import history, network_utils
-from app.core.adapters import ChangeResult
 from app.core.models import Device
 from app.core.registry import DeviceRegistry
 from app.core.scanner import ScanOptions
@@ -22,7 +21,8 @@ from app.core.report import render_report
 from app.core.targets import plan_targets
 from app.core.topology import build_topology
 from app.i18n import DEFAULT_LANGUAGE, t
-from app.ui.device_panel import DeviceControlPanel
+from app.ui.scan_progress import ScanProgress
+from app.ui.resources import load_logo_pixmap
 from app.ui.network_map import NetworkMap
 from app.ui.styles import DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput
@@ -38,7 +38,6 @@ class MainWindow(QWidget):
         self._node_worker: ScanWorker | None = None
         self._node_observed: set[str] = set()
         self._jobs: set[TaskWorker] = set()
-        self._panels: list[DeviceControlPanel] = []
         self._adapters: list[network_utils.NetworkAdapter] = []
         self._pending: dict[str, Device] = {}
         self._observations = DeviceRegistry()
@@ -54,7 +53,7 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.1.1 / Network Intelligence")
+        self.setWindowTitle("IPscans+ 4.2.0 / Network Intelligence")
         self.resize(1380, 850)
         self.setMinimumSize(1000, 650)
         self.setStyleSheet(DARK_QSS)
@@ -87,18 +86,25 @@ class MainWindow(QWidget):
         body.setContentsMargins(24, 20, 24, 16)
         body.setSpacing(16)
         heading = QHBoxLayout()
+        logo = QLabel()
+        logo.setPixmap(load_logo_pixmap(52))
+        logo.setFixedSize(52, 52)
+        heading.addWidget(logo)
+        heading.addSpacing(6)
         heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
-        heading.addWidget(QLabel("4.1.1 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
+        heading.addWidget(QLabel("4.2.0 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
         heading.addStretch()
         self.navigation = QTabBar()
+        self.navigation.setDrawBase(False)
         self.navigation.setAccessibleName(t(self.lang, "navigation"))
-        self.navigation.addTab("SCAN")
-        self.navigation.addTab("NETWORK MAP")
+        self.navigation.addTab(self._v4("Scan", "Tara"))
+        self.navigation.addTab(t(self.lang, "network_map"))
         heading.addWidget(self.navigation)
         body.addLayout(heading)
-        self.scan_controls = QWidget()
+        self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
-        scan.setContentsMargins(0, 0, 0, 0)
+        scan.setContentsMargins(20, 18, 20, 18)
+        scan.setSpacing(12)
         heading = QHBoxLayout()
         self.adapter_select = QComboBox()
         self.adapter_select.setAccessibleName(t(self.lang, "current_adapter"))
@@ -127,28 +133,12 @@ class MainWindow(QWidget):
         scan.addWidget(QLabel(self._v4('Automatic discovery · Scan only networks you own or are authorized to assess.',
             'Otomatik keşif · Yalnızca sahibi olduğunuz veya tarama yetkiniz olan ağları tarayın.')))
         body.addWidget(self.scan_controls)
-        self.metrics_panel = QWidget()
-        cards = QHBoxLayout(self.metrics_panel)
-        cards.setContentsMargins(0, 0, 0, 0)
-        self.metric_values = {}
-        for key, title in [('devices', self._v4('DEVICES FOUND', 'BULUNAN CİHAZ')),
-                           ('services', self._v4('OPEN TCP SERVICES', 'AÇIK TCP SERVİSİ')),
-                           ('speed', self._v4('HOSTS / SECOND', 'HEDEF / SANİYE')),
-                           ('elapsed', self._v4('ELAPSED', 'GEÇEN SÜRE'))]:
-            frame = QFrame(objectName='MetricCard')
-            layout = QVBoxLayout(frame)
-            layout.addWidget(QLabel(title, objectName='MetricTitle'))
-            value = QLabel('—', objectName='MetricValue')
-            self.metric_values[key] = value
-            layout.addWidget(value)
-            cards.addWidget(frame, 1)
-        body.addWidget(self.metrics_panel)
         self.pages = QStackedWidget()
         body.addWidget(self.pages, stretch=1)
         self.workspace = QWidget()
         workspace = QVBoxLayout(self.workspace)
         workspace.setContentsMargins(0, 0, 0, 0)
-        self.summary_label = QLabel()
+        self.summary_label = QLabel(objectName="ResultsHeading")
         self.summary_label.setWordWrap(True)
         workspace.addWidget(self.summary_label)
         filters = QHBoxLayout()
@@ -174,20 +164,22 @@ class MainWindow(QWidget):
         self.views = QStackedWidget()
         self.table = self._build_table()
         self.network_map = NetworkMap(self.lang)
-        self.network_map.device_activated.connect(self._open_panel)
+        self.network_map.device_activated.connect(self._open_device)
         self.network_map.refresh_requested.connect(self._refresh_node)
         self.views.addWidget(self.table)
         self.views.addWidget(self.network_map)
         workspace.addWidget(self.views, stretch=1)
         self.pages.addWidget(self.workspace)
-        self.progress_bar = QProgressBar()
+        self.progress_bar = ScanProgress(self)
+        self.progress_bar.setAccessibleName(self._v4("Scan progress", "Tarama ilerlemesi"))
         self.progress_bar.setVisible(False)
         body.addWidget(self.progress_bar)
-        self.status_label = QLabel(t(self.lang, "status_ready"))
+        self.status_label = QLabel(t(self.lang, "status_ready"), objectName="StatusLabel")
         self.status_label.setWordWrap(True)
         body.addWidget(self.status_label)
         self.warning_label = QLabel()
         self.warning_label.setWordWrap(True)
+        self.warning_label.setVisible(False)
         body.addWidget(self.warning_label)
         self.navigation.currentChanged.connect(self._navigate)
         self.navigation.setCurrentIndex(0)
@@ -198,12 +190,6 @@ class MainWindow(QWidget):
 
     def _on_metrics(self, metrics: dict) -> None:
         self._metrics = dict(metrics)
-        self.metric_values['speed'].setText(f"{metrics['hosts_per_second']:.1f}")
-        self.metric_values['elapsed'].setText(f"{metrics['elapsed_seconds']:.1f} s")
-        first = metrics.get('first_result_seconds')
-        self.metric_values['speed'].setToolTip(self._v4('Completed discovery targets / total elapsed time. ',
-            'Tamamlanan keşif hedefi / toplam geçen süre. ') +
-            (f"First result: {first:.3f} s" if first is not None else ''))
 
     def _build_table(self) -> QTableView:
         table = QTableView()
@@ -213,6 +199,8 @@ class MainWindow(QWidget):
         self.proxy.setSourceModel(self.model)
         table.setModel(self.proxy)
         table.setAlternatingRowColors(True)
+        table.setShowGrid(False)
+        table.verticalHeader().setDefaultSectionSize(46)
         table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         table.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
         table.setSortingEnabled(True)
@@ -312,7 +300,7 @@ class MainWindow(QWidget):
 
     def _navigate(self, index: int) -> None:
         self.views.setCurrentIndex(index)
-        for widget in (self.scan_controls, self.metrics_panel, self.summary_label, self.columns_button):
+        for widget in (self.scan_controls, self.summary_label, self.columns_button):
             widget.setVisible(index == 0)
         if index == 1:
             self._refresh_map(force=True)
@@ -344,19 +332,20 @@ class MainWindow(QWidget):
         self._cancelled = False
         self._scan_complete = False
         self._metrics = {}
-        for value in self.metric_values.values():
-            value.setText('—')
         self._pending.clear()
         self._observations = DeviceRegistry()
         self._conflicts.clear()
         self._warnings.clear()
         self.warning_label.clear()
+        self.warning_label.hide()
         self.model.clear()
+        self._update_summary()
         self.network_map.collapsed.clear()
         self.network_map.refresh([])
         self._scan_target = self.target_input.spec()
         self._scan_adapter = self.adapter_select.currentData()
         self._scan_started = time.monotonic()
+        self.progress_bar.reset()
         self._set_scanning(True)
         self.progress_bar.setRange(0, len(targets))
         self.progress_bar.setValue(0)
@@ -402,30 +391,30 @@ class MainWindow(QWidget):
 
     def _update_summary(self) -> None:
         devices = self.model._devices
-        counts = {
-            "devices": len(devices), "cameras": sum(d.device_type == "IP Camera" for d in devices),
-            "routers": sum(d.device_type in ("Router", "Gateway", "Access Point") for d in devices),
-            "switches": sum(d.device_type in ("Switch", "PoE Switch") for d in devices),
-            "recorders": sum(d.device_type in ("NVR", "DVR") for d in devices),
-            "unknown": sum(d.device_type == "Unknown" for d in devices), "conflicts": len(self._conflicts),
-        }
-        self.summary_label.setText(t(self.lang, "overview", **counts))
+        self.summary_label.setText(self._v4(
+            f"{len(devices)} devices  ·  Double-click to open the web interface ↗",
+            f"{len(devices)} cihaz  ·  Web arayüzünü açmak için çift tıklayın ↗"))
         self.conflicts_button.setText(f"{t(self.lang, 'conflicts')} ({len(self._conflicts)})")
-        self.metric_values['devices'].setText(str(len(devices)))
-        self.metric_values['services'].setText(str(sum(len(d.open_ports) for d in devices)))
 
     def _on_conflicts(self, conflicts) -> None:
         self._conflicts = list({conflict.ip: conflict for conflict in (*self._conflicts, *conflicts)}.values())
 
     def _on_phase_changed(self, phase: str) -> None:
-        self.status_label.setText(f"{phase.title()} / {self.model.rowCount()} / "
-                                  f"{time.monotonic() - self._scan_started:.1f} s")
+        labels = {
+            "discovering network": self._v4("Discovering your network", "Ağınız keşfediliyor"),
+            "identifying devices": self._v4("Identifying devices", "Cihazlar tanımlanıyor"),
+            "building network topology": self._v4("Preparing the network map", "Ağ haritası hazırlanıyor"),
+        }
+        if phase != "discovering network":
+            # Discovery totals do not measure enrichment: show activity, not a false 100%.
+            self.progress_bar.setRange(0, 0)
+        self.status_label.setText(labels.get(phase, phase))
 
     def _on_progress(self, done: int, total: int) -> None:
         self.progress_bar.setRange(0, max(total, 1))
         self.progress_bar.setValue(done)
         self.status_label.setText(t(self.lang, "status_scanning", done=done, total=total,
-                                   found=self.model.rowCount()) + f" / {time.monotonic() - self._scan_started:.1f} s")
+                                   found=self.model.rowCount()))
 
     def _on_scan_finished(self) -> None:
         self._flush_results(all_results=True)
@@ -436,8 +425,7 @@ class MainWindow(QWidget):
             return
         self._scan_complete = True
         devices = self.model._devices
-        self.status_label.setText(t(self.lang, "status_done", count=len(devices)) +
-                                  f" / {time.monotonic() - self._scan_started:.1f} s")
+        self.status_label.setText(t(self.lang, "status_done", count=len(devices)))
         if self.views.currentIndex() == 1:
             self.network_map.fit()
 
@@ -449,6 +437,7 @@ class MainWindow(QWidget):
         QMessageBox.critical(self, t(self.lang, "status_error"), message)
 
     def _warning(self, message: str) -> None:
+        self.warning_label.show()
         self._warnings.add(message)
         self.warning_label.setText(" / ".join(sorted(self._warnings)))
 
@@ -500,39 +489,16 @@ class MainWindow(QWidget):
         if index.isValid():
             device = self.model.device_at(self.proxy.mapToSource(index).row())
             if device:
-                self._open_panel(device)
+                self._open_device(device)
 
-    def _open_panel(self, device: Device) -> None:
-        adapter = self._scan_adapter or self.adapter_select.currentData()
-        panel = DeviceControlPanel(device, list(self.model._devices),
-                                   adapter.network if adapter else None, self.lang, self,
-                                   allow_changes=not any(worker and worker.isRunning()
-                                                         for worker in (self._worker, self._node_worker)))
-        self._panels.append(panel)
-        panel.device_updated.connect(self._on_device_found)
-        panel.configuration_verified.connect(lambda result: self._configuration_verified(device, result))
-        panel.finished.connect(lambda: self._panels.remove(panel) if panel in self._panels else None)
-        panel.finished.connect(self._close_when_idle)
-        panel.show()
-
-    def _configuration_verified(self, device: Device, result: ChangeResult) -> None:
-        device = self._pending.get(result.old_ip) or next(
-            (entry for entry in self.model._devices if entry.ip == result.old_ip), device)
-        devices = [entry for entry in self.model._devices if entry.ip != result.old_ip]
-        self._pending.pop(result.old_ip, None)
-        self._observations.devices.pop(result.old_ip, None)
-        if result.new_ip:
-            devices.append(replace(device, ip=result.new_ip, onvif_endpoint=result.endpoint,
-                                   parent_ip=None, connection_evidence=None))
-        self.model.clear()
-        self.model.add_devices(devices)
-        for entry in devices:
-            self._observations.merge(entry)
-        self._map_dirty = True
-        self._refresh_map(force=True)
-        self.status_label.setText(result.message)
-        if result.new_ip:
-            self._refresh_node(result.new_ip)
+    def _open_device(self, device: Device) -> None:
+        try:
+            url = QUrl(device.url)
+        except ValueError:
+            self._warning(self._v4("The device IP address is invalid.", "Cihazın IP adresi geçersiz."))
+            return
+        if not QDesktopServices.openUrl(url):
+            self._warning(self._v4("Could not open the default browser.", "Varsayılan tarayıcı açılamadı."))
 
     def _show_conflicts(self) -> None:
         if not self._conflicts:
@@ -568,11 +534,9 @@ class MainWindow(QWidget):
                          lambda _: self.status_label.setText(str(target)))
 
     def closeEvent(self, event) -> None:
-        for panel in list(self._panels):
-            panel.close()
         running = any(worker and worker.isRunning() for worker in (
             self._worker, self._node_worker, *self._jobs))
-        if running or self._panels:
+        if running:
             self._close_pending = True
             self._adapter_timer.stop()
             self._stop_scan()
