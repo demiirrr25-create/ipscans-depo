@@ -19,16 +19,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast",
       ...applications.map((app) => `/applications/${app.id}`)];
     if (posts.some((post) => post.body[locale])) staticPaths.push("/blog");
-    if (locale === "en" || locale === "tr") staticPaths.push("/privacy", "/terms");
+    staticPaths.push("/privacy", "/terms");
 
     for (const path of staticPaths) {
-      const languages = ["/privacy", "/terms", "/blog"].includes(path)
-        ? {
-            en: `${BASE_URL}/en${path}`,
-            tr: `${BASE_URL}/tr${path}`,
-            "x-default": `${BASE_URL}/en${path}`,
-          }
-        : altLanguages((l) => `/${l}${path}`);
+      const languages = altLanguages((l) => `/${l}${path}`);
       entries.push({ url: `${BASE_URL}/${locale}${path}`, alternates: { languages } });
     }
     for (const key of toolKeys) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { uiText } from '@/i18n/ui';
 import { usePathname, useRouter } from "next/navigation";
 import { locales, type Locale } from "@/i18n/config";
 import { findToolBySlug, toolPath } from "@/lib/tool-routes";
@@ -18,16 +19,13 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
     const segments = pathname.split("/");
     const tool = findToolBySlug(segments[2] ?? "");
     if (tool) return toolPath(tool, target);
-    if (segments[2] === "blog" && segments[3] && target !== "en" && target !== "tr") {
-      return `/${target}/blog`;
-    }
     segments[1] = target;
     return segments.join("/") || `/${target}`;
   }
 
   return (
     <div className="flex items-center gap-1 text-sm">
-      <label className="sr-only" htmlFor="site-language">Language / Dil</label>
+      <label className="sr-only" htmlFor="site-language">{uiText(locale, "Language", "Dil")}</label>
       <select id="site-language" value={locale}
         onChange={(event) => {
           const target = event.target.value as Locale;

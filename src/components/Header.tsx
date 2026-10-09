@@ -1,5 +1,6 @@
 "use client";
 
+import { uiText } from '@/i18n/ui';
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -78,7 +79,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
         }
       }}>
       <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-        <Link href={`/${locale}`} aria-label="IPScans home" className="flex shrink-0 items-center gap-2">
+        <Link href={`/${locale}`} aria-label={uiText(locale, "IPScans home", "IPScans ana sayfa")} className="flex shrink-0 items-center gap-2">
           <Logo size={34} /><span className="hidden text-xl font-semibold tracking-[-.06em] min-[400px]:inline">ipscans<span className="text-neutral-500">.</span></span>
         </Link>
         <nav aria-label={dict.nav.tools} className="hidden items-center gap-1 lg:flex">

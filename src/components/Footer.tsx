@@ -1,3 +1,4 @@
+import { uiText } from '@/i18n/ui';
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -30,7 +31,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   return (
     <footer className="border-t border-white/15 bg-black">
       <div className="mx-auto max-w-7xl px-5 sm:px-8 pt-16">
-        <p className="mb-6 font-mono text-xs tracking-[.2em] text-neutral-400">NETWORK INTELLIGENCE / DESIGNED FOR CLARITY</p>
+        <p className="mb-6 font-mono text-xs tracking-[.2em] text-neutral-400">{uiText(locale, "NETWORK INTELLIGENCE / DESIGNED FOR CLARITY", "AĞ KEŞFİ / SADELİK İÇİN TASARLANDI")}</p>
         <p className="border-b border-white/15 pb-12 font-[family-name:var(--font-display)] text-[clamp(3.5rem,13vw,12rem)] font-semibold leading-none tracking-[-0.075em]">ipscans<span className="text-neutral-600">.</span></p>
       </div>
       <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 py-16 md:grid-cols-[2fr_1fr_1fr_1fr]">

@@ -1,3 +1,4 @@
+import translatedProduct from './ipcast-locales.json';
 import type { Locale } from "@/i18n/config";
 
 type ProductCopy = {
@@ -7,6 +8,7 @@ type ProductCopy = {
 };
 
 export const ipcastProductCopy: Partial<Record<Locale, ProductCopy>> = {
+  ...translatedProduct,
   tr: {
     newTitle: "Bu sürümde neler var?", securityTitle: "Erişim sizin kontrolünüzde", faqTitle: "Sık sorulan sorular",
     connection: "İki bilgisayarda da aynı IPCast sürümünü açın. Karşı cihazın 9 haneli kimliğini girin, ilk bağlantıda sertifika parmak izini doğrulayın ve istenen izinleri uzak cihazda onaylayın.",

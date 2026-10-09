@@ -1,3 +1,4 @@
+import translations from './legal-locales.json';
 import type { Locale } from "@/i18n/config";
 
 /** Static, code-authored HTML — never derived from user input. */
@@ -104,3 +105,9 @@ export const termsOfService: LocalizedHtml = {
     <p>Questions? Reach us at legal@ipscans.com</p>
   `,
 };
+
+for(const [key,value] of Object.entries(translations)) {
+  const locale=key as Locale;
+  privacyPolicy[locale]=value.privacy;
+  termsOfService[locale]=value.terms;
+}

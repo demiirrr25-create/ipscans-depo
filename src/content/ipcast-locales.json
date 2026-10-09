@@ -1,0 +1,290 @@
+{
+  "it": {
+    "newTitle": "Novità",
+    "securityTitle": "Sei tu a controllare l'accesso",
+    "faqTitle": "Domande frequenti",
+    "connection": "Apri la stessa versione IPCast su entrambi i computer. Inserisci l'ID remoto di 9 cifre, verifica l'impronta digitale del certificato alla prima connessione e approva le autorizzazioni richieste sul dispositivo remoto.",
+    "changes": [
+      "Temi chiari/scuri monocromatici, un'area di lavoro a schede e una barra di connessione sempre disponibile.",
+      "Gruppi della rubrica, tag, note, ricerca, ordinamento e importazione/esportazione JSON.",
+      "Selezione della qualità durante la sessione, screenshot PNG, controllo della pausa ed esportazione di chat/cronologia.",
+      "Codici di autenticazione opzionali per accesso non presidiato, criteri di connessione in entrata e disconnessione per inattività."
+    ],
+    "security": "TLS crittografa il traffico della sessione. Le connessioni in entrata sono visibili; le autorizzazioni per schermo, tastiera, appunti, file, audio e registrazione vengono selezionate separatamente. L'accesso automatico è disattivato per impostazione predefinita e utilizza la derivazione della password e la limitazione della velocità quando abilitato. L'autenticazione opzionale a due fattori aggiunge un codice di autenticazione monouso alla password. Utilizza la versione 2.5 su entrambi i dispositivi per questa funzionalità.",
+    "limitations": "L'eseguibile e il programma di installazione non sono firmati. SHA-256 verifica l'integrità del file. Desktop protetto/UAC/Ctrl+Alt+Canc, driver della schermata privacy e reindirizzamento della stampante virtuale non sono disponibili. Non è stato eseguito il test di accettazione su due dispositivi fisici Windows 10/11.",
+    "faq": [
+      {
+        "question": "Quali versioni di Windows sono supportate?",
+        "answer": "Windows 10 e Windows 11, 64 bit. IPCast viene eseguito in una sessione utente che ha effettuato l'accesso. Le connessioni Internet richiedono l'accesso al servizio di inoltro da entrambi i computer."
+      },
+      {
+        "question": "Chi può accedere ai miei file?",
+        "answer": "È necessario consentire il trasferimento di file e condividere esplicitamente una cartella in File. L'accesso è limitato a quella cartella. Puoi interrompere la condivisione o disconnetterti in qualsiasi momento."
+      },
+      {
+        "question": "La registrazione o l'audio possono essere avviati segretamente?",
+        "answer": "Entrambi richiedono un'autorizzazione separata. La registrazione visualizza REC su entrambi i dispositivi. L'audio si avvia e lo spettatore lo abilita. La registrazione AVI non ha audio e si ferma al cambio di risoluzione o a 1,8 GB."
+      },
+      {
+        "question": "Cosa succede quando si interrompe una connessione?",
+        "answer": "IPCast riprova fino a tre volte. Una nuova sessione richiede una nuova approvazione. I trasferimenti di file possono riprendere con la stessa cartella condivisa e il file di origine invariato."
+      }
+    ]
+  },
+  "pt": {
+    "newTitle": "O que há de novo",
+    "securityTitle": "Você controla o acesso",
+    "faqTitle": "Perguntas frequentes",
+    "connection": "Abra a mesma versão do IPCast nos dois computadores. Insira o ID remoto de 9 dígitos, verifique a impressão digital do certificado na primeira conexão e aprove as permissões solicitadas no dispositivo remoto.",
+    "changes": [
+      "Temas monocromáticos claro/escuro, um espaço de trabalho com guias e uma barra de conexão sempre disponível.",
+      "Grupos de catálogo de endereços, tags, notas, pesquisa, classificação e importação/exportação JSON.",
+      "Seleção de qualidade na sessão, capturas de tela em PNG, pausa de controle e exportação de bate-papo/histórico.",
+      "Códigos autenticadores opcionais para acesso não supervisionado, políticas de conexão de entrada e desconexão ociosa."
+    ],
+    "security": "TLS criptografa o tráfego da sessão. As conexões de entrada são visíveis; as permissões de tela, teclado, área de transferência, arquivos, áudio e gravação são selecionadas separadamente. O acesso não supervisionado está desativado por padrão e usa derivação de senha e limitação de taxa quando ativado. A autenticação opcional de dois fatores adiciona um código autenticador único à senha. Use a versão 2.5 em ambos os dispositivos para esse recurso.",
+    "limitations": "O executável e o instalador não estão assinados. SHA-256 verifica a integridade do arquivo. Área de trabalho segura/UAC/Ctrl+Alt+Del, drivers de tela de privacidade e redirecionamento de impressora virtual não estão disponíveis. O teste de aceitação em dois dispositivos físicos do Windows 10/11 não foi realizado.",
+    "faq": [
+      {
+        "question": "Quais versões do Windows são suportadas?",
+        "answer": "Windows 10 e Windows 11, 64 bits. O IPCast é executado em uma sessão de usuário conectado. As conexões com a Internet exigem acesso ao serviço de retransmissão de ambos os computadores."
+      },
+      {
+        "question": "Quem pode acessar meus arquivos?",
+        "answer": "Você deve permitir a transferência de arquivos e compartilhar explicitamente uma pasta em Arquivos. O acesso está confinado a essa pasta. Você pode parar de compartilhar ou desconectar a qualquer momento."
+      },
+      {
+        "question": "A gravação ou o áudio podem começar secretamente?",
+        "answer": "Ambos requerem permissão separada. A gravação exibe REC em ambos os dispositivos. O áudio inicia e o visualizador o ativa. A gravação AVI não tem áudio e para quando a resolução muda ou 1,8 GB."
+      },
+      {
+        "question": "O que acontece quando uma conexão cai?",
+        "answer": "IPCast tenta até três vezes. Uma nova sessão requer nova aprovação. As transferências de arquivos podem ser retomadas com a mesma pasta compartilhada e arquivo de origem inalterado."
+      }
+    ]
+  },
+  "nl": {
+    "newTitle": "Wat is er nieuw",
+    "securityTitle": "Jij beheert de toegang",
+    "faqTitle": "Veelgestelde vragen",
+    "connection": "Open op beide computers dezelfde IPCast-versie. Voer de externe 9-cijferige ID in, verifieer de certificaatvingerafdruk bij de eerste verbinding en keur de gevraagde machtigingen op het externe apparaat goed.",
+    "changes": [
+      "Monochrome licht/donker-thema's, een werkruimte met tabbladen en een altijd beschikbare verbindingsbalk.",
+      "Adresboekgroepen, tags, notities, zoeken, sorteren en JSON-import/export.",
+      "Kwaliteitsselectie tijdens de sessie, PNG-screenshots, bedieningspauze en export van chat/geschiedenis.",
+      "Optionele authenticatiecodes voor onbeheerde toegang, beleid voor inkomende verbindingen en bij inactieve verbinding."
+    ],
+    "security": "TLS codeert sessieverkeer. Inkomende verbindingen zijn zichtbaar; scherm-, toetsenbord-, klembord-, bestanden-, audio- en opnamerechten worden afzonderlijk geselecteerd. Onbeheerde toegang is standaard uitgeschakeld en maakt gebruik van wachtwoordafleiding en snelheidsbeperking indien ingeschakeld. Optionele tweefactorauthenticatie voegt een eenmalige authenticatorcode toe aan het wachtwoord. Gebruik voor deze functie versie 2.5 op beide apparaten.",
+    "limitations": "Het uitvoerbare bestand en het installatieprogramma zijn niet ondertekend. SHA-256 verifieert de bestandsintegriteit. Veilige desktop/UAC/Ctrl+Alt+Del, stuurprogramma's voor privacyscherm en virtuele printeromleiding zijn niet beschikbaar. Acceptatietests op twee fysieke Windows 10/11-apparaten zijn niet uitgevoerd.",
+    "faq": [
+      {
+        "question": "Welke Windows-versies worden ondersteund?",
+        "answer": "Windows 10 en Windows 11, 64-bit. IPCast wordt uitgevoerd in een ingelogde gebruikerssessie. Voor internetverbindingen is toegang tot de relayservice vanaf beide computers vereist."
+      },
+      {
+        "question": "Wie heeft toegang tot mijn bestanden?",
+        "answer": "Je moet bestandsoverdracht toestaan ​​en expliciet een map delen in Bestanden. De toegang is beperkt tot die map. U kunt op elk gewenst moment stoppen met delen of de verbinding verbreken."
+      },
+      {
+        "question": "Kan de opname of audio in het geheim starten?",
+        "answer": "Voor beide is aparte toestemming nodig. Opnemen geeft REC op beide apparaten weer. Audio begint en de kijker schakelt deze in. AVI-opname heeft geen audio en stopt bij een resolutiewijziging of 1,8 GB."
+      },
+      {
+        "question": "Wat gebeurt er als een verbinding wegvalt?",
+        "answer": "IPCast probeert het maximaal drie keer opnieuw. Voor een nieuwe sessie is nieuwe goedkeuring vereist. Bestandsoverdrachten kunnen worden hervat met dezelfde gedeelde map en ongewijzigd bronbestand."
+      }
+    ]
+  },
+  "pl": {
+    "newTitle": "Co nowego",
+    "securityTitle": "Kontrolujesz dostęp",
+    "faqTitle": "Często zadawane pytania",
+    "connection": "Otwórz tę samą wersję IPCastu na obu komputerach. Wprowadź zdalny 9-cyfrowy identyfikator, zweryfikuj odcisk palca certyfikatu przy pierwszym połączeniu i zatwierdź żądane uprawnienia na zdalnym urządzeniu.",
+    "changes": [
+      "Monochromatyczne jasne/ciemne motywy, obszar roboczy z zakładkami i zawsze dostępny pasek połączeń.",
+      "Grupy książki adresowej, znaczniki, notatki, wyszukiwanie, sortowanie i import/eksport JSON.",
+      "Wybór jakości w trakcie sesji, zrzuty ekranu w formacie PNG, pauza kontrolna i eksport czatu/historii.",
+      "Opcjonalne kody uwierzytelniające dla dostępu nienadzorowanego, zasad połączeń przychodzących i rozłączania w stanie bezczynności."
+    ],
+    "security": "TLS szyfruje ruch sesyjny. Połączenia przychodzące są widoczne; ekran, klawiatura, schowek, uprawnienia do plików, dźwięku i nagrywania są wybierane osobno. Dostęp nienadzorowany jest domyślnie wyłączony i po włączeniu korzysta z wyprowadzania hasła i ograniczania szybkości. Opcjonalne uwierzytelnianie dwuskładnikowe dodaje do hasła jednorazowy kod uwierzytelniający. Aby skorzystać z tej funkcji, użyj wersji 2.5 na obu urządzeniach.",
+    "limitations": "Plik wykonywalny i instalator są niepodpisane. SHA-256 weryfikuje integralność plików. Bezpieczny pulpit/UAC/Ctrl+Alt+Del, sterowniki ekranu prywatności i przekierowanie drukarki wirtualnej są niedostępne. Nie przeprowadzono testów akceptacyjnych na dwóch fizycznych urządzeniach z systemem Windows 10/11.",
+    "faq": [
+      {
+        "question": "Które wersje systemu Windows są obsługiwane?",
+        "answer": "Windows 10 i Windows 11, 64-bitowy. IPCcast działa w sesji zalogowanego użytkownika. Połączenia internetowe wymagają dostępu do usługi przekaźnika z obu komputerów."
+      },
+      {
+        "question": "Kto może uzyskać dostęp do moich plików?",
+        "answer": "Musisz zezwolić na przesyłanie plików i jawnie udostępnić folder w Plikach. Dostęp jest ograniczony do tego folderu. Możesz przerwać udostępnianie lub rozłączyć się w dowolnym momencie."
+      },
+      {
+        "question": "Czy nagrywanie lub dźwięk mogą rozpocząć się w tajemnicy?",
+        "answer": "Obydwa wymagają osobnego pozwolenia. Nagrywanie wyświetla REC na obu urządzeniach. Rozpoczyna się dźwięk, a widz go włącza. Nagranie AVI nie zawiera dźwięku i zatrzymuje się przy zmianie rozdzielczości lub 1,8 GB."
+      },
+      {
+        "question": "Co się stanie, gdy połączenie zostanie zerwane?",
+        "answer": "IPCast ponawia próby maksymalnie trzy razy. Nowa sesja wymaga nowego zatwierdzenia. Przesyłanie plików można wznowić z tym samym folderem udostępnionym i niezmienionym plikiem źródłowym."
+      }
+    ]
+  },
+  "ru": {
+    "newTitle": "Что нового",
+    "securityTitle": "Вы контролируете доступ",
+    "faqTitle": "Часто задаваемые вопросы",
+    "connection": "Откройте одну и ту же версию IPCast на обоих компьютерах. Введите удаленный 9-значный идентификатор, проверьте отпечаток сертификата при первом подключении и подтвердите запрошенные разрешения на удаленном устройстве.",
+    "changes": [
+      "Монохромные светлые/темные темы, рабочее пространство с вкладками и всегда доступная панель подключений.",
+      "Группы адресной книги, теги, заметки, поиск, сортировка и импорт/экспорт JSON.",
+      "Выбор качества во время сеанса, скриншоты в формате PNG, управление паузой и экспорт чата/истории.",
+      "Дополнительные коды аутентификации для автоматического доступа, политик входящего соединения и отключения при простое."
+    ],
+    "security": "TLS шифрует сеансовый трафик. Входящие соединения видны; экран, клавиатура, буфер обмена, файлы, права на звук и запись выбираются отдельно. Автоматический доступ по умолчанию отключен, а при включении используется генерация пароля и ограничение скорости. Дополнительная двухфакторная аутентификация добавляет к паролю одноразовый код аутентификации. Для этой функции используйте версию 2.5 на обоих устройствах.",
+    "limitations": "Исполняемый файл и программа установки не подписаны. SHA-256 проверяет целостность файла. Безопасный рабочий стол/UAC/Ctrl+Alt+Del, драйверы экрана конфиденциальности и перенаправление виртуального принтера недоступны. Приемочное тестирование на двух физических устройствах с Windows 10/11 не проводилось.",
+    "faq": [
+      {
+        "question": "Какие версии Windows поддерживаются?",
+        "answer": "Windows 10 и Windows 11, 64-разрядная версия. IPCast запускается в сеансе вошедшего пользователя. Для подключения к Интернету требуется доступ к службе ретрансляции с обоих компьютеров."
+      },
+      {
+        "question": "Кто может получить доступ к моим файлам?",
+        "answer": "Вы должны разрешить передачу файлов и явно предоставить общий доступ к папке в разделе «Файлы». Доступ ограничен этой папкой. Вы можете прекратить совместное использование или отключиться в любой момент."
+      },
+      {
+        "question": "Может ли запись или аудио начаться тайно?",
+        "answer": "Оба требуют отдельного разрешения. При записи отображается REC на обоих устройствах. Звук запускается, и зритель включает его. Запись AVI не сопровождается звуком и прекращается при изменении разрешения или размере 1,8 ГБ."
+      },
+      {
+        "question": "Что происходит, когда соединение обрывается?",
+        "answer": "IPCast повторяет попытку до трех раз. Новая сессия требует нового одобрения. Передача файлов может возобновиться с той же общей папкой и неизмененным исходным файлом."
+      }
+    ]
+  },
+  "ar": {
+    "newTitle": "ما الجديد",
+    "securityTitle": "يمكنك التحكم في الوصول",
+    "faqTitle": "الأسئلة المتداولة",
+    "connection": "افتح نفس إصدار IPCast على كلا الجهازين. أدخل المعرف البعيد المكون من 9 أرقام، وتحقق من بصمة الشهادة عند الاتصال الأول، واعتمد الأذونات المطلوبة على الجهاز البعيد.",
+    "changes": [
+      "سمات أحادية اللون فاتحة/غامقة ومساحة عمل مبوبة وشريط اتصال متاح دائمًا.",
+      "مجموعات دفتر العناوين والعلامات والملاحظات والبحث والفرز واستيراد/تصدير JSON.",
+      "تحديد الجودة أثناء الجلسة ولقطات شاشة PNG والتحكم المؤقت وتصدير الدردشة/السجل.",
+      "رموز المصادقة الاختيارية للوصول غير المراقب وسياسات الاتصال الوارد وقطع الاتصال الخامل."
+    ],
+    "security": "يقوم TLS بتشفير حركة مرور الجلسة. الاتصالات الواردة مرئية. يتم تحديد أذونات الشاشة ولوحة المفاتيح والحافظة والملفات والصوت والتسجيل بشكل منفصل. يتم إيقاف الوصول غير المراقب بشكل افتراضي ويستخدم اشتقاق كلمة المرور وتحديد المعدل عند تمكينه. تضيف المصادقة الثنائية الاختيارية رمز مصادقة لمرة واحدة إلى كلمة المرور. استخدم الإصدار 2.5 على كلا الجهازين لهذه الميزة.",
+    "limitations": "الملف القابل للتنفيذ والمثبت غير موقعين. يتحقق SHA-256 من سلامة الملف. لا تتوفر برامج تشغيل سطح المكتب الآمن/UAC/Ctrl+Alt+Del وبرامج تشغيل شاشة الخصوصية وإعادة توجيه الطابعة الافتراضية. لم يتم إجراء اختبار القبول على جهازين فعليين يعملان بنظام Windows 10/11.",
+    "faq": [
+      {
+        "question": "ما هي إصدارات Windows المدعومة؟",
+        "answer": "نظاما التشغيل Windows 10 وWindows 11، 64 بت. يعمل IPCast في جلسة مستخدم مسجل الدخول. تتطلب اتصالات الإنترنت الوصول إلى خدمة الترحيل من كلا الجهازين."
+      },
+      {
+        "question": "من يمكنه الوصول إلى ملفاتي؟",
+        "answer": "يجب عليك السماح بنقل الملفات ومشاركة مجلد بشكل صريح في الملفات. يقتصر الوصول إلى هذا المجلد. يمكنك إيقاف المشاركة أو قطع الاتصال في أي وقت."
+      },
+      {
+        "question": "هل يمكن بدء التسجيل أو الصوت سرا؟",
+        "answer": "كلاهما يتطلب إذنًا منفصلاً. يعرض التسجيل REC على كلا الجهازين. يبدأ الصوت ويقوم المشاهد بتمكينه. لا يحتوي تسجيل AVI على صوت ويتوقف عند تغيير الدقة أو 1.8 جيجابايت."
+      },
+      {
+        "question": "ماذا يحدث عند انقطاع الاتصال؟",
+        "answer": "يقوم IPCast بإعادة المحاولة حتى ثلاث مرات. تتطلب الجلسة الجديدة موافقة جديدة. يمكن استئناف عمليات نقل الملفات بنفس المجلد المشترك والملف المصدر الذي لم يتغير."
+      }
+    ]
+  },
+  "ja": {
+    "newTitle": "新着情報",
+    "securityTitle": "アクセスを制御するのはあなたです",
+    "faqTitle": "よくある質問",
+    "connection": "両方のコンピュータで同じ IPCast バージョンを開きます。リモートの 9 桁の ID を入力し、最初の接続で証明書のフィンガープリントを確認し、リモート デバイスで要求されたアクセス許可を承認します。",
+    "changes": [
+      "モノクロのライト/ダーク テーマ、タブ付きワークスペース、いつでも利用できる接続バー。",
+      "アドレス帳グループ、タグ、メモ、検索、並べ替え、JSON インポート/エクスポート。",
+      "セッション中の品質の選択、PNG スクリーンショット、一時停止の制御、チャット/履歴のエクスポート。",
+      "無人アクセス、着信接続ポリシー、およびアイドル切断のためのオプションの認証コード。"
+    ],
+    "security": "TLS はセッション トラフィックを暗号化します。受信接続が表示されます。画面、キーボード、クリップボード、ファイル、オーディオ、録音の権限は個別に選択されます。無人アクセスはデフォルトではオフになっており、有効にするとパスワード導出とレート制限が使用されます。オプションの 2 要素認証では、パスワードにワンタイム認証コードを追加します。この機能には両方のデバイスでバージョン 2.5 を使用してください。",
+    "limitations": "実行可能ファイルとインストーラは署名されていません。 SHA-256 はファイルの整合性を検証します。セキュア デスクトップ/UAC/Ctrl+Alt+Del、プライバシー スクリーン ドライバー、仮想プリンター リダイレクトは利用できません。 2 台の物理 Windows 10/11 デバイスでの受け入れテストは実行されませんでした。",
+    "faq": [
+      {
+        "question": "Windowsのどのバージョンがサポートされていますか?",
+        "answer": "Windows 10およびWindows 11、64ビット。 IPCast は、サインインしたユーザー セッションで実行されます。インターネット接続には、両方のコンピュータからリレー サービスにアクセスする必要があります。"
+      },
+      {
+        "question": "私のファイルに誰がアクセスできますか?",
+        "answer": "ファイル転送を許可し、ファイル内のフォルダーを明示的に共有する必要があります。アクセスはそのフォルダーに制限されます。いつでも共有を停止したり切断したりできます。"
+      },
+      {
+        "question": "こっそり録音や音声を開始できますか?",
+        "answer": "どちらも別途許可が必要です。録画中は両方のデバイスに「REC」と表示されます。音声が開始され、ビューアが音声を有効にします。 AVI 録画には音声がなく、解像度の変更または 1.8 GB で停止します。"
+      },
+      {
+        "question": "接続が切れたらどうなるの？",
+        "answer": "IPCast は最大 3 回まで再試行します。新しいセッションには新たな承認が必要です。ファイル転送は、同じ共有フォルダーと変更されていないソース ファイルを使用して再開できます。"
+      }
+    ]
+  },
+  "ko": {
+    "newTitle": "새로운 점",
+    "securityTitle": "귀하는 액세스를 제어합니다.",
+    "faqTitle": "자주 묻는 질문",
+    "connection": "두 컴퓨터 모두에서 동일한 IPcast 버전을 엽니다. 원격 장치 ID 9자리를 입력하고, 첫 번째 연결 시 인증서 지문을 확인한 후, 원격 장치에 요청된 권한을 승인하세요.",
+    "changes": [
+      "단색의 밝은/어두운 테마, 탭으로 구분된 작업 공간 및 항상 사용 가능한 연결 표시줄.",
+      "주소록 그룹, 태그, 메모, 검색, 정렬 및 JSON 가져오기/내보내기.",
+      "세션 중 품질 선택, PNG 스크린샷, 제어 일시 중지 및 채팅/기록 내보내기.",
+      "무인 액세스, 수신 연결 정책 및 유휴 연결 해제를 위한 선택적 인증자 코드입니다."
+    ],
+    "security": "TLS는 세션 트래픽을 암호화합니다. 들어오는 연결이 표시됩니다. 화면, 키보드, 클립보드, 파일, 오디오, 녹음 권한은 별도로 선택됩니다. 무인 액세스는 기본적으로 꺼져 있으며 활성화되면 비밀번호 파생 및 속도 제한을 사용합니다. 선택적 2단계 인증은 비밀번호에 일회성 인증 코드를 추가합니다. 이 기능을 사용하려면 두 장치 모두에서 버전 2.5를 사용하세요.",
+    "limitations": "실행 파일과 설치 프로그램이 서명되지 않았습니다. SHA-256은 파일 무결성을 확인합니다. 보안 데스크톱/UAC/Ctrl+Alt+Del, 개인정보 보호 화면 드라이버 및 가상 프린터 리디렉션을 사용할 수 없습니다. 두 개의 물리적 Windows 10/11 장치에 대한 승인 테스트는 수행되지 않았습니다.",
+    "faq": [
+      {
+        "question": "어떤 Windows 버전이 지원됩니까?",
+        "answer": "Windows 10 및 Windows 11, 64비트. IPCast는 로그인한 사용자 세션에서 실행됩니다. 인터넷 연결을 위해서는 두 컴퓨터 모두에서 릴레이 서비스에 액세스해야 합니다."
+      },
+      {
+        "question": "누가 내 파일에 접근할 수 있나요?",
+        "answer": "파일 전송을 허용하고 Files에서 폴더를 명시적으로 공유해야 합니다. 액세스는 해당 폴더로 제한됩니다. 언제든지 공유를 중지하거나 연결을 끊을 수 있습니다."
+      },
+      {
+        "question": "녹음이나 오디오를 비밀리에 시작할 수 있나요?",
+        "answer": "둘 다 별도의 권한이 필요합니다. 녹음하면 두 장치 모두에 REC가 표시됩니다. 오디오가 시작되고 뷰어가 이를 활성화합니다. AVI 녹화에는 오디오가 없으며 해상도 변경 또는 1.8GB에서 중지됩니다."
+      },
+      {
+        "question": "연결이 끊어지면 어떻게 되나요?",
+        "answer": "IPcast는 최대 3번까지 재시도합니다. 새 세션에는 새로운 승인이 필요합니다. 동일한 공유 폴더 및 변경되지 않은 소스 파일을 사용하여 파일 전송을 재개할 수 있습니다."
+      }
+    ]
+  },
+  "zh": {
+    "newTitle": "最新消息",
+    "securityTitle": "您控制访问",
+    "faqTitle": "常见问题",
+    "connection": "在两台计算机上打开相同的IPCast版本。输入远程 9 位 ID，在首次连接时验证证书指纹，并批准远程设备上请求的权限。",
+    "changes": [
+      "单色浅色/深色主题、选项卡式工作区和始终可用的连接栏。",
+      "通讯录组、标签、注释、搜索、排序和 JSON 导入/导出。",
+      "会话中质量选择、PNG 屏幕截图、控制暂停和聊天/历史记录导出。",
+      "用于无人值守访问、传入连接策略和空闲断开的可选验证器代码。"
+    ],
+    "security": "TLS对会话流量进行加密。传入连接可见；屏幕、键盘、剪贴板、文件、音频和录音权限分别选择。无人值守访问默认处于关闭状态，启用后会使用密码派生和速率限制。可选的双因素身份验证会在密码中添加一次性身份验证码。在两台设备上使用 2.5 版来实现此功能。",
+    "limitations": "可执行文件和安装程序未签名。 SHA-256 验证文件完整性。安全桌面/UAC/Ctrl+Alt+Del、隐私屏幕驱动程序和虚拟打印机重定向不可用。未在两台物理 Windows 10/11 设备上执行验收测试。",
+    "faq": [
+      {
+        "question": "支持哪些Windows版本？",
+        "answer": "Windows 10 和 Windows 11，64 位。 IPCast 在登录的用户会话中运行。 Internet 连接需要从两台计算机访问中继服务。"
+      },
+      {
+        "question": "谁可以访问我的文件？",
+        "answer": "您必须允许文件传输并显式共享“文件”中的文件夹。访问仅限于该文件夹。您可以随时停止共享或断开连接。"
+      },
+      {
+        "question": "录音或音频可以秘密启动吗？",
+        "answer": "两者都需要单独的许可。录音在两台设备上均显示 REC。音频开始，观众启用它。 AVI 录制没有音频，并在分辨率更改或 1.8 GB 处停止。"
+      },
+      {
+        "question": "当连接断开时会发生什么？",
+        "answer": "IPCast重试最多3次。新的会议需要新的批准。可以使用相同的共享文件夹和未更改的源文件恢复文件传输。"
+      }
+    ]
+  }
+}

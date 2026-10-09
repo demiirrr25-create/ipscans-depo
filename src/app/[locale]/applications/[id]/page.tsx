@@ -1,3 +1,4 @@
+import { uiText } from '@/i18n/ui';
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -90,12 +91,12 @@ export default async function ApplicationDetail({ params }: Params) {
             <div><dt className="text-neutral-400">{copy.version}</dt><dd className="mt-2">{app.version}</dd></div>
             <div><dt className="text-neutral-400">{copy.size}</dt><dd className="mt-2">{(app.installerBytes / 1024 / 1024).toFixed(1)} MiB</dd></div>
           </dl>
-          <dl className="mt-6 font-mono text-xs"><dt className="text-neutral-400">{copy.checksum} · Windows installer</dt><dd className="mt-2 break-all select-all text-neutral-200">{app.installerSha256}</dd></dl>
+          <dl className="mt-6 font-mono text-xs"><dt className="text-neutral-400">{copy.checksum} · {uiText(locale, "Windows installer", "Windows kurulum paketi")}</dt><dd className="mt-2 break-all select-all text-neutral-200">{app.installerSha256}</dd></dl>
           {app.id === "scanner" && <>
             <dl className="mt-6 font-mono text-xs">
-              <dt className="text-neutral-400">{copy.size} · Portable EXE</dt>
+              <dt className="text-neutral-400">{copy.size} · {uiText(locale, "Portable EXE", "Taşınabilir EXE")}</dt>
               <dd className="mt-2">{(app.portableBytes / 1024 / 1024).toFixed(1)} MiB</dd>
-              <dt className="mt-4 text-neutral-400">{copy.checksum} · Portable EXE</dt>
+              <dt className="mt-4 text-neutral-400">{copy.checksum} · {uiText(locale, "Portable EXE", "Taşınabilir EXE")}</dt>
               <dd className="mt-2 break-all select-all text-neutral-200">{app.portableSha256}</dd>
             </dl>
             <a href={app.releaseUrl} className="mt-6 inline-flex min-h-11 items-center text-sm text-neutral-300 underline underline-offset-4 hover:text-white">{scanner.releaseNotes} ↗</a>
@@ -105,14 +106,14 @@ export default async function ApplicationDetail({ params }: Params) {
         </aside>
       </div>
       {app.id === "scanner" && <section className="py-16 sm:py-24" aria-labelledby="map-preview-title">
-        <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPscans+ / network evidence</p>
-        <h2 id="map-preview-title" className="mt-4 max-w-2xl font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">Network Map<span className="text-neutral-500">.</span></h2>
+        <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPscans+ / {uiText(locale, "Network evidence", "Ağ kanıtları")}</p>
+        <h2 id="map-preview-title" className="mt-4 max-w-2xl font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">{uiText(locale, "Network map", "Ağ haritası")}<span className="text-neutral-500">.</span></h2>
         <p className="mt-5 max-w-2xl leading-relaxed text-neutral-300">{scanner.mapIntro}</p>
         <div className="mt-10 grid gap-px border border-white/15 bg-white/15 md:grid-cols-3">
           {[
-            { code: "01 / VERIFIED", title: "LLDP", description: locale === "tr" ? "Yetkili SNMP ile ilan edilmiş komşu MAC eşleşmesi" : "Neighbor MAC announced through authorized SNMP" },
-            { code: "02 / INFERRED", title: "Gateway path", description: locale === "tr" ? "Ortak ağ geçidi; fiziksel anahtar portu bilinmiyor" : "Shared gateway; physical switch port unknown" },
-            { code: "03 / UNKNOWN", title: "Unmapped", description: locale === "tr" ? "Kanıt yoksa bağlantı uydurulmaz" : "No connection is invented without evidence" },
+            { code: uiText(locale, "01 / VERIFIED", "01 / DOĞRULANDI"), title: "LLDP", description: uiText(locale, "Neighbor MAC announced through authorized SNMP", "Yetkili SNMP ile ilan edilmiş komşu MAC eşleşmesi") },
+            { code: uiText(locale, "02 / INFERRED", "02 / ÇIKARIMSAL"), title: uiText(locale, "Gateway path", "Ağ geçidi yolu"), description: uiText(locale, "Shared gateway; physical switch port unknown", "Ortak ağ geçidi; fiziksel anahtar portu bilinmiyor") },
+            { code: uiText(locale, "03 / UNKNOWN", "03 / BİLİNMİYOR"), title: uiText(locale, "Unmapped", "Eşlenmemiş"), description: uiText(locale, "No connection is invented without evidence", "Kanıt yoksa bağlantı uydurulmaz") },
           ].map((entry) => <div key={entry.code} className="bg-black p-7">
             <span className="font-mono text-xs tracking-widest text-neutral-400">{entry.code}</span>
             <h3 className="mt-8 text-2xl font-semibold">{entry.title}</h3>

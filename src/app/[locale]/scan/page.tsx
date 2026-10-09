@@ -1,3 +1,4 @@
+import { uiText } from '@/i18n/ui';
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
@@ -65,7 +66,7 @@ export default async function ScanPage({
         </div>
 
         <h2 className="mt-10 text-xl font-semibold">
-          {locale === "tr" ? "Yaygın Portlar" : "Common Ports"}
+          {uiText(locale, "Common Ports", "Yaygın Portlar")}
         </h2>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {COMMON_PORTS.map((p) => (

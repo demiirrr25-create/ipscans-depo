@@ -10,8 +10,8 @@ export function PageShell({
   return (
     <div className="page-frame mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
       <header className="page-heading border-b border-white/20 pb-10">
-        <p className="mb-6 font-mono text-[11px] tracking-[.2em] text-neutral-400">IPSCANS / NETWORK INTELLIGENCE</p>
-        <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-[-.05em] sm:text-6xl">
+        <p className="mb-6 font-mono text-[11px] tracking-[.2em] text-neutral-400">IPSCANS</p>
+        <h1 className="font-[family-name:var(--font-display)] break-words text-4xl font-medium tracking-[-.05em] sm:text-6xl">
           <span className="text-white">{title}</span>
         </h1>
         {subtitle && (

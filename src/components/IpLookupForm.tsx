@@ -118,7 +118,7 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
                   key={label}
                   className="border-b border-white/10 last:border-0"
                 >
-                  <th scope="row" className="text-left w-2/5 bg-white/5 px-4 py-3 font-medium text-neutral-400">
+                  <th scope="row" className="text-start w-2/5 bg-white/5 px-4 py-3 font-medium text-neutral-400">
                     {label}
                   </th>
                   <td className="break-all px-4 py-3 font-mono text-white">

@@ -1844,7 +1844,10 @@ const dictionaries: Record<Locale, Dictionary> = {
 };
 
 export function getDictionary(locale: Locale): Dictionary {
-  return dictionaries[locale];
+  const dict=dictionaries[locale];
+  const blogNames:Partial<Record<Locale,string>>={ar:'المدونة',ja:'ブログ',ko:'블로그',zh:'博客',ru:'Блог'};
+  const name=blogNames[locale];
+  return name ? {...dict,nav:{...dict.nav,blog:name},blog:{...dict.blog,title:name}} : dict;
 }
 
 export function getPublicDictionary(locale: Locale): PublicDictionary {

@@ -1,5 +1,6 @@
 "use client";
 
+import { uiText } from '@/i18n/ui';
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -42,11 +43,11 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
     <section id="applications" aria-labelledby="applications-title" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-24">
       <div className="mb-10 border-b border-white/15 pb-8 sm:flex sm:items-end sm:justify-between">
         <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-400">02 / IPScans ecosystem</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-400">02 / {uiText(locale, "IPScans ecosystem", "IPScans ekosistemi")}</p>
         <Heading id="applications-title" className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight sm:text-6xl">{copy.applications}<span className="text-neutral-500">.</span></Heading>
         <p className="mt-3 max-w-2xl text-neutral-400">{copy.applicationsIntro}</p>
         </div>
-        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-400 sm:block">EXPLORE / 01—{String(applications.length + tools.length).padStart(2, "0")}</span>
+        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-400 sm:block">{uiText(locale, "EXPLORE", "KEŞFET")} / 01—{String(applications.length + tools.length).padStart(2, "0")}</span>
       </div>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <label className="block w-full sm:max-w-sm">
@@ -72,7 +73,7 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
             <div className="flex items-start justify-between">
               {"icon" in item && item.icon ? <Image src={item.icon} alt="" width={64} height={64} className="rounded-2xl" /> :
                 <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/20 font-mono text-2xl">⌁</span>}
-              <span className="font-mono text-xs text-neutral-400">{String(index + 1).padStart(2, "0")} / {item.category.toUpperCase()}</span>
+              <span className="max-w-[65%] text-end font-mono text-xs text-neutral-400">{String(index + 1).padStart(2, "0")} / {item.category === "desktop" ? dict.experience.categories.desktop : item.category === "ip" ? dict.experience.categories.ip : dict.nav.tools}</span>
             </div>
             <h3 className="mt-8 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-white">{item.name}</h3>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-neutral-300">{item.description}</p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { uiText } from '@/i18n/ui';
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
@@ -27,7 +28,7 @@ export default function NotFound() {
   const t = copy[locale];
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-6xl flex-col justify-center px-4 py-20">
-      <p className="font-mono text-xs uppercase tracking-[0.3em] text-neutral-400">IPSCANS / SIGNAL LOST</p>
+      <p className="font-mono text-xs uppercase tracking-[0.3em] text-neutral-400">IPSCANS / {uiText(locale, "SIGNAL LOST", "SİNYAL YOK")}</p>
       <h1 className="mt-6 font-[family-name:var(--font-display)] text-[clamp(6rem,23vw,16rem)] font-semibold leading-none tracking-[-0.1em]">404<span className="text-neutral-500">.</span></h1>
       <p className="mt-6 max-w-lg text-lg text-neutral-300">{t.message}</p>
       <div className="mt-10 flex flex-wrap gap-3">

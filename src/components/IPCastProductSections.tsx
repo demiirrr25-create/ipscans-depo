@@ -1,3 +1,4 @@
+import { uiText } from '@/i18n/ui';
 import type { Locale } from "@/i18n/config";
 import { ipcastProductCopy } from "@/content/ipcast-product";
 
@@ -7,7 +8,7 @@ export function IPCastProductSections({ locale }: { locale: Locale }) {
   return (
     <div className="mx-auto mt-12 max-w-5xl space-y-10">
       <section aria-labelledby="ipcast-whats-new" className="rounded-2xl border border-white/15 bg-white/[0.03] p-6 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">IPCast · Secure Remote Access</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">IPCast · {uiText(locale, "Secure Remote Access", "Güvenli Uzak Erişim")}</p>
         <h2 id="ipcast-whats-new" className="mt-3 text-2xl font-semibold text-white">{copy.newTitle}</h2>
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
           {copy.changes.map((change, index) => (

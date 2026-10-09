@@ -1,3 +1,17 @@
+import en from './blog-locales/en.json';
+import de from './blog-locales/de.json';
+import es from './blog-locales/es.json';
+import fr from './blog-locales/fr.json';
+import it from './blog-locales/it.json';
+import pt from './blog-locales/pt.json';
+import nl from './blog-locales/nl.json';
+import pl from './blog-locales/pl.json';
+import ru from './blog-locales/ru.json';
+import ar from './blog-locales/ar.json';
+import ja from './blog-locales/ja.json';
+import ko from './blog-locales/ko.json';
+import zh from './blog-locales/zh.json';
+import { findToolBySlug, toolPath } from '@/lib/tool-routes';
 import type { Locale } from "@/i18n/config";
 import { networkGuides } from './network-guides';
 
@@ -5,7 +19,7 @@ export type Post = {
   slug: string;
   date: string;
   category?: string;
-  // Only tr/en are fully translated today; other locales fall back to English.
+  categories?: Partial<Record<Locale, string>>;
   title: Partial<Record<Locale, string>>;
   excerpt: Partial<Record<Locale, string>>;
   /** Static, code-authored HTML — never derived from user input. */
@@ -19,7 +33,7 @@ export function localizedPostText(
   return field[locale] ?? field.en ?? Object.values(field)[0] ?? "";
 }
 
-export const posts: Post[] = [
+const originalPosts: Post[] = [
   ...networkGuides,
   {
     slug: "ip-adresi-nedir",
@@ -203,5 +217,26 @@ export function getPost(slug: string): Post | undefined {
 
 export function readingMinutes(post: Post, locale: Locale): number {
   const text = localizedPostText(post.body, locale).replace(/<[^>]*>/g, ' ');
-  return Math.max(1, Math.ceil(text.trim().split(/\s+/).length / 180));
+  return Math.max(1, Math.ceil(['ja','zh','ko'].includes(locale) ? text.replace(/\s/g,'').length / 400 : text.trim().split(/\s+/).length / 180));
+}
+
+type Translation = {title:string;excerpt:string;category:string;body:string};
+const translations: Partial<Record<Locale,Record<string,Translation>>> = {en,de,es,fr,it,pt,nl,pl,ru,ar,ja,ko,zh};
+export const posts: Post[] = originalPosts.map(post => {
+  const result: Post = {...post,title:{...post.title},excerpt:{...post.excerpt},body:{...post.body},categories:{tr:post.category || 'Temeller'}};
+  for (const [language, articles] of Object.entries(translations)) {
+    const locale=language as Locale, translated=articles[post.slug];
+    if(!translated) continue;
+    result.title[locale]=translated.title;
+    result.excerpt[locale]=translated.excerpt;
+    result.categories![locale]=translated.category;
+    result.body[locale]=translated.body.replace(/href="\/[^/]+\/([^"#?]+)"/g,(match,slug:string)=>{
+      const tool=findToolBySlug(slug);
+      return tool ? `href="${toolPath(tool,locale)}"` : match;
+    });
+  }
+  return result;
+});
+export function postCategory(post:Post,locale:Locale):string {
+  return post.categories?.[locale] || post.category || 'Essentials';
 }

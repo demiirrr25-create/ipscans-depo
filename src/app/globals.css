@@ -215,7 +215,7 @@ input, select, textarea { min-width: 0; }
 .prose-ipscans ul,
 .prose-ipscans ol {
   margin-top: 1.1em;
-  padding-left: 1.4em;
+  padding-inline-start: 1.4em;
 }
 .prose-ipscans li {
   margin-top: 0.5em;
@@ -291,3 +291,10 @@ main .text-neutral-500 { color: #a3a3a3; }
 .article-body a { overflow-wrap:anywhere; }
 @media(max-width:640px) { .network-backdrop { opacity:.4; mask-image:linear-gradient(90deg,transparent,#000); } }
 @media(prefers-reduced-motion:reduce) { .network-packet,.network-beacon { animation:none; } }
+
+/* Long localized titles and right-to-left layouts share the same readable grid. */
+.page-frame, .page-heading, .blog-card { min-width:0; }
+.page-heading h1, .blog-card h3, .article-body { overflow-wrap:anywhere; }
+.article-body code { unicode-bidi:isolate; direction:ltr; }
+[dir="rtl"] .network-backdrop { transform:scaleX(-1); }
+[dir="rtl"] .font-mono { letter-spacing:normal; }
