@@ -1,5 +1,6 @@
 """IPscans+ — PyQt6 desktop app entry point."""
 import sys
+import os
 import traceback
 import logging
 import socket
@@ -18,7 +19,7 @@ from app.ui.styles import DARK_QSS
 
 # Written next to every run (not just on crash) so a support request can
 # include real diagnostics even without a crash — see _log().
-_LOG_PATH = Path.home() / "IPscans-Plus.log"
+_LOG_PATH = Path(os.environ.get('LOCALAPPDATA', Path.home() / '.local' / 'share')) / 'IPscans+' / 'logs' / 'IPscans-Plus.log'
 
 
 def _log(message: str) -> None:
@@ -80,6 +81,7 @@ def main() -> None:
         _reset_onboarding()
 
     try:
+        _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
         handler = RotatingFileHandler(_LOG_PATH, maxBytes=2 * 1024 * 1024, backupCount=3, encoding="utf-8")
     except OSError:
         handler = logging.StreamHandler()
@@ -125,6 +127,8 @@ def main() -> None:
         if window._jobs or window._warnings:
             raise RuntimeError("Selftest could not complete adapter/history startup checks")
         from app.core import network_utils
+        if sys.platform == 'win32' and not network_utils._ping_once('127.0.0.1'):
+            raise RuntimeError('Packaged native ICMP selftest failed')
         from app.core.models import Device
         from app.ui.device_panel import DeviceControlPanel
         with socket.socket() as listener:

@@ -325,7 +325,7 @@ class DiscoveryTests(unittest.TestCase):
             app.processEvents()
         self.assertEqual(window.model.rowCount(), 1)
         self.assertIn("1 cameras", window.summary_label.text())
-        self.assertEqual(window.views.currentWidget(), window.network_map)
+        self.assertEqual(window.views.currentWidget(), window.table)  # v4 preserves the user's view
         self.assertIn("192.168.1.8", window.network_map.nodes)
         window.close()
 

@@ -8,7 +8,7 @@ import time
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFormLayout, QHBoxLayout, QHeaderView, QLabel,
+    QCheckBox, QComboBox, QFileDialog, QFormLayout, QFrame, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QListWidget, QMenu, QMessageBox, QProgressBar, QPushButton, QSpinBox,
     QStackedWidget, QTableView, QTextEdit, QVBoxLayout, QWidget,
 )
@@ -18,6 +18,9 @@ from app.core.adapters import ChangeResult
 from app.core.models import Device
 from app.core.registry import DeviceRegistry
 from app.core.scanner import ScanOptions
+from app.core.profiles import PROFILES, parse_ports
+from app.core.report import render_report
+from app.core.targets import plan_targets
 from app.core.topology import build_topology
 from app.i18n import DEFAULT_LANGUAGE, t
 from app.ui.device_panel import DeviceControlPanel
@@ -52,8 +55,10 @@ class MainWindow(QWidget):
         self._last_suggested = ""
         self._warnings: set[str] = set()
         self._map_dirty = False
+        self._metrics = {}
+        self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ / Next Generation")
+        self.setWindowTitle("IPscans+ 4.0 / Network Observatory")
         self.resize(1380, 850)
         self.setMinimumSize(1000, 650)
         self.setStyleSheet(DARK_QSS)
@@ -76,6 +81,8 @@ class MainWindow(QWidget):
         self._range_timer.timeout.connect(self._estimate_range)
         self.target_input.start_edit.textChanged.connect(lambda: self._range_timer.start())
         self.target_input.end_edit.textChanged.connect(lambda: self._range_timer.start())
+        self.additional_targets.textChanged.connect(lambda: self._range_timer.start())
+        self.exclusions.textChanged.connect(lambda: self._range_timer.start())
         QTimer.singleShot(0, self._refresh_adapters)
         QTimer.singleShot(0, self._load_history)
         QShortcut(QKeySequence("Ctrl+F"), self, activated=self.filter_edit.setFocus)
@@ -84,15 +91,19 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         outer = QHBoxLayout(self)
+        outer.setContentsMargins(20, 20, 20, 20)
+        outer.setSpacing(24)
         self.navigation = QListWidget()
-        self.navigation.setFixedWidth(150)
+        self.navigation.setFixedWidth(176)
+        self.navigation.setObjectName('Navigation')
         self.navigation.setAccessibleName(t(self.lang, "navigation"))
         self.navigation.addItems([t(self.lang, key) for key in ("scan", "network_map", "history", "settings")])
         outer.addWidget(self.navigation)
         body = QVBoxLayout()
         outer.addLayout(body, stretch=1)
         heading = QHBoxLayout()
-        heading.addWidget(QLabel("IPscans+ / Next Generation", objectName="TitleText"))
+        heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
+        heading.addWidget(QLabel("4.0  /  NETWORK OBSERVATORY", objectName="VersionBadge"))
         self.adapter_select = QComboBox()
         self.adapter_select.setAccessibleName(t(self.lang, "current_adapter"))
         self.adapter_select.currentIndexChanged.connect(self._adapter_changed)
@@ -104,6 +115,17 @@ class MainWindow(QWidget):
         self.adapter_details = QLabel(t(self.lang, "detecting_adapter"))
         self.adapter_details.setWordWrap(True)
         body.addWidget(self.adapter_details)
+        profile_row = QHBoxLayout()
+        self.profile_select = QComboBox()
+        self.profile_select.setAccessibleName(self._v4('Scan profile', 'Tarama profili'))
+        for key, profile in PROFILES.items():
+            self.profile_select.addItem(profile.name_tr if self.lang == 'tr' else profile.name, key)
+        self.profile_select.setCurrentIndex(1)
+        self.profile_description = QLabel()
+        self.profile_description.setWordWrap(True)
+        profile_row.addWidget(self.profile_select)
+        profile_row.addWidget(self.profile_description, 1)
+        body.addLayout(profile_row)
         row = QHBoxLayout()
         self.target_input = TargetInput(self.lang)
         row.addWidget(self.target_input, stretch=1)
@@ -117,6 +139,20 @@ class MainWindow(QWidget):
         body.addLayout(row)
         self.range_estimate = QLabel(t(self.lang, "range_hint"))
         body.addWidget(self.range_estimate)
+        cards = QHBoxLayout()
+        self.metric_values = {}
+        for key, title in [('devices', self._v4('DEVICES FOUND', 'BULUNAN CİHAZ')),
+                           ('services', self._v4('OPEN TCP SERVICES', 'AÇIK TCP SERVİSİ')),
+                           ('speed', self._v4('HOSTS / SECOND', 'HEDEF / SANİYE')),
+                           ('elapsed', self._v4('ELAPSED', 'GEÇEN SÜRE'))]:
+            frame = QFrame(objectName='MetricCard')
+            layout = QVBoxLayout(frame)
+            layout.addWidget(QLabel(title, objectName='MetricTitle'))
+            value = QLabel('—', objectName='MetricValue')
+            self.metric_values[key] = value
+            layout.addWidget(value)
+            cards.addWidget(frame, 1)
+        body.addLayout(cards)
         self.pages = QStackedWidget()
         body.addWidget(self.pages, stretch=1)
         self.workspace = QWidget()
@@ -129,6 +165,9 @@ class MainWindow(QWidget):
         self.filter_edit = QLineEdit()
         self.filter_edit.setPlaceholderText(t(self.lang, "search_placeholder"))
         self.filter_edit.setAccessibleName(t(self.lang, "search_placeholder"))
+        self.filter_edit.setPlaceholderText(self._v4('Search devices…  port:443  source:ONVIF  -type:Unknown',
+            'Cihaz ara…  port:443  source:ONVIF  -type:Unknown'))
+        self.filter_edit.setToolTip('ip:192.168.1.0/24  port:443  vendor:Axis  type:"IP Camera"  source:ONVIF  -type:Unknown')
         self.filter_edit.textChanged.connect(self._filter)
         filters.addWidget(self.filter_edit, stretch=1)
         self.view_select = QComboBox()
@@ -142,7 +181,7 @@ class MainWindow(QWidget):
         self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
         self.conflicts_button.clicked.connect(self._show_conflicts)
         filters.addWidget(self.conflicts_button)
-        export = QPushButton(t(self.lang, "export_results"))
+        export = QPushButton(self._v4('Export report', 'Raporu dışa aktar'))
         export.clicked.connect(self._export)
         filters.addWidget(export)
         workspace.addLayout(filters)
@@ -169,6 +208,25 @@ class MainWindow(QWidget):
         self.navigation.currentRowChanged.connect(self._navigate)
         self.navigation.setCurrentRow(0)
         self._update_summary()
+        self.profile_select.currentIndexChanged.connect(self._profile_changed)
+        self._profile_changed()
+
+    def _v4(self, en: str, tr: str) -> str:
+        return tr if self.lang == 'tr' else en
+
+    def _profile_changed(self, *_args) -> None:
+        profile = PROFILES[self.profile_select.currentData()]
+        self.profile_description.setText(profile.description_tr if self.lang == 'tr' else profile.description)
+        self.concurrency.setValue(profile.workers)
+
+    def _on_metrics(self, metrics: dict) -> None:
+        self._metrics = dict(metrics)
+        self.metric_values['speed'].setText(f"{metrics['hosts_per_second']:.1f}")
+        self.metric_values['elapsed'].setText(f"{metrics['elapsed_seconds']:.1f} s")
+        first = metrics.get('first_result_seconds')
+        self.metric_values['speed'].setToolTip(self._v4('Completed discovery targets / total elapsed time. ',
+            'Tamamlanan keşif hedefi / toplam geçen süre. ') +
+            (f"First result: {first:.3f} s" if first is not None else ''))
 
     def _build_table(self) -> QTableView:
         table = QTableView()
@@ -232,6 +290,19 @@ class MainWindow(QWidget):
         self.concurrency.setRange(2, 128)
         self.concurrency.setValue(64)
         form.addRow(t(self.lang, "worker_budget"), self.concurrency)
+        self.custom_ports = QLineEdit()
+        self.custom_ports.setPlaceholderText(self._v4('Profile defaults, or 22,80,443,8000-8010',
+            'Profil varsayılanı veya 22,80,443,8000-8010'))
+        self.custom_ports.setMaxLength(2048)
+        form.addRow(self._v4('Custom TCP ports (max 256)', 'Özel TCP portları (en çok 256)'), self.custom_ports)
+        self.additional_targets = QLineEdit()
+        self.additional_targets.setMaxLength(4096)
+        self.additional_targets.setPlaceholderText('192.168.2.0/24, 10.0.0.10-20')
+        form.addRow(self._v4('Additional ranges', 'Ek ağ aralıkları'), self.additional_targets)
+        self.exclusions = QLineEdit()
+        self.exclusions.setMaxLength(4096)
+        self.exclusions.setPlaceholderText('192.168.1.1, 192.168.1.240/28')
+        form.addRow(self._v4('Excluded addresses / subnets', 'Hariç tutulan adresler / ağlar'), self.exclusions)
         self.snmp_secret = QLineEdit()
         self.snmp_secret.setEchoMode(QLineEdit.EchoMode.Password)
         self.snmp_secret.setPlaceholderText(t(self.lang, "snmp_notice"))
@@ -300,11 +371,14 @@ class MainWindow(QWidget):
 
     def _estimate_range(self) -> None:
         try:
-            count = len(network_utils.parse_targets(self.target_input.spec()))
+            count = len(self._planned_targets())
         except network_utils.InvalidTargetError as exc:
             self.range_estimate.setText(str(exc))
             return
         self.range_estimate.setText(t(self.lang, "range_estimate", count=count))
+
+    def _planned_targets(self) -> list[str]:
+        return plan_targets(self.target_input.spec(), self.additional_targets.text(), self.exclusions.text())
 
     def _load_history(self) -> None:
         self._background(history.load_snapshots, self._history_loaded)
@@ -350,8 +424,10 @@ class MainWindow(QWidget):
         if self._worker and self._worker.isRunning() or self._node_worker and self._node_worker.isRunning():
             return
         try:
-            targets = network_utils.parse_targets(self.target_input.spec())
+            targets = self._planned_targets()
             options = ScanOptions(max_workers=self.concurrency.value(),
+                                  profile=self.profile_select.currentData(),
+                                  custom_ports=parse_ports(self.custom_ports.text()),
                                   enable_snmp=bool(self.snmp_secret.text()),
                                   snmp_community=self.snmp_secret.text() or None,
                                   interface_ip=self.adapter_select.currentData().ip
@@ -367,6 +443,10 @@ class MainWindow(QWidget):
             return
         self.snmp_secret.clear()
         self._cancelled = False
+        self._scan_complete = False
+        self._metrics = {}
+        for value in self.metric_values.values():
+            value.setText('—')
         self._pending.clear()
         self._observations = DeviceRegistry()
         self._conflicts.clear()
@@ -376,6 +456,8 @@ class MainWindow(QWidget):
         self.network_map.collapsed.clear()
         self.network_map.refresh([])
         self._scan_target = self.target_input.spec()
+        if self.additional_targets.text().strip() or self.exclusions.text().strip():
+            self._scan_target += f" | +{self.additional_targets.text().strip()} | exclude:{self.exclusions.text().strip()}"
         self._scan_adapter = self.adapter_select.currentData()
         self._scan_started = time.monotonic()
         self._set_scanning(True)
@@ -389,6 +471,7 @@ class MainWindow(QWidget):
         self._worker.phase_changed.connect(self._on_phase_changed)
         self._worker.conflicts_found.connect(self._on_conflicts)
         self._worker.warning.connect(self._warning)
+        self._worker.metrics.connect(self._on_metrics)
         self._worker.finished_ok.connect(self._on_scan_finished)
         self._worker.failed.connect(self._on_scan_failed)
         self._worker.finished.connect(self._close_when_idle)
@@ -400,6 +483,10 @@ class MainWindow(QWidget):
         self.target_input.setEnabled(not active)
         self.adapter_select.setEnabled(not active)
         self.concurrency.setEnabled(not active)
+        self.profile_select.setEnabled(not active)
+        self.custom_ports.setEnabled(not active)
+        self.additional_targets.setEnabled(not active)
+        self.exclusions.setEnabled(not active)
         self.progress_bar.setVisible(active)
         self.proxy.setDynamicSortFilter(not active)
 
@@ -418,7 +505,8 @@ class MainWindow(QWidget):
         if keys:
             self.model.add_devices([self._pending.pop(ip) for ip in keys])
             self._map_dirty = True
-        self._update_summary()
+        if keys:
+            self._update_summary()
 
     def _update_summary(self) -> None:
         devices = self.model._devices
@@ -431,6 +519,8 @@ class MainWindow(QWidget):
         }
         self.summary_label.setText(t(self.lang, "overview", **counts))
         self.conflicts_button.setText(f"{t(self.lang, 'conflicts')} ({len(self._conflicts)})")
+        self.metric_values['devices'].setText(str(len(devices)))
+        self.metric_values['services'].setText(str(sum(len(d.open_ports) for d in devices)))
 
     def _on_conflicts(self, conflicts) -> None:
         self._conflicts = list({conflict.ip: conflict for conflict in (*self._conflicts, *conflicts)}.values())
@@ -452,6 +542,7 @@ class MainWindow(QWidget):
         if self._cancelled:
             self.status_label.setText(t(self.lang, "scan_cancelled", count=self.model.rowCount()))
             return
+        self._scan_complete = True
         previous = next((scan.devices for scan in reversed(self._snapshots)
                          if scan.target == self._scan_target), [])
         by_mac = {device.mac: device for device in previous if device.mac}
@@ -463,8 +554,8 @@ class MainWindow(QWidget):
         self._background(lambda: self._save_history(devices, target), self._history_loaded)
         self.status_label.setText(t(self.lang, "status_done", count=len(devices)) +
                                   f" / {time.monotonic() - self._scan_started:.1f} s")
-        self.navigation.setCurrentRow(1)
-        self.network_map.fit()
+        if self.views.currentIndex() == 1:
+            self.network_map.fit()
 
     @staticmethod
     def _save_history(devices: list[Device], target: str):
@@ -582,15 +673,19 @@ class MainWindow(QWidget):
     def _export(self) -> None:
         self._flush_results(all_results=True)
         path, selected = QFileDialog.getSaveFileName(
-            self, t(self.lang, "export_results"), "IPscans-scan.csv", "CSV (*.csv);;JSON (*.json)")
+            self, t(self.lang, "export_results"), "IPscans-report.html", "HTML (*.html);;CSV (*.csv);;JSON (*.json)")
         if not path:
             return
         target = Path(path)
-        if target.suffix.lower() not in (".csv", ".json"):
-            target = target.with_suffix(".json" if "JSON" in selected else ".csv")
+        if target.suffix.lower() not in (".csv", ".json", '.html'):
+            target = target.with_suffix('.html' if 'HTML' in selected else ".json" if "JSON" in selected else ".csv")
         devices = [self.model.device_at(self.proxy.mapToSource(self.proxy.index(row, 0)).row())
                    for row in range(self.proxy.rowCount())]
-        self._background(lambda: history.export_results([d for d in devices if d], target),
+        devices = [replace(d) for d in devices if d]
+        report_options = dict(target=self._scan_target, profile=self._metrics.get('profile', ''),
+                              completed=self._scan_complete, metrics=dict(self._metrics))
+        self._background(lambda: target.write_text(render_report(devices, **report_options), encoding='utf-8')
+                         if target.suffix.lower() == '.html' else history.export_results(devices, target),
                          lambda _: self.status_label.setText(str(target)))
 
     def _update_vendors(self) -> None:

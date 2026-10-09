@@ -7,6 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { toolPath } from "@/lib/tool-routes";
 import { scannerApplication, platformCopy } from "@/content/applications";
 import { scannerCopy } from "@/content/scanner";
+import { ScannerV4 } from "@/components/ScannerV4";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   return {
-    title: "IPscans+ — Advanced Network Discovery",
+    title: "IPscans+ 4.0 — Network Observatory",
     description: scannerApplication.description[locale],
     alternates: {
       canonical: `/${locale}/ip-scanner`,
@@ -45,6 +46,7 @@ export default async function IpScannerPage({ params }: { params: Promise<{ loca
   return (
     <PageShell title="IPscans+" subtitle={scannerApplication.description[locale]}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
+      <div className="mx-auto max-w-7xl px-4"><ScannerV4 locale={locale} /></div>
       <div className="mx-auto max-w-4xl space-y-12 pb-12">
         <div className="flex flex-wrap gap-3">
           <Link href={`/${locale}/applications/scanner`} className="btn-primary inline-flex min-h-12 items-center rounded-xl px-6 font-semibold">{platformCopy[locale].details} ↗</Link>

@@ -20,6 +20,7 @@ class ScanWorker(QThread):
     failed = pyqtSignal(str)
     conflicts_found = pyqtSignal(object)
     warning = pyqtSignal(str)
+    metrics = pyqtSignal(object)
 
     def __init__(self, targets: list[str], options: ScanOptions, parent=None) -> None:
         super().__init__(parent)
@@ -48,6 +49,7 @@ class ScanWorker(QThread):
                 on_phase=lambda phase: self.phase_changed.emit(phase),
                 on_conflicts=self.conflicts_found.emit,
                 on_warning=self.warning.emit,
+                on_metrics=self.metrics.emit,
             )
             self.finished_ok.emit()
         except Exception as exc:  # keep the UI thread alive no matter what

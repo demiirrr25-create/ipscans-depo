@@ -40,7 +40,7 @@ class NextGenerationTests(unittest.TestCase):
     def test_results_are_emitted_before_sweep_finishes(self):
         observed = threading.Event()
         found, progress = [], []
-        def ping(ip):
+        def ping(ip, *_args):
             if ip.endswith(".8"):
                 return True
             if not observed.wait(1):
@@ -160,7 +160,8 @@ class NextGenerationTests(unittest.TestCase):
                 def callback(device):
                     found[device.ip] = device
                     callback_threads.append(threading.get_ident())
-                run_scan(["127.0.0.1"], ScanOptions(max_workers=4, providers=[], enable_wmi=False), callback)
+                run_scan(["127.0.0.1"], ScanOptions(max_workers=4, providers=[], enable_wmi=False,
+                                                 custom_ports=(port,)), callback)
         self.assertEqual(set(found), {"127.0.0.1"})
         self.assertIn("TCP", found["127.0.0.1"].sources)
         self.assertEqual(found["127.0.0.1"].open_ports, [port])
@@ -169,9 +170,10 @@ class NextGenerationTests(unittest.TestCase):
 
     def test_port_probe_does_not_drop_later_connections_after_an_early_refusal(self):
         from unittest.mock import Mock
+        import errno
         rejected, connected = Mock(), Mock()
-        rejected.connect_ex.return_value = connected.connect_ex.return_value = 115
-        rejected.getsockopt.return_value = 111
+        rejected.connect_ex.return_value = connected.connect_ex.return_value = errno.EINPROGRESS
+        rejected.getsockopt.return_value = errno.ECONNREFUSED
         connected.getsockopt.return_value = 0
         with patch("app.core.network_utils.socket.socket", side_effect=[rejected, connected]), \
                 patch("select.select", side_effect=[([], [rejected], []), ([], [connected], [])]) as selected:
@@ -184,7 +186,7 @@ class NextGenerationTests(unittest.TestCase):
         targets = network_utils.parse_targets("10.0.0.0/20")
         calls = []
         stop = threading.Event()
-        def ping(ip):
+        def ping(ip, *_args):
             calls.append(ip)
             stop.set()
             return False

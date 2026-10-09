@@ -6,10 +6,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import ipaddress
 import logging
+import time
 from typing import Callable
 
 from app.core import intelligence, network_utils, vendor_lookup
 from app.core.models import Device
+from app.core.profiles import PROFILES
 from app.core.providers import DeviceProvider, MDNSProvider, ONVIFProvider, UPnPProvider
 from app.core.protocols import mdns_probe, nmap_probe, onvif_probe, snmp_probe, upnp_probe, wmi_probe
 from app.core.registry import DeviceRegistry, PotentialConflict
@@ -28,8 +30,15 @@ class ScanOptions:
     max_workers: int = 64
     providers: list[DeviceProvider] | None = None
     interface_ip: str | None = None
+    profile: str = 'balanced'
+    custom_ports: tuple[int, ...] | None = None
 
     def __post_init__(self) -> None:
+        if self.profile not in PROFILES:
+            raise ValueError('Unknown scan profile')
+        if self.custom_ports is not None and (not self.custom_ports or len(self.custom_ports) > 256
+                or any(type(p) is not int or not 1 <= p <= 65535 for p in self.custom_ports)):
+            raise ValueError('Choose between 1 and 256 valid service ports')
         if not 2 <= self.max_workers <= 128:
             raise ValueError("Scan concurrency must be between 2 and 128 workers")
         if self.enable_snmp and not self.snmp_community:
@@ -43,11 +52,14 @@ def _enrich_host(ip: str, mac: str | None, options: ScanOptions,
     device = Device(ip=ip, mac=mac, vendor=vendor_lookup.lookup_vendor(mac))
     if stopped():
         return device
-    device.hostname = network_utils.resolve_hostname(ip)
+    profile = PROFILES[options.profile]
+    if profile.resolve_dns:
+        device.hostname = network_utils.resolve_hostname(ip)
     if stopped():
         return device
     latencies: list[float] = []
-    device.open_ports = network_utils.scan_ports(ip, on_latency=latencies.append)
+    device.open_ports = network_utils.scan_ports(ip, list(options.custom_ports or profile.ports),
+        timeout=profile.tcp_seconds, on_latency=latencies.append, should_stop=stopped)
     device.latency_ms = min(latencies) if latencies else None
     if stopped():
         return device
@@ -89,6 +101,7 @@ def run_scan(
     on_phase: Callable[[str], None] | None = None,
     on_conflicts: Callable[[list[PotentialConflict]], None] | None = None,
     on_warning: Callable[[str], None] | None = None,
+    on_metrics: Callable[[dict], None] | None = None,
 ) -> None:
     """Emit upserts as soon as reachability or a discovery announcement is observed.
 
@@ -97,6 +110,11 @@ def run_scan(
     concurrently in three fixed slots. All user callbacks run on this thread.
     """
     stopped = should_stop or (lambda: False)
+    started = time.monotonic()
+    first_result = None
+    enriched_count = 0
+    probed_count = 0
+    last_metrics = 0.0
     target_set = set(targets)
     registry = DeviceRegistry()
     reported_conflicts: list[PotentialConflict] = []
@@ -121,7 +139,7 @@ def run_scan(
         pending: dict[Future[Device], str] = {}
 
         def emit(device: Device) -> None:
-            nonlocal reported_conflicts
+            nonlocal reported_conflicts, first_result
             if stopped():
                 return
             merged = registry.merge(device)
@@ -130,12 +148,15 @@ def run_scan(
                 merged.classification_confidence = "Low"
                 merged.classification_evidence = "Potential IP conflict; device identity is ambiguous"
             on_device_found(merged)
+            if first_result is None:
+                first_result = time.monotonic() - started
             conflicts = registry.conflicts
             if on_conflicts and conflicts != reported_conflicts:
                 reported_conflicts = conflicts
                 on_conflicts(conflicts)
 
         def finish_enrichment(block: bool = False) -> None:
+            nonlocal enriched_count
             if not pending:
                 return
             ready, _ = wait(pending, timeout=0.1 if block else 0,
@@ -146,6 +167,7 @@ def run_scan(
                     continue
                 try:
                     emit(future.result())
+                    enriched_count += 1
                 except (OSError, TimeoutError, ValueError, RuntimeError) as exc:
                     _LOG.warning("Enrichment failed for %s (%s)", ip, type(exc).__name__)
                     if on_warning:
@@ -182,11 +204,26 @@ def run_scan(
                     if on_warning:
                         on_warning(f"{name} discovery unavailable; other discovery methods remain active.")
 
+        def metrics(force: bool = False) -> None:
+            nonlocal last_metrics
+            now = time.monotonic()
+            if on_metrics and (force or now - last_metrics >= .2):
+                elapsed = now - started
+                on_metrics({'elapsed_seconds': elapsed, 'probed': probed_count,
+                    'total': len(targets), 'devices': len(registry.devices),
+                    'enriched': enriched_count, 'first_result_seconds': first_result,
+                    'hosts_per_second': probed_count / elapsed if elapsed else 0,
+                    'profile': options.profile, 'cancelled': stopped()})
+                last_metrics = now
+
         def progress(done: int, total: int) -> None:
+            nonlocal probed_count
+            probed_count = done
             if on_progress:
                 on_progress(done, total)
             finish_announcements()
             finish_enrichment()
+            metrics()
 
         if on_phase:
             on_phase("discovering network")
@@ -194,6 +231,9 @@ def run_scan(
             targets, max_workers=options.max_workers - enrichment_workers,
             should_stop=stopped, on_probe=progress,
             on_alive=lambda ip, source: found(Device(ip, sources=[source])),
+            ping_ms=PROFILES[options.profile].ping_ms,
+            tcp_seconds=PROFILES[options.profile].tcp_seconds,
+            retries=PROFILES[options.profile].retries,
         )
         for ip in alive:
             if ip not in scheduled:
@@ -204,14 +244,18 @@ def run_scan(
             wait(announcements, timeout=0.1, return_when=FIRST_COMPLETED)
             finish_announcements()
             finish_enrichment()
+            metrics()
         while pending and not stopped():
             finish_enrichment(block=True)
+            metrics()
         if stopped():
             for future in (*announcements, *pending):
                 future.cancel()
+            metrics(force=True)
             return
         final_macs = network_utils.resolve_macs(list(registry.devices), options.interface_ip)
         for ip, mac in final_macs.items():
             emit(Device(ip, mac=mac, vendor=vendor_lookup.lookup_vendor(mac)))
         if on_phase:
             on_phase("building network topology")
+        metrics(force=True)

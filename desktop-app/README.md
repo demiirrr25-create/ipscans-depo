@@ -1,4 +1,12 @@
-# IPscans+ / Next Generation (3.0.0)
+# IPscans+ 4.0.0 / Network Observatory
+
+Native Windows ICMP, parallel TCP discovery, four scan profiles, custom TCP
+ports, multiple subnets/exclusions, structured search, live metrics and
+standalone HTML reports. See [v4 engineering notes](V4_RESEARCH.md).
+
+Use Settings for additional ranges, exclusions and service ports. Search
+with `port:443 source:ONVIF`, `ip:192.168.1.0/24`, `type:"IP Camera"` or
+`-type:Unknown`. HTML reports can be printed to PDF from a browser.
 
 PyQt6 desktop network discovery and authorized management. Windows releases
 are published only after the source, packaged application, installer and

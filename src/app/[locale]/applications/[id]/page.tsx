@@ -6,6 +6,7 @@ import { isLocale, locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { applications, platformCopy } from "@/content/applications";
 import { scannerCopy } from "@/content/scanner";
+import { ScannerV4 } from "@/components/ScannerV4";
 import { localizedAlternates } from "@/lib/seo";
 
 type Params = { params: Promise<{ locale: string; id: string }> };
@@ -60,6 +61,7 @@ export default async function ApplicationDetail({ params }: Params) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:py-20">
       <Link href={`/${locale}/download`} className="text-sm text-neutral-300 underline underline-offset-4 hover:text-white">← {copy.applications}</Link>
+      {app.id === 'scanner' && <ScannerV4 locale={locale} />}
       <div className="mt-10 grid gap-10 border-y border-white/15 py-12 lg:grid-cols-[1.3fr_1fr] lg:gap-20 lg:py-20">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPScans / {app.id} / Windows</p>

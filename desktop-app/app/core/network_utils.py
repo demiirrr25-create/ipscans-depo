@@ -9,6 +9,7 @@ import subprocess
 import logging
 import time
 import json
+import errno
 from pathlib import Path
 from dataclasses import dataclass
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
@@ -258,14 +259,20 @@ def parse_targets(spec: str) -> list[str]:
     return [valid_host(address)]
 
 
-def _ping_once(ip: str) -> bool:
+def _ping_once(ip: str, timeout_ms: int = PING_TIMEOUT_MS) -> bool:
     """Shells out to the OS ping command — no raw sockets, so no admin/root needed."""
     ipv6 = ipaddress.ip_address(ip).version == 6
+    if _IS_WINDOWS and not ipv6:
+        from app.core.native_ping import ping_ipv4
+        try:
+            return ping_ipv4(ip, timeout_ms)
+        except (OSError, AttributeError):
+            _LOG.debug('Native ICMP unavailable; using system ping')
     if _IS_WINDOWS:
-        cmd = ["ping", *(["-6"] if ipv6 else []), "-n", "1", "-w", str(PING_TIMEOUT_MS), ip]
+        cmd = ["ping", *(["-6"] if ipv6 else []), "-n", "1", "-w", str(timeout_ms), ip]
     else:
         cmd = ["ping", *(["-6"] if ipv6 else []), "-c", "1", "-W",
-               str(max(1, PING_TIMEOUT_MS // 1000)), ip]
+               str(max(1, (timeout_ms + 999) // 1000)), ip]
     try:
         result = subprocess.run(
             cmd,
@@ -365,20 +372,19 @@ def clear_arp_entry(ip: str) -> None:
         _LOG.debug("Could not clear neighbor entry for %s (%s)", ip, type(exc).__name__)
 
 
-def _tcp_alive(ip: str) -> bool:
-    for port in DISCOVERY_PORTS:
-        try:
-            with socket.create_connection((ip, port), timeout=0.18):
-                return True
-        except (OSError, TimeoutError):
-            continue
-    return False
+def _tcp_alive(ip: str, timeout: float = .35,
+               should_stop: Callable[[], bool] | None = None) -> bool:
+    # A refused TCP connection is also an active response, not an open port.
+    _, responded = _connect_ports(ip, DISCOVERY_PORTS, timeout, should_stop, first_response=True)
+    return responded
 
 
 def ping_sweep(targets: list[str], max_workers: int = 64,
                should_stop: Callable[[], bool] | None = None,
                on_probe: Callable[[int, int], None] | None = None,
-               on_alive: Callable[[str, str], None] | None = None) -> list[str]:
+               on_alive: Callable[[str, str], None] | None = None,
+               ping_ms: int = PING_TIMEOUT_MS, tcp_seconds: float = .35,
+               retries: int = 0) -> list[str]:
     """Bounded active ICMP/TCP sweep; stale ARP entries alone do not prove liveness."""
     candidates = list(targets)
     sources: dict[str, str] = {}
@@ -386,12 +392,15 @@ def ping_sweep(targets: list[str], max_workers: int = 64,
     def probe(ip: str) -> bool:
         if should_stop and should_stop():
             return False
-        if _ping_once(ip):
-            sources[ip] = "ICMP"
-            return True
-        if not (should_stop and should_stop()) and _tcp_alive(ip):
-            sources[ip] = "TCP"
-            return True
+        for _ in range(retries + 1):
+            if should_stop and should_stop():
+                break
+            if _ping_once(ip, ping_ms):
+                sources[ip] = "ICMP"
+                return True
+            if not (should_stop and should_stop()) and _tcp_alive(ip, tcp_seconds, should_stop):
+                sources[ip] = "TCP"
+                return True
         return False
 
     return _probe_targets(candidates, probe, max_workers, should_stop, on_probe,
@@ -448,43 +457,83 @@ def resolve_hostname(ip: str) -> str | None:
 
 
 def scan_ports(ip: str, ports: list[int] | None = None, timeout: float = 0.3,
-               on_latency: Callable[[float], None] | None = None) -> list[int]:
+               on_latency: Callable[[float], None] | None = None,
+               should_stop: Callable[[], bool] | None = None) -> list[int]:
     ports = CANDIDATE_PORTS if ports is None else ports
+    return _connect_ports(ip, ports, timeout, should_stop, on_latency=on_latency)[0]
+
+
+def _connect_ports(ip: str, ports, timeout: float,
+                   should_stop: Callable[[], bool] | None = None, *,
+                   first_response: bool = False,
+                   on_latency: Callable[[float], None] | None = None) -> tuple[list[int], bool]:
+    """At most 64 sockets per host; each batch shares one deadline.
+
+    Windows reports refused connects in select's exceptional set. Never
+    confuse refusal/unreachable with an open service, or abandon slower sockets.
+    """
     import select
+    ports = list(dict.fromkeys(ports))
+    if len(ports) > 256 or any(type(p) is not int or not 1 <= p <= 65535 for p in ports):
+        raise ValueError('At most 256 valid TCP ports are allowed')
+    if not 0 < timeout <= 5:
+        raise ValueError('TCP timeout must be between 0 and 5 seconds')
+    family = socket.AF_INET6 if ipaddress.ip_address(ip).version == 6 else socket.AF_INET
     waiting: dict[socket.socket, int] = {}
     open_ports: list[int] = []
-    started = time.monotonic()
-    deadline = started + timeout
     latencies: list[float] = []
+    responded = False
+    pending_codes = {errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY, 10035, 10036, 10037}
+    refused_codes = {errno.ECONNREFUSED, 10061}
+    stopped = should_stop or (lambda: False)
     try:
-        for port in ports:
-            family = socket.AF_INET6 if ipaddress.ip_address(ip).version == 6 else socket.AF_INET
-            sock = socket.socket(family, socket.SOCK_STREAM)
-            sock.setblocking(False)
-            try:
-                error = sock.connect_ex((ip, port))
-                if error == 0:
-                    open_ports.append(port)
-                    latencies.append((time.monotonic() - started) * 1000)
+        for offset in range(0, len(ports), 64):
+            if stopped():
+                break
+            started = time.monotonic()
+            deadline = started + timeout
+            for port in ports[offset:offset + 64]:
+                if stopped():
+                    break
+                sock = socket.socket(family, socket.SOCK_STREAM)
+                sock.setblocking(False)
+                try:
+                    error = sock.connect_ex((ip, port))
+                    if error == 0:
+                        open_ports.append(port)
+                        responded = True
+                        latencies.append((time.monotonic() - started) * 1000)
+                        sock.close()
+                    elif error in pending_codes:
+                        waiting[sock] = port
+                    else:
+                        responded = responded or error in refused_codes
+                        sock.close()
+                except OSError:
                     sock.close()
-                else:
-                    waiting[sock] = port
-            except OSError:
+                if first_response and responded:
+                    break
+            while waiting and not stopped() and not (first_response and responded) and (remaining := deadline - time.monotonic()) > 0:
+                _, writable, exceptional = select.select([], list(waiting), list(waiting), min(remaining, .05))
+                for sock in set(writable) | set(exceptional):
+                    error = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+                    if error == 0:
+                        open_ports.append(waiting[sock])
+                        latencies.append((time.monotonic() - started) * 1000)
+                    responded = responded or error == 0 or error in refused_codes
+                    waiting.pop(sock)
+                    sock.close()
+            for sock in waiting:
                 sock.close()
-        while waiting and (remaining := deadline - time.monotonic()) > 0:
-            _, writable, _ = select.select([], list(waiting), [], remaining)
-            for sock in writable:
-                if sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR) == 0:
-                    open_ports.append(waiting[sock])
-                    latencies.append((time.monotonic() - started) * 1000)
-                waiting.pop(sock)
-                sock.close()
+            waiting.clear()
+            if first_response and responded:
+                break
     finally:
         for sock in waiting:
             sock.close()
     if latencies and on_latency:
         on_latency(min(latencies))
-    return sorted(open_ports)
+    return sorted(open_ports), responded
 
 
 def resolve_macs(ips: list[str], interface_ip: str | None = None) -> dict[str, str]:

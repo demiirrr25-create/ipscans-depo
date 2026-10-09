@@ -37,7 +37,9 @@ jobs:
           python main.py --selftest
 
       - name: Benchmark bounded scheduling and UI responsiveness
-        run: python benchmarks/scanner_benchmark.py --output scanner-benchmark.json
+        run: |
+          python benchmarks/scanner_benchmark.py --output scanner-benchmark.json
+          python benchmarks/native_benchmark.py --output native-benchmark.json
 
       - name: Build Windows EXE
         run: |
@@ -90,6 +92,7 @@ jobs:
           name: IPscans-Plus-validation
           path: |
             desktop-app/scanner-benchmark.json
+            desktop-app/native-benchmark.json
             desktop-app/dist/checksums.json
           if-no-files-found: error
 

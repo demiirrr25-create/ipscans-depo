@@ -1,3 +1,19 @@
+# IPscans+ 4.0.0 / Network Observatory
+
+- Native Windows IPv4 ICMP engine with checked reply status and identity.
+- Parallel TCP discovery, including responding hosts with closed ports.
+- Quick, Balanced, Detailed and Sensitive network profiles.
+- Up to 256 custom service ports; multi-subnet plans and explicit exclusions.
+- Live discovery metrics, refreshed workspace and shared structured search.
+- Escaped, script-free HTML reports with complete/partial scan metadata.
+- Preserved selected view and reduced idle UI work.
+- Windows source, packaged, installer and uninstall validation required.
+
+See [research and measurement scope](V4_RESEARCH.md). Existing v3.0.0
+packages remain available under their original release tag.
+
+---
+
 # IPscans+ 3.0.0 / Next Generation
 
 Windows release: source, packaged application, installed application,

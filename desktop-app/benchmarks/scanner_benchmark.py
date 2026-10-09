@@ -42,7 +42,7 @@ def benchmark_scan(prefix):
         peak = max(peak, process.memory_info().rss)
 
     with ExitStack() as stack:
-        stack.enter_context(patch("app.core.network_utils._ping_once", side_effect=lambda ip: ip in expected))
+        stack.enter_context(patch("app.core.network_utils._ping_once", side_effect=lambda ip, *_args: ip in expected))
         stack.enter_context(patch("app.core.network_utils._tcp_alive", return_value=False))
         stack.enter_context(patch("app.core.scanner.network_utils.resolve_macs", return_value={}))
         stack.enter_context(patch("app.core.scanner.network_utils.resolve_hostname", return_value=None))

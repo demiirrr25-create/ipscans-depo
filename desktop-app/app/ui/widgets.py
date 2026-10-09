@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from app.core.models import Device
+from app.core.search import matches_device
 from app.i18n import t
 from app.ui.device_icons import icon_for_type
 
@@ -33,13 +34,6 @@ COLUMN_KEYS = [
     "col_confidence",
     "col_device",
 ]
-
-
-def matches_device(device: Device, needle: str) -> bool:
-    return needle in " ".join(filter(None, (
-        device.ip, device.mac, device.vendor, device.hostname, device.device_type,
-        device.onvif_model, device.onvif_manufacturer, device.upnp_friendly_name,
-    ))).lower()
 
 
 class DeviceTableModel(QAbstractTableModel):
