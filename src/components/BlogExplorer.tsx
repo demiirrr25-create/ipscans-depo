@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 export type BlogCard = {slug:string;title:string;excerpt:string;category:string;date:string;minutes:number};
+const searchText=(value:string)=>value.normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase().replaceAll('ı','i');
 export function BlogExplorer({items,locale}:{items:BlogCard[];locale:string}) {
   const [query,setQuery]=useState('');
   const [category,setCategory]=useState('');
   const tr=locale==='tr';
   const categories=[...new Set(items.map(p=>p.category))];
-  const normalized=query.trim().toLocaleLowerCase(locale);
-  const filtered=items.filter(p=>(!category||p.category===category)&&`${p.title} ${p.excerpt} ${p.category}`.toLocaleLowerCase(locale).includes(normalized));
+  const normalized=searchText(query.trim());
+  const filtered=items.filter(p=>(!category||p.category===category)&&searchText(`${p.title} ${p.excerpt} ${p.category}`).includes(normalized));
   return <div>
     <div className="grid gap-6 border-b border-white/15 pb-8 md:grid-cols-[1fr_320px]">
       <div><p className="font-mono text-xs uppercase tracking-widest text-neutral-400">FIELD NOTES / {items.length}</p><h2 className="mt-3 text-2xl tracking-tight">{tr?'Bir soruyla başlayın.':'Start with a question.'}</h2></div>
