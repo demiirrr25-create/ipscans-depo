@@ -126,7 +126,7 @@ class NextGenerationTests(unittest.TestCase):
 
     def test_node_without_a_new_response_does_not_keep_online_status(self):
         from app.ui.main_window import MainWindow
-        with patch.object(MainWindow, "_refresh_adapters"), patch.object(MainWindow, "_load_history"):
+        with patch.object(MainWindow, "_refresh_adapters"):
             window = MainWindow()
             window._on_device_found(Device("192.168.1.8", last_seen="2026-10-07"))
             window._flush_results(all_results=True)
@@ -139,7 +139,7 @@ class NextGenerationTests(unittest.TestCase):
     def test_table_enter_shortcut_does_not_intercept_graph_keyboard_actions(self):
         from PyQt6.QtGui import QShortcut
         from app.ui.main_window import MainWindow
-        with patch.object(MainWindow, "_refresh_adapters"), patch.object(MainWindow, "_load_history"):
+        with patch.object(MainWindow, "_refresh_adapters"):
             window = MainWindow()
         enter, = [shortcut for shortcut in window.table.findChildren(QShortcut)
                   if shortcut.key().toString() == "Return"]
@@ -292,7 +292,7 @@ class NextGenerationTests(unittest.TestCase):
         graph.refresh([Device("192.168.1.8", device_type="IP Camera"), Device("192.168.1.9", vendor="Axis")],
                       "192.168.1.1", "192.168.1.0/24")
         self.assertEqual(len(graph.nodes), 2)
-        self.assertEqual(len(graph.scene.items()), 2)
+        self.assertEqual(len(graph.scene.items()), 3)  # includes unresolved group label
         graph.set_filter_text("camera")
         self.assertEqual(set(graph.nodes), {"192.168.1.8"})
         graph.close()
@@ -319,6 +319,8 @@ class NextGenerationTests(unittest.TestCase):
         devices = [Device(f"10.0.{i // 250}.{i % 250 + 1}") for i in range(1000)]
         start = time.monotonic()
         graph.refresh(devices)
+        self.assertEqual(len(graph.nodes), 24)  # bounded initial group
+        graph.expand_all()
         self.assertEqual(len(graph.nodes), 1000)
         self.assertLess(time.monotonic() - start, 1)
         graph.close()

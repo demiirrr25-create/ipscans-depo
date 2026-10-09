@@ -7,7 +7,7 @@ import webbrowser
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication, QCheckBox, QDialog, QFileDialog, QFormLayout, QHBoxLayout, QLabel,
-    QLineEdit, QMessageBox, QPushButton, QTextEdit, QVBoxLayout,
+    QLineEdit, QInputDialog, QMessageBox, QPushButton, QTextEdit, QVBoxLayout,
 )
 
 from app.core import network_utils
@@ -57,6 +57,9 @@ class DeviceControlPanel(QDialog):
             button.clicked.connect(operation)
             actions.addWidget(button)
         layout.addLayout(actions)
+        topology_button = QPushButton('Read topology / SNMP' if lang != 'tr' else 'Bağlantıları oku / SNMP')
+        topology_button.clicked.connect(self._read_topology)
+        layout.addWidget(topology_button)
         form = QFormLayout()
         self.username, self.password, self.ca_bundle = QLineEdit(), QLineEdit(), QLineEdit()
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
@@ -106,14 +109,40 @@ class DeviceControlPanel(QDialog):
         fields = {
             "IP": device.ip, "MAC": device.mac, "Hostname": device.hostname, "Vendor": device.vendor,
             "Type": f"{device.device_type} / {device.classification_confidence} confidence",
-            "Evidence": device.classification_evidence, "Model": device.onvif_model,
+            "Evidence": device.classification_evidence, "Model": device.onvif_model or device.model,
+            "Evidence score (not accuracy %)": f'{device.identification_score}/100',
+            "HTTP identity": device.http_title or device.http_server, "RTSP identity": device.rtsp_server,
             "Serial": device.serial_number, "Firmware": device.onvif_firmware,
             "Parent / connection": device.connection_evidence,
             "TCP connect time": f"{device.latency_ms:.1f} ms" if device.latency_ms is not None else None,
             "First seen": device.first_seen, "Last seen": device.last_seen,
             "Sources": ", ".join(device.sources), "Ports": ", ".join(map(str, device.open_ports)),
         }
-        self.details.setPlainText("\n".join(f"{key}: {value or 'Unknown'}" for key, value in fields.items()))
+        self.details.setPlainText("\n".join(f"{key}: {value or 'Unavailable'}" for key, value in fields.items()))
+
+    def _read_topology(self) -> None:
+        if self._worker and self._worker.isRunning():
+            return
+        secret, accepted = QInputDialog.getText(self, 'Authorized SNMPv2c',
+            'Read-only community for this device (session only; SNMPv2c is unencrypted):', QLineEdit.EchoMode.Password)
+        if not accepted or not secret:
+            return
+        from app.core.protocols import snmp_probe
+        from app.core import intelligence
+        def received(result):
+            if not result:
+                self.status.setText('No authorized SNMP response; topology remains unresolved.')
+                return
+            self.device = replace(self.device, snmp_sys_descr=result.sys_descr, snmp_sys_name=result.sys_name,
+                model=result.model or self.device.model,
+                serial_number=result.serial_number or self.device.serial_number,
+                lldp_neighbor_macs=list(result.lldp_neighbor_macs), cdp_neighbor_ips=list(result.cdp_neighbor_ips),
+                bridge_fdb=list(result.bridge_fdb), sources=list(set(self.device.sources) | {'SNMP'}))
+            intelligence.classify(self.device)
+            self.device_updated.emit(self.device)
+            self._refresh_details()
+            self.status.setText('SNMP observations received. Forwarding paths are marked as inferred.')
+        self._run(lambda: snmp_probe.query(self.device.ip, secret), received)
 
     def _choose_ca(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, t(self.lang, "trusted_ca"), "", "Certificates (*.pem *.crt)")

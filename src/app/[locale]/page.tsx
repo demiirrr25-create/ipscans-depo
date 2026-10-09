@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { getDictionary, getPublicDictionary } from "@/i18n/dictionaries";
-import { LiveIp } from "@/components/LiveIp";
-import { NetworkCanvas } from "@/components/NetworkCanvas";
+import { PlatformHero } from "@/components/PlatformHero";
 import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
@@ -20,47 +19,7 @@ export default async function HomePage({
 
   return (
     <div>
-      <section className="hero-stage relative overflow-hidden border-b border-white/15">
-        <div className="pointer-events-none absolute inset-0 opacity-50">
-          <NetworkCanvas />
-        </div>
-        <div className="hero-grid pointer-events-none absolute inset-0" />
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-4 pb-14 pt-16 sm:pt-24 lg:min-h-[720px] lg:grid-cols-[1.4fr_0.6fr] lg:items-end lg:pb-24">
-          <div>
-            <p className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.2em] text-neutral-300"><span className="h-2 w-2 rounded-full bg-white" /> {platform.eyebrow} <span aria-hidden="true" className="text-neutral-500">/ 001</span></p>
-
-            <h1 className="mt-10 max-w-5xl font-[family-name:var(--font-display)] text-[clamp(3.6rem,9vw,9rem)] font-semibold leading-[0.94] tracking-[-0.075em]">
-              {platform.title}
-            </h1>
-
-            <p className="mt-10 max-w-xl text-lg leading-relaxed text-neutral-300">
-              {platform.subtitle}
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link
-                href={`/${locale}/ip-scanner`}
-                className="btn-primary inline-flex min-h-12 items-center rounded-lg px-6 font-semibold"
-              >
-                IPscans+ <span aria-hidden="true" className="ms-8">↗</span>
-              </Link>
-              <Link href="#applications" className="btn-ghost inline-flex min-h-12 items-center rounded-lg px-6 font-semibold">
-                {platform.explore} <span aria-hidden="true" className="ms-5">↓</span>
-              </Link>
-            </div>
-          </div>
-          <div className="hero-terminal self-end border border-white/20 bg-black/80 p-5 backdrop-blur-md sm:p-7">
-            <div className="flex items-center justify-between border-b border-white/15 pb-4 font-mono text-[11px] uppercase tracking-widest text-neutral-400"><span>IPSCANS / LIVE</span><span className="text-white">● ONLINE</span></div>
-            <div className="py-9"><LiveIp label={dict.hero.yourIp} /></div>
-            <div className="grid grid-cols-2 gap-3 border-t border-white/15 pt-5 font-mono text-xs">
-              <Link href={toolPath("ipLookup", locale)} className="text-neutral-300 hover:text-white">01 / {dict.nav.ipLookup} ↗</Link>
-              <Link href={toolPath("dns", locale)} className="text-neutral-300 hover:text-white">02 / {dict.nav.dns} ↗</Link>
-              <Link href={toolPath("ports", locale)} className="text-neutral-300 hover:text-white">03 / {dict.nav.ports} ↗</Link>
-              <Link href={toolPath("speedTest", locale)} className="text-neutral-300 hover:text-white">04 / {dict.nav.speedTest} ↗</Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PlatformHero locale={locale} ipLabel={dict.hero.yourIp} />
 
       <section aria-labelledby="popular-title" className="mx-auto max-w-7xl px-4 py-18">
         <div className="mb-8 flex items-end justify-between gap-4 border-b border-white/15 pb-6">

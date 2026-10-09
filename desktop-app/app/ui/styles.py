@@ -410,28 +410,19 @@ QDialog QPushButton, QMessageBox QPushButton {
 QDialog QPushButton:hover, QMessageBox QPushButton:hover {
     background: #e6e6e6;
 }
-/* v4 workspace: quiet surfaces, readable hierarchy, restrained mint accent. */
-#AppRoot { background: #0b1015; }
-QLabel#TitleText { font-size: 26px; font-weight: 700; }
-QLabel#VersionBadge { color: #82dfc5; font-size: 10px; font-weight: 600; padding: 6px 12px; }
-QListWidget#Navigation { background: #10171f; border: 1px solid #25313e; border-radius: 12px; padding: 10px; }
-QListWidget#Navigation::item { padding: 16px 10px; border-radius: 8px; margin-bottom: 5px; }
-QListWidget#Navigation::item:selected { background: #233d38; color: #b5f5df; }
-QFrame#MetricCard { background: #121c25; border: 1px solid #293744; border-radius: 12px; }
-QLabel#MetricTitle { color: #99afc1; font-size: 10px; font-weight: 600; padding: 6px 6px 0 6px; }
-QLabel#MetricValue { color: #e9f8f3; font-size: 29px; font-weight: 600; padding: 0 6px 6px 6px; }
-QPushButton#PrimaryButton { background: #a5efda; color: #09231c; border-radius: 8px; }
-QPushButton#PrimaryButton:hover { background: #c3fae9; }
-QPushButton#PrimaryButton:disabled { background: #28443d; color: #899d96; }
-QStackedWidget { background: #0b1015; }
-QTableView { background: #101820; alternate-background-color: #141e28; border: 1px solid #293744; }
-QTableView::item:selected { background: #24473f; }
-QHeaderView::section { background: #18232e; color: #acc0d2; padding: 12px 8px; }
-QLineEdit, QComboBox, QSpinBox { background: #111b24; border: 1px solid #354758; border-radius: 7px; padding: 8px; }
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border: 1px solid #a5efda; }
-QProgressBar::chunk { background: #a5efda; }
-QScrollBar:horizontal { background: #101820; height: 9px; }
-QScrollBar::handle:horizontal { background: #3b5263; border-radius: 4px; min-width: 24px; }
+/* v4.1: one monochrome design system. */
+#AppRoot, QStackedWidget { background: #000000; }
+QLabel#TitleText { font-size: 28px; font-weight: 700; }
+QLabel#VersionBadge { color: #aaaaaa; font-size: 10px; padding: 6px 12px; }
+QTabBar::tab { background: #000000; padding: 14px 24px; border: none; border-bottom: 2px solid #333333; }
+QTabBar::tab:selected { color: #ffffff; background: #151515; border-bottom: 2px solid #ffffff; }
+QFrame#MetricCard { background: #0c0c0c; border: 1px solid #333333; border-radius: 10px; }
+QLabel#MetricTitle { color: #aaaaaa; font-size: 10px; padding: 6px; }
+QLabel#MetricValue { color: #ffffff; font-size: 30px; font-weight: 600; padding: 0 6px 6px; }
+QTableView { background: #080808; alternate-background-color: #111111; border-radius: 6px; }
+QHeaderView::section { background: #171717; color: #cccccc; padding: 12px 8px; }
+QScrollBar:horizontal { background: #111111; height: 10px; }
+QScrollBar::handle:horizontal { background: #555555; border-radius: 4px; min-width: 24px; }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: #101820; }
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: #111111; }
 """

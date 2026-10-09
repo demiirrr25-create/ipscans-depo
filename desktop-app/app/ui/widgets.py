@@ -139,10 +139,7 @@ class DeviceTableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DecorationRole and index.column() == 7:
             return icon_for_type(self._devices[index.row()].device_type)
         if role == Qt.ItemDataRole.DecorationRole and index.column() == 8:
-            symbol = (QStyle.StandardPixmap.SP_DialogApplyButton
-                      if self._devices[index.row()].reachability == "Online"
-                      else QStyle.StandardPixmap.SP_MessageBoxWarning)
-            return QApplication.style().standardIcon(symbol)
+            return icon_for_type('Online' if self._devices[index.row()].reachability == 'Online' else 'Attention')
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         device = self._devices[index.row()]

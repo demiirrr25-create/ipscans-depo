@@ -32,6 +32,8 @@ class ScanOptions:
     interface_ip: str | None = None
     profile: str = 'balanced'
     custom_ports: tuple[int, ...] | None = None
+    adaptive: bool = False
+    fingerprint: bool = False
 
     def __post_init__(self) -> None:
         if self.profile not in PROFILES:
@@ -61,6 +63,15 @@ def _enrich_host(ip: str, mac: str | None, options: ScanOptions,
     device.open_ports = network_utils.scan_ports(ip, list(options.custom_ports or profile.ports),
         timeout=profile.tcp_seconds, on_latency=latencies.append, should_stop=stopped)
     device.latency_ms = min(latencies) if latencies else None
+    if options.fingerprint and not stopped():
+        from app.core.protocols.service_probe import http_identity, rtsp_identity
+        device.http_title, device.http_server = http_identity(ip, device.open_ports, stopped)
+        if device.http_title or device.http_server:
+            device.sources.append('HTTP')
+        if 554 in device.open_ports and not stopped():
+            device.rtsp_server = rtsp_identity(ip, stopped)
+            if device.rtsp_server:
+                device.sources.append('RTSP')
     if stopped():
         return device
     if options.enable_snmp and options.snmp_community and ipaddress.ip_address(ip).version == 4:
@@ -70,6 +81,9 @@ def _enrich_host(ip: str, mac: str | None, options: ScanOptions,
             device.snmp_sys_name = result.sys_name
             device.serial_number = result.serial_number
             device.lldp_neighbor_macs = list(result.lldp_neighbor_macs)
+            device.cdp_neighbor_ips = list(result.cdp_neighbor_ips)
+            device.bridge_fdb = list(result.bridge_fdb)
+            device.model = result.model
             device.sources.append("SNMP")
     if options.enable_wmi and not stopped() and _looks_like_self(ip):
         result = wmi_probe.query_local_machine()
@@ -213,7 +227,7 @@ def run_scan(
                     'total': len(targets), 'devices': len(registry.devices),
                     'enriched': enriched_count, 'first_result_seconds': first_result,
                     'hosts_per_second': probed_count / elapsed if elapsed else 0,
-                    'profile': options.profile, 'cancelled': stopped()})
+                    'profile': 'automatic' if options.adaptive else options.profile, 'cancelled': stopped()})
                 last_metrics = now
 
         def progress(done: int, total: int) -> None:
@@ -227,7 +241,13 @@ def run_scan(
 
         if on_phase:
             on_phase("discovering network")
-        alive = network_utils.ping_sweep(
+        sweep = network_utils.ping_sweep
+        if options.adaptive:
+            from app.core.adaptive import sweep as adaptive_sweep
+            def sweep(targets, max_workers, should_stop, on_probe, on_alive, **_unused):
+                return adaptive_sweep(targets, max_workers, should_stop, on_probe, on_alive,
+                                      network_utils._ping_once, network_utils._tcp_alive)
+        alive = sweep(
             targets, max_workers=options.max_workers - enrichment_workers,
             should_stop=stopped, on_probe=progress,
             on_alive=lambda ip, source: found(Device(ip, sources=[source])),

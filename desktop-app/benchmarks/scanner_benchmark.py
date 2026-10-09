@@ -26,7 +26,7 @@ from app.ui.widgets import DeviceTableModel, DeviceFilterProxyModel
 from app.ui.network_map import NetworkMap
 
 
-def benchmark_scan(prefix):
+def benchmark_scan(prefix, adaptive=False):
     targets = network_utils.parse_targets(f"10.0.0.0/{prefix}")
     expected = set(targets[::10])
     latest = {}
@@ -47,10 +47,10 @@ def benchmark_scan(prefix):
         stack.enter_context(patch("app.core.scanner.network_utils.resolve_macs", return_value={}))
         stack.enter_context(patch("app.core.scanner.network_utils.resolve_hostname", return_value=None))
         stack.enter_context(patch("app.core.scanner.network_utils.scan_ports", return_value=[]))
-        run_scan(targets, ScanOptions(providers=[], enable_wmi=False), found)
+        run_scan(targets, ScanOptions(providers=[], enable_wmi=False, adaptive=adaptive), found)
     elapsed = time.monotonic() - started
     actual_cpu = process.cpu_times()
-    return {"cidr": f"/{prefix}", "targets": len(targets), "devices": len(latest),
+    return {"cidr": f"/{prefix}", "adaptive": adaptive, "targets": len(targets), "devices": len(latest),
             "discovery_seconds": round(elapsed, 4), "first_result_seconds": round(first_result or 0, 4),
             "cpu_seconds": round(actual_cpu.user + actual_cpu.system - cpu.user - cpu.system, 4),
             "peak_rss_mib": round(peak / 1024 / 1024, 2),
@@ -93,12 +93,18 @@ def benchmark_ui(app):
     started = time.monotonic()
     graph.refresh(devices[:1000])
     graph_seconds = time.monotonic() - started
+    grouped_nodes = len(graph.nodes)
+    started = time.monotonic()
+    graph.expand_all()
+    expanded_seconds = time.monotonic() - started
     graph.close()
     table.close()
     return {"table_rows": model.rowCount(), "table_population_seconds": round(populated, 4),
             "table_sort_seconds": round(sorted_seconds, 4),
             "max_event_loop_gap_ms": round(max(gaps, default=0) * 1000, 2),
-            "graph_nodes": len(graph.nodes), "graph_construction_seconds": round(graph_seconds, 4)}
+            "graph_nodes": len(graph.nodes), "grouped_nodes": grouped_nodes,
+            "graph_expansion_seconds": round(expanded_seconds, 4),
+            "graph_construction_seconds": round(graph_seconds, 4)}
 
 
 def main():
@@ -106,7 +112,8 @@ def main():
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     app = QApplication.instance() or QApplication([])
-    report = {"mode": "synthetic-no-network", "scan": [benchmark_scan(prefix) for prefix in (24, 22, 20)],
+    report = {"mode": "synthetic-no-network", "scan": [benchmark_scan(prefix, adaptive)
+              for adaptive in (False, True) for prefix in (24, 22, 20)],
               "ui": benchmark_ui(app)}
     encoded = json.dumps(report, indent=2)
     print(encoded)
@@ -115,6 +122,8 @@ def main():
     if (any(row["false_positive_rate"] or row["false_negative_rate"] or row["unsubstantiated_classifications"]
             for row in report["scan"]) or report["ui"]["table_rows"] != 10000
             or report["ui"]["max_event_loop_gap_ms"] > 200
+            or report["ui"]["graph_nodes"] != 1000
+            or report["ui"]["graph_expansion_seconds"] > 1
             or report["ui"]["graph_construction_seconds"] > 1):
         raise SystemExit("Benchmark correctness or responsiveness threshold failed")
 

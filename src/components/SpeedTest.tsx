@@ -1,322 +1,102 @@
 "use client";
+import { useEffect, useRef, useState } from 'react';
+import type { Dictionary } from '@/i18n/dictionaries';
+import type { Locale } from '@/i18n/config';
+import type { SpeedResult, SpeedUpdate, Trace } from '@/lib/speed-engine';
 
-import { useState } from "react";
-import Link from "next/link";
-import type { Dictionary } from "@/i18n/dictionaries";
-import type { Locale } from "@/i18n/config";
-import { xhrUpload } from "@/lib/speed-upload";
-
-type Phase = "idle" | "ping" | "download" | "upload" | "done";
-
-const DOWN_URL = "https://speed.cloudflare.com/__down?bytes=";
-
-async function measurePing(samples = 8): Promise<{ ping: number; jitter: number }> {
-  const times: number[] = [];
-  for (let i = 0; i < samples; i++) {
-    const start = performance.now();
-    try {
-      const response = await fetch(`${DOWN_URL}0&r=${start}`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
-      if (!response.ok) continue;
-      times.push(performance.now() - start);
-    } catch {
-      // ignore failed sample
-    }
-  }
-  if (times.length === 0) throw new Error("No ping samples");
-  const sorted = [...times].sort((a, b) => a - b);
-  const ping = sorted[Math.floor(sorted.length / 2)];
-  let jitterSum = 0;
-  for (let i = 1; i < times.length; i++)
-    jitterSum += Math.abs(times[i] - times[i - 1]);
-  const jitter = times.length > 1 ? jitterSum / (times.length - 1) : 0;
-  return { ping: Math.round(ping), jitter: Math.round(jitter) };
-}
-
-// Downloads in parallel streamed chunks, reporting cumulative throughput as
-// bytes arrive. Aborts every in-flight request the instant the deadline is
-// hit so sockets free up immediately instead of trailing into the next phase.
-async function measureDownload(
-  onProgress: (mbps: number) => void,
-  durationMs = 9000,
-  parallel = 5,
-  chunkBytes = 20_000_000
-): Promise<number> {
-  const start = performance.now();
-  const deadline = start + durationMs;
-  let totalBytes = 0;
-  const controllers = new Set<AbortController>();
-
-  const timer = setTimeout(() => {
-    for (const c of controllers) c.abort();
-  }, durationMs);
-
-  async function worker() {
-    while (performance.now() < deadline) {
-      const controller = new AbortController();
-      controllers.add(controller);
-      try {
-        const res = await fetch(`${DOWN_URL}${chunkBytes}&r=${Math.random()}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (!res.ok || !res.body) break;
-        const reader = res.body.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          totalBytes += value?.byteLength ?? 0;
-          const elapsed = (performance.now() - start) / 1000;
-          if (elapsed > 0) onProgress((totalBytes * 8) / elapsed / 1_000_000);
-        }
-      } catch {
-        break;
-      } finally {
-        controllers.delete(controller);
-      }
-    }
-  }
-
-  await Promise.all(Array.from({ length: parallel }, worker));
-  clearTimeout(timer);
-  if (totalBytes === 0) throw new Error("No download data");
-  const seconds = (performance.now() - start) / 1000;
-  return (totalBytes * 8) / seconds / 1_000_000;
-}
-
-// Uses XHR instead of fetch() because only XHR exposes upload progress
-// events — with fetch(), onProgress would only fire once per whole chunk,
-// which is what made the upload phase feel stuck/delayed before this fix.
-
-async function measureUpload(
-  onProgress: (mbps: number) => void,
-  durationMs = 8000,
-  parallel = 4,
-  chunkBytes = 2_000_000
-): Promise<number> {
-  const payload = new Uint8Array(chunkBytes);
-  crypto.getRandomValues(payload.subarray(0, Math.min(65536, chunkBytes)));
-  const start = performance.now();
-  const deadline = start + durationMs;
-  let totalBytes = 0;
-
-  async function worker() {
-    while (performance.now() < deadline) {
-      const { promise, abort } = xhrUpload(payload, (delta) => {
-        totalBytes += delta;
-        const elapsed = (performance.now() - start) / 1000;
-        if (elapsed > 0) onProgress((totalBytes * 8) / elapsed / 1_000_000);
-      });
-      const timer = setTimeout(abort, Math.max(0, deadline - performance.now()));
-      const succeeded = await promise;
-      clearTimeout(timer);
-      if (!succeeded) break;
-    }
-  }
-
-  await Promise.all(Array.from({ length: parallel }, worker));
-  if (totalBytes === 0) throw new Error("No upload data");
-  const seconds = (performance.now() - start) / 1000;
-  return (totalBytes * 8) / seconds / 1_000_000;
-}
-
-const GAUGE_MAX: Record<string, number> = {
-  Mbps: 500,
-  ms: 150,
-};
-
-function Gauge({
-  label,
-  value,
-  unit,
-  active,
-  accent,
-}: {
-  label: string;
-  value: number | null;
-  unit: string;
-  active: boolean;
-  accent: string;
-}) {
-  const max = GAUGE_MAX[unit] ?? 100;
-  const pct = value != null ? Math.min(1, value / max) : 0;
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - pct);
-  const display =
-    value != null
-      ? value.toFixed(value < 10 ? 2 : value < 100 ? 1 : 0)
-      : active
-        ? "…"
-        : "—";
-
-  return (
-    <div
-      className={`relative min-w-0 overflow-hidden rounded-2xl border p-3 sm:p-6 text-center transition-all duration-300 ${
-        active
-          ? "border-white/30 bg-white/[0.06] shadow-[0_0_30px_-8px_var(--gauge-accent)]"
-          : "border-white/10 bg-white/[0.02]"
-      }`}
-      style={{ "--gauge-accent": accent } as React.CSSProperties}
-    >
-      <div className="text-xs uppercase tracking-wider text-neutral-400">
-        {label}
-      </div>
-      <div className="relative mx-auto mt-3 h-28 w-28">
-        <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-          <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            fill="none"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="6"
-          />
-          <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            fill="none"
-            stroke={accent}
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            className="transition-[stroke-dashoffset] duration-300 ease-out"
-            style={{ filter: `drop-shadow(0 0 6px ${accent})` }}
-          />
-        </svg>
-        <div
-          className="absolute inset-0 grid place-items-center font-[family-name:var(--font-display)] text-2xl font-bold tabular-nums text-white"
-        >
-          {display}
-        </div>
-      </div>
-      <div className="mt-1 text-xs text-neutral-500">{unit}</div>
-    </div>
-  );
-}
-
-export function SpeedTest({
-  dict,
-  locale,
-}: {
-  dict: Dictionary["speedTest"];
-  locale: Locale;
-}) {
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [ping, setPing] = useState<number | null>(null);
-  const [jitter, setJitter] = useState<number | null>(null);
-  const [download, setDownload] = useState<number | null>(null);
-  const [upload, setUpload] = useState<number | null>(null);
-  const [error, setError] = useState(false);
-  const running = phase !== "idle" && phase !== "done";
-
+export function SpeedTest({dict, locale}: {dict: Dictionary['speedTest']; locale: Locale}) {
+  const tr = locale === 'tr';
+  const [update, setUpdate] = useState<SpeedUpdate | null>(null);
+  const [result, setResult] = useState<SpeedResult | null>(null);
+  const [trace, setTrace] = useState<Trace[]>([]);
+  const [running, setRunning] = useState(false);
+  const [notice, setNotice] = useState('');
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
   async function run() {
-    setError(false);
-    setPing(null);
-    setJitter(null);
-    setDownload(null);
-    setUpload(null);
-
+    if (controller.current) return;
+    const session = new AbortController(); controller.current = session;
+    setRunning(true); setResult(null); setTrace([]); setNotice(''); setUpdate(null);
     try {
-    setPhase("ping");
-    const p = await measurePing();
-    setPing(p.ping);
-    setJitter(p.jitter);
-
-    setPhase("download");
-    const d = await measureDownload((mbps) => setDownload(mbps));
-    setDownload(d);
-
-    setPhase("upload");
-    const u = await measureUpload((mbps) => setUpload(mbps));
-    setUpload(u);
-
-    setPhase("done");
+      const {runSpeedTest} = await import('@/lib/speed-engine');
+      const measured = await runSpeedTest(session.signal, value => {
+        if (session.signal.aborted) return;
+        setUpdate(value);
+        if (value.trace) setTrace(points => [...points.slice(-79), value.trace!]);
+      });
+      setResult(measured);
     } catch {
-      setError(true);
-      setPhase("idle");
-    }
+      setNotice(session.signal.aborted ? (tr ? 'Test durduruldu. Eksik sonuç yayımlanmadı.' : 'Test stopped. Incomplete results were not published.')
+        : (tr ? 'Yeterli ölçüm alınamadı. Bağlantıyı kontrol edip yeniden deneyin.' : 'Insufficient measurements. Check your connection and try again.'));
+    } finally { if (controller.current === session) { controller.current = null; setRunning(false); } }
   }
-
-  return (
-    <div className="mx-auto max-w-3xl">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Gauge
-          label={dict.download}
-          value={download}
-          unit="Mbps"
-          active={phase === "download"}
-          accent="#FFFFFF"
-        />
-        <Gauge
-          label={dict.upload}
-          value={upload}
-          unit="Mbps"
-          active={phase === "upload"}
-          accent="#D4D4D4"
-        />
-        <Gauge
-          label={dict.ping}
-          value={ping}
-          unit="ms"
-          active={phase === "ping"}
-          accent="#A3A3A3"
-        />
-        <Gauge
-          label="Jitter"
-          value={jitter}
-          unit="ms"
-          active={phase === "ping"}
-          accent="#737373"
-        />
-      </div>
-
-      <div className="mt-8 text-center">
-        <p role="status" className="mb-3 text-sm text-neutral-300">
-          {running ? dict.running : phase === "done" ? `${dict.download}: ${download?.toFixed(1)} Mbps · ${dict.upload}: ${upload?.toFixed(1)} Mbps · ${dict.ping}: ${ping} ms` : ""}
-        </p>
-        {error && <p role="alert" className="mb-4 text-sm text-neutral-200">{{
-          tr: "Test tamamlanamadı. İnternet bağlantınızı kontrol edip yeniden deneyin.",
-          en: "The test could not finish. Check your connection and try again.",
-          de: "Der Test konnte nicht abgeschlossen werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
-          fr: "Le test n’a pas abouti. Vérifiez votre connexion et réessayez.",
-          es: "No se pudo completar la prueba. Comprueba tu conexión e inténtalo de nuevo.",
-          it: "Impossibile completare il test. Controlla la connessione e riprova.",
-          pt: "Não foi possível concluir o teste. Verifique a ligação e tente novamente.",
-          nl: "De test kon niet worden voltooid. Controleer je verbinding en probeer het opnieuw.",
-          pl: "Nie udało się ukończyć testu. Sprawdź połączenie i spróbuj ponownie.",
-          ru: "Не удалось завершить тест. Проверьте подключение и повторите попытку.",
-          ar: "تعذر إكمال الاختبار. تحقق من اتصالك وحاول مرة أخرى.",
-          ja: "テストを完了できませんでした。接続を確認して再試行してください。",
-          ko: "테스트를 완료하지 못했습니다. 연결을 확인한 후 다시 시도하세요.",
-          zh: "测试未能完成。请检查网络连接后重试。",
-        }[locale]}</p>}
-        <button
-          onClick={run}
-          disabled={running}
-          aria-busy={running}
-          className="btn-primary rounded-xl px-10 py-3 font-semibold disabled:opacity-60"
-        >
-          {running ? dict.running : phase === "done" ? dict.restart : dict.start}
-        </button>
-        <p className="mt-4 text-xs text-neutral-500">{dict.note}</p>
-      </div>
-
-      {phase === "done" && (
-        <div className="mt-8 rounded-xl border border-white/20 bg-white/[0.06] p-5 text-center">
-          <h3 className="font-semibold text-white">{dict.crossSell.title}</h3>
-          <p className="mx-auto mt-1 max-w-md text-sm text-neutral-300">
-            {dict.crossSell.body}
-          </p>
-          <Link
-            href={`/${locale}/shop`}
-            className="mt-3 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-neutral-200"
-          >
-            {dict.crossSell.cta} →
-          </Link>
-        </div>
-      )}
+  const label = update?.phase === 'upload' ? dict.upload : update?.phase === 'latency' ? dict.ping : dict.download;
+  const value = running ? update?.mbps : result?.download;
+  const max = Math.max(100, ...trace.map(p => p.mbps));
+  const fmt = (n: number | null | undefined, unit='ms') => n == null ? '—' : `${n.toFixed(1)} ${unit}`;
+  const summary = result ? `IPScans / ${new Date(result.timestamp).toLocaleString()}\nDownload ${fmt(result.download,'Mbps')} · Upload ${fmt(result.upload,'Mbps')}\nHTTP latency ${fmt(result.idle)} · Jitter ${fmt(result.jitter)}\nLoaded latency ↓ ${fmt(result.loadedDownload)} ↑ ${fmt(result.loadedUpload)}\nCloudflare edge · ${result.seconds.toFixed(1)} s · ${(result.bytes/1e6).toFixed(1)} MB\nhttps://ipscans.com/${locale}` : '';
+  async function share() {
+    try { await navigator.clipboard.writeText(summary); setNotice(tr ? 'Sonuç panoya kopyalandı.' : 'Result copied to clipboard.'); }
+    catch { setNotice(tr ? 'Kopyalama kullanılamıyor; JSON dosyasını indirebilirsiniz.' : 'Copy unavailable; download the JSON result.'); }
+  }
+  function exportResult() {
+    if (!result) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify({method:'HTTPS transfers to Cloudflare edge; HTTP latency; no packet-loss measurement',...result},null,2)],{type:'application/json'}));
+    const link = document.createElement('a'); link.href=url; link.download='ipscans-speed-result.json'; link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  return <section className="speed-console overflow-hidden rounded-3xl border border-white/20 bg-black" aria-label={dict.title}>
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 px-6 py-5 font-mono text-xs text-neutral-300">
+      <span>IPSCANS / CONNECTION LAB</span><span>{tr ? 'Cloudflare uç ağı · HTTPS ölçümü' : 'Cloudflare edge · HTTPS measurement'}</span>
     </div>
-  );
+    <div className="grid lg:grid-cols-[1.1fr_1fr]">
+      <div className="relative grid place-items-center border-b border-white/15 p-6 sm:p-10 lg:border-e lg:border-b-0">
+        <div className="relative aspect-square w-full max-w-80">
+          <svg viewBox="0 0 320 320" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden="true">
+            <circle cx="160" cy="160" r="142" fill="none" stroke="#262626" strokeWidth="1" strokeDasharray="2 6" />
+            <circle cx="160" cy="160" r="127" fill="none" stroke="#171717" strokeWidth="8" />
+            <circle cx="160" cy="160" r="127" fill="none" stroke="white" strokeWidth="8" strokeLinecap="round" strokeDasharray="798" strokeDashoffset={798*(1-Math.min(1,Math.log10(1+(value??0))/4))} className="transition-[stroke-dashoffset] duration-300" />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="mb-4 font-mono text-xs uppercase tracking-widest text-neutral-400">{running ? label : result ? dict.download : 'READY / HAZIR'}</span>
+            <span className="text-6xl font-semibold tracking-tighter tabular-nums sm:text-7xl">{value && update?.phase !== 'latency' ? value.toFixed(1) : '—'}</span>
+            <span className="mt-3 font-mono text-xs text-neutral-400">{running && update?.phase==='latency'?'HTTP / ms':'Mbps'}</span>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <button onClick={run} disabled={running} className="btn-primary min-h-12 rounded-full px-8 font-semibold disabled:opacity-40">{result ? dict.restart : dict.start} ↗</button>
+          {running && <button onClick={()=>controller.current?.abort()} className="btn-ghost min-h-12 rounded-full px-6">{tr?'Durdur':'Stop'}</button>}
+        </div>
+        <p role="status" className="mt-5 text-center text-sm text-neutral-300">{notice || (running ? `${label} · ${(update?.seconds??0).toFixed(0)} s` : result ? (tr?'Ölçüm tamamlandı':'Measurement complete') : '')}</p>
+      </div>
+      <div className="p-6 sm:p-10">
+        <p className="font-mono text-xs tracking-widest text-neutral-400">{tr?'01 / AKTARIM ÖLÇÜMLERİ':'01 / TRANSFER MEASUREMENTS'}</p>
+        <div className="mt-5 grid grid-cols-2 gap-5">
+          {[[dict.download,fmt(result?.download,'Mbps')],[dict.upload,fmt(result?.upload,'Mbps')],
+            [tr?'Boşta gecikme':'Idle latency',fmt(result?.idle)],['Jitter',fmt(result?.jitter)],
+            [tr?'Yük altında ↓':'Loaded latency ↓',fmt(result?.loadedDownload)],[tr?'Yük altında ↑':'Loaded latency ↑',fmt(result?.loadedUpload)]].map(([name,value])=><div key={name} className="border-b border-white/15 pb-5"><p className="text-xs text-neutral-400">{name}</p><p className="mt-2 text-xl font-medium tabular-nums">{value}</p></div>)}
+        </div>
+        <div className="mt-8 flex justify-between font-mono text-xs text-neutral-400"><span>↓ {dict.download} / ↑ {dict.upload}</span><span>{max.toFixed(0)} Mbps</span></div>
+        <svg viewBox="0 0 400 130" role="img" aria-label={tr?'Ölçülen aktarım hızları zaman grafiği':'Measured transfer speed over time'} className="mt-3 w-full border-b border-white/20">
+          {[32,64,96].map(y=><path key={y} d={`M0 ${y} H400`} stroke="#262626" />)}
+          {(['download','upload'] as const).map(direction=><polyline key={direction} points={trace.map((p,i)=>p.direction===direction?`${i/Math.max(1,trace.length-1)*400},${125-p.mbps/max*115}`:'').filter(Boolean).join(' ')} fill="none" stroke={direction==='download'?'#ffffff':'#a3a3a3'} strokeWidth="2" strokeDasharray={direction==='upload'?'4 4':undefined}/>) }
+        </svg>
+        <p className="mt-3 text-xs text-neutral-400">{tr?'Grafik: anlık tarayıcı aktarımı. Upload sonucu: tamamlanan istekler.':'Chart: instantaneous browser transfer. Upload result: completed requests.'}</p>
+      </div>
+    </div>
+    {result && <div className="border-t border-white/15 p-6 sm:p-10">
+      <h3 className="text-xl font-semibold">{tr?'Bağlantı özeti':'Connection summary'}</h3>
+      <p className="mt-3 text-neutral-300">{Math.max(result.loadedDownload??0,result.loadedUpload??0)-result.idle>100
+        ? (tr?'Aktarım sırasında gecikme belirgin arttı. Yoğun aktarım, görüntülü görüşmeleri etkileyebilir.':'Latency rose substantially during transfer. Heavy transfers may affect calls.')
+        : (tr?'Hız ve gecikme değerlerini birlikte değerlendirin; tek test bağlantının her zaman aynı davranacağını göstermez.':'Read speed and latency together; one test does not describe every network condition.')}</p>
+      <p className="mt-4 font-mono text-xs text-neutral-400">{result.seconds.toFixed(1)} s · {(result.bytes/1e6).toFixed(1)} MB · {result.latencySamples} {tr?'gecikme örneği':'latency samples'} · {result.requestsFailed} {tr?'başarısız HTTP isteği':'failed HTTP requests'} · {tr?'Hız değişkenliği':'Speed variation'}: {fmt(result.stability,'%')}</p>
+      {result.capped && <p className="mt-3 text-sm">{tr?'Veri sınırına ulaşıldı; ölçüm süresi kısaldı.':'Data limit reached; the measurement window was shortened.'}</p>}
+      <div className="mt-6 flex flex-wrap gap-3"><button onClick={share} className="btn-primary min-h-11 rounded-full px-5">{tr?'Sonucu kopyala':'Copy result'}</button><button onClick={exportResult} className="btn-ghost min-h-11 rounded-full px-5">JSON ↓</button></div>
+    </div>}
+    <details className="border-t border-white/15 p-6 text-sm text-neutral-300 sm:px-10" open>
+      <summary className="cursor-pointer font-semibold text-white">{tr?'Nasıl ölçülüyor?':'How is this measured?'}</summary>
+      <p className="mt-4 leading-relaxed">{tr?'Gerçek HTTPS trafiği; dört paralel bağlantı, her aktarımda 1 saniye ısınma ve en çok 8 saniye ölçüm. Her yönde 256 MB veri sınırı. Gecikme HTTP gidiş-dönüş süresidir; jitter ardışık örnek farklarının ortalamasıdır. Cloudflare anycast yönlendirmesi uç noktayı seçer; belirli şehir seçimi yoktur.':'Real HTTPS traffic; four parallel connections, 1 second warmup and up to 8 seconds measurement per direction. 256 MB data cap per direction. Latency is HTTP round-trip time; jitter is the mean successive sample difference. Cloudflare anycast routing selects the edge; there is no manual city selection.'}</p>
+      <p className="mt-3 leading-relaxed">{tr?'Paket kaybı: kullanılamıyor. HTTP hataları paket kaybı değildir; bu testte UDP/TURN ölçüm sunucusu bağlı değil. VPN, Wi-Fi, tarayıcı ve sunucu koşulları sonucu etkiler. Başlatmak Cloudflare’a test trafiği gönderir ve veri kotanızı kullanır.':'Packet loss: unavailable. HTTP failures are not packet loss; no UDP/TURN measurement server is connected. VPN, Wi-Fi, browser and server conditions affect results. Starting sends test traffic to Cloudflare and uses your data allowance.'}</p>
+    </details>
+  </section>;
 }

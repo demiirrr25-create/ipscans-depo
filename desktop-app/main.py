@@ -116,7 +116,7 @@ def main() -> None:
         # never triggers.
         window.grab()
         for index in range(window.navigation.count()):
-            window.navigation.setCurrentRow(index)
+            window.navigation.setCurrentIndex(index)
             window.grab()
         deadline = time.monotonic() + 15
         app.processEvents()
@@ -125,11 +125,35 @@ def main() -> None:
             time.sleep(0.01)
         app.processEvents()
         if window._jobs or window._warnings:
-            raise RuntimeError("Selftest could not complete adapter/history startup checks")
+            raise RuntimeError("Selftest could not complete adapter startup checks")
         from app.core import network_utils
         if sys.platform == 'win32' and not network_utils._ping_once('127.0.0.1'):
             raise RuntimeError('Packaged native ICMP selftest failed')
         from app.core.models import Device
+        from app.core.scanner import ScanOptions
+        from app.workers.scan_worker import ScanWorker
+        window._scan_started = time.monotonic()
+        window._worker = ScanWorker(['127.0.0.1'], ScanOptions(adaptive=True, providers=[], enable_wmi=False), window)
+        window._worker.device_found.connect(window._on_device_found)
+        window._worker.failed.connect(window._warning)
+        window._worker.start()
+        deadline = time.monotonic() + 15
+        while window._worker.isRunning() and time.monotonic() < deadline:
+            app.processEvents()
+            time.sleep(.01)
+        if window._worker.isRunning():
+            window._worker.stop()
+            window._worker.wait(5000)
+            raise RuntimeError('Packaged adaptive scan timed out')
+        app.processEvents()
+        window._flush_results(all_results=True)
+        if window.model.rowCount() != 1 or window.model._devices[0].ip != '127.0.0.1':
+            raise RuntimeError('Packaged progressive loopback scan failed')
+        window.navigation.setCurrentIndex(1)
+        window._refresh_map(force=True)
+        if '127.0.0.1' not in window.network_map.nodes:
+            raise RuntimeError('Packaged Network Map scan result missing')
+        window.grab()
         from app.ui.device_panel import DeviceControlPanel
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

@@ -1,3 +1,7 @@
+# v4.1.0
+
+See [v4.1 release notes](V41_RELEASE.md): automatic adaptive discovery, two-tab monochrome UI, vertical grouped map, multi-source identity, authorized CDP/FDB evidence, and verified upgrade packaging.
+
 # IPscans+ 4.0.0 / Network Observatory
 
 - Native Windows IPv4 ICMP engine with checked reply status and identity.

@@ -28,11 +28,12 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
     ] },
   ];
   return (
-    <footer className="border-t border-white/15 bg-[#080808]">
-      <div className="mx-auto max-w-7xl px-4 pt-16">
+    <footer className="border-t border-white/15 bg-black">
+      <div className="mx-auto max-w-7xl px-5 sm:px-8 pt-16">
+        <p className="mb-6 font-mono text-xs tracking-[.2em] text-neutral-400">NETWORK INTELLIGENCE / DESIGNED FOR CLARITY</p>
         <p className="border-b border-white/15 pb-12 font-[family-name:var(--font-display)] text-[clamp(3.5rem,13vw,12rem)] font-semibold leading-none tracking-[-0.075em]">ipscans<span className="text-neutral-600">.</span></p>
       </div>
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 md:grid-cols-[2fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 py-16 md:grid-cols-[2fr_1fr_1fr_1fr]">
         <div>
           <Link href={`/${locale}`} className="flex items-center gap-2 text-xl font-semibold"><Logo size={30} /> ipscans.</Link>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-neutral-400">{dict.footer.tagline}</p>
@@ -41,12 +42,12 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
           <nav key={column.title} aria-label={column.title}>
             <h2 className="text-sm font-semibold text-white">{column.title}</h2>
             <ul className="mt-5 space-y-3">
-              {column.links.map((item) => <li key={item.href}><Link href={item.href} className="text-sm text-neutral-400 hover:text-white hover:underline">{item.label}</Link></li>)}
+              {column.links.map((item) => <li key={item.href}><Link href={item.href} className="inline-flex min-h-8 items-center text-sm text-neutral-400 hover:text-white hover:underline">{item.label}</Link></li>)}
             </ul>
           </nav>
         ))}
       </div>
-      <div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-3 border-t border-white/10 px-4 py-6 font-mono text-xs text-neutral-400">
+      <div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-3 border-t border-white/10 px-5 sm:px-8 py-6 font-mono text-xs text-neutral-400">
         <span>© {new Date().getFullYear()} IPScans — {dict.footer.rights}</span>
         <Link href={`/${locale}/privacy`} className="hover:text-white">{dict.footer.privacy}</Link>
       </div>

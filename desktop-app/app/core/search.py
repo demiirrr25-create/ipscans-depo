@@ -17,7 +17,7 @@ def matches_device(device, query: str) -> bool:
         'name': device.hostname or device.upnp_friendly_name or '', 'type': device.device_type,
         'source': ' '.join(device.sources), 'confidence': device.classification_confidence,
         'status': device.reachability}
-    haystack = ' '.join((*fields.values(), device.onvif_model or '',
+    haystack = ' '.join((*fields.values(), device.onvif_model or '', device.model or '', device.http_title or '', device.http_server or '',
         device.onvif_manufacturer or '', ' '.join(map(str, device.open_ports)))).lower()
     def match(token):
         key, sep, value = token.partition(':')
@@ -28,6 +28,11 @@ def matches_device(device, query: str) -> bool:
                 return ipaddress.ip_address(device.ip) in ipaddress.ip_network(value, strict=False)
             except ValueError:
                 return False
+        if sep and key == 'ip':
+            try:
+                return ipaddress.ip_address(device.ip) == ipaddress.ip_address(value)
+            except ValueError:
+                return bool(value) and value in device.ip
         if sep and key in fields:
             return bool(value) and value in fields[key].lower()
         return token in haystack

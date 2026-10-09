@@ -314,7 +314,6 @@ class DiscoveryTests(unittest.TestCase):
             on_device_found(Device("192.168.1.8", device_type="IP Camera", sources=["ONVIF"]))
             on_progress(1, 1)
         with patch("app.workers.scan_worker.run_scan", fake_scan), \
-             patch("app.ui.main_window.MainWindow._save_history", return_value=[]), \
              patch("app.ui.main_window.network_utils.detect_adapters", return_value=[]), \
              patch("app.ui.main_window.history.load_snapshots", return_value=[]):
             window._start_scan()

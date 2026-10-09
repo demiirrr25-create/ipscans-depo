@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   return {
-    title: "IPscans+ 4.0 — Network Observatory",
+    title: "IPscans+ 4.1 — Network Intelligence",
     description: scannerApplication.description[locale],
     alternates: {
       canonical: `/${locale}/ip-scanner`,

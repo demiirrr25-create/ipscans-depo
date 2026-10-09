@@ -42,6 +42,13 @@ class Device:
     connection_evidence: str | None = None
     onvif_types: list[str] = field(default_factory=list)
     discovery_id: str | None = None
+    http_title: str | None = None
+    http_server: str | None = None
+    rtsp_server: str | None = None
+    model: str | None = None
+    identification_score: int = 0
+    cdp_neighbor_ips: list[str] = field(default_factory=list)
+    bridge_fdb: list[str] = field(default_factory=list)
 
     @property
     def preferred_url_scheme(self) -> str:

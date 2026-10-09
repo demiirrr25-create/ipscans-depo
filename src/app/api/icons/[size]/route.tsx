@@ -20,7 +20,7 @@ export async function GET(
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0A0B0D",
+          background: "#000000",
         }}
       >
         <svg width={inner} height={inner} viewBox="0 0 64 64">

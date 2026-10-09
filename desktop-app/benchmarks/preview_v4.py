@@ -17,7 +17,7 @@ for font in ('segoeui.ttf', 'segoeuib.ttf', 'seguisb.ttf'):
     if font_path.exists():
         QFontDatabase.addApplicationFont(str(font_path))
 app.setStyle('Fusion')
-with patch.object(MainWindow, '_refresh_adapters'), patch.object(MainWindow, '_load_history'):
+with patch.object(MainWindow, '_refresh_adapters'):
     window = MainWindow('en')
     window.resize(1440, 900)
     window.adapter_details.setText('INTERFACE PREVIEW  /  Example office network  /  192.168.10.0/24')
@@ -34,11 +34,24 @@ with patch.object(MainWindow, '_refresh_adapters'), patch.object(MainWindow, '_l
     window.model.add_devices(fixture)
     window._update_summary()
     window.status_label.setText('INTERFACE PREVIEW  /  Example data — not a live scan')
-    window.warning_label.setText('Discovery · Device evidence · Network Map · Local history · Export')
+    window.warning_label.setText('Discovery · Device evidence · Network Map · Vertical topology · Export')
     window.show()
     app.processEvents()
     target = Path(sys.argv[1])
     target.parent.mkdir(parents=True, exist_ok=True)
     if not window.grab().save(str(target)):
         raise RuntimeError('Screenshot save failed')
+    if len(sys.argv) > 2:
+        fixture[0].mac = '02:00:00:00:00:01'
+        fixture[1].mac = '02:00:00:00:00:02'
+        fixture[0].lldp_neighbor_macs = [fixture[1].mac]
+        for i, device in enumerate(fixture[2:6], 3):
+            device.mac = f'02:00:00:00:00:{i:02x}'
+            fixture[1].bridge_fdb.append(f'{device.mac}@{i}')
+        window.navigation.setCurrentIndex(1)
+        window.network_map.refresh(fixture, fixture[0].ip, None)
+        app.processEvents()
+        window.network_map.fit()
+        app.processEvents()
+        window.grab().save(sys.argv[2])
     window.close()

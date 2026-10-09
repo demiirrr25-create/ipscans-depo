@@ -74,6 +74,9 @@ def _read_devices(entries: list) -> list[Device]:
                         isinstance(item, bool) or not isinstance(item, int if key == "open_ports" else str)
                         for item in value):
                     raise ValueError(f"Invalid {key} in scan history")
+            elif key == 'identification_score':
+                if type(value) is not int or not 0 <= value <= 100:
+                    raise ValueError('Invalid identification score in scan history')
             elif key == "latency_ms":
                 if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))
                                           or not math.isfinite(value) or value < 0):

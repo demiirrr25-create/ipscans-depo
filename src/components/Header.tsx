@@ -70,7 +70,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
     router.push(href);
   }
   return (
-    <header className="site-header sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur-xl"
+    <header className="site-header sticky top-0 z-50 border-b border-white/10 bg-black/95 backdrop-blur-md"
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           if (searchOpen) { setSearchOpen(false); searchInput.current?.focus(); }
@@ -78,9 +78,9 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
           else if (mobile) { setMobile(false); menuButton.current?.focus(); }
         }
       }}>
-      <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-4">
+      <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
         <Link href={`/${locale}`} aria-label="IPScans home" className="flex shrink-0 items-center gap-2">
-          <Logo size={34} /><span className="hidden text-lg font-semibold tracking-tight min-[400px]:inline">ipscans<span className="text-neutral-500">.</span></span>
+          <Logo size={34} /><span className="hidden text-xl font-semibold tracking-[-.06em] min-[400px]:inline">ipscans<span className="text-neutral-500">.</span></span>
         </Link>
         <nav aria-label={dict.nav.tools} className="hidden items-center gap-1 lg:flex">
           <Link href={`/${locale}`} aria-current={pathname === `/${locale}` ? "page" : undefined} className="nav-link">{dict.nav.home}</Link>
@@ -105,7 +105,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
         </nav>
         <div className="flex items-center gap-2">
           <div ref={searchBox} className="site-search relative">
-            <div className="flex min-h-11 items-center rounded-lg border border-white/20 bg-white/[0.04] px-3 focus-within:border-white/70">
+            <div className="flex min-h-11 items-center rounded-full border border-white/20 bg-white/[0.04] px-3 focus-within:border-white/70">
               <span aria-hidden="true" className="text-neutral-400">⌕</span>
               <input id="site-search-input" ref={searchInput} type="text" inputMode="search" value={query} role="combobox"
                 aria-label={dict.experience.searchPlaceholder} aria-expanded={searchOpen}

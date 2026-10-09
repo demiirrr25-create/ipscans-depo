@@ -139,14 +139,18 @@ class V4Tests(unittest.TestCase):
         from PyQt6.QtWidgets import QApplication
         from app.ui.main_window import MainWindow
         app = QApplication.instance() or QApplication([])
-        with patch.object(MainWindow, '_refresh_adapters'), patch.object(MainWindow, '_load_history'):
+        with patch.object(MainWindow, '_refresh_adapters'):
             window = MainWindow('tr')
-            window.profile_select.setCurrentIndex(3)
-            self.assertEqual(window.concurrency.value(), 4)
+            self.assertEqual(window.navigation.count(), 2)
+            self.assertFalse(hasattr(window, 'profile_select'))
+            window.show()
+            window.navigation.setCurrentIndex(1)
+            self.assertFalse(window.scan_controls.isVisible())
+            self.assertEqual(window.views.currentWidget(), window.network_map)
             window._on_metrics({'elapsed_seconds': 2.0, 'hosts_per_second': 50.0})
             self.assertEqual(window.metric_values['speed'].text(), '50.0')
             window._set_scanning(True)
-            self.assertFalse(window.profile_select.isEnabled())
+            self.assertFalse(window.target_input.isEnabled())
             window.close()
 
 

@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QFormLayout, QFrame, QHBoxLayout, QHeaderView, QLabel,
-    QLineEdit, QListWidget, QMenu, QMessageBox, QProgressBar, QPushButton, QSpinBox,
+    QLineEdit, QTabBar, QMenu, QMessageBox, QProgressBar, QPushButton,
     QStackedWidget, QTableView, QTextEdit, QVBoxLayout, QWidget,
 )
 
@@ -18,7 +18,6 @@ from app.core.adapters import ChangeResult
 from app.core.models import Device
 from app.core.registry import DeviceRegistry
 from app.core.scanner import ScanOptions
-from app.core.profiles import PROFILES, parse_ports
 from app.core.report import render_report
 from app.core.targets import plan_targets
 from app.core.topology import build_topology
@@ -29,7 +28,6 @@ from app.ui.styles import DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput
 from app.workers.scan_worker import ScanWorker
 from app.workers.task_worker import TaskWorker
-from app.workers.vendor_update_worker import VendorUpdateWorker
 
 
 class MainWindow(QWidget):
@@ -39,11 +37,9 @@ class MainWindow(QWidget):
         self._worker: ScanWorker | None = None
         self._node_worker: ScanWorker | None = None
         self._node_observed: set[str] = set()
-        self._vendor_worker: VendorUpdateWorker | None = None
         self._jobs: set[TaskWorker] = set()
         self._panels: list[DeviceControlPanel] = []
         self._adapters: list[network_utils.NetworkAdapter] = []
-        self._snapshots: list[history.ScanSnapshot] = []
         self._pending: dict[str, Device] = {}
         self._observations = DeviceRegistry()
         self._conflicts = []
@@ -58,7 +54,7 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.0 / Network Observatory")
+        self.setWindowTitle("IPscans+ 4.1 / Network Intelligence")
         self.resize(1380, 850)
         self.setMinimumSize(1000, 650)
         self.setStyleSheet(DARK_QSS)
@@ -81,29 +77,29 @@ class MainWindow(QWidget):
         self._range_timer.timeout.connect(self._estimate_range)
         self.target_input.start_edit.textChanged.connect(lambda: self._range_timer.start())
         self.target_input.end_edit.textChanged.connect(lambda: self._range_timer.start())
-        self.additional_targets.textChanged.connect(lambda: self._range_timer.start())
-        self.exclusions.textChanged.connect(lambda: self._range_timer.start())
         QTimer.singleShot(0, self._refresh_adapters)
-        QTimer.singleShot(0, self._load_history)
         QShortcut(QKeySequence("Ctrl+F"), self, activated=self.filter_edit.setFocus)
         QShortcut(QKeySequence("F5"), self, activated=self._start_scan)
         QShortcut(QKeySequence("Escape"), self, activated=self._stop_scan)
 
     def _build_ui(self) -> None:
-        outer = QHBoxLayout(self)
-        outer.setContentsMargins(20, 20, 20, 20)
-        outer.setSpacing(24)
-        self.navigation = QListWidget()
-        self.navigation.setFixedWidth(176)
-        self.navigation.setObjectName('Navigation')
-        self.navigation.setAccessibleName(t(self.lang, "navigation"))
-        self.navigation.addItems([t(self.lang, key) for key in ("scan", "network_map", "history", "settings")])
-        outer.addWidget(self.navigation)
-        body = QVBoxLayout()
-        outer.addLayout(body, stretch=1)
+        body = QVBoxLayout(self)
+        body.setContentsMargins(24, 20, 24, 16)
+        body.setSpacing(16)
         heading = QHBoxLayout()
         heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
-        heading.addWidget(QLabel("4.0  /  NETWORK OBSERVATORY", objectName="VersionBadge"))
+        heading.addWidget(QLabel("4.1 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
+        heading.addStretch()
+        self.navigation = QTabBar()
+        self.navigation.setAccessibleName(t(self.lang, "navigation"))
+        self.navigation.addTab("SCAN")
+        self.navigation.addTab("NETWORK MAP")
+        heading.addWidget(self.navigation)
+        body.addLayout(heading)
+        self.scan_controls = QWidget()
+        scan = QVBoxLayout(self.scan_controls)
+        scan.setContentsMargins(0, 0, 0, 0)
+        heading = QHBoxLayout()
         self.adapter_select = QComboBox()
         self.adapter_select.setAccessibleName(t(self.lang, "current_adapter"))
         self.adapter_select.currentIndexChanged.connect(self._adapter_changed)
@@ -111,21 +107,10 @@ class MainWindow(QWidget):
         refresh = QPushButton(t(self.lang, "refresh_adapters"))
         refresh.clicked.connect(self._refresh_adapters)
         heading.addWidget(refresh)
-        body.addLayout(heading)
+        scan.addLayout(heading)
         self.adapter_details = QLabel(t(self.lang, "detecting_adapter"))
         self.adapter_details.setWordWrap(True)
-        body.addWidget(self.adapter_details)
-        profile_row = QHBoxLayout()
-        self.profile_select = QComboBox()
-        self.profile_select.setAccessibleName(self._v4('Scan profile', 'Tarama profili'))
-        for key, profile in PROFILES.items():
-            self.profile_select.addItem(profile.name_tr if self.lang == 'tr' else profile.name, key)
-        self.profile_select.setCurrentIndex(1)
-        self.profile_description = QLabel()
-        self.profile_description.setWordWrap(True)
-        profile_row.addWidget(self.profile_select)
-        profile_row.addWidget(self.profile_description, 1)
-        body.addLayout(profile_row)
+        scan.addWidget(self.adapter_details)
         row = QHBoxLayout()
         self.target_input = TargetInput(self.lang)
         row.addWidget(self.target_input, stretch=1)
@@ -136,10 +121,15 @@ class MainWindow(QWidget):
         self.stop_btn.setEnabled(False)
         row.addWidget(self.scan_btn)
         row.addWidget(self.stop_btn)
-        body.addLayout(row)
+        scan.addLayout(row)
         self.range_estimate = QLabel(t(self.lang, "range_hint"))
-        body.addWidget(self.range_estimate)
-        cards = QHBoxLayout()
+        scan.addWidget(self.range_estimate)
+        scan.addWidget(QLabel(self._v4('Automatic discovery · Scan only networks you own or are authorized to assess.',
+            'Otomatik keşif · Yalnızca sahibi olduğunuz veya tarama yetkiniz olan ağları tarayın.')))
+        body.addWidget(self.scan_controls)
+        self.metrics_panel = QWidget()
+        cards = QHBoxLayout(self.metrics_panel)
+        cards.setContentsMargins(0, 0, 0, 0)
         self.metric_values = {}
         for key, title in [('devices', self._v4('DEVICES FOUND', 'BULUNAN CİHAZ')),
                            ('services', self._v4('OPEN TCP SERVICES', 'AÇIK TCP SERVİSİ')),
@@ -152,7 +142,7 @@ class MainWindow(QWidget):
             self.metric_values[key] = value
             layout.addWidget(value)
             cards.addWidget(frame, 1)
-        body.addLayout(cards)
+        body.addWidget(self.metrics_panel)
         self.pages = QStackedWidget()
         body.addWidget(self.pages, stretch=1)
         self.workspace = QWidget()
@@ -170,14 +160,10 @@ class MainWindow(QWidget):
         self.filter_edit.setToolTip('ip:192.168.1.0/24  port:443  vendor:Axis  type:"IP Camera"  source:ONVIF  -type:Unknown')
         self.filter_edit.textChanged.connect(self._filter)
         filters.addWidget(self.filter_edit, stretch=1)
-        self.view_select = QComboBox()
-        self.view_select.addItems([t(self.lang, "view_table"), t(self.lang, "view_graph")])
-        self.view_select.setAccessibleName(t(self.lang, "workspace_view"))
-        self.view_select.currentIndexChanged.connect(self._view_changed)
-        filters.addWidget(self.view_select)
         columns = QPushButton(t(self.lang, "columns"))
         columns.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
         filters.addWidget(columns)
+        self.columns_button = columns
         self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
         self.conflicts_button.clicked.connect(self._show_conflicts)
         filters.addWidget(self.conflicts_button)
@@ -194,8 +180,6 @@ class MainWindow(QWidget):
         self.views.addWidget(self.network_map)
         workspace.addWidget(self.views, stretch=1)
         self.pages.addWidget(self.workspace)
-        self.pages.addWidget(self._build_history())
-        self.pages.addWidget(self._build_settings())
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         body.addWidget(self.progress_bar)
@@ -205,19 +189,12 @@ class MainWindow(QWidget):
         self.warning_label = QLabel()
         self.warning_label.setWordWrap(True)
         body.addWidget(self.warning_label)
-        self.navigation.currentRowChanged.connect(self._navigate)
-        self.navigation.setCurrentRow(0)
+        self.navigation.currentChanged.connect(self._navigate)
+        self.navigation.setCurrentIndex(0)
         self._update_summary()
-        self.profile_select.currentIndexChanged.connect(self._profile_changed)
-        self._profile_changed()
 
     def _v4(self, en: str, tr: str) -> str:
         return tr if self.lang == 'tr' else en
-
-    def _profile_changed(self, *_args) -> None:
-        profile = PROFILES[self.profile_select.currentData()]
-        self.profile_description.setText(profile.description_tr if self.lang == 'tr' else profile.description)
-        self.concurrency.setValue(profile.workers)
 
     def _on_metrics(self, metrics: dict) -> None:
         self._metrics = dict(metrics)
@@ -267,53 +244,6 @@ class MainWindow(QWidget):
             action.toggled.connect(lambda visible, col=column: self.table.setColumnHidden(col, not visible))
             menu.addAction(action)
         menu.exec(self.table.horizontalHeader().mapToGlobal(position))
-
-    def _build_history(self) -> QWidget:
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.addWidget(QLabel(t(self.lang, "history_notice")))
-        self.history_select = QComboBox()
-        self.history_select.setAccessibleName(t(self.lang, "history"))
-        self.history_select.currentIndexChanged.connect(self._inspect_history)
-        layout.addWidget(self.history_select)
-        self.history_details = QTextEdit()
-        self.history_details.setReadOnly(True)
-        layout.addWidget(self.history_details)
-        return page
-
-    def _build_settings(self) -> QWidget:
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.addWidget(QLabel(t(self.lang, "authorized_networks")))
-        form = QFormLayout()
-        self.concurrency = QSpinBox()
-        self.concurrency.setRange(2, 128)
-        self.concurrency.setValue(64)
-        form.addRow(t(self.lang, "worker_budget"), self.concurrency)
-        self.custom_ports = QLineEdit()
-        self.custom_ports.setPlaceholderText(self._v4('Profile defaults, or 22,80,443,8000-8010',
-            'Profil varsayılanı veya 22,80,443,8000-8010'))
-        self.custom_ports.setMaxLength(2048)
-        form.addRow(self._v4('Custom TCP ports (max 256)', 'Özel TCP portları (en çok 256)'), self.custom_ports)
-        self.additional_targets = QLineEdit()
-        self.additional_targets.setMaxLength(4096)
-        self.additional_targets.setPlaceholderText('192.168.2.0/24, 10.0.0.10-20')
-        form.addRow(self._v4('Additional ranges', 'Ek ağ aralıkları'), self.additional_targets)
-        self.exclusions = QLineEdit()
-        self.exclusions.setMaxLength(4096)
-        self.exclusions.setPlaceholderText('192.168.1.1, 192.168.1.240/28')
-        form.addRow(self._v4('Excluded addresses / subnets', 'Hariç tutulan adresler / ağlar'), self.exclusions)
-        self.snmp_secret = QLineEdit()
-        self.snmp_secret.setEchoMode(QLineEdit.EchoMode.Password)
-        self.snmp_secret.setPlaceholderText(t(self.lang, "snmp_notice"))
-        form.addRow("SNMPv2c / LLDP", self.snmp_secret)
-        layout.addLayout(form)
-        layout.addWidget(QLabel(t(self.lang, "credentials_notice")))
-        self.update_vendor_btn = QPushButton(t(self.lang, "update_vendors"))
-        self.update_vendor_btn.clicked.connect(self._update_vendors)
-        layout.addWidget(self.update_vendor_btn)
-        layout.addStretch()
-        return page
 
     def _background(self, operation, completed, failed=None) -> None:
         worker = TaskWorker(operation, self)
@@ -378,41 +308,15 @@ class MainWindow(QWidget):
         self.range_estimate.setText(t(self.lang, "range_estimate", count=count))
 
     def _planned_targets(self) -> list[str]:
-        return plan_targets(self.target_input.spec(), self.additional_targets.text(), self.exclusions.text())
-
-    def _load_history(self) -> None:
-        self._background(history.load_snapshots, self._history_loaded)
-
-    def _history_loaded(self, snapshots: list[history.ScanSnapshot]) -> None:
-        self._snapshots = snapshots
-        self.history_select.clear()
-        for snapshot in reversed(snapshots):
-            self.history_select.addItem(f"{snapshot.scanned_at} / {snapshot.target} / {len(snapshot.devices)}", snapshot)
-
-    def _inspect_history(self, _index: int) -> None:
-        scan = self.history_select.currentData()
-        if not scan:
-            self.history_details.clear()
-            return
-        peers = [candidate for candidate in self._snapshots if candidate.target == scan.target
-                 and candidate.scanned_at < scan.scanned_at]
-        change = history.compare(peers[-1].devices, scan.devices) if peers else None
-        summary = (f"+{change.added} new / {change.missing} no longer observed / {change.ip_changes} IP changes / "
-                   f"{change.vendor_changes} vendor changes / {change.mac_changes} MAC changes (not proof of conflict)"
-                   if change else t(self.lang, "history_baseline"))
-        lines = [summary, "", *(f"{device.ip} | {device.mac or 'Unknown'} | {device.hostname or ''} | "
-                               f"{device.vendor or ''} | {device.device_type}" for device in scan.devices)]
-        self.history_details.setPlainText("\n".join(lines))
+        return plan_targets(self.target_input.spec())
 
     def _navigate(self, index: int) -> None:
-        self.pages.setCurrentIndex(0 if index < 2 else index - 1)
-        if index < 2:
-            self.view_select.setCurrentIndex(index)
-
-    def _view_changed(self, index: int) -> None:
         self.views.setCurrentIndex(index)
+        for widget in (self.scan_controls, self.metrics_panel, self.summary_label, self.columns_button):
+            widget.setVisible(index == 0)
         if index == 1:
             self._refresh_map(force=True)
+            QTimer.singleShot(0, self.network_map.fit)
 
     def _filter(self, text: str) -> None:
         self.proxy.set_filter_text(text)
@@ -425,11 +329,7 @@ class MainWindow(QWidget):
             return
         try:
             targets = self._planned_targets()
-            options = ScanOptions(max_workers=self.concurrency.value(),
-                                  profile=self.profile_select.currentData(),
-                                  custom_ports=parse_ports(self.custom_ports.text()),
-                                  enable_snmp=bool(self.snmp_secret.text()),
-                                  snmp_community=self.snmp_secret.text() or None,
+            options = ScanOptions(adaptive=True, fingerprint=True,
                                   interface_ip=self.adapter_select.currentData().ip
                                   if self.adapter_select.currentData() else None)
         except (network_utils.InvalidTargetError, ValueError) as exc:
@@ -441,7 +341,6 @@ class MainWindow(QWidget):
             QMessageBox.StandardButton.No,
         ) != QMessageBox.StandardButton.Yes:
             return
-        self.snmp_secret.clear()
         self._cancelled = False
         self._scan_complete = False
         self._metrics = {}
@@ -456,15 +355,13 @@ class MainWindow(QWidget):
         self.network_map.collapsed.clear()
         self.network_map.refresh([])
         self._scan_target = self.target_input.spec()
-        if self.additional_targets.text().strip() or self.exclusions.text().strip():
-            self._scan_target += f" | +{self.additional_targets.text().strip()} | exclude:{self.exclusions.text().strip()}"
         self._scan_adapter = self.adapter_select.currentData()
         self._scan_started = time.monotonic()
         self._set_scanning(True)
         self.progress_bar.setRange(0, len(targets))
         self.progress_bar.setValue(0)
         self.status_label.setText(t(self.lang, "status_discovering", count=len(targets)))
-        self.navigation.setCurrentRow(0)
+        self.navigation.setCurrentIndex(0)
         self._worker = ScanWorker(targets, options, self)
         self._worker.device_found.connect(self._on_device_found)
         self._worker.progress.connect(self._on_progress)
@@ -482,11 +379,6 @@ class MainWindow(QWidget):
         self.stop_btn.setEnabled(active)
         self.target_input.setEnabled(not active)
         self.adapter_select.setEnabled(not active)
-        self.concurrency.setEnabled(not active)
-        self.profile_select.setEnabled(not active)
-        self.custom_ports.setEnabled(not active)
-        self.additional_targets.setEnabled(not active)
-        self.exclusions.setEnabled(not active)
         self.progress_bar.setVisible(active)
         self.proxy.setDynamicSortFilter(not active)
 
@@ -543,24 +435,11 @@ class MainWindow(QWidget):
             self.status_label.setText(t(self.lang, "scan_cancelled", count=self.model.rowCount()))
             return
         self._scan_complete = True
-        previous = next((scan.devices for scan in reversed(self._snapshots)
-                         if scan.target == self._scan_target), [])
-        by_mac = {device.mac: device for device in previous if device.mac}
-        for device in self.model._devices:
-            if device.mac and device.mac in by_mac:
-                device.first_seen = by_mac[device.mac].first_seen or device.first_seen
-        devices = [replace(device) for device in self.model._devices]
-        target = self._scan_target
-        self._background(lambda: self._save_history(devices, target), self._history_loaded)
+        devices = self.model._devices
         self.status_label.setText(t(self.lang, "status_done", count=len(devices)) +
                                   f" / {time.monotonic() - self._scan_started:.1f} s")
         if self.views.currentIndex() == 1:
             self.network_map.fit()
-
-    @staticmethod
-    def _save_history(devices: list[Device], target: str):
-        history.save_snapshot(devices, target=target)
-        return history.load_snapshots()
 
     def _on_scan_failed(self, message: str) -> None:
         self._flush_results(all_results=True)
@@ -597,7 +476,7 @@ class MainWindow(QWidget):
             return
         adapter = self._scan_adapter or self.adapter_select.currentData()
         self._node_observed.clear()
-        self._node_worker = ScanWorker([ip], ScanOptions(interface_ip=adapter.ip if adapter else None), self)
+        self._node_worker = ScanWorker([ip], ScanOptions(adaptive=True, fingerprint=True, interface_ip=adapter.ip if adapter else None), self)
         self._node_worker.device_found.connect(self._on_node_found)
         self._node_worker.failed.connect(self._warning)
         self._node_worker.warning.connect(self._warning)
@@ -688,22 +567,11 @@ class MainWindow(QWidget):
                          if target.suffix.lower() == '.html' else history.export_results(devices, target),
                          lambda _: self.status_label.setText(str(target)))
 
-    def _update_vendors(self) -> None:
-        if self._vendor_worker and self._vendor_worker.isRunning():
-            return
-        self.update_vendor_btn.setEnabled(False)
-        self._vendor_worker = VendorUpdateWorker(self)
-        self._vendor_worker.completed.connect(lambda: self.update_vendor_btn.setEnabled(True))
-        self._vendor_worker.failed.connect(self._warning)
-        self._vendor_worker.finished.connect(lambda: self.update_vendor_btn.setEnabled(True))
-        self._vendor_worker.finished.connect(self._close_when_idle)
-        self._vendor_worker.start()
-
     def closeEvent(self, event) -> None:
         for panel in list(self._panels):
             panel.close()
         running = any(worker and worker.isRunning() for worker in (
-            self._worker, self._node_worker, self._vendor_worker, *self._jobs))
+            self._worker, self._node_worker, *self._jobs))
         if running or self._panels:
             self._close_pending = True
             self._adapter_timer.stop()

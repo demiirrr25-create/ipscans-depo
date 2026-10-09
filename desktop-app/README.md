@@ -1,105 +1,42 @@
-# IPscans+ 4.0.0 / Network Observatory
+# IPscans+ 4.1.0 / Network Intelligence
 
-Native Windows ICMP, parallel TCP discovery, four scan profiles, custom TCP
-ports, multiple subnets/exclusions, structured search, live metrics and
-standalone HTML reports. See [v4 engineering notes](V4_RESEARCH.md).
-
-Use Settings for additional ranges, exclusions and service ports. Search
-with `port:443 source:ONVIF`, `ip:192.168.1.0/24`, `type:"IP Camera"` or
-`-type:Unknown`. HTML reports can be printed to PDF from a browser.
-
-PyQt6 desktop network discovery and authorized management. Windows releases
-are published only after the source, packaged application, installer and
-uninstaller pass CI. The previous 2.0.2 assets remain available; downloads
-are never replaced with untested binaries or fabricated hashes.
+Monochrome Windows network discovery with exactly two top tabs: **SCAN** and
+**NETWORK MAP**. See [v4.1 engineering and release notes](V41_RELEASE.md).
 
 ## Run and validate
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
-QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -v
-QT_QPA_PLATFORM=offscreen python main.py --selftest
-QT_QPA_PLATFORM=offscreen python benchmarks/scanner_benchmark.py --output benchmark.json
-python -m compileall -q app tests benchmarks
+python -m unittest discover -s tests -v
+python main.py --selftest
+python benchmarks/scanner_benchmark.py --output benchmark.json
+python benchmarks/native_benchmark.py --output native-benchmark.json
 ```
-
-On Windows omit `QT_QPA_PLATFORM=offscreen` or set it through the shell's
-environment mechanism. The Windows workflow runs engine, adapter, graph and
-UI tests, benchmarks, a packaged executable selftest, installer/shortcut
-checks, an installed executable selftest and uninstall checks, and uploads
-SHA-256 hashes separately. PyInstaller on Linux cannot create a Windows EXE.
 
 ## Workflow
 
-- Sidebar: Scan, Network Map, History, Settings.
-- Detect active IPv4 adapters with their actual masks and gateway/DNS
-  metadata. Windows metadata is obtained without parsing localized
-  `ipconfig` labels. Adapter polling and history I/O run outside the GUI.
-- Start/end IP fields replace Single IP / CIDR modes. Pasted single IPs
-  and CIDRs still work. IPv4 targets are capped at 65,534; scans exceeding
-  4,096 addresses require confirmation. IPv6 remains manually bounded
-  to 256 addresses; scoped link-local targets are unsupported.
-- A single workspace switches between a virtualized model/view device
-  table and a node graph, with one shared search. Table columns are
-  sortable, movable, resizable and hideable through the header context
-  menu. Hidden legacy columns preserve port/serial/source information.
-- The graph supports zoom, pan, fit, search, branch collapse/expand,
-  context menus, device refresh, details and SVG/PNG export. Raster
-  export is limited to 250 visible devices and 4,096 pixels per dimension.
-- Double-click or Enter opens the Device Control Panel. Web access,
-  copy IP and ICMP/TCP tests are available without device authentication.
-- History stores at most 20 completed scans, bounded to 32 MiB. Only
-  matching ranges are compared. Cancelled/failed scans do not replace
-  a complete baseline. Missing responses are **not proof of offline status**.
-- SNMP credentials and OUI updates are advanced Settings operations, not
-  primary scan modes. Live Monitoring is no longer a main-screen feature;
-  the separately maintained Pro product still owns its monitoring engine.
-- `Ctrl+F` focuses search, `F5` scans, Escape stops. A model/view table is
-  the screen-reader alternative to the visual graph.
+- Active adapter and range are detected automatically. Enter one IP, a start/end
+  range or CIDR when needed. The standard UI has no manual profiles or Settings.
+- Adaptive bounded discovery emits results progressively. Stop cancels pending
+  work; current socket calls finish within their deadlines.
+- Search with `port:443 source:ONVIF`, `ip:192.168.1.0/24`, `type:"IP Camera"`
+  or `-type:Unknown`. Table columns sort, move, resize and hide.
+- NETWORK MAP uses the workspace canvas with vertical hierarchy, separate
+  unresolved devices, grouped large sibling sets, zoom/pan and branch collapse.
+- Solid connections show LLDP/CDP evidence; dashed connections show inferred
+  gateway/FDB paths. Adjacency does not determine upstream direction.
+- Double-click or Enter opens device details, source evidence, safe diagnostic
+  tools and explicitly authorized ONVIF/SNMP operations.
+- Export CSV, JSON, standalone HTML, SVG or bounded PNG. HTML can print to PDF.
+  No scan history is automatically saved. Existing exports remain compatible.
+- Ctrl+F searches, F5 starts and Escape stops. The accessible model/view table
+  provides the alternative to the visual graph.
 
-## Architecture
-
-| Module | Responsibility |
-| --- | --- |
-| `app/core/network_utils.py` | Validated targets, active interfaces, bounded ICMP/TCP probes, nonblocking ports, time-limited reverse DNS |
-| `app/core/scanner.py` | Progressive discovery and enrichment, cancellation, protocol scheduling and warning callbacks |
-| `app/core/providers.py` | Independent ONVIF, mDNS and SSDP providers; vendor integrations do not belong in the scanner |
-| `app/core/registry.py` | Deduplicated observations and within-scan potential IP conflicts |
-| `app/core/intelligence.py` | Conservative classification with source evidence and qualitative confidence |
-| `app/core/topology.py` | Confirmed LLDP adjacency and separately labelled inferred L3 routes |
-| `app/core/adapters.py` | DeviceAdapter contract, verified-TLS ONVIF operations and safe configuration workflow |
-| `app/core/history.py` | Validated, atomically saved bounded history and CSV/JSON export |
-| `app/ui/network_map.py` | Viewport-culled QGraphicsScene graph; no fabricated physical parents |
-| `app/ui/widgets.py` | Virtualized table, batched IP upserts, one-pass sorting and range input |
-| `app/ui/device_panel.py` | Capability-driven authenticated control panel |
-| `app/workers/` | QThread boundaries for scanning, management and local I/O |
-
-The worker budget (2-128, default 64) is divided between probing and
-enrichment. Each pool queues at most twice its worker count. Three fixed
-protocol slots run concurrently. Discovery results are emitted before the
-full sweep ends and enrichment becomes an upsert, not a duplicate row.
-UI delivery batches at most 256 upserts every 100 ms; graph rebuilds are
-limited to once per second during scanning. Source sorting avoids a
-Qt/Python comparator call for every pair of rows.
-Progress delivery is limited to 20 updates per second, with completion
-always emitted. Port probes continue waiting for pending connections after
-an early refusal rather than dropping slower successful connections.
-
-Selected adapters bind multicast ONVIF, SSDP and mDNS discovery. ARP data
-is identity evidence, not proof of current reachability. ICMP failures
-fall back to TCP and protocol announcements. No default SNMP community,
-device passwords or authentication bypass are attempted. ONVIF
-NetworkVideoStorage is distinguished from transmitters; a generic ONVIF
-Device is not automatically called a camera. Vendor/OUI or a single port
-alone does not establish a device type.
-
-LLDP links confirm **adjacency only**, not upstream/downstream direction.
-Inferred gateway lines indicate a logical subnet route, not cable/port
-order. An unknown parent remains unknown. The old IP TREE module remains
-only for compatibility/tests, not as a separate navigation surface.
+IPv4 scans are capped at 65,534 targets and ranges over 4,096 require confirmation.
+Manual IPv6 inputs remain bounded to 256 addresses; scoped link-local addresses
+and exhaustive IPv6 subnet discovery are unsupported. New explanatory copy uses
+English/Turkish with English fallback; existing core labels retain six languages.
 
 ## Authorized management and limitations
 
@@ -151,36 +88,13 @@ reason: failover, replacement and proxy ARP are alternative explanations.
 A MAC change between scans is an identity change, **not** a confirmed
 duplicate-IP conflict. Potentially conflicting addresses are not writable.
 
-## Performance and release gates
+## Release validation
 
-The benchmark makes **no network calls**: `/24`, `/22` and `/20` use mocked
-transport to measure bounded scheduling, first result, CPU seconds, RSS
-and false positives/negatives against known fixtures. It also measures
-10,000 table rows and 1,000 graph nodes with an actual Qt event loop.
-The gates are zero synthetic discovery errors/unsubstantiated
-classifications, at most 200 ms between UI events and at most 1 second
-to construct the 1,000-node graph. Real identification accuracy is `null`,
-not an invented percentage. Real hardware timing/accuracy needs a labelled
-authorized network and cannot be inferred from these mocks.
+Windows CI runs unit tests, source and packaged loopback selftests, synthetic
+benchmarks, a checksum-verified v4.0 to v4.1 installation upgrade, shortcut,
+installed selftest and uninstall checks. SHA-256 hashes and build provenance
+are published with installer and portable binaries.
 
-WMI enriches only the local Windows host; optional Nmap requires an
-installed binary. Linux gateway/DNS metadata is supported; other OSes
-may have incomplete gateway metadata. There is no MAC/IP reassignment
-through proprietary Hikvision SADP/ISAPI, CDP/FDB topology, password guessing,
-cloud management, image streaming or automatic credential persistence.
-New vendor providers/adapters must add protocol-specific tests before
-their capabilities are enabled.
-Automated protocol tests use test doubles and real loopback sockets.
-Physical camera/firmware interoperability and real-network timing have
-not been measured in this environment; advertised protocol support does
-not guarantee compatibility with every model.
-
-Diagnostics rotate at 2 MiB with three backups. `--debug` enables DEBUG;
-normal logs include INFO/WARNING/ERROR without third-party HTTP debug logs.
-The first-run language and terms flow remains intact. Upgrading asks users
-to accept privacy policy v2, which discloses the expanded local history.
-Navigation and core controls retain six languages; full new explanatory
-copy is provided in English/Turkish, with the existing English fallback
-for other languages and technical protocol errors.
-
-See [release notes](RELEASE_NOTES.md) for changes and the release checklist.
+Synthetic results do not establish real-device accuracy or universal speed.
+Physical camera, switch and router validation requires an authorized lab.
+See V41_RELEASE.md for protocol bounds and limitations.

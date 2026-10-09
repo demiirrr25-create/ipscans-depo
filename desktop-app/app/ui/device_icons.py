@@ -8,6 +8,14 @@ from PyQt6.QtGui import QIcon, QPainter, QPixmap
 from PyQt6.QtSvg import QSvgRenderer
 
 _SHAPES = {
+    "Online": '<circle cx="24" cy="24" r="16"/><path d="m15 24 6 6 13-14"/>',
+    "Attention": '<path d="m24 6 20 35H4zM24 17v11m0 6v1"/>',
+    "Modem": '<rect x="8" y="18" width="32" height="20" rx="3"/><path d="M14 25h3m5 0h3m5 0h3M14 12v6"/>',
+    "Firewall": '<path d="M24 5 40 12v12c0 10-16 19-16 19S8 34 8 24V12zM10 21h28M14 31h20M24 12v9m-7 0v10m14-10v10"/>',
+    "Laptop": '<rect x="10" y="10" width="28" height="23" rx="2"/><path d="m10 33-6 7h40l-6-7"/>',
+    "Smart TV": '<rect x="5" y="10" width="38" height="25" rx="3"/><path d="m13 41 6-6m10 0 6 6"/>',
+    "VoIP Phone": '<rect x="10" y="9" width="28" height="32" rx="5"/><path d="M18 15h14v8H18zM19 29h3m5 0h3m-11 5h3m5 0h3"/>',
+    "IoT Device": '<rect x="12" y="12" width="24" height="24" rx="4"/><path d="M18 5v7m12-7v7M18 36v7m12-7v7M5 18h7m-7 12h7m24-12h7m-7 12h7"/>',
     "Router": '<rect x="7" y="21" width="34" height="14" rx="3"/><path d="M13 15v6m22-6v6M15 28h4m7 0h4"/>',
     "Gateway": '<rect x="7" y="21" width="34" height="14" rx="3"/><path d="M13 15v6m22-6v6M15 28h4m7 0h4"/>',
     "Switch": '<rect x="5" y="17" width="38" height="20" rx="2"/><path d="M10 24h5m4 0h5m4 0h5M10 30h5m4 0h5m4 0h5"/>',
@@ -22,6 +30,10 @@ _SHAPES = {
     "Printer": '<rect x="7" y="18" width="34" height="20" rx="2"/><path d="M14 18v-8h20v8M14 30h20v11H14z"/>',
     "Unknown": '<rect x="10" y="10" width="28" height="28" rx="5"/><path d="M19 20a5 5 0 1 1 8 4l-3 3v2m0 4v1"/>',
 }
+_SHAPES.update({
+    'Managed Switch': _SHAPES['Switch'], 'Unmanaged Switch': _SHAPES['Switch'],
+    'Wi-Fi Extender': _SHAPES['Access Point'], 'Network Storage': _SHAPES['NAS'],
+})
 
 
 @lru_cache(maxsize=24)

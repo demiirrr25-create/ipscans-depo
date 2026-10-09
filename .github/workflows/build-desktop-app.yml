@@ -54,7 +54,7 @@ jobs:
           $expected = [regex]::Match((Get-Content version_info.txt -Raw), "StringStruct\(u'FileVersion', u'([^']+)'\)").Groups[1].Value
           $actual = (Get-Item ".\dist\IPscans-Plus.exe").VersionInfo.FileVersion
           if (-not $expected -or $actual -ne $expected) { throw "Packaged version $actual does not match source $expected" }
-          $process = Start-Process -FilePath ".\dist\IPscans-Plus.exe" -ArgumentList "--selftest" -Wait -PassThru
+          $process = Start-Process -FilePath ".\dist\IPscans-Plus.exe" -ArgumentList "--selftest" -WindowStyle Hidden -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Packaged IPscans+ selftest failed" }
 
       - name: Install Inno Setup and build installer
@@ -65,21 +65,29 @@ jobs:
           & $iscc installer\Scanner.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
 
-      - name: Smoke test installer and desktop shortcut
+      - name: Upgrade v4.0 to v4.1 and verify installer, shortcut and uninstall
         run: |
           $setup = (Resolve-Path "dist\installer\IPscans-Plus-Setup.exe").Path
           $installDir = Join-Path $env:RUNNER_TEMP "IPscansPlusInstallTest"
           $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "IPscans+.lnk"
-          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" -Wait -PassThru
+          $oldSetup = Join-Path $env:RUNNER_TEMP "IPscans-Plus-v4.0-Setup.exe"
+          Invoke-WebRequest "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.0.0/IPscans-Plus-Setup.exe" -OutFile $oldSetup
+          if ((Get-FileHash $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne "1a62124feba3ba0896761b12c483063d1399c47c549baa6c32c02f30a19b5970") { throw "v4.0 checksum mismatch" }
+          $process = Start-Process -FilePath $oldSetup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0 -or (Get-Item (Join-Path $installDir "IPscans-Plus.exe")).VersionInfo.FileVersion -ne "4.0.0.0") { throw "v4.0 baseline installation failed" }
+          Set-Content (Join-Path $installDir "upgrade-preservation.txt") "User-owned file retained across upgrade"
+          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" -WindowStyle Hidden -Wait -PassThru
           if ($process.ExitCode -ne 0 -or -not (Test-Path (Join-Path $installDir "IPscans-Plus.exe")) -or -not (Test-Path $shortcut)) {
             throw "IPscans+ install or desktop shortcut failed"
           }
+          if ((Get-Item (Join-Path $installDir "IPscans-Plus.exe")).VersionInfo.FileVersion -ne "4.1.0.0") { throw "Upgrade did not install v4.1" }
+          if (-not (Test-Path (Join-Path $installDir "upgrade-preservation.txt"))) { throw "Upgrade deleted an unrelated file" }
           $target = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath
           if ($target -ne (Join-Path $installDir "IPscans-Plus.exe")) { throw "Shortcut points to $target" }
-          $process = Start-Process -FilePath (Join-Path $installDir "IPscans-Plus.exe") -ArgumentList "--selftest" -Wait -PassThru
+          $process = Start-Process -FilePath (Join-Path $installDir "IPscans-Plus.exe") -ArgumentList "--selftest" -WindowStyle Hidden -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Installed application selftest failed" }
           $uninstaller = Join-Path $installDir "unins000.exe"
-          $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
+          $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -WindowStyle Hidden -Wait -PassThru
           if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "IPscans+ uninstall failed" }
 
       - name: Record package checksums

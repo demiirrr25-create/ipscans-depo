@@ -6,7 +6,7 @@ from pathlib import Path
 import webbrowser
 
 from PyQt6.QtCore import QRectF, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPen
+from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPen
 from PyQt6.QtSvg import QSvgGenerator
 from PyQt6.QtWidgets import (
     QApplication, QFileDialog, QGraphicsItem, QGraphicsObject, QGraphicsScene,
@@ -84,6 +84,35 @@ class DeviceNode(QGraphicsObject):
             QApplication.clipboard().setText(self.device.ip)
 
 
+class GroupNode(QGraphicsObject):
+    activated = pyqtSignal(str)
+
+    def __init__(self, label, key):
+        super().__init__()
+        self.label, self.key = label, key
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
+        self.setToolTip(label + ' / Enter')
+
+    def boundingRect(self):
+        return QRectF(0, 0, 260, 40)
+
+    def paint(self, painter, option, widget=None):
+        painter.setPen(QPen(QColor('#aaaaaa'), 1, Qt.PenStyle.DashLine))
+        painter.setBrush(QColor('#171717'))
+        painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 5, 5)
+        painter.drawText(self.boundingRect(), Qt.AlignmentFlag.AlignCenter, self.label)
+
+    def mouseDoubleClickEvent(self, event):
+        self.activated.emit(self.key)
+        event.accept()
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.activated.emit(self.key)
+        else:
+            super().keyPressEvent(event)
+
+
 class GraphView(QGraphicsView):
     def wheelEvent(self, event) -> None:
         if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
@@ -111,6 +140,7 @@ class NetworkMap(QWidget):
         self.needle = ""
         self.collapsed: set[str] = set()
         self.nodes: dict[str, DeviceNode] = {}
+        self.expanded_groups: set[str] = set()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         actions = QHBoxLayout()
@@ -162,44 +192,106 @@ class NetworkMap(QWidget):
         for link in links:
             children[link.parent].append(link.child)
             parent[link.child] = link.parent
-        depth: dict[str, int] = {}
-        hidden = set()
-        queue = deque((ip, 0, False) for ip in by_ip if ip not in parent)
-        while queue:
-            ip, level, hide = queue.popleft()
-            if ip in depth:
-                continue
-            depth[ip] = level
-            if hide:
-                hidden.add(ip)
-            queue.extend((child, min(level + 1, 8), hide or ip in self.collapsed)
-                         for child in children[ip])
-        rows: dict[int, int] = defaultdict(int)
-        for device in self.devices:
-            if device.ip in hidden or not matches_device(device, self.needle):
-                continue
-            level = depth.get(device.ip, 0)
-            row = rows[level]
-            rows[level] += 1
+        # Retain ancestors as dim context while highlighting actual matches.
+        matches = {d.ip for d in self.devices if matches_device(d, self.needle)}
+        visible = set(matches)
+        for ip in list(matches):
+            seen = set()
+            while ip in parent and ip not in seen:
+                seen.add(ip)
+                ip = parent[ip]
+                visible.add(ip)
+        for ip in self.collapsed:
+            queue = deque(children[ip])
+            while queue:
+                child = queue.popleft()
+                visible.discard(child)
+                queue.extend(children[child])
+        effective = {ip: [c for c in kids if c in visible] for ip, kids in children.items()}
+        groups = {}
+        if not self.needle:
+            for ip, kids in effective.items():
+                if len(kids) > 24 and ip not in self.expanded_groups:
+                    groups[ip] = len(kids) - 24
+                    effective[ip] = kids[:24]
+        widths = {}
+        def width(ip):
+            stack = [(ip, False)]
+            while stack:
+                key, ready = stack.pop()
+                if key in widths:
+                    continue
+                if ready:
+                    widths[key] = max(260, sum(widths[c] for c in effective.get(key, [])))
+                else:
+                    stack.append((key, True))
+                    stack.extend((c, False) for c in effective.get(key, []))
+            return widths[ip]
+        positions = {}
+        def place(ip, x, y):
+            stack = [(ip, x, y)]
+            while stack:
+                key, left, top = stack.pop()
+                positions[key] = (left + width(key) / 2 - 120, top)
+                offset = left
+                for child in effective.get(key, []):
+                    stack.append((child, offset, top + 180))
+                    offset += width(child)
+        roots = [ip for ip in by_ip if ip in visible and ip not in parent]
+        roots.sort(key=lambda ip: (ip != self.gateway, ip))
+        unresolved = [ip for ip in roots if not children[ip] and ip != self.gateway]
+        cursor = 0
+        for ip in roots:
+            if ip not in unresolved:
+                place(ip, cursor, 50)
+                cursor += width(ip) + 80
+        if unresolved:
+            label = self.scene.addText(('Çözümlenmemiş cihazlar' if self.lang == 'tr' else 'Unresolved Devices') + f' / {len(unresolved)}')
+            label.setDefaultTextColor(QColor('#bbbbbb'))
+            label.setPos(cursor, 0)
+            shown = unresolved if self.needle or 'unresolved' in self.expanded_groups else unresolved[:24]
+            for i, ip in enumerate(shown):
+                positions[ip] = (cursor + i % 4 * 260, 50 + i // 4 * 112)
+            if len(shown) < len(unresolved):
+                group = GroupNode(f'+ {len(unresolved)-len(shown)} devices · double-click to expand', 'unresolved')
+                group.activated.connect(self.expand_group)
+                group.setPos(cursor, 50 + 6 * 112)
+                self.scene.addItem(group)
+        for ip, (x, y) in positions.items():
+            device = by_ip[ip]
             node = DeviceNode(device, self.lang)
-            node.setPos(level * 1080 + row % 4 * 260, row // 4 * 112)
+            node.setPos(x, y)
+            node.setOpacity(1 if ip in matches else .45)
             node.activated.connect(self.device_activated.emit)
             node.refresh_requested.connect(self.refresh_requested.emit)
             node.collapse_requested.connect(self.toggle_branch)
-            node.setSelected(device.ip in selected)
+            node.setSelected(ip in selected)
             self.scene.addItem(node)
-            self.nodes[device.ip] = node
+            self.nodes[ip] = node
+            if ip in groups:
+                group = GroupNode(f'+ {groups[ip]} branches · double-click to expand', ip)
+                group.activated.connect(self.expand_group)
+                group.setPos(x, y + 100)
+                self.scene.addItem(group)
         for link in links:
             a, b = self.nodes.get(link.parent), self.nodes.get(link.child)
             if not a or not b:
                 continue
-            pen = QPen(QColor("#aaaaaa" if link.confirmed else "#666666"), 1.5)
+            pen = QPen(QColor('#cccccc' if link.confirmed else '#777777'), 1.5)
             if not link.confirmed:
                 pen.setStyle(Qt.PenStyle.DashLine)
-            edge = self.scene.addLine(a.x() + 240, a.y() + 45, b.x(), b.y() + 45, pen)
+            path = QPainterPath()
+            path.moveTo(a.x() + 120, a.y() + 90)
+            mid = (a.y() + 90 + b.y()) / 2
+            path.cubicTo(a.x() + 120, mid, b.x() + 120, mid, b.x() + 120, b.y())
+            edge = self.scene.addPath(path, pen)
             edge.setZValue(-1)
             edge.setToolTip(f"{'Confirmed adjacency' if link.confirmed else 'Inferred route'}: {link.evidence}")
         self.scene.setSceneRect(self.scene.itemsBoundingRect().adjusted(-30, -30, 30, 30))
+
+    def expand_group(self, key: str) -> None:
+        self.expanded_groups.add(key)
+        self._render()
 
     def toggle_branch(self, ip: str) -> None:
         if ip in self.collapsed:
@@ -216,6 +308,8 @@ class NetworkMap(QWidget):
 
     def expand_all(self) -> None:
         self.collapsed.clear()
+        self.expanded_groups.update(d.ip for d in self.devices)
+        self.expanded_groups.add("unresolved")
         self._render()
 
     def fit(self) -> None:

@@ -23,6 +23,10 @@ def build_topology(devices: list[Device], gateway: str | None,
     by_mac = {device.mac: device for device in devices if device.mac and counts[device.mac] == 1}
     adjacent: dict[str, set[str]] = {ip: set() for ip in by_ip}
     for device in devices:
+        for ip in device.cdp_neighbor_ips:
+            if ip in by_ip and ip != device.ip:
+                adjacent[device.ip].add(ip)
+                adjacent[ip].add(device.ip)
         for mac in device.lldp_neighbor_macs:
             peer = by_mac.get(mac)
             if peer and peer.ip != device.ip:
@@ -48,10 +52,24 @@ def build_topology(devices: list[Device], gateway: str | None,
                     continue
                 visited.add(child)
                 links[child] = TopologyLink(parent, child,
-                                             "Authorized SNMP LLDP adjacency; display direction is arbitrary",
+                                             "Authorized SNMP LLDP/CDP adjacency; display direction is arbitrary",
                                              True)
                 queue.append(child)
 
+    for child in devices:
+        if child.ip in links or child.ip == gateway or not child.mac or counts[child.mac] != 1:
+            continue
+        candidates = [(d.ip, entry.split('@', 1)[1]) for d in devices if d.ip != child.ip
+                      for entry in d.bridge_fdb if entry.startswith(child.mac + '@')]
+        if len(candidates) == 1:
+            parent, port = candidates[0]
+            chain, seen = parent, {child.ip}
+            while chain in links and chain not in seen:
+                seen.add(chain)
+                chain = links[chain].parent
+            if chain not in seen:
+                links[child.ip] = TopologyLink(parent, child.ip,
+                    f'SNMP bridge forwarding port {port}; intervening devices possible', False)
     subnet = ipaddress.IPv4Network(local_network) if local_network else None
     if gateway and gateway in by_ip and subnet and ipaddress.IPv4Address(gateway) in subnet:
         for child in devices:
