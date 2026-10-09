@@ -54,7 +54,7 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.1 / Network Intelligence")
+        self.setWindowTitle("IPscans+ 4.1.1 / Network Intelligence")
         self.resize(1380, 850)
         self.setMinimumSize(1000, 650)
         self.setStyleSheet(DARK_QSS)
@@ -88,7 +88,7 @@ class MainWindow(QWidget):
         body.setSpacing(16)
         heading = QHBoxLayout()
         heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
-        heading.addWidget(QLabel("4.1 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
+        heading.addWidget(QLabel("4.1.1 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
         heading.addStretch()
         self.navigation = QTabBar()
         self.navigation.setAccessibleName(t(self.lang, "navigation"))

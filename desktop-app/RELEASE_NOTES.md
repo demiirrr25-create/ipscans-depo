@@ -1,3 +1,13 @@
+# v4.1.1 — Locked-file installation repair
+
+Install releases in a versioned directory so a running older executable is never
+overwritten. Keep the same AppId and preserve exports; update shortcuts to the new
+version. A setup mutex prevents concurrent installers. Same-version repair checks
+write access before replacement and explains running-process/folder access errors.
+Restart Manager uses normal close behavior, never forced termination. CI now holds
+the previous EXE open without write/delete sharing during upgrade, verifies the old
+hash, tests blocked and successful repair, shortcuts, installed selftest and uninstall.
+
 # v4.1.0
 
 See [v4.1 release notes](V41_RELEASE.md): automatic adaptive discovery, two-tab monochrome UI, vertical grouped map, multi-source identity, authorized CDP/FDB evidence, and verified upgrade packaging.

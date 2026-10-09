@@ -65,30 +65,47 @@ jobs:
           & $iscc installer\Scanner.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
 
-      - name: Upgrade v4.0 to v4.1 and verify installer, shortcut and uninstall
+      - name: Upgrade a locked v4.1 install, repair safely and verify shortcuts
         run: |
+          $ErrorActionPreference = "Stop"
           $setup = (Resolve-Path "dist\installer\IPscans-Plus-Setup.exe").Path
           $installDir = Join-Path $env:RUNNER_TEMP "IPscansPlusInstallTest"
+          $newExe = Join-Path $installDir "versions\4.1.1\IPscans-Plus.exe"
+          $oldExe = Join-Path $installDir "IPscans-Plus.exe"
           $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "IPscans+.lnk"
-          $oldSetup = Join-Path $env:RUNNER_TEMP "IPscans-Plus-v4.0-Setup.exe"
-          Invoke-WebRequest "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.0.0/IPscans-Plus-Setup.exe" -OutFile $oldSetup
-          if ((Get-FileHash $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne "1a62124feba3ba0896761b12c483063d1399c47c549baa6c32c02f30a19b5970") { throw "v4.0 checksum mismatch" }
-          $process = Start-Process -FilePath $oldSetup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" -WindowStyle Hidden -Wait -PassThru
-          if ($process.ExitCode -ne 0 -or (Get-Item (Join-Path $installDir "IPscans-Plus.exe")).VersionInfo.FileVersion -ne "4.0.0.0") { throw "v4.0 baseline installation failed" }
+          $oldSetup = Join-Path $env:RUNNER_TEMP "IPscans-Plus-v4.1-Setup.exe"
+          Invoke-WebRequest "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.1.0/IPscans-Plus-Setup.exe" -OutFile $oldSetup
+          if ((Get-FileHash $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne "e83324ad752715f84343e90c2c8ea2d37301c131c9f50bf36ea55cdd054323cf") { throw "v4.1 checksum mismatch" }
+          $arguments = @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOCLOSEAPPLICATIONS", "/NORESTARTAPPLICATIONS", "/DIR=`"$installDir`"")
+          $process = Start-Process -FilePath $oldSetup -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0 -or (Get-Item $oldExe).VersionInfo.FileVersion -ne "4.1.0.0") { throw "Baseline installation failed" }
+          $oldHash = (Get-FileHash $oldExe).Hash
           Set-Content (Join-Path $installDir "upgrade-preservation.txt") "User-owned file retained across upgrade"
-          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$installDir`"" -WindowStyle Hidden -Wait -PassThru
-          if ($process.ExitCode -ne 0 -or -not (Test-Path (Join-Path $installDir "IPscans-Plus.exe")) -or -not (Test-Path $shortcut)) {
-            throw "IPscans+ install or desktop shortcut failed"
-          }
-          if ((Get-Item (Join-Path $installDir "IPscans-Plus.exe")).VersionInfo.FileVersion -ne "4.1.0.0") { throw "Upgrade did not install v4.1" }
-          if (-not (Test-Path (Join-Path $installDir "upgrade-preservation.txt"))) { throw "Upgrade deleted an unrelated file" }
+          # Reproduce DeleteFile code 5: deny write/delete access to the old EXE.
+          $lock = [IO.File]::Open($oldExe, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+          try {
+            $process = Start-Process -FilePath $setup -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "Upgrade failed while old EXE was locked" }
+          } finally { $lock.Dispose() }
+          if ((Get-FileHash $oldExe).Hash -ne $oldHash) { throw "Upgrade changed locked previous version" }
+          if ((Get-Item $newExe).VersionInfo.FileVersion -ne "4.1.1.0") { throw "Upgrade version mismatch" }
+          if (-not (Test-Path (Join-Path $installDir "upgrade-preservation.txt"))) { throw "Unrelated file removed" }
           $target = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath
-          if ($target -ne (Join-Path $installDir "IPscans-Plus.exe")) { throw "Shortcut points to $target" }
-          $process = Start-Process -FilePath (Join-Path $installDir "IPscans-Plus.exe") -ArgumentList "--selftest" -WindowStyle Hidden -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Installed application selftest failed" }
+          if ($target -ne $newExe) { throw "Shortcut points to $target" }
+          $process = Start-Process -FilePath $newExe -ArgumentList "--selftest" -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installed selftest failed" }
+          # Same-version repair must fail clearly before replacing a locked file.
+          $lock = [IO.File]::Open($newExe, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+          try {
+            $process = Start-Process -FilePath $setup -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
+            if ($process.ExitCode -eq 0) { throw "Locked repair unexpectedly succeeded" }
+          } finally { $lock.Dispose() }
+          $process = Start-Process -FilePath $setup -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Unlocked repair failed" }
           $uninstaller = Join-Path $installDir "unins000.exe"
           $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -WindowStyle Hidden -Wait -PassThru
-          if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "IPscans+ uninstall failed" }
+          if ($process.ExitCode -ne 0 -or (Test-Path $shortcut)) { throw "Uninstall failed" }
+          @{ lockedLegacyUpgrade=$true; lockedRepairBlocked=$true; unlockedRepair=$true; shortcut=$true; installedSelftest=$true; uninstall=$true } | ConvertTo-Json | Set-Content installer-validation.json
 
       - name: Record package checksums
         run: |
@@ -101,6 +118,7 @@ jobs:
           path: |
             desktop-app/scanner-benchmark.json
             desktop-app/native-benchmark.json
+            desktop-app/installer-validation.json
             desktop-app/dist/checksums.json
           if-no-files-found: error
 
