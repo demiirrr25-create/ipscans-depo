@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as dns } from "node:dns";
+import { Resolver } from "node:dns/promises";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,22 +13,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid domain" }, { status: 400 });
   }
 
+  const dns = new Resolver({ timeout: 1500, tries: 1 });
+
   async function safe<T>(fn: () => Promise<T>): Promise<T | []> {
     try {
       return await fn();
-    } catch {
-      return [];
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ENODATA' || code === 'ENOTFOUND') return [];
+      throw error;
     }
   }
 
-  const [a, aaaa, mx, txt, ns, cname] = await Promise.all([
+  const records = await Promise.all([
     safe(() => dns.resolve4(domain!)),
     safe(() => dns.resolve6(domain!)),
     safe(() => dns.resolveMx(domain!)),
     safe(() => dns.resolveTxt(domain!)),
     safe(() => dns.resolveNs(domain!)),
     safe(() => dns.resolveCname(domain!)),
-  ]);
+  ]).catch(() => null);
+  if (!records) {
+    return NextResponse.json({ error: "DNS resolver unavailable; retry later" }, { status: 503 });
+  }
+  const [a, aaaa, mx, txt, ns, cname] = records;
 
   return NextResponse.json({
     domain,

@@ -3,7 +3,7 @@ import { scannerApplication } from '@/content/applications';
 import { ProductPreview } from './ProductPreview';
 
 export function ScannerV4({locale,primary=false}: {locale:Locale;primary?:boolean}) {
-  const tr=locale==='tr', Heading=primary?'h1':'h2';
+  const tr=locale==='tr', Heading=primary?'h1':'h2', FeatureHeading=primary?'h2':'h3';
   const features=tr?[
     ['01 / OTOMATİK KEŞİF','Açın. Tarayın. Görün.','Ağ aralığı adaptörden alınır. Sınırlandırılmış motor, eşzamanlılığı ve zaman aşımını yanıtlara göre ayarlar. Sonuçlar tarama bitmeden görünür.'],
     ['02 / CİHAZ KİMLİĞİ','Tek ipucundan fazlası.','ONVIF, mDNS, UPnP, servis yanıtları ve yetkili SNMP birlikte değerlendirilir. Çelişen veya yetersiz kanıt, bilinmeyen olarak kalır.'],
@@ -29,7 +29,7 @@ export function ScannerV4({locale,primary=false}: {locale:Locale;primary?:boolea
     </div>
     <ProductPreview tr={tr}/>
     <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-white/15 bg-white/15 md:grid-cols-2">
-      {features.map(([code,title,body])=><div key={code} className="bg-black p-7 sm:p-10"><p className="font-mono text-xs tracking-widest text-neutral-400">{code}</p><h3 className="mt-6 text-2xl font-medium tracking-tight">{title}</h3><p className="mt-4 text-sm leading-relaxed text-neutral-400">{body}</p></div>)}
+      {features.map(([code,title,body])=><div key={code} className="bg-black p-7 sm:p-10"><p className="font-mono text-xs tracking-widest text-neutral-400">{code}</p><FeatureHeading className="mt-6 text-2xl font-medium tracking-tight">{title}</FeatureHeading><p className="mt-4 text-sm leading-relaxed text-neutral-400">{body}</p></div>)}
     </div>
     <div className="mt-8 flex flex-wrap items-center justify-between gap-5 rounded-2xl border border-white/15 p-6"><p className="text-sm text-neutral-300">{tr?'Birleştirilmiş arama. Aynı cihaz, aynı kanıt.':'One search. The same device, the same evidence.'}</p><code className="max-w-full overflow-x-auto text-sm">ip:192.168.1.0/24 port:443 -type:Unknown</code></div>
   </section>;

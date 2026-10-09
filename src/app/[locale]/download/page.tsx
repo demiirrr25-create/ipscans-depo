@@ -23,7 +23,7 @@ export default async function DownloadPage({ params }: { params: Promise<{ local
   if (!isLocale(locale)) notFound();
   return (
     <div className="pt-10">
-      <ApplicationsSection locale={locale} dict={getPublicDictionary(locale)} />
+      <ApplicationsSection locale={locale} dict={getPublicDictionary(locale)} primary />
     </div>
   );
 }

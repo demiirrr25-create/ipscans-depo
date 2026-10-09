@@ -8,7 +8,8 @@ import type { PublicDictionary } from "@/i18n/dictionaries";
 import { applications, platformCopy } from "@/content/applications";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 
-export function ApplicationsSection({ locale, dict }: { locale: Locale; dict: PublicDictionary }) {
+export function ApplicationsSection({ locale, dict, primary = false }: { locale: Locale; dict: PublicDictionary; primary?: boolean }) {
+  const Heading = primary ? 'h1' : 'h2';
   const copy = platformCopy[locale];
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -42,7 +43,7 @@ export function ApplicationsSection({ locale, dict }: { locale: Locale; dict: Pu
       <div className="mb-10 border-b border-white/15 pb-8 sm:flex sm:items-end sm:justify-between">
         <div>
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-400">02 / IPScans ecosystem</p>
-        <h2 id="applications-title" className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight sm:text-6xl">{copy.applications}<span className="text-neutral-500">.</span></h2>
+        <Heading id="applications-title" className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight sm:text-6xl">{copy.applications}<span className="text-neutral-500">.</span></Heading>
         <p className="mt-3 max-w-2xl text-neutral-400">{copy.applicationsIntro}</p>
         </div>
         <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-400 sm:block">EXPLORE / 01—{String(applications.length + tools.length).padStart(2, "0")}</span>
