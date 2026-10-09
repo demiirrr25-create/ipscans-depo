@@ -286,7 +286,7 @@ _WORKSPACE = {
         "range_hint": "Enter a start and end IP. Pasted single IPs and bounded CIDRs are also accepted.",
         "range_estimate": "{count:,} target addresses / bounded concurrency / only authorized networks",
         "large_range": "Confirm large scan", "large_range_notice": "This scan covers {count:,} IPs and can take several minutes. Confirm that you are authorized to scan this entire range.",
-        "scan_cancelled": "Scan stopped / {count} devices observed / partial results were not saved to history.",
+        "scan_cancelled": "Scan stopped / {count} devices observed / results are incomplete.",
         "overview": "{devices} devices / {cameras} cameras / {routers} routers/AP / {switches} switches / {recorders} NVR/DVR / {conflicts} potential conflicts / {unknown} unknown",
         "col_status": "Status", "col_parent": "Parent / route", "col_latency": "TCP connect time", "col_confidence": "Confidence", "col_device": "Device",
         "zoom_out": "Zoom out", "zoom_in": "Zoom in", "fit_screen": "Fit to screen",
@@ -323,7 +323,7 @@ _WORKSPACE = {
         "range_hint": "Başlangıç ve bitiş IP girin. Yapıştırılan tek IP ve sınırlı CIDR de desteklenir.",
         "range_estimate": "{count:,} hedef adres / sınırlı eşzamanlılık / yalnızca yetkili ağlar",
         "large_range": "Geniş taramayı onayla", "large_range_notice": "Bu tarama {count:,} IP içeriyor ve birkaç dakika sürebilir. Tüm aralığı tarama yetkinizi onaylayın.",
-        "scan_cancelled": "Tarama durduruldu / {count} cihaz gözlendi / eksik sonuçlar geçmişe kaydedilmedi.",
+        "scan_cancelled": "Tarama durduruldu / {count} cihaz gözlendi / sonuçlar tamamlanmadı.",
         "overview": "{devices} cihaz / {cameras} kamera / {routers} router/AP / {switches} switch / {recorders} NVR/DVR / {conflicts} olası çakışma / {unknown} bilinmeyen",
         "col_status": "Durum", "col_parent": "Üst cihaz / rota", "col_latency": "TCP bağlantı süresi", "col_confidence": "Güven düzeyi", "col_device": "Cihaz",
         "zoom_out": "Uzaklaştır", "zoom_in": "Yakınlaştır", "fit_screen": "Ekrana sığdır",
@@ -529,8 +529,8 @@ party. All scanning happens locally between your computer and the devices
 on your own network. No account, sign-up, or internet connection is
 required for the app to function.</p>
 <p><b>Local storage:</b> Language and policy acceptance are saved locally.
-Up to 20 completed scans (32 MiB maximum) store device IP/MAC addresses,
-hostnames, vendor information and timestamps on your computer. CSV/JSON
+Scans remain in memory; no scan history is automatically saved. Existing
+exports and earlier-version history files are not deleted. CSV/JSON/HTML
 and map exports go only to files you choose. Device credentials and SNMP
 secrets are kept only in session memory, never in history or logs. Logs
 contain diagnostics and IP addresses and rotate locally. OUI updates
@@ -547,8 +547,8 @@ işlemi yalnızca bilgisayarınız ile kendi ağınızdaki cihazlar arasında,
 yerel olarak gerçekleşir. Uygulamanın çalışması için hesap, kayıt veya
 internet bağlantısı gerekmez.</p>
 <p><b>Yerel depolama:</b> Dil ve politika onayları yerelde saklanır.
-En fazla 20 tamamlanmış tarama (32 MiB sınırı) cihaz IP/MAC adreslerini,
-hostname, üretici ve zaman bilgilerini bilgisayarınızda tutar. CSV/JSON
+Taramalar bellekte tutulur; tarama geçmişi otomatik kaydedilmez. Önceki
+sürümlerin geçmiş ve dışa aktarım dosyaları silinmez. CSV/JSON/HTML
 ve harita dışa aktarmaları seçtiğiniz dosyalara yazılır. Cihaz kimlik
 bilgileri ve SNMP sırları yalnızca oturum belleğinde kullanılır; geçmişe
 veya loglara kaydedilmez. Tanılama logları IP adresi içerebilir ve yerelde
