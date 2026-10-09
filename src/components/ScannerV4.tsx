@@ -2,8 +2,9 @@ import Image from "next/image";
 import type { Locale } from "@/i18n/config";
 import { scannerApplication } from "@/content/applications";
 
-export function ScannerV4({ locale }: { locale: Locale }) {
+export function ScannerV4({ locale, primary = false }: { locale: Locale; primary?: boolean }) {
   const tr = locale === "tr";
+  const Heading = primary ? "h1" : "h2";
   const features = tr ? [
     ["01 / MOTOR", "Daha az bekle. Daha çok gör.", "Windows yerel ICMP ve paralel TCP keşfi. Her IP için ayrı ping süreci açmadan, sınırlandırılmış kaynak kullanımıyla."],
     ["02 / KONTROL", "Ağınıza göre bir profil.", "Hızlı, Dengeli, Ayrıntılı ve Hassas ağ. Özel servis portları, birden fazla alt ağ ve tarama dışında bırakılan adresler."],
@@ -19,9 +20,9 @@ export function ScannerV4({ locale }: { locale: Locale }) {
     <div className="grid gap-8 p-7 sm:p-12 lg:grid-cols-[1.4fr_1fr]">
       <div>
         <p className="font-mono text-xs tracking-[0.2em] text-emerald-200">IPSCANS+ 4.0 / NETWORK OBSERVATORY</p>
-        <h2 id="scanner-v4-title" className="mt-6 max-w-2xl text-4xl leading-tight font-semibold tracking-tight sm:text-6xl">
+        <Heading id="scanner-v4-title" className="mt-6 max-w-2xl text-4xl leading-tight font-semibold tracking-tight sm:text-6xl">
           {tr ? "Ağınızın tamamı. Net bir bakış." : "Your whole network. A clearer view."}
-        </h2>
+        </Heading>
         <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-300">{tr
           ? "Keşiften cihaz yönetimine, tek bir Windows çalışma alanı. Hız için yeniden tasarlanan motor, kontrol için açık seçenekler."
           : "From discovery to device management, one Windows workspace. An engine redesigned for speed, with explicit controls for your scan."}</p>

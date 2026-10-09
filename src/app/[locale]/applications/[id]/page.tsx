@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const app = applications.find((item) => item.id === id);
   if (!app) return {};
   return {
-    title: app.name,
+    title: `${app.name} ${app.version}`,
     description: app.description[locale],
     alternates: localizedAlternates(locale, `/applications/${app.id}`),
   };
@@ -58,15 +58,16 @@ export default async function ApplicationDetail({ params }: Params) {
     : scanner.features;
   const intro = app.id === "ipcast" ? dict.ipcast.subtitle
     : scanner.intro;
+  const ProductHeading = app.id === "scanner" ? "h2" : "h1";
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:py-20">
       <Link href={`/${locale}/download`} className="text-sm text-neutral-300 underline underline-offset-4 hover:text-white">← {copy.applications}</Link>
-      {app.id === 'scanner' && <ScannerV4 locale={locale} />}
+      {app.id === 'scanner' && <ScannerV4 locale={locale} primary />}
       <div className="mt-10 grid gap-10 border-y border-white/15 py-12 lg:grid-cols-[1.3fr_1fr] lg:gap-20 lg:py-20">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPScans / {app.id} / Windows</p>
           <Image src={app.icon} alt="" width={96} height={96} className="mt-8 rounded-2xl" />
-          <h1 className="mt-8 font-[family-name:var(--font-display)] text-[clamp(3.5rem,8vw,7rem)] leading-none font-semibold tracking-[-0.07em]">{app.name}<span className="text-neutral-500">.</span></h1>
+          <ProductHeading className="mt-8 font-[family-name:var(--font-display)] text-[clamp(3.5rem,8vw,7rem)] leading-none font-semibold tracking-[-0.07em]">{app.name}<span className="text-neutral-500">.</span></ProductHeading>
           <p className="mt-7 max-w-xl text-xl leading-relaxed text-neutral-300">{app.description[locale]}</p>
           <p className="mt-5 max-w-xl leading-relaxed text-neutral-400">{intro}</p>
           <div className="mt-9 flex flex-wrap items-center gap-4">

@@ -7,7 +7,14 @@
 - Live discovery metrics, refreshed workspace and shared structured search.
 - Escaped, script-free HTML reports with complete/partial scan metadata.
 - Preserved selected view and reduced idle UI work.
-- Windows source, packaged, installer and uninstall validation required.
+- Windows source, packaged, installer and uninstall validation passed.
+
+All 91 desktop tests passed in the [Windows release build](https://github.com/demiirrr25-create/ipscans-depo/actions/runs/37950820894)
+for commit `3b3cffe101c8fb27701fd05d96589cad21b6a43d`.
+The CI loopback benchmark measured median ICMP invocation cost of 17.9543 ms
+for subprocess ping and 0.636 ms for native ICMP (28.23× lower call overhead).
+This measures local invocation overhead, not real LAN or competitor speed.
+Both packages are unsigned; SHA-256 sidecars and a build manifest are provided.
 
 See [research and measurement scope](V4_RESEARCH.md). Existing v3.0.0
 packages remain available under their original release tag.
