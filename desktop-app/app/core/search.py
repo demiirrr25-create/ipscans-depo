@@ -14,7 +14,7 @@ def _tokens(query):
 
 def matches_device(device, query: str) -> bool:
     fields = {'ip': device.ip, 'mac': device.mac or '', 'vendor': device.vendor or '',
-        'name': device.hostname or device.upnp_friendly_name or '', 'type': device.device_type,
+        'name': ' '.join(filter(None, (device.custom_name, device.hostname, device.upnp_friendly_name))), 'type': device.device_type,
         'source': ' '.join(device.sources), 'confidence': device.classification_confidence,
         'status': device.reachability}
     haystack = ' '.join((*fields.values(), device.onvif_model or '', device.model or '', device.http_title or '', device.http_server or '',

@@ -21,6 +21,7 @@ from app.ui.widgets import matches_device
 
 class DeviceNode(QGraphicsObject):
     activated = pyqtSignal(object)
+    rename_requested = pyqtSignal(object)
     refresh_requested = pyqtSignal(str)
     collapse_requested = pyqtSignal(str)
 
@@ -30,7 +31,7 @@ class DeviceNode(QGraphicsObject):
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
                       | QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
         self.setToolTip(
-            f"{device.ip}\n{device.device_type} / {device.reachability}\n"
+            f"{device.display_name}\n{device.ip}\n{device.device_type} / {device.reachability}\n"
             f"{device.classification_confidence} confidence: {device.classification_evidence or 'Unknown'}\n"
             f"{device.connection_evidence or 'Physical connection unknown'}"
         )
@@ -45,10 +46,11 @@ class DeviceNode(QGraphicsObject):
         icon_for_type(self.device.device_type).paint(painter, 12, 14, 28, 28)
         painter.setPen(QColor("#ffffff"))
         painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
-        painter.drawText(QRectF(50, 10, 180, 24), self.device.ip)
+        painter.drawText(QRectF(50, 10, 180, 24), painter.fontMetrics().elidedText(
+            self.device.custom_name or self.device.ip, Qt.TextElideMode.ElideRight, 176))
         painter.setFont(QFont("Segoe UI", 9))
-        name = self.device.hostname or self.device.upnp_friendly_name or self.device.vendor or self.device.device_type
-        painter.drawText(QRectF(50, 34, 180, 20), name[:26])
+        name = self.device.ip if self.device.custom_name else self.device.display_name
+        painter.drawText(QRectF(50, 34, 180, 20), painter.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, 176))
         painter.setPen(QColor("#cccccc"))
         painter.drawText(QRectF(12, 62, 220, 20), f"{self.device.reachability} | {self.device.device_type}")
 
@@ -61,16 +63,24 @@ class DeviceNode(QGraphicsObject):
             self.activated.emit(self.device)
             event.accept()
         else:
-            super().keyPressEvent(event)
+            if event.key() == Qt.Key.Key_F2:
+                self.rename_requested.emit(self.device)
+                event.accept()
+            else:
+                super().keyPressEvent(event)
 
     def contextMenuEvent(self, event) -> None:
         menu = QMenu()
+        rename = menu.addAction(t(self.lang, "rename_device"))
+        menu.addSeparator()
         refresh = menu.addAction(t(self.lang, "refresh_node"))
         collapse = menu.addAction(t(self.lang, "collapse_branch"))
         open_device = menu.addAction(t(self.lang, "open_device"))
         copy = menu.addAction(t(self.lang, "copy_ip"))
         chosen = menu.exec(event.screenPos())
-        if chosen == refresh:
+        if chosen == rename:
+            self.rename_requested.emit(self.device)
+        elif chosen == refresh:
             self.refresh_requested.emit(self.device.ip)
         elif chosen == collapse:
             self.collapse_requested.emit(self.device.ip)
@@ -125,6 +135,7 @@ class GraphView(QGraphicsView):
 
 class NetworkMap(QWidget):
     device_activated = pyqtSignal(object)
+    rename_requested = pyqtSignal(object)
     refresh_requested = pyqtSignal(str)
 
     def __init__(self, lang: str = "en", parent=None) -> None:
@@ -259,6 +270,7 @@ class NetworkMap(QWidget):
             node.setPos(x, y)
             node.setOpacity(1 if ip in matches else .45)
             node.activated.connect(self.device_activated.emit)
+            node.rename_requested.connect(self.rename_requested.emit)
             node.refresh_requested.connect(self.refresh_requested.emit)
             node.collapse_requested.connect(self.toggle_branch)
             node.setSelected(ip in selected)

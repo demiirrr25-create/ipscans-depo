@@ -1,7 +1,7 @@
-# IPscans+ 4.2.0 / Network Intelligence
+# IPscans+ 4.3.0 / Network Intelligence
 
 Monochrome Windows network discovery with exactly two top tabs: **SCAN** and
-**NETWORK MAP**. See [v4.2 release notes](V42_RELEASE.md).
+**NETWORK MAP**. See [v4.3 release notes](V43_RELEASE.md).
 
 ## Run and validate
 
@@ -55,7 +55,7 @@ duplicate-IP conflict. Resolve suspected conflicts through the device vendor int
 ## Release validation
 
 Windows CI runs unit tests, source and packaged loopback selftests, synthetic
-benchmarks, a checksum-verified locked v4.1.1 to v4.2.0 installation upgrade, shortcut,
+benchmarks, a checksum-verified locked v4.1.1 to v4.3.0 installation upgrade, shortcut,
 installed selftest and uninstall checks. SHA-256 hashes and build provenance
 are published with installer and portable binaries.
 

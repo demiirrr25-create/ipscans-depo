@@ -8,7 +8,7 @@ def render_report(devices, *, target='', profile='', completed=True, metrics=Non
         return escape(str(value if value is not None else '—'), quote=True)
     rows = []
     for d in devices:
-        values = (d.ip, d.hostname or d.upnp_friendly_name, d.mac, d.vendor,
+        values = (d.ip, d.display_name, d.mac, d.vendor,
             d.device_type, ', '.join(map(str, d.open_ports)), ', '.join(d.sources),
             d.classification_confidence, d.classification_evidence, d.reachability)
         rows.append('<tr>' + ''.join(f'<td>{e(v)}</td>' for v in values) + '</tr>')
@@ -20,7 +20,7 @@ def render_report(devices, *, target='', profile='', completed=True, metrics=Non
     return f'''<!doctype html><html lang="en"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'">
-<title>IPscans+ 4.1 · Network report</title><style>
+<title>IPscans+ 4.3 · Network report</title><style>
 body{{font:14px system-ui,sans-serif;margin:40px;color:#172033;background:#f5f7fa}}
 header,main{{background:white;padding:28px;border:1px solid #dce3eb;border-radius:16px;margin:16px 0}}
 h1{{font-size:34px;letter-spacing:-1px}}small{{color:#52637b}}.badge{{color:#007f68;font-weight:700}}
@@ -28,7 +28,7 @@ main{{overflow:auto}}table{{border-collapse:collapse;width:100%;text-align:left}
 th,td{{padding:12px;border-bottom:1px solid #e3e9ef;vertical-align:top;overflow-wrap:anywhere}}
 th{{font-size:11px;text-transform:uppercase;color:#52637b}}footer{{color:#52637b}}
 @media print{{body{{margin:0;background:white}}header,main{{border:0;padding:0}}table{{font-size:9px}}}}
-</style><header><span class="badge">IPscans+ / 4.1</span><h1>Network discovery report</h1>
+</style><header><span class="badge">IPscans+ / 4.3</span><h1>Network discovery report</h1>
 <p>{len(devices)} displayed devices · {e('Completed' if completed else 'Partial / in progress')} scan</p>
 <small>{e(datetime.now(timezone.utc).isoformat())} · Target: {e(target)} · Profile: {e(profile)}</small>
 {measured}</header><main><table><thead><tr>'''+''.join(f'<th>{label}</th>' for label in

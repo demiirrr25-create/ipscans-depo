@@ -101,7 +101,7 @@ class DeviceTableModel(QAbstractTableModel):
                 ", ".join(device.sources), device.device_type, device.reachability, device.parent_ip or "",
                 device.latency_ms if device.latency_ms is not None else float("inf"),
                 {"Low": 0, "Medium": 1, "High": 2}[device.classification_confidence],
-                device.upnp_friendly_name or device.onvif_model or device.hostname or "",
+                device.display_name,
             )
             return values[column]
         ordered = sorted(self._devices, key=sort_key, reverse=order == Qt.SortOrder.DescendingOrder)
@@ -169,7 +169,7 @@ class DeviceTableModel(QAbstractTableModel):
         if column == 11:
             return device.classification_confidence
         if column == 12:
-            return device.upnp_friendly_name or device.onvif_model or device.hostname or "—"
+            return device.display_name
         return None
 
 

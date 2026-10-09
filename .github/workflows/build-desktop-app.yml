@@ -65,20 +65,20 @@ jobs:
           & $iscc installer\Scanner.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
 
-      - name: Upgrade a locked v4.1.1 install, repair safely and verify shortcuts
+      - name: Upgrade a locked v4.2.0 install, repair safely and verify shortcuts
         run: |
           $ErrorActionPreference = "Stop"
           $setup = (Resolve-Path "dist\installer\IPscans-Plus-Setup.exe").Path
           $installDir = Join-Path $env:RUNNER_TEMP "IPscansPlusInstallTest"
-          $newExe = Join-Path $installDir "versions\4.2.0\IPscans-Plus.exe"
-          $oldExe = Join-Path $installDir "versions\4.1.1\IPscans-Plus.exe"
+          $newExe = Join-Path $installDir "versions\4.3.0\IPscans-Plus.exe"
+          $oldExe = Join-Path $installDir "versions\4.2.0\IPscans-Plus.exe"
           $shortcut = Join-Path ([Environment]::GetFolderPath("DesktopDirectory")) "IPscans+.lnk"
           $oldSetup = Join-Path $env:RUNNER_TEMP "IPscans-Plus-v4.1-Setup.exe"
-          Invoke-WebRequest "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.1.1/IPscans-Plus-Setup.exe" -OutFile $oldSetup
-          if ((Get-FileHash $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne "e6d0ac8fbf12955ebef9124ca92c3f28393adfbebb009fccbadcdb27631a205b") { throw "v4.1 checksum mismatch" }
+          Invoke-WebRequest "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.2.0/IPscans-Plus-Setup.exe" -OutFile $oldSetup
+          if ((Get-FileHash $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne "cbefc7d74302f156649d56f5e2d24b01219bdbfa8abe2d198ef3edd0d550696a") { throw "v4.1 checksum mismatch" }
           $arguments = @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOCLOSEAPPLICATIONS", "/NORESTARTAPPLICATIONS", "/DIR=`"$installDir`"")
           $process = Start-Process -FilePath $oldSetup -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
-          if ($process.ExitCode -ne 0 -or (Get-Item $oldExe).VersionInfo.FileVersion -ne "4.1.1.0") { throw "Baseline installation failed" }
+          if ($process.ExitCode -ne 0 -or (Get-Item $oldExe).VersionInfo.FileVersion -ne "4.2.0.0") { throw "Baseline installation failed" }
           $oldHash = (Get-FileHash $oldExe).Hash
           Set-Content (Join-Path $installDir "upgrade-preservation.txt") "User-owned file retained across upgrade"
           # Reproduce DeleteFile code 5: deny write/delete access to the old EXE.
@@ -88,7 +88,7 @@ jobs:
             if ($process.ExitCode -ne 0) { throw "Upgrade failed while old EXE was locked" }
           } finally { $lock.Dispose() }
           if ((Get-FileHash $oldExe).Hash -ne $oldHash) { throw "Upgrade changed locked previous version" }
-          if ((Get-Item $newExe).VersionInfo.FileVersion -ne "4.2.0.0") { throw "Upgrade version mismatch" }
+          if ((Get-Item $newExe).VersionInfo.FileVersion -ne "4.3.0.0") { throw "Upgrade version mismatch" }
           if (-not (Test-Path (Join-Path $installDir "upgrade-preservation.txt"))) { throw "Unrelated file removed" }
           $target = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath
           if ($target -ne $newExe) { throw "Shortcut points to $target" }

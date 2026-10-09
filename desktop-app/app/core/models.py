@@ -49,6 +49,11 @@ class Device:
     identification_score: int = 0
     cdp_neighbor_ips: list[str] = field(default_factory=list)
     bridge_fdb: list[str] = field(default_factory=list)
+    custom_name: str | None = None
+
+    @property
+    def display_name(self) -> str:
+        return self.custom_name or self.upnp_friendly_name or self.onvif_model or self.hostname or self.device_type
 
     @property
     def preferred_url_scheme(self) -> str:

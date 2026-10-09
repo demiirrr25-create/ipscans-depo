@@ -395,6 +395,9 @@ def save_language(code: str) -> None:
 
 
 def t(lang: str, key: str, **kwargs) -> str:
+    if key == 'rename_device':
+        return {'tr': 'İsimlendir…', 'en': 'Rename…', 'de': 'Umbenennen…',
+                'fr': 'Renommer…', 'es': 'Renombrar…', 'ru': 'Переименовать…'}.get(lang, 'Rename…')
     if key == "app_title":
         return "IPscans+"
     table = _STRINGS.get(lang) or _STRINGS[DEFAULT_LANGUAGE]

@@ -153,7 +153,7 @@ def export_results(devices: list[Device], path: Path) -> None:
     if path.suffix.lower() == ".json":
         path.write_text(json.dumps([asdict(device) for device in devices], ensure_ascii=False, indent=2), encoding="utf-8")
     elif path.suffix.lower() == ".csv":
-        columns = ("ip", "mac", "hostname", "vendor", "device_type", "classification_evidence",
+        columns = ("ip", "custom_name", "mac", "hostname", "vendor", "device_type", "classification_evidence",
                    "classification_confidence", "reachability", "parent_ip", "connection_evidence", "latency_ms",
                    "serial_number", "onvif_model", "onvif_firmware", "open_ports", "sources", "first_seen", "last_seen")
         with path.open("w", encoding="utf-8-sig", newline="") as file:

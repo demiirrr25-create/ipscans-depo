@@ -162,6 +162,13 @@ def main() -> None:
                 raise RuntimeError("Packaged TCP probe selftest failed")
         if hasattr(window, '_panels') or hasattr(window, '_configuration_verified'):
             raise RuntimeError("Removed device configuration UI is still reachable")
+        import tempfile
+        from app.core.pdf_report import write_pdf
+        with tempfile.TemporaryDirectory() as folder:
+            pdf = Path(folder) / 'selftest.pdf'
+            write_pdf([Device('192.0.2.1', custom_name='Kapı kamerası', open_ports=[443])], pdf, lang='tr')
+            if not pdf.read_bytes().startswith(b'%PDF-') or pdf.stat().st_size < 1000:
+                raise RuntimeError('Packaged PDF export failed')
         wizard = OnboardingWizard(["language", "terms", "privacy"], DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()  # paints every step, not just the first one shown

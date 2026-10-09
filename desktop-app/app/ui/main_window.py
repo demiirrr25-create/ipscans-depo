@@ -9,12 +9,14 @@ from PyQt6.QtCore import Qt, QTimer, QUrl
 from PyQt6.QtGui import QAction, QDesktopServices, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QComboBox, QFileDialog, QFrame, QHBoxLayout, QHeaderView, QLabel,
-    QLineEdit, QTabBar, QMenu, QMessageBox, QPushButton,
+    QInputDialog, QLineEdit, QTabBar, QMenu, QMessageBox, QPushButton,
     QStackedWidget, QTableView, QVBoxLayout, QWidget,
 )
 
 from app.core import history, network_utils
 from app.core.models import Device
+from app.core.device_names import DeviceNames
+from app.core.pdf_report import write_pdf
 from app.core.registry import DeviceRegistry
 from app.core.scanner import ScanOptions
 from app.core.report import render_report
@@ -34,6 +36,7 @@ class MainWindow(QWidget):
     def __init__(self, lang: str = DEFAULT_LANGUAGE) -> None:
         super().__init__()
         self.lang = lang
+        self.device_names = DeviceNames()
         self._worker: ScanWorker | None = None
         self._node_worker: ScanWorker | None = None
         self._node_observed: set[str] = set()
@@ -53,7 +56,7 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.2.0 / Network Intelligence")
+        self.setWindowTitle("IPscans+ 4.3.0 / Network Intelligence")
         self.resize(1380, 850)
         self.setMinimumSize(1000, 650)
         self.setStyleSheet(DARK_QSS)
@@ -92,7 +95,7 @@ class MainWindow(QWidget):
         heading.addWidget(logo)
         heading.addSpacing(6)
         heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
-        heading.addWidget(QLabel("4.2.0 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
+        heading.addWidget(QLabel("4.3.0 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
         heading.addStretch()
         self.navigation = QTabBar()
         self.navigation.setDrawBase(False)
@@ -158,6 +161,8 @@ class MainWindow(QWidget):
         self.conflicts_button.clicked.connect(self._show_conflicts)
         filters.addWidget(self.conflicts_button)
         export = QPushButton(self._v4('Export report', 'Raporu dışa aktar'))
+        self.export_button = export
+        export.setToolTip(self._v4('Save a PDF with your device names', 'Cihaz isimlerinizi içeren PDF raporu kaydedin'))
         export.clicked.connect(self._export)
         filters.addWidget(export)
         workspace.addLayout(filters)
@@ -165,6 +170,7 @@ class MainWindow(QWidget):
         self.table = self._build_table()
         self.network_map = NetworkMap(self.lang)
         self.network_map.device_activated.connect(self._open_device)
+        self.network_map.rename_requested.connect(self._rename_device, Qt.ConnectionType.QueuedConnection)
         self.network_map.refresh_requested.connect(self._refresh_node)
         self.views.addWidget(self.table)
         self.views.addWidget(self.network_map)
@@ -217,6 +223,9 @@ class MainWindow(QWidget):
         for column in (4, 5, 6):
             table.setColumnHidden(column, True)
         table.doubleClicked.connect(self._on_row_double_clicked)
+        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        table.customContextMenuRequested.connect(self._device_menu)
+        QShortcut(QKeySequence('F2'), table, activated=self._rename_selected)
         enter = QShortcut(QKeySequence("Return"), table,
                           activated=lambda: self._on_row_double_clicked(table.currentIndex()))
         enter.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
@@ -378,7 +387,9 @@ class MainWindow(QWidget):
             self.status_label.setText(t(self.lang, "status_stopping"))
 
     def _on_device_found(self, device: Device) -> None:
-        self._pending[device.ip] = self._observations.merge(device)
+        merged = self._observations.merge(device)
+        merged.custom_name = self.device_names.get(self._name_scope(), merged) or None
+        self._pending[device.ip] = merged
         self._on_conflicts(self._observations.conflicts)
 
     def _flush_results(self, all_results: bool = False) -> None:
@@ -500,6 +511,53 @@ class MainWindow(QWidget):
         if not QDesktopServices.openUrl(url):
             self._warning(self._v4("Could not open the default browser.", "Varsayılan tarayıcı açılamadı."))
 
+    def _name_scope(self) -> str:
+        adapter = self._scan_adapter or self.adapter_select.currentData()
+        return f'{adapter.name}|{adapter.network}|{adapter.gateway}' if adapter else self._scan_target or 'manual'
+
+    def _rename_selected(self) -> None:
+        index = self.table.currentIndex()
+        if index.isValid():
+            device = self.model.device_at(self.proxy.mapToSource(index).row())
+            if device:
+                self._rename_device(device)
+
+    def _device_menu(self, position) -> None:
+        index = self.table.indexAt(position)
+        if not index.isValid():
+            return
+        device = self.model.device_at(self.proxy.mapToSource(index).row())
+        menu = QMenu(self)
+        rename = menu.addAction(t(self.lang, 'rename_device'))
+        open_device = menu.addAction(t(self.lang, 'open_device'))
+        chosen = menu.exec(self.table.viewport().mapToGlobal(position))
+        if chosen == rename:
+            self._rename_device(device)
+        elif chosen == open_device:
+            self._open_device(device)
+
+    def _rename_device(self, device: Device) -> None:
+        name, accepted = QInputDialog.getText(self, t(self.lang, 'rename_device'),
+            self._v4(f'{device.ip} · Up to 80 characters. Leave empty to reset.',
+                     f'{device.ip} · En fazla 80 karakter. Sıfırlamak için boş bırakın.'),
+            text=device.custom_name or '')
+        if not accepted:
+            return
+        try:
+            name = self.device_names.set(self._name_scope(), device, name)
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, t(self.lang, 'rename_device'), str(exc))
+            return
+        # Update all live references, including results already queued by a scan.
+        for entry in [device, *self.model._devices, *self._pending.values(), *self._observations.devices.values()]:
+            if entry.ip == device.ip:
+                entry.custom_name = name or None
+        row = self.model._rows_by_ip.get(device.ip)
+        if row is not None:
+            self.model.dataChanged.emit(self.model.index(row, 0), self.model.index(row, self.model.columnCount()-1))
+        self._refresh_map(force=True)
+        self.status_label.setText(self._v4('Device name saved locally.', 'Cihaz adı bu bilgisayara kaydedildi.'))
+
     def _show_conflicts(self) -> None:
         if not self._conflicts:
             QMessageBox.information(self, t(self.lang, "conflicts"), t(self.lang, "no_conflicts"))
@@ -518,20 +576,33 @@ class MainWindow(QWidget):
     def _export(self) -> None:
         self._flush_results(all_results=True)
         path, selected = QFileDialog.getSaveFileName(
-            self, t(self.lang, "export_results"), "IPscans-report.html", "HTML (*.html);;CSV (*.csv);;JSON (*.json)")
+            self, self._v4('Export report', 'Raporu dışa aktar'), "IPscans-report.pdf", "PDF (*.pdf);;HTML (*.html);;CSV (*.csv);;JSON (*.json)")
         if not path:
             return
         target = Path(path)
-        if target.suffix.lower() not in (".csv", ".json", '.html'):
-            target = target.with_suffix('.html' if 'HTML' in selected else ".json" if "JSON" in selected else ".csv")
+        if target.suffix.lower() not in (".csv", ".json", '.html', '.pdf'):
+            target = target.with_suffix('.pdf' if 'PDF' in selected else '.html' if 'HTML' in selected else '.json' if 'JSON' in selected else '.csv')
         devices = [self.model.device_at(self.proxy.mapToSource(self.proxy.index(row, 0)).row())
                    for row in range(self.proxy.rowCount())]
         devices = [replace(d) for d in devices if d]
         report_options = dict(target=self._scan_target, profile=self._metrics.get('profile', ''),
                               completed=self._scan_complete, metrics=dict(self._metrics))
-        self._background(lambda: target.write_text(render_report(devices, **report_options), encoding='utf-8')
-                         if target.suffix.lower() == '.html' else history.export_results(devices, target),
-                         lambda _: self.status_label.setText(str(target)))
+        self.export_button.setEnabled(False)
+        self.status_label.setText(self._v4('Preparing your report…', 'Raporunuz hazırlanıyor…'))
+        def save():
+            if target.suffix.lower() == '.pdf':
+                return write_pdf(devices, target, target=report_options['target'], completed=report_options['completed'], lang=self.lang)
+            if target.suffix.lower() == '.html':
+                return target.write_text(render_report(devices, **report_options), encoding='utf-8')
+            return history.export_results(devices, target)
+        def done(_):
+            self.export_button.setEnabled(True)
+            self.status_label.setText(self._v4('Report saved: ', 'Rapor kaydedildi: ') + str(target))
+        def failed(message):
+            self.export_button.setEnabled(True)
+            self._warning(message)
+            QMessageBox.warning(self, self._v4('Export failed', 'Rapor kaydedilemedi'), message)
+        self._background(save, done, failed)
 
     def closeEvent(self, event) -> None:
         running = any(worker and worker.isRunning() for worker in (
