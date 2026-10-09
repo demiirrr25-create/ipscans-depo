@@ -1,8 +1,10 @@
 import type { Locale } from "@/i18n/config";
+import { networkGuides } from './network-guides';
 
 export type Post = {
   slug: string;
   date: string;
+  category?: string;
   // Only tr/en are fully translated today; other locales fall back to English.
   title: Partial<Record<Locale, string>>;
   excerpt: Partial<Record<Locale, string>>;
@@ -18,6 +20,7 @@ export function localizedPostText(
 }
 
 export const posts: Post[] = [
+  ...networkGuides,
   {
     slug: "ip-adresi-nedir",
     date: "2026-09-15",
@@ -31,9 +34,9 @@ export const posts: Post[] = [
     },
     body: {
       tr: `
-        <p>IP adresi, internete bağlı her cihaza atanan benzersiz bir sayısal tanımlayıcıdır. Bir mektubun üzerindeki adres gibi düşünebilirsin: veri paketlerinin doğru cihaza ulaşması için gereklidir.</p>
+        <p>IP adresi, bir ağ arayüzünün belirli bir ağ kapsamındaki sayısal adresidir. Bir cihazın birden fazla IP adresi olabilir; özel adresler farklı ağlarda tekrar kullanılabilir. Bir mektubun üzerindeki adres gibi düşünebilirsin: veri paketlerinin doğru cihaza ulaşması için gereklidir.</p>
         <h2>IPv4 ve IPv6 arasındaki fark nedir?</h2>
-        <p><strong>IPv4</strong> adresleri 32 bit uzunluğundadır ve <code>192.168.1.1</code> gibi dört bölümden oluşur. Toplam adres alanı yaklaşık 4,3 milyar ile sınırlıdır ve bu alan artık dolmuş durumda. <strong>IPv6</strong> ise 128 bit uzunluğunda olup <code>2001:0db8:85a3::8a2e:0370:7334</code> gibi yazılır ve pratik olarak tükenmeyecek kadar geniş bir adres alanı sunar.</p>
+        <p><strong>IPv4</strong> adresleri 32 bit uzunluğundadır ve <code>192.168.1.1</code> gibi dört bölümden oluşur. Toplam adres alanı yaklaşık 4,3 milyar adresle sınırlıdır; genel adres tahsisindeki kıtlık NAT gibi yöntemlerin yaygınlaşmasına yol açmıştır. <strong>IPv6</strong> ise 128 bit uzunluğunda olup <code>2001:0db8:85a3::8a2e:0370:7334</code> gibi yazılır ve pratik olarak tükenmeyecek kadar geniş bir adres alanı sunar.</p>
         <h2>Genel (public) ve yerel (private) IP farkı</h2>
         <ul>
           <li><strong>Genel IP:</strong> İnternet servis sağlayıcın tarafından sana atanan, internette görünen adres.</li>
@@ -44,9 +47,9 @@ export const posts: Post[] = [
         <p>Yaklaşık konumunu, internet servis sağlayıcını ve bazı durumlarda organizasyonunu ortaya çıkarabilir. Bu yüzden VPN kullanımı, gizlilik odaklı kullanıcılar arasında yaygınlaşmıştır.</p>
       `,
       en: `
-        <p>An IP address is a unique numeric identifier assigned to every device connected to the internet. Think of it like the address on an envelope — it's how data packets know where to go.</p>
+        <p>An IP address identifies a network interface within an addressing scope. A device may have several addresses, and private addresses can be reused across separate networks. Think of it like the address on an envelope — it's how data packets know where to go.</p>
         <h2>What's the difference between IPv4 and IPv6?</h2>
-        <p><strong>IPv4</strong> addresses are 32 bits long, written as four segments like <code>192.168.1.1</code>. The total address space is capped at about 4.3 billion and has already run out. <strong>IPv6</strong> is 128 bits long, written like <code>2001:0db8:85a3::8a2e:0370:7334</code>, and offers a practically inexhaustible address space.</p>
+        <p><strong>IPv4</strong> addresses are 32 bits long, written as four segments like <code>192.168.1.1</code>. The total address space is about 4.3 billion; scarcity of public allocations has encouraged extensive use of NAT. <strong>IPv6</strong> is 128 bits long, written like <code>2001:0db8:85a3::8a2e:0370:7334</code>, and offers a practically inexhaustible address space.</p>
         <h2>Public vs. private IP</h2>
         <ul>
           <li><strong>Public IP:</strong> The address your ISP assigns you that's visible on the internet.</li>
@@ -75,28 +78,28 @@ export const posts: Post[] = [
         <ol>
           <li><strong>Yönlendiriciyi doğru yerleştir:</strong> Merkezi, açık ve yüksek bir konum, sinyal kaybını azaltır.</li>
           <li><strong>5 GHz bandını kullan:</strong> 2.4 GHz'e göre daha hızlıdır, ancak menzili biraz daha kısadır.</li>
-          <li><strong>DNS sunucunu değiştir:</strong> <code>1.1.1.1</code> (Cloudflare) veya <code>8.8.8.8</code> (Google) genellikle ISS'nin varsayılan sunucusundan daha hızlı yanıt verir.</li>
+          <li><strong>DNS sunucunu değiştir:</strong> <code>1.1.1.1</code> (Cloudflare) veya <code>8.8.8.8</code> (Google) gibi seçenekleri mevcut çözümleyicinle ölçerek karşılaştır. DNS değişikliği indirme bant genişliğini doğrudan artırmaz; kurumsal iç adları etkileyebilir.</li>
           <li><strong>Arka plan trafiğini kapat:</strong> Otomatik güncellemeler ve bulut senkronizasyonu bant genişliğini sessizce tüketir.</li>
           <li><strong>Kablolu bağlantıyı tercih et:</strong> Ethernet, Wi-Fi'nin çoğu zaman ulaşamayacağı stabiliteyi sağlar.</li>
           <li><strong>Yönlendirici yazılımını güncel tut:</strong> Üretici güncellemeleri performans ve güvenlik düzeltmeleri içerir.</li>
           <li><strong>Düzenli test yap:</strong> <a href="/tr/hiz-testi">Hız testi aracımızla</a> sağlayıcının vaat ettiği hızı gerçekten alıp almadığını doğrula.</li>
         </ol>
         <h2>Ne zaman ISS'ni aramalısın?</h2>
-        <p>Kablolu bağlantıda bile testler vaat edilen hızın belirgin şekilde altında kalıyorsa, sorun genellikle ağındaki cihazlarda değil, altyapı tarafındadır.</p>
+        <p>Kablolu bağlantıda bile testler vaat edilen hızın belirgin şekilde altında kalıyorsa, test saati, cihaz, Ethernet bağlantı hızı ve arka plan trafiğiyle birlikte ISS'ne ölçümleri ilet. Sonuç tek başına arızanın yerini kanıtlamaz.</p>
       `,
       en: `
         <p>Slow internet can stem from many different factors. The seven steps below make a noticeable difference in most home and office networks.</p>
         <ol>
           <li><strong>Place your router correctly:</strong> a central, open, elevated spot reduces signal loss.</li>
           <li><strong>Use the 5 GHz band:</strong> faster than 2.4 GHz, though with slightly shorter range.</li>
-          <li><strong>Switch your DNS:</strong> <code>1.1.1.1</code> (Cloudflare) or <code>8.8.8.8</code> (Google) often respond faster than your ISP's default.</li>
+          <li><strong>Switch your DNS:</strong> <code>1.1.1.1</code> (Cloudflare) or <code>8.8.8.8</code> (Google) can be compared with your current resolver. Changing DNS does not directly increase download bandwidth and can affect internal name resolution.</li>
           <li><strong>Disable background traffic:</strong> automatic updates and cloud sync quietly eat bandwidth.</li>
           <li><strong>Prefer a wired connection:</strong> Ethernet delivers stability Wi-Fi often can't match.</li>
           <li><strong>Keep your router's firmware current:</strong> vendor updates include performance and security fixes.</li>
           <li><strong>Test regularly:</strong> use our <a href="/en/speed-test">speed test tool</a> to confirm you're actually getting the speed you're paying for.</li>
         </ol>
         <h2>When should you call your ISP?</h2>
-        <p>If tests stay significantly below the promised speed even over a wired connection, the issue is usually upstream — not with the devices on your network.</p>
+        <p>If tests stay significantly below the promised speed even over a wired connection, record the device, link speed, time and background traffic before contacting your ISP. This result alone does not locate the fault.</p>
       `,
     },
   },
@@ -118,7 +121,7 @@ export const posts: Post[] = [
         <p>İnternete VPN sunucusunun IP adresi üzerinden çıkarsın. Ziyaret ettiğin siteler senin gerçek IP'ni değil, VPN sağlayıcının IP'sini görür. Bunu <a href="/tr/ip-sorgulama">IP sorgulama aracımızla</a> VPN açıp kapatarak test edebilirsin.</p>
         <h2>VPN neyi çözer, neyi çözmez?</h2>
         <ul>
-          <li><strong>Çözer:</strong> Açık Wi-Fi ağlarında trafiğinin dinlenmesini, ISS'nin gezinme geçmişini görmesini, coğrafi kısıtlamaları.</li>
+          <li><strong>Yardımcı olabilir:</strong> Tünele yönlenen trafiği yerel ağdan gizlemeye ve uzak ağa erişmeye. Bölünmüş tünel, DNS yapılandırması ve sağlayıcı politikaları kapsamı değiştirir; tam anonimlik veya kısıtlamaları aşma garantisi vermez.</li>
           <li><strong>Çözmez:</strong> Giriş yaptığın hesaplar üzerinden seni tanımlanabilir kılan çerezleri, tarayıcı parmak izini veya kötü amaçlı yazılımları.</li>
         </ul>
         <h2>Nasıl bir VPN seçmeli?</h2>
@@ -130,7 +133,7 @@ export const posts: Post[] = [
         <p>You appear to browse the internet from the VPN server's IP address. Sites you visit see the VPN provider's IP, not your real one. You can verify this yourself with our <a href="/en/ip-lookup">IP lookup tool</a> — check before and after connecting.</p>
         <h2>What a VPN fixes — and what it doesn't</h2>
         <ul>
-          <li><strong>Fixes:</strong> traffic snooping on open Wi-Fi, your ISP seeing your browsing history, some geographic restrictions.</li>
+          <li><strong>Can help:</strong> protect traffic routed through the tunnel from local observers and provide remote access. Split tunneling, DNS configuration and provider policies affect coverage; anonymity is not guaranteed.</li>
           <li><strong>Doesn't fix:</strong> being identified through logged-in accounts, browser fingerprinting, or malware.</li>
         </ul>
         <h2>How to choose a VPN</h2>
@@ -142,8 +145,8 @@ export const posts: Post[] = [
     slug: "yaygin-port-numaralari-rehberi",
     date: "2026-09-05",
     title: {
-      tr: "Yaygın Port Numaraları Rehberi: 15 Port ve Ne İşe Yaradıkları",
-      en: "A Guide to Common Port Numbers: 15 Ports and What They Do",
+      tr: "Yaygın Port Numaraları Rehberi: Sık Kullanılan Hizmetler",
+      en: "A Guide to Common Port Numbers: Frequently Used Services",
     },
     excerpt: {
       tr: "80, 443, 22, 3389... Bu port numaraları ne anlama geliyor? Ağ ve güvenlik temelli bir rehber.",
@@ -196,4 +199,9 @@ export const posts: Post[] = [
 
 export function getPost(slug: string): Post | undefined {
   return posts.find((p) => p.slug === slug);
+}
+
+export function readingMinutes(post: Post, locale: Locale): number {
+  const text = localizedPostText(post.body, locale).replace(/<[^>]*>/g, ' ');
+  return Math.max(1, Math.ceil(text.trim().split(/\s+/).length / 180));
 }

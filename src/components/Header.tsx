@@ -60,8 +60,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
     { href: `/${locale}`, name: dict.nav.home },
     { href: `/${locale}/download`, name: platformCopy[locale].applications },
     { href: `/${locale}/ip-scanner`, name: "IPscans+" },
-    { href: `/${locale}/scan`, name: dict.experience.networkTools },
-    { href: `/${locale}/blog`, name: dict.experience.resources },
+    { href: `/${locale}/blog`, name: "Blog" },
   ];
   function select(href: string) {
     setSearchOpen(false);

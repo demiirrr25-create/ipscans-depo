@@ -46,7 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         alternates: {
           languages: {
             ...Object.fromEntries(translated.map((l) => [l, `${BASE_URL}/${l}/blog/${post.slug}`])),
-            "x-default": `${BASE_URL}/en/blog/${post.slug}`,
+            "x-default": `${BASE_URL}/${post.body.en ? "en" : "tr"}/blog/${post.slug}`,
           },
         },
       });

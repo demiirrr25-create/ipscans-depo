@@ -56,7 +56,7 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
             className="min-h-12 w-full rounded-xl border border-white/20 bg-neutral-950 px-4 text-white placeholder:text-neutral-400 focus:border-white" />
         </label>
         <div role="group" aria-label={dict.nav.tools} className="flex flex-wrap gap-2">
-          {(["all", "network", "ip", "desktop"] as const).map((value) => (
+          {(["all", "ip", "desktop"] as const).map((value) => (
             <button key={value} type="button" aria-pressed={category === value} onClick={() => setCategory(value)}
               className={`min-h-11 rounded-lg border px-4 text-sm transition ${category === value ? "border-white bg-white text-black" : "border-white/20 text-neutral-300 hover:border-white/50"}`}>
               {dict.experience.categories[value]}

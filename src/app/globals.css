@@ -267,3 +267,27 @@ main .text-neutral-500 { color: #a3a3a3; }
   main > div, .network-experience.is-animated .flow-path, .product-card { animation: none; }
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
+
+/* Ambient network illustration runs without hydration or pointer interaction. */
+.network-backdrop { mask-image: linear-gradient(90deg, transparent 16%, #000 65%); opacity: .85; }
+.network-packet { stroke-dasharray: 12 90; stroke-opacity: .55; animation: ambient-flow 20s linear infinite; }
+.network-orbit { stroke-opacity: .055; stroke-dasharray: 2 12; }
+.network-beacon { opacity: .25; animation: ambient-beacon 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes ambient-flow { to { stroke-dashoffset: -1020; } }
+@keyframes ambient-beacon { 0%,100% { opacity: .12; transform: scale(.8); } 50% { opacity: .4; transform: scale(1.3); } }
+.editorial-art { position:relative; height:180px; overflow:hidden; border:1px solid #ffffff20; background:radial-gradient(ellipse at 70% 50%,#282828,#080808 70%); }
+.editorial-art span { position:absolute; width:110px; height:110px; border:1px solid #ffffff50; border-radius:50%; top:35px; left:calc(50% - 90px); }
+.editorial-art span:nth-child(2) { transform:translateX(35px); }
+.editorial-art span:nth-child(3) { transform:translateX(70px); }
+.editorial-art b { position:absolute; bottom:12px; left:14px; font:10px monospace; color:#888; }
+.editorial-art-1 span { border-radius:0; transform:rotate(45deg); }
+.editorial-art-1 span:nth-child(2) { transform:translateX(35px) rotate(45deg); }
+.editorial-art-1 span:nth-child(3) { transform:translateX(70px) rotate(45deg); }
+.editorial-art-2 span { width:12px; height:12px; background:#eee; border-radius:2px; top:85px; box-shadow:0 -40px 0 #555,0 40px 0 #555; }
+.editorial-art-2:before { content:""; position:absolute; top:91px; left:25%; width:50%; height:1px; background:#555; }
+.article-body h2 { scroll-margin-top:110px; }
+.article-body { font-size:1.0625rem; line-height:1.9; }
+.article-body li { margin-block:.75rem; }
+.article-body a { overflow-wrap:anywhere; }
+@media(max-width:640px) { .network-backdrop { opacity:.4; mask-image:linear-gradient(90deg,transparent,#000); } }
+@media(prefers-reduced-motion:reduce) { .network-packet,.network-beacon { animation:none; } }

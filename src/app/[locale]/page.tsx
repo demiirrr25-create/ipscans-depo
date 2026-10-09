@@ -2,6 +2,7 @@ import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { getDictionary, getPublicDictionary } from "@/i18n/dictionaries";
 import { PlatformHero } from "@/components/PlatformHero";
+import { BlogSection } from "@/components/BlogSection";
 import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { toolPath } from "@/lib/tool-routes";
 import { notFound } from "next/navigation";
@@ -43,12 +44,13 @@ export default async function HomePage({
       </section>
 
       <ApplicationsSection locale={locale} dict={getPublicDictionary(locale)} />
+      <BlogSection locale={locale} />
 
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-16 md:grid-cols-2">
         <div className="min-w-0 break-words rounded-2xl border border-white/10 bg-white/[0.03] p-8">
           <h2 className="text-2xl font-bold">{dict.experience.why}</h2>
           <p className="mt-4 leading-relaxed text-neutral-300">{platform.subtitle}</p>
-          <Link href={`/${locale}/scan`} className="mt-6 inline-block text-sm underline underline-offset-4">{dict.experience.networkTools} ↗</Link>
+          <Link href={`/${locale}/blog`} className="mt-6 inline-block text-sm underline underline-offset-4">{dict.blog.title} ↗</Link>
         </div>
         <div className="min-w-0 break-words rounded-2xl border border-white/10 bg-white/[0.03] p-8">
           <h2 className="text-2xl font-bold">{dict.experience.privacyTitle}</h2>
