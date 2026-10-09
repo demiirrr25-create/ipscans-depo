@@ -71,7 +71,7 @@ test("every website locale has actual features and explicit discovery limitation
   assert.deepEqual(Object.keys(scannerCopy).sort(), [...locales].sort());
   for (const locale of locales) {
     const copy = scannerCopy[locale];
-    assert.equal(copy.features.length, 7);
+    assert.equal(copy.features.length, 8);
     assert.ok(copy.features.every((feature) => feature.length > 30));
     assert.ok(copy.limitations.length > 100);
     assert.ok(copy.mapIntro.length > 60);
