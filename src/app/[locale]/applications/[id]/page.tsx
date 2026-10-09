@@ -66,7 +66,7 @@ export default async function ApplicationDetail({ params }: Params) {
       {app.id === 'scanner' && <ScannerV4 locale={locale} primary />}
       <div className="mt-10 grid gap-10 border-y border-white/15 py-12 lg:grid-cols-[1.3fr_1fr] lg:gap-20 lg:py-20">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPScans / {app.id} / Windows</p>
+          <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPScans / {app.name} / Windows</p>
           <Image src={app.icon} alt="" width={96} height={96} className="mt-8 rounded-2xl" />
           <ProductHeading className="mt-8 font-[family-name:var(--font-display)] text-[clamp(3.5rem,8vw,7rem)] leading-none font-semibold tracking-[-0.07em]">{app.name}<span className="text-neutral-500">.</span></ProductHeading>
           <p className="mt-7 max-w-xl text-xl leading-relaxed text-neutral-300">{app.description[locale]}</p>
