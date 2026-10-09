@@ -112,4 +112,21 @@ class NamesAndPDFTests(unittest.TestCase):
             finally:
                 doc.close();sip.delete(doc)
 
+    def test_map_context_action_survives_live_scene_refresh(self):
+        from app.ui.network_map import NetworkMap
+        from PyQt6.QtCore import QPoint
+        from types import SimpleNamespace
+        graph=NetworkMap('tr');device=Device('192.0.2.1')
+        graph.refresh([device]);node=graph.nodes[device.ip];renamed=[]
+        graph.rename_requested.connect(renamed.append)
+        def refreshed(menu, point):
+            action=menu.actions()[0]
+            graph.refresh([Device(device.ip)])
+            self.assertTrue(sip.isdeleted(node))
+            return action
+        with patch('app.ui.network_map.QMenu.exec',new=refreshed):
+            node.contextMenuEvent(SimpleNamespace(screenPos=lambda:QPoint()))
+        self.assertEqual(renamed,[device])
+        graph.close()
+
 if __name__=='__main__': unittest.main()

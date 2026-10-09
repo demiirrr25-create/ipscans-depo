@@ -25,9 +25,10 @@ class DeviceNode(QGraphicsObject):
     refresh_requested = pyqtSignal(str)
     collapse_requested = pyqtSignal(str)
 
-    def __init__(self, device: Device, lang: str) -> None:
+    def __init__(self, device: Device, lang: str, menu_owner=None) -> None:
         super().__init__()
         self.device, self.lang = device, lang
+        self.menu_owner = menu_owner
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
                       | QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
         self.setToolTip(
@@ -70,6 +71,9 @@ class DeviceNode(QGraphicsObject):
                 super().keyPressEvent(event)
 
     def contextMenuEvent(self, event) -> None:
+        # A live scan can rebuild the scene while QMenu's nested event loop runs.
+        # Dispatch through the stable map widget, never a deleted graphics node.
+        device, owner = self.device, self.menu_owner
         menu = QMenu()
         rename = menu.addAction(t(self.lang, "rename_device"))
         menu.addSeparator()
@@ -77,17 +81,18 @@ class DeviceNode(QGraphicsObject):
         collapse = menu.addAction(t(self.lang, "collapse_branch"))
         open_device = menu.addAction(t(self.lang, "open_device"))
         copy = menu.addAction(t(self.lang, "copy_ip"))
+        callbacks = {
+            rename: ((owner.rename_requested.emit if owner else self.rename_requested.emit), device),
+            refresh: ((owner.refresh_requested.emit if owner else self.refresh_requested.emit), device.ip),
+            collapse: ((owner.toggle_branch if owner else self.collapse_requested.emit), device.ip),
+            open_device: ((owner.device_activated.emit if owner else self.activated.emit), device),
+        }
         chosen = menu.exec(event.screenPos())
-        if chosen == rename:
-            self.rename_requested.emit(self.device)
-        elif chosen == refresh:
-            self.refresh_requested.emit(self.device.ip)
-        elif chosen == collapse:
-            self.collapse_requested.emit(self.device.ip)
-        elif chosen == open_device:
-            self.activated.emit(self.device)
+        if chosen in callbacks:
+            callback, argument = callbacks[chosen]
+            callback(argument)
         elif chosen == copy:
-            QApplication.clipboard().setText(self.device.ip)
+            QApplication.clipboard().setText(device.ip)
 
 
 class GroupNode(QGraphicsObject):
@@ -266,7 +271,7 @@ class NetworkMap(QWidget):
                 self.scene.addItem(group)
         for ip, (x, y) in positions.items():
             device = by_ip[ip]
-            node = DeviceNode(device, self.lang)
+            node = DeviceNode(device, self.lang, self)
             node.setPos(x, y)
             node.setOpacity(1 if ip in matches else .45)
             node.activated.connect(self.device_activated.emit)
