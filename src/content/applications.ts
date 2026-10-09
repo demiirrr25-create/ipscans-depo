@@ -18,14 +18,14 @@ export const ipcastRelease = {
 
 export const desktopRelease = {
   scanner: {
-    version: "4.1.1",
-    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.1.1",
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.1.1/IPscans-Plus-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.1.1/IPscans-Plus.exe",
-    installerBytes: 49274382,
-    installerSha256: "e6d0ac8fbf12955ebef9124ca92c3f28393adfbebb009fccbadcdb27631a205b",
-    portableBytes: 47327283,
-    portableSha256: "4acb178463da97325bf853bec542d8c81f530798a075f10c47eb09e04a5df83d",
+    version: "4.2.0",
+    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.2.0",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.2.0/IPscans-Plus-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.2.0/IPscans-Plus.exe",
+    installerBytes: 49631631,
+    installerSha256: "cbefc7d74302f156649d56f5e2d24b01219bdbfa8abe2d198ef3edd0d550696a",
+    portableBytes: 47544823,
+    portableSha256: "94b09b035cbce30fc1476e55d2f2abb7862abe0246a7827e0bc404dfa5f63416",
   },
 } as const;
 
@@ -98,8 +98,8 @@ export const applications: readonly Application[] = [
   {
     id: "scanner",
     name: "IPscans+",
-    description: { tr: "İlerlemeli ağ keşfi, birleşik Network Map ve yetkili ONVIF cihaz yönetimi", en: "Progressive network discovery, unified Network Map and authorized ONVIF device management", de: "Fortlaufende Netzwerkerkennung, Netzwerkkarte und autorisierte ONVIF-Geräteverwaltung", fr: "Découverte réseau progressive, carte unifiée et gestion ONVIF autorisée", es: "Descubrimiento progresivo, mapa de red unificado y gestión ONVIF autorizada", it: "Rilevamento progressivo, mappa di rete unificata e gestione ONVIF autorizzata", pt: "Descoberta progressiva, mapa de rede unificado e gestão ONVIF autorizada", nl: "Progressieve netwerkdetectie, uniforme netwerkkaart en bevoegd ONVIF-beheer", pl: "Stopniowe wykrywanie sieci, wspólna mapa i autoryzowane zarządzanie ONVIF", ru: "Постепенное обнаружение сети, единая карта и разрешённое управление ONVIF", ar: "اكتشاف شبكة تدريجي وخريطة موحدة وإدارة ONVIF مصرح بها", ja: "段階的ネットワーク検出、統合ネットワークマップ、権限に基づく ONVIF 管理", ko: "점진적 네트워크 탐색, 통합 네트워크 맵 및 권한 기반 ONVIF 관리", zh: "渐进式网络发现、统一网络地图与授权 ONVIF 设备管理" },
-    icon: "/scanner-mark.svg",
+    description: {"en": "Network discovery, network map and one double-click to your device", "tr": "Ağ keşfi, ağ haritası ve cihazınıza çift tıklamayla erişim", "de": "Netzwerkerkennung, Netzwerkkarte und Gerätezugriff per Doppelklick", "fr": "Découverte réseau, carte et accès aux appareils par double-clic", "es": "Descubrimiento de red, mapa y acceso al dispositivo con doble clic", "it": "Rilevamento della rete, mappa e accesso ai dispositivi con doppio clic", "pt": "Descoberta de rede, mapa e acesso ao dispositivo com duplo clique", "nl": "Netwerkdetectie, netwerkkaart en apparaattoegang met een dubbelklik", "pl": "Wykrywanie sieci, mapa i dostęp do urządzenia po dwukrotnym kliknięciu", "ru": "Обнаружение сети, карта и доступ к устройству двойным щелчком", "ar": "اكتشاف الشبكة وخريطتها والوصول إلى الجهاز بنقرة مزدوجة", "ja": "ネットワーク検出、マップ、ダブルクリックによるデバイスアクセス", "ko": "네트워크 탐색, 지도 및 두 번 클릭으로 장치 접속", "zh": "网络发现、网络地图与双击访问设备"},
+    icon: "/scanner-icon-v42.png",
     version: desktopRelease.scanner.version,
     platform: "Windows 10/11 · x64",
     detailPath: "/download",

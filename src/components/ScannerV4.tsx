@@ -6,18 +6,18 @@ export function ScannerV4({locale,primary=false}: {locale:Locale;primary?:boolea
   const tr=locale==='tr', Heading=primary?'h1':'h2', FeatureHeading=primary?'h2':'h3';
   const features=tr?[
     ['01 / OTOMATİK KEŞİF','Açın. Tarayın. Görün.','Ağ aralığı adaptörden alınır. Sınırlandırılmış motor, eşzamanlılığı ve zaman aşımını yanıtlara göre ayarlar. Sonuçlar tarama bitmeden görünür.'],
-    ['02 / CİHAZ KİMLİĞİ','Tek ipucundan fazlası.','ONVIF, mDNS, UPnP, servis yanıtları ve yetkili SNMP birlikte değerlendirilir. Çelişen veya yetersiz kanıt, bilinmeyen olarak kalır.'],
+    ['02 / CİHAZ KİMLİĞİ','Tek ipucundan fazlası.','ONVIF, mDNS, UPnP, servis yanıtları birlikte değerlendirilir. Çelişen veya yetersiz kanıt, bilinmeyen olarak kalır.'],
     ['03 / NETWORK MAP','Bağlantıların büyük resmi.','Tam alanı kullanan dikey harita. Doğrulanmış LLDP/CDP komşuluğu düz; çıkarımsal yönlendirme yolu kesikli. Belirsiz cihazlar ayrı grupta.'],
-    ['04 / ODAK','Yalnızca iki sekme.','SCAN ve NETWORK MAP. Ortak arama, çift tıklamayla cihaz detayları ve HTML/CSV/JSON raporları. Manuel profil seçimi veya ayar sayfası yok.'],
+    ['04 / ODAK','Yalnızca iki sekme.','SCAN ve NETWORK MAP. Ortak arama, çift tıklamayla varsayılan tarayıcıda cihazın web arayüzü ve HTML/CSV/JSON raporları. Manuel profil seçimi veya ayar sayfası yok.'],
   ]:[
     ['01 / AUTOMATIC DISCOVERY','Open. Scan. Understand.','The adapter supplies your range. A bounded engine adjusts concurrency and timeouts from observed responses. Results arrive before the scan completes.'],
-    ['02 / DEVICE IDENTITY','More than a single clue.','ONVIF, mDNS, UPnP, service responses and authorized SNMP contribute evidence. Conflicting or insufficient identities remain unknown.'],
+    ['02 / DEVICE IDENTITY','More than a single clue.','ONVIF, mDNS, UPnP, service responses contribute evidence. Conflicting or insufficient identities remain unknown.'],
     ['03 / NETWORK MAP','The bigger picture.','A full-canvas vertical hierarchy. Confirmed LLDP/CDP adjacency is solid; inferred forwarding paths are dashed. Unresolved devices have their own group.'],
-    ['04 / FOCUS','Just two tabs.','SCAN and NETWORK MAP. Shared search, double-click device details and HTML/CSV/JSON reports. No manual profiles or settings page.'],
+    ['04 / FOCUS','Just two tabs.','SCAN and NETWORK MAP. Shared search, double-click access to the device web interface in your default browser and HTML/CSV/JSON reports. No manual profiles or settings page.'],
   ];
   return <section className="my-12" aria-labelledby="scanner-v4-title">
     <div className="mb-12 grid items-end gap-10 lg:grid-cols-[1.3fr_.7fr]">
-      <div><p className="font-mono text-xs tracking-[.2em] text-neutral-400">IPSCANS+ 4.1 / NETWORK INTELLIGENCE</p>
+      <div><p className="font-mono text-xs tracking-[.2em] text-neutral-400">IPSCANS+ {scannerApplication.version} / NETWORK INTELLIGENCE</p>
         <Heading id="scanner-v4-title" className="mt-7 text-5xl font-medium leading-[1.02] tracking-[-.06em] sm:text-7xl">{tr?'Karmaşık ağlar.':'Complex networks.'}<br/><span className="text-neutral-400">{tr?'Sade bir deneyim.':'A focused workspace.'}</span></Heading>
         <p className="mt-7 max-w-xl text-lg leading-relaxed text-neutral-300">{tr?'Cihazları keşfedin, kimliklerini anlayın ve ağınızı kanıtlarıyla haritalayın. Windows için baştan tasarlanan monokrom ağ konsolu.':'Discover devices, understand their identity and map your network with evidence. A redesigned monochrome network console for Windows.'}</p>
       </div>

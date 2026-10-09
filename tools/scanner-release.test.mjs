@@ -67,7 +67,7 @@ test("catalog and legacy redirect use the same versioned scanner release", () =>
   assert.match(redirect, /desktopRelease\.scanner\.installerUrl/);
 });
 
-test("every website locale has actual features and explicit management limitations", () => {
+test("every website locale has actual features and explicit discovery limitations", () => {
   assert.deepEqual(Object.keys(scannerCopy).sort(), [...locales].sort());
   for (const locale of locales) {
     const copy = scannerCopy[locale];
