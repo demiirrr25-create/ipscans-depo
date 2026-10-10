@@ -1,0 +1,52 @@
+{
+  "dataset_id": "ipscans-owned-synthetic-smoke-v1",
+  "synthetic": true,
+  "evaluation": true,
+  "scope": "one_plate_per_image; ambiguous detections count as abstentions",
+  "latency_scope": "detector+ocr; excludes decoding and RTSP transport",
+  "metrics": {
+    "samples": 4,
+    "exact_match_accuracy": 0.75,
+    "plate_precision": 0.6666666666666666,
+    "plate_recall": 0.6666666666666666,
+    "character_error_rate": 0.08333333333333333,
+    "false_positive_images": 1,
+    "false_negative_images": 1,
+    "latency_ms_p50": 22.168700001202524,
+    "latency_ms_p95": 25.860699999611825
+  },
+  "rows": [
+    {
+      "image": "synthetic-0.png",
+      "expected": "34ABC123",
+      "predicted": "34ABC123",
+      "latency_ms": 25.860699999611825,
+      "ambiguous": false
+    },
+    {
+      "image": "synthetic-1.png",
+      "expected": "06AB1234",
+      "predicted": "06AB1234",
+      "latency_ms": 24.261500002467074,
+      "ambiguous": false
+    },
+    {
+      "image": "synthetic-2.png",
+      "expected": "35A12345",
+      "predicted": "35A112445",
+      "latency_ms": 22.168700001202524,
+      "ambiguous": false
+    },
+    {
+      "image": "synthetic-blank.png",
+      "expected": "",
+      "predicted": "",
+      "latency_ms": 20.192099997075275,
+      "ambiguous": false
+    }
+  ],
+  "python": "3.14.3",
+  "providers": [
+    "CPUExecutionProvider"
+  ]
+}

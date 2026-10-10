@@ -1,0 +1,36 @@
+{
+  "doctor": {
+    "python": "3.14.3",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "dependencies": {
+      "cv2": true,
+      "numpy": true,
+      "onnxruntime": true,
+      "fast_plate_ocr": true,
+      "paddleocr": false,
+      "paddle": false,
+      "PySide6": true
+    },
+    "hardware_tested": false,
+    "barrier_control": "not_implemented"
+  },
+  "image": {
+    "source": "offline_image",
+    "evaluation": true,
+    "readings": [
+      {
+        "text": "34ABC123",
+        "confidence": 0.946672260761261,
+        "box": {
+          "x1": 129,
+          "y1": 216,
+          "x2": 672,
+          "y2": 344,
+          "score": 0.8100195527076721
+        }
+      }
+    ],
+    "inference_ms": 26.317299998481758
+  },
+  "gui_launch": "alive at login after 6 seconds; offscreen"
+}

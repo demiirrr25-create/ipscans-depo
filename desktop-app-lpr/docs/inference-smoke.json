@@ -1,0 +1,149 @@
+{
+  "scope": "integration smoke test; not held-out accuracy benchmark",
+  "sample_source": {
+    "url": "https://raw.githubusercontent.com/ankandrew/fast-alpr/master/assets/test_image.png",
+    "sha256": "c154c3e0873fa35076ecf4f611d345c092450217fe75737b2a77183018218255",
+    "bytes": 353058
+  },
+  "model_files": {
+    "detector.onnx": {
+      "url": "https://github.com/ankandrew/open-image-models/releases/download/assets/yolo-v9-t-384-license-plates-end2end.onnx",
+      "sha256": "888397b96d761c89db40bc9c305838e8652660f5e282c2cadebbe8d2951a77a8",
+      "bytes": 7771218
+    },
+    "ocr/model.onnx": {
+      "url": "https://github.com/ankandrew/cnn-ocr-lp/releases/download/arg-plates/cct_xs_v2_global.onnx",
+      "sha256": "8031afb5fdc6b4d80462c9d542f1284ebd2cfddf5dbacd62609848d7e2855f44",
+      "bytes": 3344292
+    },
+    "ocr/config.yaml": {
+      "url": "https://github.com/ankandrew/cnn-ocr-lp/releases/download/arg-plates/cct_xs_v2_global_plate_config.yaml",
+      "sha256": "0335c74a305173bb6f393efed0fde03cadeaa0b649ed8e19f431016d8232d0a6",
+      "bytes": 1725
+    },
+    "upstream_sample.png": {
+      "url": "https://raw.githubusercontent.com/ankandrew/fast-alpr/master/assets/test_image.png",
+      "sha256": "c154c3e0873fa35076ecf4f611d345c092450217fe75737b2a77183018218255",
+      "bytes": 353058
+    },
+    "detector-LICENSE.txt": {
+      "url": "https://raw.githubusercontent.com/ankandrew/open-image-models/main/LICENSE",
+      "sha256": "a953e6268c89179c4a8f0cf5a49f57bc380a60e38078fe1f6361a0e45fd00363",
+      "bytes": 1066
+    }
+  },
+  "commercial_release_approved": false,
+  "python": "3.14.3",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "logical_cpu_count": 16,
+  "ram_gib": 15.817798614501953,
+  "process_rss_mib": 140.81640625,
+  "providers": [
+    "CPUExecutionProvider"
+  ],
+  "session_load_ms": 702.1478000096977,
+  "versions": {
+    "onnxruntime": "1.31.0",
+    "fast-plate-ocr": "1.1.0",
+    "opencv-python-headless": "5.0.0.93",
+    "numpy": "2.4.3"
+  },
+  "warm_inference_ms_10_repeats": [
+    21.750200001406483,
+    22.31059999030549,
+    20.90180000232067,
+    21.802099989145063,
+    21.7726999981096,
+    22.022899996954948,
+    21.85369998915121,
+    21.29219999187626,
+    20.6185999995796,
+    21.294600010151044
+  ],
+  "cases": [
+    {
+      "case": "upstream_public_example",
+      "synthetic": false,
+      "expected": "5AU5341",
+      "readings": [
+        {
+          "text": "5AU5341",
+          "confidence": 0.9995695948600769,
+          "box": {
+            "x1": 307,
+            "y1": 188,
+            "x2": 387,
+            "y2": 210,
+            "score": 0.8428492546081543
+          }
+        }
+      ],
+      "inference_ms": 27.905899987672456
+    },
+    {
+      "case": "synthetic_tr_0",
+      "synthetic": true,
+      "expected": "34ABC123",
+      "readings": [
+        {
+          "text": "34ABC123",
+          "confidence": 0.946672260761261,
+          "box": {
+            "x1": 129,
+            "y1": 216,
+            "x2": 672,
+            "y2": 344,
+            "score": 0.8100195527076721
+          }
+        }
+      ],
+      "inference_ms": 23.858800006564707
+    },
+    {
+      "case": "synthetic_tr_1",
+      "synthetic": true,
+      "expected": "06AB1234",
+      "readings": [
+        {
+          "text": "06AB1234",
+          "confidence": 0.9511591196060181,
+          "box": {
+            "x1": 132,
+            "y1": 215,
+            "x2": 670,
+            "y2": 345,
+            "score": 0.8979470729827881
+          }
+        }
+      ],
+      "inference_ms": 22.694200000842102
+    },
+    {
+      "case": "synthetic_tr_2",
+      "synthetic": true,
+      "expected": "35A12345",
+      "readings": [
+        {
+          "text": "35A112445",
+          "confidence": 0.6372533440589905,
+          "box": {
+            "x1": 131,
+            "y1": 216,
+            "x2": 670,
+            "y2": 345,
+            "score": 0.8751614093780518
+          }
+        }
+      ],
+      "inference_ms": 22.36329999868758
+    },
+    {
+      "case": "synthetic_blank",
+      "synthetic": true,
+      "expected": "",
+      "readings": [],
+      "inference_ms": 19.027800008188933
+    }
+  ]
+}

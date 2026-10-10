@@ -8,6 +8,7 @@ import type { Locale } from "@/i18n/config";
 import type { PublicDictionary } from "@/i18n/dictionaries";
 import { applications, platformCopy } from "@/content/applications";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
+import { lprRelease } from "@/content/lpr-release";
 
 export function ApplicationsSection({ locale, dict, primary = false }: { locale: Locale; dict: PublicDictionary; primary?: boolean }) {
   const Heading = primary ? 'h1' : 'h2';
@@ -22,6 +23,7 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
     category: key === "ipLookup" ? "ip" : "network",
   }));
   const results = [
+    { id: "lpr-pro", name: "IPScans LPR Pro · Beta", description: locale === "tr" ? "Yerel plaka tanıma ve kayıt inceleme. Değerlendirme sürümü; fiziksel bariyer kontrolü yok." : "Local plate recognition and record review. Evaluation release; no physical barrier control.", href: `/${locale}/lpr-pro`, category: "desktop", icon: "/lpr-mark.svg", version: lprRelease.version, platform: "Windows 10/11 · x64", download: lprRelease.url },
     ...applications.map((app) => ({
       id: app.id,
       name: app.name,
@@ -47,7 +49,7 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
         <Heading id="applications-title" className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight sm:text-6xl">{copy.applications}<span className="text-neutral-500">.</span></Heading>
         <p className="mt-3 max-w-2xl text-neutral-400">{copy.applicationsIntro}</p>
         </div>
-        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-400 sm:block">{uiText(locale, "EXPLORE", "KEŞFET")} / 01—{String(applications.length + tools.length).padStart(2, "0")}</span>
+        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-400 sm:block">{uiText(locale, "EXPLORE", "KEŞFET")} / 01—{String(applications.length + tools.length + 1).padStart(2, "0")}</span>
       </div>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <label className="block w-full sm:max-w-sm">

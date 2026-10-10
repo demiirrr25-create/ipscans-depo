@@ -19,7 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast",
       ...applications.map((app) => `/applications/${app.id}`)];
     if (posts.some((post) => post.body[locale])) staticPaths.push("/blog");
-    staticPaths.push("/privacy", "/terms");
+    staticPaths.push("/privacy", "/terms", "/lpr-pro");
 
     for (const path of staticPaths) {
       const languages = altLanguages((l) => `/${l}${path}`);

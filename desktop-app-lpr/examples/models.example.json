@@ -1,0 +1,18 @@
+{
+  "license": "REQUIRED: license of both trained weights and redistribution",
+  "source": "REQUIRED: immutable provenance URL or internal model registry",
+  "reviewed_by": "REQUIRED: reviewer",
+  "reviewed_at": "REQUIRED: ISO date",
+  "commercial_use_approved": false,
+  "detector": {
+    "path": "detector.onnx",
+    "sha256": "REQUIRED",
+    "format": "xyxy_score_class",
+    "input_size": 640
+  },
+  "ocr": {
+    "path": "ocr",
+    "model_name": "en_PP-OCRv4_mobile_rec",
+    "files": {"inference.pdmodel": "REQUIRED", "inference.pdiparams": "REQUIRED"}
+  }
+}

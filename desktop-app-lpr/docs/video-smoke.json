@@ -1,0 +1,210 @@
+{
+  "scope": "real video decoder + real inference on synthetic content",
+  "result": {
+    "source": "recorded_video",
+    "frames_read": 12,
+    "frames_analyzed": 12,
+    "decision_counts": {
+      "pending": 2,
+      "review": 1,
+      "recognized": 1,
+      "suppressed": 8
+    },
+    "cancelled": false,
+    "barrier_commands": 0
+  },
+  "events": [
+    {
+      "source": "recorded_video",
+      "frame": 1,
+      "media_seconds": 0.0,
+      "inference_ms": 27.311599988024682,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9410001635551453,
+        "status": "pending",
+        "reason": "insufficient_consensus",
+        "camera": "RECORDED",
+        "frame_id": 1,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 2,
+      "media_seconds": 0.1,
+      "inference_ms": 25.41259999270551,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.8992930054664612,
+        "status": "review",
+        "reason": "low_confidence",
+        "camera": "RECORDED",
+        "frame_id": 2,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 3,
+      "media_seconds": 0.2,
+      "inference_ms": 23.247799996170215,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "pending",
+        "reason": "insufficient_consensus",
+        "camera": "RECORDED",
+        "frame_id": 3,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 4,
+      "media_seconds": 0.3,
+      "inference_ms": 21.609899995382875,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9541194637616476,
+        "status": "recognized",
+        "reason": "recognition_only",
+        "camera": "RECORDED",
+        "frame_id": 4,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 5,
+      "media_seconds": 0.4,
+      "inference_ms": 22.93180000560824,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 5,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 6,
+      "media_seconds": 0.5,
+      "inference_ms": 21.652499999618158,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 6,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 7,
+      "media_seconds": 0.6,
+      "inference_ms": 23.06420000968501,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 7,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 8,
+      "media_seconds": 0.7,
+      "inference_ms": 22.935700006200932,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 8,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 9,
+      "media_seconds": 0.8,
+      "inference_ms": 22.750800009816885,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 9,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 10,
+      "media_seconds": 0.9,
+      "inference_ms": 22.38390001002699,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 10,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 11,
+      "media_seconds": 1.0,
+      "inference_ms": 23.897100007161498,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 11,
+        "barrier_result": "not_requested"
+      }
+    },
+    {
+      "source": "recorded_video",
+      "frame": 12,
+      "media_seconds": 1.1,
+      "inference_ms": 22.343799995724112,
+      "detections": 1,
+      "decision": {
+        "plate": "34ABC123",
+        "confidence": 0.9606791138648987,
+        "status": "suppressed",
+        "reason": "passage_cooldown",
+        "camera": "RECORDED",
+        "frame_id": 12,
+        "barrier_result": "not_requested"
+      }
+    }
+  ]
+}

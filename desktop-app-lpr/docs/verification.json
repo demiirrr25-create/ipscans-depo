@@ -1,0 +1,26 @@
+{
+  "unit_tests": {
+    "command": "python -m pytest -q",
+    "exit_code": 0,
+    "stdout": ".................................                                        [100%]\n33 passed in 4.85s\n",
+    "stderr": "Failed to find real location of C:\\Python314\\python.exe\n"
+  },
+  "doctor": {
+    "command": "python -m lpr.cli doctor",
+    "exit_code": 0,
+    "stdout": "{\"python\": \"3.14.3\", \"platform\": \"Windows-11-10.0.26200-SP0\", \"dependencies\": {\"cv2\": true, \"numpy\": true, \"onnxruntime\": true, \"fast_plate_ocr\": true, \"paddleocr\": false, \"paddle\": false, \"PySide6\": true}, \"hardware_tested\": false, \"barrier_control\": \"not_implemented\"}\n",
+    "stderr": "Failed to find real location of C:\\Python314\\python.exe\n"
+  },
+  "synthetic_demo": {
+    "command": "python -m lpr.cli demo",
+    "exit_code": 0,
+    "stdout": "{\"source\": \"synthetic_ocr_fixture\", \"decision\": {\"plate\": \"34ABC123\", \"confidence\": 0.96, \"status\": \"pending\", \"reason\": \"insufficient_consensus\", \"camera\": \"SIMULATED\", \"frame_id\": 0, \"barrier_result\": \"not_requested\"}}\n{\"source\": \"synthetic_ocr_fixture\", \"decision\": {\"plate\": \"34ABC123\", \"confidence\": 0.94, \"status\": \"pending\", \"reason\": \"insufficient_consensus\", \"camera\": \"SIMULATED\", \"frame_id\": 1, \"barrier_result\": \"not_requested\"}}\n{\"source\": \"synthetic_ocr_fixture\", \"decision\": {\"plate\": \"34ABC123\", \"confidence\": 0.9566666666666667, \"status\": \"recognized\", \"reason\": \"recognition_only\", \"camera\": \"SIMULATED\", \"frame_id\": 2, \"barrier_result\": \"not_requested\"}}\n{\"source\": \"synthetic_ocr_fixture\", \"decision\": {\"plate\": \"34ABC123\", \"confidence\": 0.99, \"status\": \"suppressed\", \"reason\": \"passage_cooldown\", \"camera\": \"SIMULATED\", \"frame_id\": 3, \"barrier_result\": \"not_requested\"}}\n{\"source\": \"synthetic_ocr_fixture\", \"decision\": {\"plate\": \"06AB1234\", \"confidence\": 0.52, \"status\": \"review\", \"reason\": \"low_confidence\", \"camera\": \"SIMULATED\", \"frame_id\": 4, \"barrier_result\": \"not_requested\"}}\n{\"source\": \"synthetic_ocr_fixture\", \"decision\": {\"plate\": \"99ZZ999\", \"confidence\": 0.99, \"status\": \"review\", \"reason\": \"unsupported_or_invalid_format\", \"camera\": \"SIMULATED\", \"frame_id\": 5, \"barrier_result\": \"not_requested\"}}\n{\"stored_events\": 3, \"barrier_commands\": 0, \"real_recognition_accuracy\": null}\n",
+    "stderr": "Failed to find real location of C:\\Python314\\python.exe\n"
+  },
+  "compile": {
+    "command": "python -m compileall -q lpr",
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "Failed to find real location of C:\\Python314\\python.exe\n"
+  }
+}
