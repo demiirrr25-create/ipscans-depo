@@ -1,0 +1,9 @@
+{
+  "dataset_id": "REPLACE-with-authorized-held-out-dataset-id",
+  "usage_authorized": false,
+  "synthetic": false,
+  "samples": [
+    {"image": "images/daylight.png", "expected": "34ABC123"},
+    {"image": "images/empty-lane.png", "expected": ""}
+  ]
+}

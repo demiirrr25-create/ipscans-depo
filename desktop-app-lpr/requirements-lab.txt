@@ -1,0 +1,7 @@
+# Versions exercised on Windows 11 / CPython 3.14.3. No training dependencies.
+onnxruntime==1.31.0
+fast-plate-ocr==1.1.0
+opencv-python-headless==5.0.0.93
+numpy==2.4.3
+PySide6==6.12.0
+pytest==9.0.2
