@@ -78,5 +78,5 @@ export function InfinityScene() {
     const firstFrame=requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(()=>{cleanup=initialize();});});
     return()=>{cancelAnimationFrame(firstFrame);cancelAnimationFrame(secondFrame);cleanup?.();};
   },[]);
-  return <div className="infinity-scene" aria-hidden="true"><svg viewBox="0 0 800 520" className="infinity-fallback"><g fill="none" stroke="white" strokeWidth=".6" opacity=".25">{Array.from({length:18},(_,i)=><ellipse key={i} cx="400" cy="260" rx={220+i*3} ry={75+i*3} transform={`rotate(${i*10} 400 260)`}/>)}</g></svg><canvas ref={ref}/><div className="scene-axis scene-axis-x"/><div className="scene-axis scene-axis-y"/><span className="scene-coordinate">∞ / IPSCANS</span></div>;
+  return <div className="infinity-scene" aria-hidden="true"><svg viewBox="0 0 800 520" className="infinity-fallback"><g fill="none" stroke="white" strokeWidth=".6" opacity=".25">{Array.from({length:18},(_,i)=><ellipse key={i} cx="400" cy="260" rx={220+i*3} ry={75+i*3} transform={`rotate(${i*10} 400 260)`}/>)}</g></svg><canvas ref={ref}/><div className="scene-axis scene-axis-x"/><div className="scene-axis scene-axis-y"/></div>;
 }

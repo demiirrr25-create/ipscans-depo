@@ -89,8 +89,8 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
                 {copy.details} <span aria-hidden="true" className="ms-2 transition-transform group-hover:translate-x-1">↗</span>
               </Link>
               {"download" in item && (
-                <a href={item.download} aria-label={`${item.name} — ${copy.downloadApp}`} className="btn-ghost ms-auto inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-all hover:bg-white hover:text-black">
-                  {item.id==='lpr-pro' ? uiText(locale,'Source ZIP','Kaynak ZIP') : copy.downloadApp} ↓
+                <a href={item.download} aria-label={`${item.name} — ${item.id==='lpr-pro' ? uiText(locale,'Download EXE','EXE indir') : copy.downloadApp}`} className="btn-ghost ms-auto inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-all hover:bg-white hover:text-black">
+                  {item.id==='lpr-pro' ? uiText(locale,'Download EXE','EXE indir') : copy.downloadApp} ↓
                 </a>
               )}
             </div>
