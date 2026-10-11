@@ -29,7 +29,7 @@ export default async function LprPage({params}:{params:Promise<{locale:string}>}
   return <article lang={tr?"tr":"en"} className="mx-auto max-w-6xl px-5 pb-24 pt-24 sm:px-8">
     <Link href={`/${locale}/download`} className="text-sm text-neutral-400 underline underline-offset-4">← {tr?"Tüm uygulamalar":"All applications"}</Link>
     <div className="mt-12 border-b border-white/15 pb-12">
-      <p className="font-mono text-xs uppercase tracking-[.22em] text-neutral-400">WINDOWS x64 / 0.3.0 BETA</p>
+      <p className="font-mono text-xs uppercase tracking-[.22em] text-neutral-400">WINDOWS x64 / 0.3.1 BETA</p>
       <h1 className="mt-6 text-5xl font-semibold tracking-tight sm:text-7xl">IPScans LPR Pro<span className="text-neutral-500">.</span></h1>
       <p className="mt-6 max-w-2xl text-xl leading-relaxed text-neutral-300">{tr?"Plakaları yerelde okuyun. Sonuçları inceleyin. Erişim kurallarınızı sınayın.":"Read plates locally. Review results. Test your access rules."}</p>
       <p className="mt-4 max-w-2xl leading-relaxed text-neutral-400">{tr?"Bu sürüm saha değerlendirmesi içindir. Ticari üretim ve fiziksel bariyer kontrolü için hazır değildir. IPscans+ ve IPCast uygulamalarından bağımsızdır.":"This release is for evaluation. It is not ready for commercial production or physical barrier control. It is independent of IPscans+ and IPCast."}</p>
@@ -37,7 +37,7 @@ export default async function LprPage({params}:{params:Promise<{locale:string}>}
         <a href={lprRelease.url} className="inline-flex min-h-12 items-center rounded-lg bg-white px-6 py-3 font-semibold text-black hover:bg-neutral-200">{tr?"Windows uygulamasını indir · EXE":"Download Windows app · EXE"} ↓</a>
         <a href={lprRelease.releaseUrl} className="underline underline-offset-4">{tr?"Sürüm notları ve kaynak":"Release notes and source"} ↗</a>
       </div>
-      <p className="mt-4 text-sm text-neutral-400">{tr?"Windows 10/11 x64 için 147,6 MB taşınabilir değerlendirme uygulaması. İmzalanmamıştır; dosyanın kaydedileceği yeri tarayıcınız belirler.":"147.6 MB portable evaluation app for Windows 10/11 x64. It is unsigned; your browser controls where the file is saved."}</p>
+      <p className="mt-4 text-sm text-neutral-400">{tr?"Windows 10/11 x64 için 118,3 MB taşınabilir değerlendirme uygulaması. İmzalanmamıştır; dosyanın kaydedileceği yeri tarayıcınız belirler.":"118.3 MB portable evaluation app for Windows 10/11 x64. It is unsigned; your browser controls where the file is saved."}</p>
     </div>
     <figure className="mt-10 overflow-hidden rounded-xl border border-white/20">
       <Image src="/lpr-pro-preview.png" alt={tr?"Sentetik 34 ABC 123 örneğini inceleyen gerçek LPR Pro arayüzü":"Actual LPR Pro interface reviewing a synthetic 34 ABC 123 example"} width={1440} height={950} className="h-auto w-full" />
@@ -51,6 +51,7 @@ export default async function LprPage({params}:{params:Promise<{locale:string}>}
         <li>{tr?"Tanıma bölümünde kullanma izniniz olan bir görüntü veya video seçin. Sonuçları Geçmiş bölümünde inceleyin.":"Select an image or video you are authorized to use in Recognition. Review results in History."}</li>
       </ol>
       <p className="mt-6 text-sm leading-relaxed text-neutral-400">{tr?"İndirilen değerlendirme modelleri yalnız çevrimdışı kullanılır; model ve eğitim verisi ticari hak incelemesi tamamlanmamıştır. Canlı RTSP için ticari kullanımı incelenmiş bir model manifesti gerekir.":"Downloaded evaluation models are restricted to offline use; commercial rights review of model weights and training data is pending. Live RTSP requires a commercially reviewed model manifest."}</p>
+      <p className="mt-4 text-sm leading-relaxed text-neutral-400">{tr?"QtCore DLL uyarısı devam ederse Windows için resmi Microsoft Visual C++ x64 paketini yükleyip uygulamayı yeniden açın.":"If a QtCore DLL error persists, install Microsoft's official Visual C++ x64 package for Windows and reopen the app."} <a className="underline underline-offset-4" href="https://aka.ms/vs/17/release/vc_redist.x64.exe">{tr?"Microsoft x64 paketi":"Microsoft x64 package"} ↗</a></p>
     </section>
     <section className="mt-12"><h2 className="text-2xl font-semibold">{tr?"Cihaz uyumluluğunun sınırları":"Device compatibility limits"}</h2>
       <p className="mt-4 leading-relaxed text-neutral-400">{tr?"Hikvision/Dahua RTSP adres profilleri mevcuttur; fiziksel model ve firmware doğrulaması yapılmadı. Kameranın kendi ANPR olaylarını alma ve ONVIF keşfi henüz tamamlanmadı. Modbus TCP tek bobin okuma ve Shelly RPC durum sorgulama araçları bulunur; röle çıkışı ve otomatik bariyer açma kapalıdır. Tüm Ethernet rölelerle uyumluluk iddiası yoktur.":"Hikvision/Dahua RTSP address profiles are included; physical models and firmware have not been validated. Native camera ANPR events and ONVIF discovery are not yet implemented. Read-only Modbus TCP single-coil and Shelly RPC status tools are included; relay actuation and automatic barrier opening are disabled. Universal Ethernet relay compatibility is not claimed."}</p>

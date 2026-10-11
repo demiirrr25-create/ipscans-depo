@@ -1,9 +1,9 @@
-Third-party notices for IPScans LPR Pro 0.3.0 beta.
+Third-party notices for IPScans LPR Pro 0.3.1 beta.
 
-Qt / PySide6 6.12.0 is dynamically linked under its applicable LGPL/GPL terms.
-Qt source: https://download.qt.io/official_releases/qt/6.12/6.12.0/
-PySide source: https://code.qt.io/cgit/pyside/pyside-setup.git/tag/?h=v6.12.0
-Python source: https://www.python.org/downloads/release/python-3143/
+Qt / PySide6 6.8.3 is dynamically linked under its applicable LGPL/GPL terms.
+Qt source: https://download.qt.io/official_releases/qt/6.8/6.8.3/
+PySide source: https://code.qt.io/cgit/pyside/pyside-setup.git/tag/?h=v6.8.3
+Python source: https://www.python.org/downloads/release/python-31316/
 PyInstaller bootloader: https://github.com/pyinstaller/pyinstaller/tree/v6.21.0
 OpenCV source: https://github.com/opencv/opencv
 ONNX Runtime source: https://github.com/microsoft/onnxruntime/tree/v1.31.0

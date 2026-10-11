@@ -1,5 +1,5 @@
 import { lprRelease } from "@/content/lpr-release";
 
 export function GET() {
-  return Response.redirect(lprRelease.url || lprRelease.releaseUrl, 307);
+  return new Response(null, { status: 307, headers: { Location: lprRelease.url, "Cache-Control": "no-store" } });
 }

@@ -1,8 +1,8 @@
-# 0.3.0 evaluation beta
+# 0.3.1 evaluation beta
 
 See [release notes](docs/RELEASE_0.3.md) for current features, setup, tests and outstanding limitations. This is not a production barrier-control release.
 
-Build on Windows: `python -m pip install -r requirements-windows.txt`, then `python scripts/build_windows.py`. Run the source UI with `python -c "from lpr.application import main; main()"`.
+Build on Windows with Python 3.13 in a clean virtual environment: `python -m pip install -r requirements-windows.txt`, `python scripts/prepare_notices.py`, then `python scripts/build_windows.py`. The build limits DLL lookup to that environment and Windows system paths. Run the source UI with `python -c "from lpr.application import main; main()"`.
 
 ---
 

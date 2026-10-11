@@ -1,4 +1,6 @@
-# IPScans LPR Pro 0.3.0 — Evaluation beta
+# IPScans LPR Pro 0.3.1 — Evaluation beta
+
+0.3.1 rebuilds the Windows executable with Python 3.13, Qt/PySide6 6.8.3, a clean DLL search path and UPX disabled. The previous frozen build had selected Visual C++ runtime DLLs from an unrelated tool directory. On the build host, the new executable passed Qt GUI startup and 33 source tests. Windows machines without the required Visual C++ runtime may still need Microsoft's current x64 redistributable; field compatibility remains to be checked.
 
 This release is an independent, local Windows evaluation application. It is not a finished commercial access-control system. No physical barrier command is implemented or sent.
 

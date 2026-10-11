@@ -1,0 +1,13 @@
+{
+  "version": "0.3.1-beta",
+  "platform": "Windows 11 x64 build 26200",
+  "python": "3.13.16",
+  "pyside6": "6.8.3",
+  "pyinstaller": "6.21.0",
+  "source_tests": "33 passed",
+  "frozen_worker_doctor": "passed",
+  "frozen_qt_gui_startup": "alive for 8 seconds with offscreen Qt platform",
+  "startup_error_window": false,
+  "unrelated_runtime_dlls_in_build": false,
+  "field_windows_hosts_tested": false
+}

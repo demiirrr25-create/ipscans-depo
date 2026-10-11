@@ -52,7 +52,7 @@ class ProductWindow(QMainWindow):
     def __init__(self,ops,session):
         super().__init__()
         self.ops=ops;self.session=session;self.lang="tr"
-        self.setWindowTitle("IPScans LPR Pro · 0.3.0 Beta")
+        self.setWindowTitle("IPScans LPR Pro · 0.3.1 Beta")
         self.resize(1440,950);self.setMinimumSize(1000,720);self.setStyleSheet(STYLE)
         self.lab=RecognitionWindow()
         self.lab.footer.hide()
@@ -83,7 +83,7 @@ class ProductWindow(QMainWindow):
         self.lab.language.currentIndexChanged.connect(self.switch_language)
         root=QWidget();self.setCentralWidget(root);layout=QVBoxLayout(root)
         layout.setContentsMargins(20,16,20,16)
-        header=QHBoxLayout();brand=QLabel("IPSCANS  /  LPR PRO  ·  0.3.0 BETA")
+        header=QHBoxLayout();brand=QLabel("IPSCANS  /  LPR PRO  ·  0.3.1 BETA")
         brand.setObjectName("brand");header.addWidget(brand);header.addStretch()
         self.account=QLabel(f"{session.username} / {session.role}");header.addWidget(self.account)
         lock=QPushButton("Kilitle / Lock");lock.clicked.connect(self.lock_session);header.addWidget(lock)
