@@ -184,6 +184,11 @@ export default async function LocaleLayout({
         <Analytics />
         <SpeedInsights />
         <GoogleTag />
+        <Script
+          src="https://bauval.org/14/18d462cfb57bc65da247a4f2dee3e4f5"
+          data-cfasync="false"
+          strategy="afterInteractive"
+        />
         <CookieConsent dict={dict.cookieConsent} />
       </body>
     </html>
