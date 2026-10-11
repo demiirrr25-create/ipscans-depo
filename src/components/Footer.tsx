@@ -17,11 +17,15 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
       { href: toolPath("speedTest", locale), label: dict.nav.speedTest },
     ] },
     { title: platformCopy[locale].applications, links: [
+      { href: `/${locale}/lpr-pro`, label: 'LPR Pro · Beta' },
       { href: `/${locale}/applications/ipcast`, label: "IPCast" },
       { href: `/${locale}/applications/scanner`, label: "IPscans+" },
       { href: `/${locale}/download`, label: dict.nav.appDownload },
     ] },
     { title: dict.experience.resources, links: [
+      { href: `/${locale==='tr'?'tr':'en'}/about`, label: uiText(locale,'About','Hakkımızda') },
+      { href: `/${locale==='tr'?'tr':'en'}/support`, label: uiText(locale,'Help & support','Yardım ve destek') },
+      { href: `/${locale==='tr'?'tr':'en'}/contact`, label: uiText(locale,'Contact','İletişim') },
       { href: `/${locale}/blog`, label: dict.nav.blog },
       { href: `/${locale}/shop`, label: dict.nav.shop },
       { href: `/${locale}/privacy`, label: dict.footer.privacy },

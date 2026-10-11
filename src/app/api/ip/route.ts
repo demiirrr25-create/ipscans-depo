@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
   try {
     const res = await fetch(`https://ipwho.is/${encodeURIComponent(target)}`, {
       next: { revalidate: 0 },
+      signal: AbortSignal.timeout(8000),
     });
     const data = await res.json();
 

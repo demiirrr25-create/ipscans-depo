@@ -14,6 +14,11 @@ import zh from './blog-locales/zh.json';
 import { findToolBySlug, toolPath } from '@/lib/tool-routes';
 import type { Locale } from "@/i18n/config";
 import { networkGuides } from './network-guides';
+import { infinityFoundations } from './black-infinity-foundations';
+import { infinityDiscovery } from './black-infinity-discovery';
+import { infinityOperations } from './black-infinity-operations';
+import { infinityModern } from './black-infinity-modern';
+import { infinityTroubleshooting } from './black-infinity-troubleshooting';
 
 export type Post = {
   slug: string;
@@ -54,7 +59,7 @@ const originalPosts: Post[] = [
         <h2>Genel (public) ve yerel (private) IP farkı</h2>
         <ul>
           <li><strong>Genel IP:</strong> İnternet servis sağlayıcın tarafından sana atanan, internette görünen adres.</li>
-          <li><strong>Yerel IP:</strong> Ev veya ofis ağındaki cihazları birbirinden ayıran, yönlendiricinin dağıttığı adres (örn. 192.168.x.x).</li>
+          <li><strong>Yerel IP:</strong> Yerel ağ kapsamında kullanılan adres; DHCP sunucusundan alınabilir veya elle atanabilir (örn. 192.168.x.x).</li>
         </ul>
         <p>Bir web sitesine bağlandığında tarayıcın, hedef sunucunun IP adresini DNS üzerinden çözer, ardından veri paketleri bu adres üzerinden gidip gelir. IP adresini öğrenmek istersen <a href="/tr/ip-sorgulama">IP sorgulama aracımızı</a> kullanabilirsin.</p>
         <h2>IP adresin neden önemli?</h2>
@@ -67,7 +72,7 @@ const originalPosts: Post[] = [
         <h2>Public vs. private IP</h2>
         <ul>
           <li><strong>Public IP:</strong> The address your ISP assigns you that's visible on the internet.</li>
-          <li><strong>Private IP:</strong> The address your router hands out to distinguish devices on your home or office network (e.g. 192.168.x.x).</li>
+          <li><strong>Private IP:</strong> An address used within a private network, assigned through DHCP or configured manually (e.g. 192.168.x.x).</li>
         </ul>
         <p>When you connect to a website, your browser resolves the destination server's IP via DNS, then data packets travel back and forth over that address. Want to check your own? Try our <a href="/en/ip-lookup">IP lookup tool</a>.</p>
         <h2>Why does your IP matter?</h2>
@@ -88,10 +93,10 @@ const originalPosts: Post[] = [
     },
     body: {
       tr: `
-        <p>Yavaş internet birçok farklı sebepten kaynaklanabilir. Aşağıdaki yedi adım, çoğu ev ve ofis ağında gözle görülür bir fark yaratır.</p>
+        <p>Yavaş internet birçok farklı sebepten kaynaklanabilir. Aşağıdaki adımları aynı cihaz ve test koşullarında önce/sonra ölçümüyle değerlendirin; her değişiklik hız artışı sağlamaz.</p>
         <ol>
           <li><strong>Yönlendiriciyi doğru yerleştir:</strong> Merkezi, açık ve yüksek bir konum, sinyal kaybını azaltır.</li>
-          <li><strong>5 GHz bandını kullan:</strong> 2.4 GHz'e göre daha hızlıdır, ancak menzili biraz daha kısadır.</li>
+          <li><strong>5 GHz bandını karşılaştır:</strong> Uyumlu cihaz ve uygun sinyal koşullarında daha yüksek kapasite sağlayabilir. Mesafe, kanal genişliği ve parazit sonucu değiştirir.</li>
           <li><strong>DNS sunucunu değiştir:</strong> <code>1.1.1.1</code> (Cloudflare) veya <code>8.8.8.8</code> (Google) gibi seçenekleri mevcut çözümleyicinle ölçerek karşılaştır. DNS değişikliği indirme bant genişliğini doğrudan artırmaz; kurumsal iç adları etkileyebilir.</li>
           <li><strong>Arka plan trafiğini kapat:</strong> Otomatik güncellemeler ve bulut senkronizasyonu bant genişliğini sessizce tüketir.</li>
           <li><strong>Kablolu bağlantıyı tercih et:</strong> Ethernet, Wi-Fi'nin çoğu zaman ulaşamayacağı stabiliteyi sağlar.</li>
@@ -102,10 +107,10 @@ const originalPosts: Post[] = [
         <p>Kablolu bağlantıda bile testler vaat edilen hızın belirgin şekilde altında kalıyorsa, test saati, cihaz, Ethernet bağlantı hızı ve arka plan trafiğiyle birlikte ISS'ne ölçümleri ilet. Sonuç tek başına arızanın yerini kanıtlamaz.</p>
       `,
       en: `
-        <p>Slow internet can stem from many different factors. The seven steps below make a noticeable difference in most home and office networks.</p>
+        <p>Slow internet can stem from many different factors. Compare the following steps with before-and-after measurements on the same device; no individual change guarantees a speed increase.</p>
         <ol>
           <li><strong>Place your router correctly:</strong> a central, open, elevated spot reduces signal loss.</li>
-          <li><strong>Use the 5 GHz band:</strong> faster than 2.4 GHz, though with slightly shorter range.</li>
+          <li><strong>Use the 5 GHz band:</strong> it can offer more capacity with compatible equipment and suitable signal conditions; distance, interference and channel width affect the result.</li>
           <li><strong>Switch your DNS:</strong> <code>1.1.1.1</code> (Cloudflare) or <code>8.8.8.8</code> (Google) can be compared with your current resolver. Changing DNS does not directly increase download bandwidth and can affect internal name resolution.</li>
           <li><strong>Disable background traffic:</strong> automatic updates and cloud sync quietly eat bandwidth.</li>
           <li><strong>Prefer a wired connection:</strong> Ethernet delivers stability Wi-Fi often can't match.</li>
@@ -130,28 +135,28 @@ const originalPosts: Post[] = [
     },
     body: {
       tr: `
-        <p>VPN (Virtual Private Network), cihazın ile bir VPN sunucusu arasında şifreli bir "tünel" oluşturur. Bu tünel sayesinde internet servis sağlayıcın ve aynı ağdaki diğer kişiler trafiğinin içeriğini göremez.</p>
+        <p>Şifreli bir VPN, cihazın ile VPN sunucusu arasında tünel kurar. Yalnızca bu tünele yönlendirilen trafiğin içeriğini yerel ağdaki gözlemcilerden korur; kapsam kullanılan protokole ve yapılandırmaya bağlıdır.</p>
         <h2>VPN kullanınca IP adresin ne olur?</h2>
-        <p>İnternete VPN sunucusunun IP adresi üzerinden çıkarsın. Ziyaret ettiğin siteler senin gerçek IP'ni değil, VPN sağlayıcının IP'sini görür. Bunu <a href="/tr/ip-sorgulama">IP sorgulama aracımızla</a> VPN açıp kapatarak test edebilirsin.</p>
+        <p>Tünele yönlendirilen web bağlantılarında hedef genellikle VPN çıkış adresini görür. Bölünmüş tünel veya farklı IPv6 politikaları nedeniyle bütün bağlantılar aynı yolu kullanmayabilir. <a href="/tr/ip-sorgulama">IP sorgulama aracımızla</a> yalnızca ilgili isteğin görünen adresini karşılaştırabilirsin.</p>
         <h2>VPN neyi çözer, neyi çözmez?</h2>
         <ul>
           <li><strong>Yardımcı olabilir:</strong> Tünele yönlenen trafiği yerel ağdan gizlemeye ve uzak ağa erişmeye. Bölünmüş tünel, DNS yapılandırması ve sağlayıcı politikaları kapsamı değiştirir; tam anonimlik veya kısıtlamaları aşma garantisi vermez.</li>
           <li><strong>Çözmez:</strong> Giriş yaptığın hesaplar üzerinden seni tanımlanabilir kılan çerezleri, tarayıcı parmak izini veya kötü amaçlı yazılımları.</li>
         </ul>
         <h2>Nasıl bir VPN seçmeli?</h2>
-        <p>"Log tutmuyoruz" iddiası bağımsız denetimle desteklenmiyorsa temkinli yaklaş. Ücretsiz VPN'lerin bir kısmı, gelirini kullanıcı verisini satarak elde eder — bu da amacın tam tersidir.</p>
+        <p>Sağlayıcının veri toplama politikasını, denetim kapsamını ve tünel kesildiğinde istemcinin davranışını incele. Ücretli veya ücretsiz olması tek başına gizlilik kanıtı değildir.</p>
       `,
       en: `
-        <p>A VPN (Virtual Private Network) creates an encrypted "tunnel" between your device and a VPN server. Inside that tunnel, your ISP and anyone else on the same network can't see the contents of your traffic.</p>
+        <p>An encrypted VPN protects traffic routed through its tunnel from local observers. Coverage depends on the protocol, client configuration and routing policy.</p>
         <h2>What happens to your IP when you use a VPN?</h2>
-        <p>You appear to browse the internet from the VPN server's IP address. Sites you visit see the VPN provider's IP, not your real one. You can verify this yourself with our <a href="/en/ip-lookup">IP lookup tool</a> — check before and after connecting.</p>
+        <p>For web connections routed through the tunnel, the destination usually sees the VPN exit address. Split tunneling and IPv6 policies can send other connections along a different path. You can verify this yourself with our <a href="/en/ip-lookup">IP lookup tool</a> — check before and after connecting.</p>
         <h2>What a VPN fixes — and what it doesn't</h2>
         <ul>
           <li><strong>Can help:</strong> protect traffic routed through the tunnel from local observers and provide remote access. Split tunneling, DNS configuration and provider policies affect coverage; anonymity is not guaranteed.</li>
           <li><strong>Doesn't fix:</strong> being identified through logged-in accounts, browser fingerprinting, or malware.</li>
         </ul>
         <h2>How to choose a VPN</h2>
-        <p>Be cautious of "no-logs" claims that aren't backed by an independent audit. Some free VPNs fund themselves by selling user data — which defeats the whole purpose.</p>
+        <p>Review the data collection policy, audit scope and client behavior when the tunnel fails. Whether a service is paid or free is not evidence of privacy by itself.</p>
       `,
     },
   },
@@ -183,7 +188,7 @@ const originalPosts: Post[] = [
           <li><strong>8080 — HTTP-alt:</strong> Genellikle geliştirme ortamlarında veya proxy'lerde kullanılır.</li>
         </ul>
         <h2>Açık bir port ne zaman risk oluşturur?</h2>
-        <p>Bir portun açık olması tek başına güvenlik açığı demek değildir; ancak gereksiz yere dışa açık bırakılmış yönetim portları (ör. 3389, 22) saldırganlar için ilk hedeftir. <a href="/tr/port-kontrol">Port kontrol aracımızla</a> hangi portların dışa açık olduğunu hızlıca görebilirsin.</p>
+        <p>Bir portun açık olması tek başına güvenlik açığı demek değildir. <a href="/tr/port-kontrol">Port kontrol aracımız</a>, IPScans sunucusundan seçili 12 yaygın TCP portuna bağlantı dener. UDP veya bütün portlar taranmaz. Yanıt alınamaması kapalı port, filtreleme veya zaman aşımı olabilir; yerel ağ taraması değildir.</p>
         <h2>Pratik öneri</h2>
         <p>Yönetim amaçlı portları mümkünse VPN arkasında tut, güçlü kimlik doğrulama kullan ve kullanılmayan servisleri kapat.</p>
       `,
@@ -203,7 +208,7 @@ const originalPosts: Post[] = [
           <li><strong>8080 — HTTP-alt:</strong> commonly used in dev environments or proxies.</li>
         </ul>
         <h2>When is an open port a risk?</h2>
-        <p>An open port alone isn't a vulnerability — but unnecessarily exposed management ports (like 3389 or 22) are a top target for attackers. Use our <a href="/en/port-check">port check tool</a> to quickly see what's exposed on a host.</p>
+        <p>An open port alone isn't a vulnerability — but unnecessarily exposed management ports (like 3389 or 22) are a top target for attackers. Use our <a href="/en/port-check">port check tool</a> to test connections from the IPScans server to 12 selected common TCP ports. It does not scan UDP, all ports or your LAN. A failed attempt may indicate filtering or a timeout, not necessarily a closed port.</p>
         <h2>A practical tip</h2>
         <p>Keep management ports behind a VPN where possible, enforce strong authentication, and shut down services you're not using.</p>
       `,
@@ -222,7 +227,13 @@ export function readingMinutes(post: Post, locale: Locale): number {
 
 type Translation = {title:string;excerpt:string;category:string;body:string};
 const translations: Partial<Record<Locale,Record<string,Translation>>> = {en,de,es,fr,it,pt,nl,pl,ru,ar,ja,ko,zh};
-export const posts: Post[] = originalPosts.map(post => {
+const reviewedSources: Record<string,[string,string,string]> = {
+  'ip-adresi-nedir':['https://www.rfc-editor.org/rfc/rfc1918','RFC 1918','ozel-ip-araliklari'],
+  'internet-hizini-artirma':['https://support.apple.com/en-us/102766','Wi-Fi router settings — Apple','hiz-testi-dogru-olcum'],
+  'vpn-nedir':['https://www.rfc-editor.org/rfc/rfc4301','IPsec architecture — RFC 4301','vpn-split-tunneling'],
+  'yaygin-port-numaralari-rehberi':['https://nmap.org/book/man-port-scanning-basics.html','Nmap port states','tcp-udp-port-farki'],
+};
+export const legacyPosts: Post[] = originalPosts.map(post => {
   const result: Post = {...post,title:{...post.title},excerpt:{...post.excerpt},body:{...post.body},categories:{tr:post.category || 'Temeller'}};
   for (const [language, articles] of Object.entries(translations)) {
     const locale=language as Locale, translated=articles[post.slug];
@@ -235,8 +246,20 @@ export const posts: Post[] = originalPosts.map(post => {
       return tool ? `href="${toolPath(tool,locale)}"` : match;
     });
   }
+  const sources=reviewedSources[post.slug];
+  if(sources) for(const locale of Object.keys(result.body) as Locale[]){
+    const [url,label,related]=sources;
+    const target=originalPosts.some(p=>p.slug===related)?related:'tcp-udp-port-farki';
+    result.body[locale]+=`<h2>${locale==='tr'?'Kaynak ve güncellik':'References'}</h2><p><a href="${url}">${label}</a>. ${locale==='tr'?'Teknik gözden geçirme: 11 Ekim 2026.':locale==='en'?'Technical review: 11 October 2026.':''}</p><p><a href="/${locale}/blog/${target}">${locale==='tr'?'İlgili teknik rehber':localizedPostText(originalPosts.find(p=>p.slug===target)!.title,locale)}</a></p>`;
+  }
   return result;
 });
+export const posts: Post[] = [...legacyPosts,...infinityFoundations,...infinityDiscovery,...infinityOperations,...infinityModern,...infinityTroubleshooting];
 export function postCategory(post:Post,locale:Locale):string {
   return post.categories?.[locale] || post.category || 'Essentials';
+}
+
+export function postTags(post:Post,locale:Locale):string[] {
+  const text=`${localizedPostText(post.title,locale)} ${localizedPostText(post.excerpt,locale)}`;
+  return ['IPv6','IPv4','DNS','DHCP','VLAN','VPN','ONVIF','TCP','UDP','Wi-Fi','QUIC','SNMP','Windows'].filter(tag=>text.toLowerCase().includes(tag.toLowerCase())).slice(0,4);
 }

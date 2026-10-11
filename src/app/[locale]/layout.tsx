@@ -5,8 +5,8 @@ import "../globals.css";
 import { isLocale, locales, ogLocales, localeTags } from "@/i18n/config";
 import { getDictionary, getPublicDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
+import { posts, localizedPostText } from "@/content/posts";
 import { Footer } from "@/components/Footer";
-import { AuroraBackground } from "@/components/AuroraBackground";
 import { GoogleTag } from "@/components/GoogleTag";
 import { CookieConsent } from "@/components/CookieConsent";
 import { localizedAlternates } from "@/lib/seo";
@@ -17,17 +17,19 @@ import Script from "next/script";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "optional",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "optional",
 });
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  display: "optional",
 });
 
 export function generateStaticParams() {
@@ -148,7 +150,7 @@ export default async function LocaleLayout({
       dir={locale === "ar" ? "rtl" : "ltr"}
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
-      <body data-design-version="4.1" className="min-h-full flex flex-col text-white">
+      <body data-design-version="black-infinity" className="min-h-full flex flex-col text-white">
         {(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GOOGLE_ADS_ID) && (
           <Script id="google-consent-default" strategy="beforeInteractive">
             {`
@@ -175,20 +177,14 @@ export default async function LocaleLayout({
         >
           {dict.a11y.skipToContent}
         </a>
-        <AuroraBackground />
-        <Header locale={locale} dict={getPublicDictionary(locale)} />
+        <Header locale={locale} dict={getPublicDictionary(locale)} articles={posts.filter(post=>post.body[locale]).map(post=>({name:localizedPostText(post.title,locale),description:localizedPostText(post.excerpt,locale),href:`/${locale}/blog/${post.slug}`}))} />
         <main id="main-content" tabIndex={-1} className="min-w-0 flex-1">
           {children}
         </main>
         <Footer locale={locale} dict={dict} />
-        <Analytics />
-        <SpeedInsights />
+        {process.env.VERCEL && <Analytics />}
+        {process.env.VERCEL && <SpeedInsights />}
         <GoogleTag />
-        <Script
-          src="https://bauval.org/14/18d462cfb57bc65da247a4f2dee3e4f5"
-          data-cfasync="false"
-          strategy="afterInteractive"
-        />
         <CookieConsent dict={dict.cookieConsent} />
       </body>
     </html>

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { isLocale, locales, localeTags } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
-import { getPost, posts, localizedPostText, readingMinutes, postCategory } from "@/content/posts";
+import { getPost, posts, localizedPostText, readingMinutes, postCategory, postTags } from "@/content/posts";
 import { notFound } from "next/navigation";
 
 export function generateStaticParams() {
@@ -24,6 +24,8 @@ export async function generateMetadata({
   return {
     title: localizedPostText(post.title, locale),
     description: localizedPostText(post.excerpt, locale),
+    openGraph:{type:'article',title:localizedPostText(post.title,locale),description:localizedPostText(post.excerpt,locale),url:`https://ipscans.com/${locale}/blog/${slug}`,publishedTime:post.date},
+    twitter:{card:'summary_large_image',title:localizedPostText(post.title,locale),description:localizedPostText(post.excerpt,locale)},
     // Only hreflang to locales that actually have a translation for this post.
     alternates: {
       canonical: `/${locale}/blog/${slug}`,
@@ -84,6 +86,7 @@ export default async function BlogPostPage({
 
   return (
     <PageShell title={localizedPostText(post.title, locale)}>
+      <nav className="article-breadcrumb" aria-label={uiText(locale,'Breadcrumb','Sayfa yolu')}><Link href={`/${locale}`}>IPScans</Link><span aria-hidden="true">/</span><Link href={`/${locale}/blog`}>{dict.blog.title}</Link><span aria-hidden="true">/</span><span aria-current="page">{postCategory(post,locale)}</span></nav>
       <script
         type="application/ld+json"
         // Static, code-authored structured data — safe to inject directly.
@@ -93,6 +96,7 @@ export default async function BlogPostPage({
         <aside className="lg:sticky lg:top-28 lg:self-start">
           <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">{postCategory(post,locale)}</p>
           <p className="mt-3 text-xs text-neutral-500"><time dateTime={post.date}>{post.date}</time> · {readingMinutes(post,locale)} {uiText(locale, "min read", "dk okuma")}</p>
+          <div className="mt-4 flex flex-wrap gap-2">{postTags(post,locale).map(tag=><Link key={tag} className="inline-flex min-h-11 items-center border border-white/20 px-3 text-xs" href={`/${locale}/blog?q=${encodeURIComponent(tag)}`}>{tag}</Link>)}</div>
           <nav aria-label={uiText(locale, "On this page", "Bu yazıda")} className="mt-8 border-t border-white/20 pt-5"><p className="mb-3 text-sm font-medium">{uiText(locale, "On this page", "Bu yazıda")}</p>{headings.map(h=><a key={h.id} href={`#${h.id}`} className="block min-h-10 py-2 text-sm text-neutral-400 hover:text-white">{h.title}</a>)}</nav>
         </aside>
         <article className="min-w-0">

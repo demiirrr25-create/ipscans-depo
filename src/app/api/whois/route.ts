@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         "User-Agent": "ipscans.com WHOIS lookup (+https://ipscans.com)",
       },
       redirect: "follow",
+      signal: AbortSignal.timeout(8000),
       next: { revalidate: 0 },
     });
 

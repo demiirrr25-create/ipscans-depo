@@ -90,7 +90,7 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
               </Link>
               {"download" in item && (
                 <a href={item.download} aria-label={`${item.name} — ${copy.downloadApp}`} className="btn-ghost ms-auto inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-all hover:bg-white hover:text-black">
-                  {copy.downloadApp} ↓
+                  {item.id==='lpr-pro' ? uiText(locale,'Source ZIP','Kaynak ZIP') : copy.downloadApp} ↓
                 </a>
               )}
             </div>

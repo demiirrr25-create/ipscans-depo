@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
+import { uiText } from '@/i18n/ui';
 
 type PortResult = {
   host: string;
@@ -73,6 +74,7 @@ export function PortCheckForm({
       </form>
 
       <p className="mt-3 text-xs text-neutral-400">{dict.disclaimer}</p>
+      <p className="mt-2 text-xs leading-relaxed text-neutral-400">{uiText(locale,'Tests 12 selected TCP ports from the IPScans server. No reply can mean a closed port, filtering or a timeout; this does not scan your local network.','IPScans sunucusundan seçili 12 TCP portu kontrol edilir. Yanıt alınamaması kapalı port, filtreleme veya zaman aşımı olabilir; yerel ağınız taranmaz.')}</p>
 
       {error && (
         <p id="PortCheckForm-error" role="alert" className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
@@ -106,7 +108,7 @@ export function PortCheckForm({
                       p.open ? "text-white" : "text-neutral-500"
                     }`}
                   >
-                    {p.open ? dict.open : dict.closed}
+                    {p.open ? dict.open : uiText(locale,'No reply','Yanıt yok')}
                   </span>
                 </div>
                 <div className="text-xs text-neutral-400">{p.name}</div>

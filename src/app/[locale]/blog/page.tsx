@@ -12,10 +12,13 @@ export async function generateMetadata({params}:{params:Promise<{locale:string}>
   const t=getDictionary(locale).blog;
   return {title:t.title,description:t.subtitle,alternates:{canonical:`/${locale}/blog`,languages:{...Object.fromEntries(locales.map(l=>[l,`/${l}/blog`])),'x-default':'/en/blog'}},robots:posts.some(p=>p.body[locale])?undefined:{index:false,follow:true}};
 }
-export default async function BlogPage({params}:{params:Promise<{locale:string}>}) {
+export default async function BlogPage({params,searchParams}:{params:Promise<{locale:string}>;searchParams:Promise<{page?:string;q?:string}>}) {
   const {locale}=await params;
   if(!isLocale(locale))notFound();
   const dict=getDictionary(locale);
-  const items=posts.filter(p=>p.body[locale]).map(p=>({slug:p.slug,title:localizedPostText(p.title,locale),excerpt:localizedPostText(p.excerpt,locale),category:postCategory(p,locale),date:p.date,minutes:readingMinutes(p,locale)}));
-  return <PageShell title={dict.blog.title} subtitle={dict.blog.subtitle}>{items.length?<BlogExplorer items={items} locale={locale}/>:<p className="text-neutral-400">{dict.blog.empty}</p>}</PageShell>;
+  const requested=Number((await searchParams).page||1);
+  const q=(await searchParams).q?.slice(0,120)||'';
+  const page=Number.isSafeInteger(requested)&&requested>0?requested:1;
+  const items=posts.filter(p=>p.body[locale]).sort((a,b)=>b.date.localeCompare(a.date)).map(p=>({slug:p.slug,title:localizedPostText(p.title,locale),excerpt:localizedPostText(p.excerpt,locale),category:postCategory(p,locale),date:p.date,minutes:readingMinutes(p,locale)}));
+  return <PageShell title={dict.blog.title} subtitle={dict.blog.subtitle}>{items.length?<BlogExplorer key={`${page}-${q}`} items={items} locale={locale} initialPage={page} initialQuery={q}/>:<p className="text-neutral-400">{dict.blog.empty}</p>}</PageShell>;
 }

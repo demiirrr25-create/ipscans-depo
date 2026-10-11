@@ -11,6 +11,7 @@ export function SpeedTest({dict, locale}: {dict: Dictionary['speedTest']; locale
   const [trace, setTrace] = useState<Trace[]>([]);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState('');
+  const [history,setHistory]=useState<SpeedResult[]>([]);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   async function run() {
@@ -25,6 +26,7 @@ export function SpeedTest({dict, locale}: {dict: Dictionary['speedTest']; locale
         if (value.trace) setTrace(points => [...points.slice(-79), value.trace!]);
       });
       setResult(measured);
+      setHistory(previous=>[measured,...previous].slice(0,5));
     } catch {
       setNotice(session.signal.aborted ? (uiText(locale, "Test stopped. Incomplete results were not published.", "Test durduruldu. Eksik sonuç yayımlanmadı."))
         : (uiText(locale, "Insufficient measurements. Check your connection and try again.", "Yeterli ölçüm alınamadı. Bağlantıyı kontrol edip yeniden deneyin.")));
@@ -49,6 +51,7 @@ export function SpeedTest({dict, locale}: {dict: Dictionary['speedTest']; locale
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 px-6 py-5 font-mono text-xs text-neutral-300">
       <span>IPSCANS / {uiText(locale, "CONNECTION LAB", "BAĞLANTI LABORATUVARI")}</span><span>{uiText(locale, "Cloudflare edge · HTTPS measurement", "Cloudflare uç ağı · HTTPS ölçümü")}</span>
     </div>
+    <ol className="speed-stages" aria-label={uiText(locale,'Test progress','Test ilerlemesi')}>{(['latency','download','upload'] as const).map((phase,index)=><li key={phase} aria-current={running&&update?.phase===phase?'step':undefined}><span>0{index+1}</span>{phase==='latency'?uiText(locale,'HTTP latency','HTTP gecikmesi'):phase==='download'?dict.download:dict.upload}<span aria-hidden="true">{result?'✓':running&&update?.phase===phase?'●':'—'}</span></li>)}</ol>
     <div className="grid lg:grid-cols-[1.1fr_1fr]">
       <div className="relative grid place-items-center border-b border-white/15 p-6 sm:p-10 lg:border-e lg:border-b-0">
         <div className="relative aspect-square w-full max-w-80">
@@ -59,7 +62,7 @@ export function SpeedTest({dict, locale}: {dict: Dictionary['speedTest']; locale
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="mb-4 font-mono text-xs uppercase tracking-widest text-neutral-400">{running ? label : result ? dict.download : uiText(locale, "READY", "HAZIR")}</span>
-            <span className="text-6xl font-semibold tracking-tighter tabular-nums sm:text-7xl">{value && update?.phase !== 'latency' ? value.toFixed(1) : '—'}</span>
+            <span className="text-6xl font-semibold tracking-tighter tabular-nums sm:text-7xl">{value != null && (!running || update?.phase !== 'latency') ? value.toFixed(1) : '—'}</span>
             <span className="mt-3 font-mono text-xs text-neutral-400">{running && update?.phase==='latency'?'HTTP / ms':'Mbps'}</span>
           </div>
         </div>
@@ -85,7 +88,7 @@ export function SpeedTest({dict, locale}: {dict: Dictionary['speedTest']; locale
       </div>
     </div>
     {result && <div className="border-t border-white/15 p-6 sm:p-10">
-      <h3 className="text-xl font-semibold">{uiText(locale, "Connection summary", "Bağlantı özeti")}</h3>
+      <h2 className="text-xl font-semibold">{uiText(locale, "Connection summary", "Bağlantı özeti")}</h2>
       <p className="mt-3 text-neutral-300">{Math.max(result.loadedDownload??0,result.loadedUpload??0)-result.idle>100
         ? (uiText(locale, "Latency rose substantially during transfer. Heavy transfers may affect calls.", "Aktarım sırasında gecikme belirgin arttı. Yoğun aktarım, görüntülü görüşmeleri etkileyebilir."))
         : (uiText(locale, "Read speed and latency together; one test does not describe every network condition.", "Hız ve gecikme değerlerini birlikte değerlendirin; tek test bağlantının her zaman aynı davranacağını göstermez."))}</p>
@@ -93,6 +96,7 @@ export function SpeedTest({dict, locale}: {dict: Dictionary['speedTest']; locale
       {result.capped && <p className="mt-3 text-sm">{uiText(locale, "Data limit reached; the measurement window was shortened.", "Veri sınırına ulaşıldı; ölçüm süresi kısaldı.")}</p>}
       <div className="mt-6 flex flex-wrap gap-3"><button onClick={share} className="btn-primary min-h-11 rounded-full px-5">{uiText(locale, "Copy result", "Sonucu kopyala")}</button><button onClick={exportResult} className="btn-ghost min-h-11 rounded-full px-5">JSON ↓</button></div>
     </div>}
+    {history.length>0&&<section className="border-t border-white/15 p-6 sm:px-10"><div className="flex items-center justify-between gap-4"><h2 className="text-lg">{uiText(locale,'This session','Bu oturum')}</h2><button type="button" onClick={()=>setHistory([])} className="infinity-text-link">{uiText(locale,'Clear history','Geçmişi temizle')}</button></div><p className="mb-4 text-xs text-neutral-400">{uiText(locale,'Only in memory. Closing or reloading this page clears the history.','Yalnızca bellekte tutulur. Sayfayı kapatmak veya yenilemek geçmişi siler.')}</p><ol>{history.map(entry=><li key={entry.timestamp} className="flex flex-wrap justify-between gap-3 border-t border-white/10 py-4 font-mono text-xs"><time dateTime={entry.timestamp}>{new Date(entry.timestamp).toLocaleTimeString(locale)}</time><span>↓ {fmt(entry.download,'Mbps')}</span><span>↑ {fmt(entry.upload,'Mbps')}</span><span>HTTP {fmt(entry.idle)}</span></li>)}</ol></section>}
     <details className="border-t border-white/15 p-6 text-sm text-neutral-300 sm:px-10" open>
       <summary className="cursor-pointer font-semibold text-white">{uiText(locale, "How is this measured?", "Nasıl ölçülüyor?")}</summary>
       <p className="mt-4 leading-relaxed">{uiText(locale, "Real HTTPS traffic; four parallel connections, 1 second warmup and up to 8 seconds measurement per direction. 256 MB data cap per direction. Latency is HTTP round-trip time; jitter is the mean successive sample difference. Cloudflare anycast routing selects the edge; there is no manual city selection.", "Gerçek HTTPS trafiği; dört paralel bağlantı, her aktarımda 1 saniye ısınma ve en çok 8 saniye ölçüm. Her yönde 256 MB veri sınırı. Gecikme HTTP gidiş-dönüş süresidir; jitter ardışık örnek farklarının ortalamasıdır. Cloudflare anycast yönlendirmesi uç noktayı seçer; belirli şehir seçimi yoktur.")}</p>

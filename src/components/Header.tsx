@@ -11,7 +11,7 @@ import { Logo } from "./Logo";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 import { applications, platformCopy } from "@/content/applications";
 
-export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionary }) {
+export function Header({ locale, dict, articles }: { locale: Locale; dict: PublicDictionary; articles: {name:string;description:string;href:string}[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobile, setMobile] = useState(false);
@@ -44,6 +44,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
   }, []);
 
   const items = [
+    {name:'IPScans LPR Pro · Beta',description:uiText(locale,'Local plate recognition and record review','Yerel plaka tanıma ve kayıt inceleme'),href:`/${locale}/lpr-pro`,group:platformCopy[locale].applications,icon:'/lpr-mark.svg'},
     ...applications.map((app) => ({
       name: app.name, description: app.description[locale],
       href: `/${locale}/applications/${app.id}`, group: platformCopy[locale].applications,
@@ -54,8 +55,10 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
       href: toolPath(key, locale), group: dict.experience.networkTools, icon: "",
     })),
   ];
+  const searchable = [...items,...articles.map(article=>({...article,group:dict.nav.blog,icon:''})),...(['about','support','contact'] as const).map(page=>({name:page==='about'?uiText(locale,'About','Hakkımızda'):page==='support'?uiText(locale,'Help & support','Yardım ve destek'):uiText(locale,'Contact','İletişim'),description:'IPScans',href:`/${locale}/${page}`,group:dict.experience.resources,icon:''}))];
+  const normalize = (text:string) => text.toLocaleLowerCase(locale).normalize('NFKD').replace(/\p{M}/gu,'').replaceAll('ı','i');
   const results = query.trim()
-    ? items.filter((item) => `${item.name} ${item.description} ${item.group}`.toLocaleLowerCase(locale).includes(query.trim().toLocaleLowerCase(locale))).slice(0, 8)
+    ? searchable.filter((item) => normalize(`${item.name} ${item.description} ${item.group}`).includes(normalize(query.trim()))).slice(0, 8)
     : items.slice(0, 6);
   const nav = [
     { href: `/${locale}`, name: dict.nav.home },
@@ -114,7 +117,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
                 onFocus={() => setSearchOpen(true)}
                 onChange={(event) => { setQuery(event.target.value); setActive(0); setSearchOpen(true); }}
                 onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") { event.preventDefault(); setSearchOpen(true); setActive((index) => Math.min(index + 1, results.length - 1)); }
+                  if (event.key === "ArrowDown") { event.preventDefault(); setSearchOpen(true); setActive((index) => Math.max(0, Math.min(index + 1, results.length - 1))); }
                   if (event.key === "ArrowUp") { event.preventDefault(); setActive((index) => Math.max(0, index - 1)); }
                   if (event.key === "Enter" && searchOpen && results[active]) { event.preventDefault(); select(results[active].href); }
                 }}
@@ -126,6 +129,7 @@ export function Header({ locale, dict }: { locale: Locale; dict: PublicDictionar
               className="search-results absolute end-0 top-full mt-2 max-h-[min(65dvh,520px)] w-[min(430px,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-white/20 bg-neutral-950 p-2 shadow-2xl">
               {results.length ? results.map((item, index) => (
                 <button key={item.href} id={`site-result-${index}`} role="option" aria-selected={active === index}
+                  tabIndex={-1}
                   type="button" onMouseEnter={() => setActive(index)} onClick={() => select(item.href)}
                   className="flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2 text-start hover:bg-white/10 aria-selected:bg-white/10">
                   <span aria-hidden="true" className="text-lg text-neutral-400">{item.icon ? "◈" : "⌁"}</span>

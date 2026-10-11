@@ -18,7 +18,7 @@ function load(file){
  },mod,mod.exports);
  return mod.exports;
 }
-const {posts,postCategory}=load(path.join(root,'src/content/posts.ts'));
+const {legacyPosts:posts,posts:allPosts,postCategory}=load(path.join(root,'src/content/posts.ts'));
 const {locales}=load(path.join(root,'src/i18n/config.ts'));
 const links=html=>[...html.matchAll(/href="(https:[^"]+)"/g)].map(m=>m[1]);
 const codes=html=>[...html.matchAll(/<code>(.*?)<\/code>/gs)].map(m=>m[1]);
@@ -49,11 +49,11 @@ test('public UI, legal pages and application details cover every locale',()=>{
   assert.ok(ipcastProductCopy[locale]?.faq.length>=3,locale);
  }
 });
-test('sitemap exposes 756 article routes with matching language alternates',()=>{
+test('sitemap preserves legacy translations and exposes only authored article languages',()=>{
  const sitemap=load(path.join(root,'src/app/sitemap.ts')).default();
  const articles=sitemap.filter(p=>p.url.includes('/blog/'));
- assert.equal(articles.length,54*14);
- for(const page of articles)assert.equal(Object.keys(page.alternates.languages).length,15);
+ assert.equal(articles.length,allPosts.reduce((sum,p)=>sum+locales.filter(l=>p.body[l]).length,0));
+ for(const page of articles){const post=allPosts.find(p=>page.url.endsWith('/blog/'+p.slug));assert.ok(post);assert.equal(Object.keys(page.alternates.languages).length,Object.keys(post.body).length+1);}
  for(const locale of locales)for(const slug of ['blog','privacy','terms']){
   const entry=sitemap.find(p=>p.url===`https://ipscans.com/${locale}/${slug}`);
   assert.equal(Object.keys(entry.alternates.languages).length,15,`${locale}/${slug}`);

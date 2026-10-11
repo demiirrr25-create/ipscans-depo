@@ -7,7 +7,7 @@ import { isLocale, locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { applications, platformCopy } from "@/content/applications";
 import { scannerCopy } from "@/content/scanner";
-import { ScannerV4 } from "@/components/ScannerV4";
+import { ProductPreview } from "@/components/ProductPreview";
 import { localizedAlternates } from "@/lib/seo";
 
 type Params = { params: Promise<{ locale: string; id: string }> };
@@ -59,50 +59,37 @@ export default async function ApplicationDetail({ params }: Params) {
     : scanner.features;
   const intro = app.id === "ipcast" ? dict.ipcast.subtitle
     : scanner.intro;
-  const ProductHeading = app.id === "scanner" ? "h2" : "h1";
+
+  const structuredData={'@context':'https://schema.org','@graph':[{'@type':'SoftwareApplication',name:app.name,description:app.description[locale],softwareVersion:app.version,operatingSystem:app.platform,applicationCategory:'NetworkingApplication',downloadUrl:app.downloadUrl,url:`https://ipscans.com/${locale}/applications/${app.id}`},{'@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'IPScans',item:`https://ipscans.com/${locale}`},{'@type':'ListItem',position:2,name:copy.applications,item:`https://ipscans.com/${locale}/download`},{'@type':'ListItem',position:3,name:app.name,item:`https://ipscans.com/${locale}/applications/${app.id}`}]}]};
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:py-20">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(structuredData).replaceAll('<','\\u003c')}}/>
       <Link href={`/${locale}/download`} className="text-sm text-neutral-300 underline underline-offset-4 hover:text-white">← {copy.applications}</Link>
-      {app.id === 'scanner' && <ScannerV4 locale={locale} primary />}
-      <div className="mt-10 grid gap-10 border-y border-white/15 py-12 lg:grid-cols-[1.3fr_1fr] lg:gap-20 lg:py-20">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">IPScans / {app.name} / Windows</p>
-          <Image src={app.icon} alt="" width={96} height={96} className="mt-8 rounded-2xl" />
-          <ProductHeading className="mt-8 font-[family-name:var(--font-display)] text-[clamp(3.5rem,8vw,7rem)] leading-none font-semibold tracking-[-0.07em]">{app.name}<span className="text-neutral-500">.</span></ProductHeading>
-          <p className="mt-7 max-w-xl text-xl leading-relaxed text-neutral-300">{app.description[locale]}</p>
-          <p className="mt-5 max-w-xl leading-relaxed text-neutral-400">{intro}</p>
-          <div className="mt-9 flex flex-wrap items-center gap-4">
-            <a href={app.downloadUrl} className="btn-primary inline-flex min-h-12 items-center rounded-lg px-6 text-sm font-semibold">{copy.downloadApp} ↓</a>
-            {app.id !== "scanner" && <Link href={`/${locale}${app.detailPath}`} className="btn-ghost inline-flex min-h-12 items-center rounded-lg px-6 text-sm">{copy.details} ↗</Link>}
-          </div>
-          <section className="mt-12 max-w-xl border-t border-white/15 pt-7">
-            <h2 className="text-lg font-semibold">{install.title}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-neutral-300">{install.instructions}</p>
-            <a href={app.portableUrl} className="mt-5 inline-flex min-h-11 items-center text-sm text-neutral-300 underline underline-offset-4 hover:text-white">{install.portable} ↗</a>
-          </section>
+
+      <header className="product-detail-hero">
+        <div className="flex items-center gap-4 font-mono text-xs text-neutral-400"><Image src={app.icon} alt="" width={48} height={48}/><span>IPSCANS / {app.platform} / v{app.version}</span></div>
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_1fr]">
+          <h1 className="font-[family-name:var(--font-display)] text-[clamp(4rem,10vw,9rem)] font-medium leading-none tracking-[-.07em]">{app.name}<span className="text-neutral-500">.</span></h1>
+          <div className="self-end"><p className="text-xl leading-relaxed text-neutral-200 sm:text-2xl">{app.description[locale]}</p><p className="mt-4 leading-relaxed text-neutral-400">{intro}</p></div>
         </div>
-        <aside className="border-t border-white/15 pt-8 lg:border-s lg:border-t-0 lg:ps-10 lg:pt-0">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold">{app.name} / {copy.details}</h2>
-          <ul className="mt-7 space-y-4">
-            {features.map((feature) => <li key={feature} className="flex gap-4 border-b border-white/10 pb-4 text-sm leading-relaxed text-neutral-300"><span aria-hidden="true" className="text-white">↗</span>{feature}</li>)}
-          </ul>
-          <dl className="mt-8 grid grid-cols-2 gap-5 font-mono text-xs">
-            <div><dt className="text-neutral-400">{copy.platform}</dt><dd className="mt-2">{app.platform}</dd></div>
-            <div><dt className="text-neutral-400">{copy.version}</dt><dd className="mt-2">{app.version}</dd></div>
-            <div><dt className="text-neutral-400">{copy.size}</dt><dd className="mt-2">{(app.installerBytes / 1024 / 1024).toFixed(1)} MiB</dd></div>
-          </dl>
-          <dl className="mt-6 font-mono text-xs"><dt className="text-neutral-400">{copy.checksum} · {uiText(locale, "Windows installer", "Windows kurulum paketi")}</dt><dd className="mt-2 break-all select-all text-neutral-200">{app.installerSha256}</dd></dl>
-          {app.id === "scanner" && <>
-            <dl className="mt-6 font-mono text-xs">
-              <dt className="text-neutral-400">{copy.size} · {uiText(locale, "Portable EXE", "Taşınabilir EXE")}</dt>
-              <dd className="mt-2">{(app.portableBytes / 1024 / 1024).toFixed(1)} MiB</dd>
-              <dt className="mt-4 text-neutral-400">{copy.checksum} · {uiText(locale, "Portable EXE", "Taşınabilir EXE")}</dt>
-              <dd className="mt-2 break-all select-all text-neutral-200">{app.portableSha256}</dd>
-            </dl>
-            <a href={app.releaseUrl} className="mt-6 inline-flex min-h-11 items-center text-sm text-neutral-300 underline underline-offset-4 hover:text-white">{scanner.releaseNotes} ↗</a>
-          </>}
-          <p className="mt-8 text-sm leading-relaxed text-neutral-400">{app.id === "scanner" ? scanner.limitations
-            : dict.ipcast.note}</p>
+        <div className="mt-10 flex flex-wrap gap-4"><a href={app.downloadUrl} className="btn-primary inline-flex min-h-14 items-center gap-8 px-7 text-sm font-semibold">{copy.downloadApp} <span aria-hidden="true">↓</span></a><a href={app.portableUrl} className="infinity-text-link">{install.portable} ↗</a></div>
+      </header>
+      {app.id==='scanner'&&<div className="py-12"><ProductPreview locale={locale}/></div>}
+      <div className="product-detail-body">
+        <section>
+          <p className="font-mono text-xs text-neutral-400">01 / {copy.details}</p>
+          <h2 className="mt-5 text-3xl tracking-tight">{app.name}</h2>
+          <ol className="mt-8">{features.map((feature,index)=><li key={feature} className="grid grid-cols-[32px_1fr] gap-5 border-t border-white/15 py-6"><span className="font-mono text-xs text-neutral-500">{String(index+1).padStart(2,'0')}</span><p className="leading-relaxed text-neutral-300">{feature}</p></li>)}</ol>
+          {app.id!=='scanner'&&<Link href={'/'+locale+app.detailPath} className="infinity-text-link mt-6">{copy.details} ↗</Link>}
+          <p className="mt-8 border-s border-white/40 ps-5 text-sm leading-relaxed text-neutral-400">{app.id==='scanner'?scanner.limitations:dict.ipcast.note}</p>
+        </section>
+        <aside className="product-release-panel">
+          <p className="font-mono text-xs text-neutral-400">02 / {copy.version}</p>
+          <p className="mt-4 text-5xl tracking-tighter">{app.version}</p>
+          <dl className="mt-8 grid grid-cols-2 gap-6 text-sm"><div><dt className="text-neutral-400">{copy.platform}</dt><dd className="mt-2">{app.platform}</dd></div><div><dt className="text-neutral-400">{copy.size}</dt><dd className="mt-2">{(app.installerBytes/1024/1024).toFixed(1)} MiB</dd></div></dl>
+          <details className="mt-7 border-y border-white/15 py-4"><summary className="min-h-11 text-sm">{copy.checksum}</summary><p className="mt-4 break-all font-mono text-xs leading-relaxed text-neutral-300">{app.installerSha256}</p>{app.id==='scanner'&&<><p className="mt-5 text-xs text-neutral-400">{install.portable} · {(app.portableBytes/1024/1024).toFixed(1)} MiB</p><p className="mt-2 break-all font-mono text-xs leading-relaxed text-neutral-300">{app.portableSha256}</p></>}</details>
+          <a href={app.releaseUrl} className="mt-5 infinity-text-link">{uiText(locale,'Release notes','Sürüm notları')} ↗</a>
+          <section className="mt-10 border-t border-white/15 pt-7"><h2 className="text-xl">{install.title}</h2><p className="mt-4 text-sm leading-relaxed text-neutral-300">{install.instructions}</p><p className="mt-4 text-sm leading-relaxed text-neutral-400">{uiText(locale,'Your browser controls where the download is saved. Find the file in its downloads list before running the installer.','İndirme konumunu tarayıcınız belirler. Kurulumu başlatmadan önce dosyayı tarayıcınızın indirmeler listesinde bulun.')}</p></section>
         </aside>
       </div>
       {app.id === "scanner" && <section className="py-16 sm:py-24" aria-labelledby="map-preview-title">

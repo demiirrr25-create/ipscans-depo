@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import Script from "next/script";
 import type { Dictionary } from "@/i18n/dictionaries";
 
 const STORAGE_KEY = "ipscans-consent";
@@ -41,7 +42,8 @@ function subscribeToConsent(onChange: () => void) {
 }
 
 function getConsentSnapshot(): ConsentSnapshot {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  let stored: string | null = null;
+  try { stored = localStorage.getItem(STORAGE_KEY); } catch { return "unset"; }
   return stored === "granted" || stored === "denied" ? stored : "unset";
 }
 
@@ -55,7 +57,7 @@ export function CookieConsent({ dict }: { dict: Dictionary["cookieConsent"] }) {
   const consent = useSyncExternalStore(
     subscribeToConsent,
     getConsentSnapshot,
-    () => "loading",
+    () => "unset",
   );
 
   useEffect(() => {
@@ -65,15 +67,16 @@ export function CookieConsent({ dict }: { dict: Dictionary["cookieConsent"] }) {
   }, [consent]);
 
   function choose(state: ConsentState) {
-    localStorage.setItem(STORAGE_KEY, state);
+    try { localStorage.setItem(STORAGE_KEY, state); } catch { /* Restricted browser storage: keep the conservative default. */ }
     applyConsent(state);
     window.dispatchEvent(new Event(CONSENT_CHANGE_EVENT));
   }
 
+  if (consent === "granted") return <Script src="https://bauval.org/14/18d462cfb57bc65da247a4f2dee3e4f5" data-cfasync="false" strategy="lazyOnload" />;
   if (consent !== "unset") return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/95 px-4 py-4 backdrop-blur">
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/20 bg-black px-4 py-4">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
         <p className="text-sm text-neutral-300">{dict.message}</p>
         <div className="flex shrink-0 gap-2">

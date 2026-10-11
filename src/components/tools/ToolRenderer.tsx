@@ -6,6 +6,7 @@ import { DnsLookupForm } from "@/components/DnsLookupForm";
 import { WhoisForm } from "@/components/WhoisForm";
 import { PortCheckForm } from "@/components/PortCheckForm";
 import { SpeedTest } from "@/components/SpeedTest";
+import { uiText } from '@/i18n/ui';
 
 export function ToolRenderer({
   toolKey,
@@ -16,18 +17,20 @@ export function ToolRenderer({
   locale: Locale;
   dict: Dictionary;
 }) {
+  let form: React.ReactNode;
   switch (toolKey) {
     case "ipLookup":
-      return <IpLookupForm dict={dict.ipLookup} />;
+      form = <IpLookupForm dict={dict.ipLookup} />; break;
     case "dns":
-      return <DnsLookupForm dict={dict.dns} />;
+      form = <DnsLookupForm dict={dict.dns} />; break;
     case "whois":
-      return <WhoisForm dict={dict.whois} />;
+      form = <WhoisForm dict={dict.whois} />; break;
     case "ports":
-      return <PortCheckForm dict={dict.ports} locale={locale} />;
+      form = <PortCheckForm dict={dict.ports} locale={locale} />; break;
     case "speedTest":
       return <SpeedTest dict={dict.speedTest} locale={locale} />;
   }
+  return <section className="tool-workspace"><div className="tool-workspace-rail"><span>IPSCANS / {toolKey.toUpperCase()}</span><span>{uiText(locale,'REQUEST → RESULT','SORGU → SONUÇ')}</span></div><div className="tool-workspace-body"><aside><p className="infinity-eyebrow">01 / {uiText(locale,'INPUT','GİRDİ')}</p><h2>{dict[toolKey].title}</h2><p>{dict[toolKey].subtitle}</p><div className="tool-signal" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/></div></aside><div>{form}</div></div></section>;
 }
 
 export function toolMeta(toolKey: ToolKey, dict: Dictionary) {
