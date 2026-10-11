@@ -1,0 +1,8 @@
+{
+  "real_subprocess_inference": true,
+  "recognized": "34ABC123",
+  "input": "synthetic",
+  "language_switch": true,
+  "cancellation": true,
+  "mode": "Qt offscreen smoke test"
+}
