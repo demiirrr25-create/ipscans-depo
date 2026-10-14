@@ -13,14 +13,16 @@ class CameraConfig:
     reconnect_seconds: float = 1.0
     max_pixels: int = 3840*2160
     max_retries: int = 5
+    transport: str = "tcp"
 
     def __post_init__(self):
         if not self.source or not self.camera_id or not 0 < self.reconnect_seconds <= 30:
             raise ValueError("Invalid camera configuration")
-        if self.max_pixels < 1:
+        if not 1<=self.max_pixels<=3840*2160:
             raise ValueError("Invalid frame capacity")
         if not isinstance(self.max_retries, int) or not 0 <= self.max_retries <= 100:
             raise ValueError("Invalid retry limit")
+        if self.transport not in ("tcp","udp"):raise ValueError("Invalid RTSP transport")
 
 
 @dataclass
@@ -44,7 +46,7 @@ def opencv_capture(source):
 
 
 class CameraWorker(Thread):
-    def __init__(self, config, factory=opencv_capture, clock=time.monotonic):
+    def __init__(self, config, factory=None, clock=time.monotonic):
         super().__init__(name=f"capture-{config.camera_id}",daemon=True)
         self.config,self.factory,self.clock = config,factory,clock
         self.frames = Queue(maxsize=1)
@@ -73,7 +75,11 @@ class CameraWorker(Thread):
             cap = None
             try:
                 self.status = "connecting"
-                cap = self.factory(self.config.source)
+                if self.factory is None:
+                    from .isolated_capture import IsolatedCapture
+                    cap=IsolatedCapture(self.config.source,transport=self.config.transport,
+                                        max_pixels=self.config.max_pixels,stop_event=self.stop_event)
+                else:cap = self.factory(self.config.source)
                 if not cap.isOpened():
                     self.last_error = "open_failed"
                     raise OSError("capture_unavailable")
@@ -82,6 +88,7 @@ class CameraWorker(Thread):
                 stable_frames = 0
                 while not self.stop_event.is_set():
                     ok,image = cap.read()
+                    if self.stop_event.is_set():break
                     if not ok or image is None or not getattr(image, "size", 0):
                         self.last_error = "stream_interrupted" if stable_frames else "no_decoded_frame"
                         break

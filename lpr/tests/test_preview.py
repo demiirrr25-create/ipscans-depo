@@ -144,7 +144,7 @@ def test_camera_diagnostics_cli_does_not_require_models(monkeypatch,capsys):
     probe=Mock(return_value={"frames_displayed":2,"shutdown_completed":True})
     monkeypatch.setattr(diagnostics,"probe_camera",probe)
     assert main(["camera-test","--source-env","TEST_CAMERA_SOURCE","--seconds","1","--preview"])==0
-    probe.assert_called_once_with("private-camera",1,True,None)
+    probe.assert_called_once_with("private-camera",1,True,None,'tcp')
     assert "private-camera" not in capsys.readouterr().out
 
 

@@ -100,6 +100,7 @@ def main(argv=None):
     camera_test=commands.add_parser("camera-test",help="Decode or display an RTSP stream without OCR models")
     camera_test.add_argument("--source-env",default="IPSCANS_LPR_RTSP")
     camera_test.add_argument("--seconds",type=float,default=10)
+    camera_test.add_argument("--transport",choices=['tcp','udp'],default='tcp')
     camera_test.add_argument("--preview",action="store_true")
     camera_test.add_argument("--models",help="Optional local manifest for simultaneous preview and OCR diagnostics")
     setup=commands.add_parser("setup-models")
@@ -141,7 +142,7 @@ def main(argv=None):
             result=check_package(args.output);emit(result);return 0 if result['passed'] else 2
         if args.command == "camera-test":
             from .diagnostics import probe_camera
-            result=probe_camera(os.environ.get(args.source_env,""),args.seconds,args.preview,args.models)
+            result=probe_camera(os.environ.get(args.source_env,""),args.seconds,args.preview,args.models,args.transport)
             emit(result)
             healthy=result.get("frames_received",result.get("frames_displayed",0)) and result["shutdown_completed"]
             if args.models:healthy=healthy and result.get("ocr_processed",0)>0 and result.get("ocr_shutdown_completed",False)

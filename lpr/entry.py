@@ -19,6 +19,8 @@ def worker_stream(name,handle_id,mode):
     setattr(sys,name,open(os.devnull,mode,encoding='utf-8'))
 
 if __name__=='__main__':
+    from multiprocessing import freeze_support
+    freeze_support()
     if len(sys.argv)>1 and sys.argv[1]=='--worker':
         worker_stream('stdout',-11,'w');worker_stream('stderr',-12,'w')
         from lpr.cli import main
