@@ -3,7 +3,7 @@ from datetime import datetime,timezone
 import time
 from PySide6.QtCore import QDateTime,QTimeZone
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QFormLayout,QLineEdit,QComboBox,
-    QCheckBox,QDateTimeEdit,QSpinBox,QPushButton,QLabel,QTableWidget,QTableWidgetItem,QHeaderView)
+    QCheckBox,QDateTimeEdit,QSpinBox,QPushButton,QLabel,QTableWidget,QTableWidgetItem,QHeaderView,QFileDialog)
 from .passage_query import PassageFilter
 
 
@@ -41,6 +41,10 @@ class PassageBrowser(QWidget):
         reset=QPushButton('Temizle / Reset');reset.clicked.connect(self.reset_filters);actions.addWidget(reset)
         fresh=QPushButton('En yeni kayıtlar / Latest');fresh.clicked.connect(self.latest);actions.addWidget(fresh);actions.addStretch()
         layout.addLayout(actions)
+        reports=QHBoxLayout();summary=QPushButton('Geçiş raporu / Passage report');summary.clicked.connect(self.show_report)
+        reports.addWidget(summary);self.export_button=QPushButton('Filtrelenen tüm kayıtları CSV aktar / Export filtered CSV')
+        self.export_button.clicked.connect(self.export_csv);reports.addWidget(self.export_button);reports.addStretch()
+        layout.addLayout(reports)
         self.table=QTableWidget(0,9);self.table.setHorizontalHeaderLabels(['UTC','Kamera','Çizgi','Yön','Araç','Plaka','Güven','Durum','Olay ID'])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
@@ -76,6 +80,27 @@ class PassageBrowser(QWidget):
     def latest(self):
         self.cursor=None;self.snapshot=None;self.previous=[];self.load_page()
 
+    def show_report(self):
+        from .passage_report import PassageReport
+        try:
+            report=self.ops.passage_report(self.session,self.filters)
+            PassageReport(report,self).exec()
+        except PermissionError:self.error.setText('Rapor yetkisi veya oturum geçersiz / Report permission or session invalid')
+        except ValueError:self.error.setText('Daha kısa bir tarih aralığı seçin / Select a shorter date range')
+
+    def export_csv(self):
+        from .passage_export import export_passages_csv
+        try:
+            self.ops.check(self.session,'export')
+            path,_=QFileDialog.getSaveFileName(self,'Geçiş CSV / Passage CSV','lpr-passages.csv','CSV (*.csv)')
+            if not path:return
+            if not path.lower().endswith('.csv'):path+='.csv'
+            count=export_passages_csv(self.ops,self.session,self.filters,path)
+            self.error.setText(f'{count} kayıt kaydedildi / records exported · UTC')
+        except PermissionError:self.error.setText('Dışa aktarım yetkisi yok veya dosyaya erişilemiyor / Permission denied or destination inaccessible')
+        except ValueError:self.error.setText('En fazla 100.000 kayıt aktarılabilir; tarih aralığını daraltın / Narrow the date range (100,000 record limit)')
+        except OSError:self.error.setText('Dosya yazılamadı / Could not write file')
+
     def next_page(self):
         if self.next_cursor is None:return
         self.previous.append(self.cursor);self.cursor=self.next_cursor;self.load_page()
@@ -98,6 +123,8 @@ class PassageBrowser(QWidget):
 
     def load_page(self):
         try:
+            try:self.ops.check(self.session,'export');self.export_button.setEnabled(True)
+            except PermissionError:self.export_button.setEnabled(False)
             page=self.ops.passage_page(self.session,self.filters,before=self.cursor,snapshot=self.snapshot)
             self.update_cameras()
             self.snapshot=page['snapshot'];self.next_cursor=page['next_cursor'];self.last_refresh=time.monotonic()

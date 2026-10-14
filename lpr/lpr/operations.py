@@ -270,6 +270,26 @@ class Operations:
         if not 1<=limit<=5000:raise ValueError("Invalid limit")
         return [dict(x) for x in self.db.execute("SELECT * FROM observations WHERE instr(plate,?)>0 ORDER BY id DESC LIMIT ?",(normalize_plate(plate),limit))]
 
+    def passage_report(self,session,filters=None):
+        from .passage_query import PassageFilter
+        self.check(session,'read')
+        clauses,args=(filters or PassageFilter()).sql()
+        where=' WHERE '+' AND '.join(clauses)
+        metrics="count(*) AS total,coalesce(sum(direction='entry'),0) AS entries,coalesce(sum(direction='exit'),0) AS exits,coalesce(sum(status='recognized'),0) AS recognized,coalesce(sum(status='review'),0) AS review,coalesce(sum(status='unread'),0) AS unread"
+        self.db.execute('SAVEPOINT passage_report_read')
+        try:
+            total=dict(self.db.execute('SELECT '+metrics+' FROM vehicle_passages'+where,args).fetchone())
+            groups={}
+            for name,expression in (('daily',"strftime('%Y-%m-%d',at,'unixepoch')"),
+                    ('hourly',"strftime('%Y-%m-%d %H:00',at,'unixepoch')"),('cameras','camera')):
+                rows=[dict(row) for row in self.db.execute('SELECT '+expression+' AS bucket,'+metrics+
+                    ' FROM vehicle_passages'+where+' GROUP BY '+expression+' ORDER BY bucket LIMIT 10001',args)]
+                if len(rows)>10000:raise ValueError('Report range too wide; select a shorter date range')
+                groups[name]=rows
+        finally:self.db.execute('RELEASE passage_report_read')
+        with self.db:self._audit(session.username,'passage_report_viewed',str(total['total']))
+        return dict(total=total,**groups)
+
     def correct(self,session,event,new_plate,reason):
         self.check(session,"review")
         plate=normalize_plate(new_plate)
