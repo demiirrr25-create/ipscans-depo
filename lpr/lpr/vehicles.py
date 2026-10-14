@@ -92,8 +92,11 @@ class VehicleTracker:
     This is an independent conservative tracker, not a claimed ByteTrack port.
     Unobserved tracks are retired; crossings are never bridged over occlusion.
     """
-    def __init__(self,max_gap=1.,new_threshold=.5,overlap=.2,margin=.1):
+    def __init__(self,max_gap=1.,new_threshold=.5,overlap=.2,margin=.1,max_scale_change=2.5):
+        if not math.isfinite(max_scale_change) or max_scale_change<=1:
+            raise ValueError("Invalid association scale limit")
         self.max_gap,self.new_threshold,self.overlap,self.margin=max_gap,new_threshold,overlap,margin
+        self.max_scale_change=max_scale_change
         self.tracks={};self.serial=0;self.last_at=-math.inf
 
     def reset(self):self.tracks.clear()
@@ -109,6 +112,14 @@ class VehicleTracker:
             dx,dy=track.velocity[0]*dt,track.velocity[1]*dt
             predicted=Box(box.x1+dx,box.y1+dy,box.x2+dx,box.y2+dy,box.score)
             for index,vehicle in enumerate(vehicles):
+                # A departing foreground vehicle can overlap the parked car it
+                # uncovers. IoU alone transfers identity and creates a false
+                # reverse crossing. Retire uncertain identities at abrupt
+                # dimension changes (including heavily clipped detections).
+                candidate=vehicle.box
+                ratios=((candidate.x2-candidate.x1)/max(1,box.x2-box.x1),
+                        (candidate.y2-candidate.y1)/max(1,box.y2-box.y1))
+                if any(not 1/self.max_scale_change<=ratio<=self.max_scale_change for ratio in ratios):continue
                 score=max(iou(box,vehicle.box),iou(predicted,vehicle.box))
                 if score>=self.overlap:scores[key,index]=score
         next_tracks={}

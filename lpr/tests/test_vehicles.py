@@ -72,3 +72,23 @@ def test_conflicting_or_single_frame_plate_is_review():
     assert engine.plate_result('x')['status']=='review'
     engine.evidence['x']=[('34ABC123',.99)]
     assert engine.plate_result('x')['status']=='review'
+
+
+@pytest.mark.parametrize('foreground,background',[
+    ((0,219,548,870),(0,384,363,585)),
+    ((0,36,354,953),(0,382,364,585)),
+])
+def test_departing_vehicle_cannot_transfer_identity_to_uncovered_parked_car(foreground,background):
+    # Observed failure geometries from the pinned road diagnostic (38.2,100s).
+    tracker=VehicleTracker()
+    first=tracker.update([Vehicle(Box(*foreground,.9),'car')],1)[0]
+    second=tracker.update([Vehicle(Box(*background,.9),'car')],1.2)[0]
+    assert first.id!=second.id and second.hits==1
+
+
+def test_smooth_vehicle_scale_changes_retain_identity():
+    tracker=VehicleTracker()
+    identities=[]
+    for i,side in enumerate((100,110,125,140,130)):
+        identities.append(tracker.update([Vehicle(Box(100,100,100+side,100+side,.9),'car')],i*.2)[0].id)
+    assert len(set(identities))==1

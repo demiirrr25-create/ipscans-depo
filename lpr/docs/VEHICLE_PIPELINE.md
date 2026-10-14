@@ -10,7 +10,7 @@ The initial independent tracker uses mutual unambiguous IoU matching, a velocity
 
 Passages use the vehicle box's bottom center and a finite normalized line segment. A track must have at least three observations. Direction, line, camera and vehicle track determine an idempotent event ID. Plate evidence is assigned only when the plate lies fully inside exactly one tracked vehicle and that vehicle has only one plate candidate in the frame. Temporal votes, confidence and plate format determine whether the plate needs review. A vehicle may produce an unread passage: no plate is fabricated.
 
-Physical vehicle crossing, identity stability under occlusion, night/rain performance and OCR accuracy still need real labeled validation. Unit tests are not evidence of those field results.
+One fixed-camera daylight recording has now been visually labelled and replayed; see [PASSAGE_EVALUATION.md](PASSAGE_EVALUATION.md). Representative field validation, identity stability under occlusion, night/rain performance and OCR accuracy remain open. Unit tests are not evidence of those field results.
 
 ## Validation checkpoint, 2026-10-14
 
