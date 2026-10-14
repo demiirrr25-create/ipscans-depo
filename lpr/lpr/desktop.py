@@ -39,7 +39,7 @@ COPY={
        "pending":"Pending","recognized":"Confirmed reading","suppressed":"Duplicate suppressed","rejected":"Rejected"}}
 
 STYLE="""
-QMainWindow,QWidget{background:#0b0b0b;color:#ededed;font-family:'Segoe UI';font-size:13px;}
+QMainWindow,QWidget{background:#000000;color:#FFFFFF;font-family:'Segoe UI';font-size:13px;}
 QLabel#brand{font-size:15px;font-weight:700;letter-spacing:2px;}
 QLabel#title{font-size:30px;font-weight:600;}
 QLabel#muted{color:#b0b0b0;}

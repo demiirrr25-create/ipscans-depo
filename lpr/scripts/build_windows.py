@@ -12,6 +12,8 @@ for key in ('PYTHONPATH','PYTHONHOME','QT_PLUGIN_PATH','QT_QPA_PLATFORM_PLUGIN_P
 args=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--noupx','--windowed','--onefile',
       '--name','IPScans-LPR-Pro','--distpath',str(project/'dist'),'--workpath',str(project/'build'),
       '--specpath',str(project/'build'),'--paths',str(project),
+      '--icon',str(project/'assets'/'icons'/'lpr-pro.ico'),
+      '--add-data',str(project/'assets')+';assets',
       '--collect-binaries','onnxruntime','--collect-data','fast_plate_ocr',
       '--add-data',str(project/'third-party-notices')+';third-party-notices',
       '--hidden-import','bcrypt','--hidden-import','cv2','--copy-metadata','fast-plate-ocr',

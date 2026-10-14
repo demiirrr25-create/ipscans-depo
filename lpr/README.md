@@ -1,4 +1,6 @@
-# IPScans LPR Pro 0.4.1 — Windows evaluation beta
+# IPScans LPR Pro 0.5.0.dev1 — Windows development preview
+
+This checkpoint adds model-independent live camera preview and saved PTS line editing. See [current verification and remaining work](docs/NEXT_GENERATION_PROGRESS.md) and [Turkish usage instructions](docs/TRY_PREVIEW_TR.md). Automatic vehicle line-crossing events, simultaneous OCR/preview, signed installation and production deployment are not complete.
 
 Local ONNX plate detection/OCR, independent plate tracks, per-camera regions, 1–16 camera scheduling, a Turkish/English desktop interface and operator-confirmed parking records.
 

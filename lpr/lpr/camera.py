@@ -12,12 +12,15 @@ class CameraConfig:
     camera_id: str = "camera-1"
     reconnect_seconds: float = 1.0
     max_pixels: int = 3840*2160
+    max_retries: int = 5
 
     def __post_init__(self):
         if not self.source or not self.camera_id or not 0 < self.reconnect_seconds <= 30:
             raise ValueError("Invalid camera configuration")
         if self.max_pixels < 1:
             raise ValueError("Invalid frame capacity")
+        if not isinstance(self.max_retries, int) or not 0 <= self.max_retries <= 100:
+            raise ValueError("Invalid retry limit")
 
 
 @dataclass
@@ -29,9 +32,13 @@ class Frame:
 
 def opencv_capture(source):
     # FFmpeg can otherwise echo credentials in native errors.
-    os.environ.setdefault("OPENCV_FFMPEG_LOGLEVEL", "-8")
+    os.environ["OPENCV_FFMPEG_LOGLEVEL"] = "-8"
+    os.environ["OPENCV_LOG_LEVEL"] = "SILENT"
     import cv2
-    cv2.setLogLevel(0)
+    # OpenCV 5 wheels no longer expose the OpenCV 4 logging setter.
+    setter = getattr(cv2, "setLogLevel", None)
+    if setter is not None:
+        setter(0)
     return cv2.VideoCapture(source, cv2.CAP_FFMPEG,
         [cv2.CAP_PROP_OPEN_TIMEOUT_MSEC,3000,cv2.CAP_PROP_READ_TIMEOUT_MSEC,3000])
 
@@ -44,29 +51,49 @@ class CameraWorker(Thread):
         self.stop_event = Event()
         self.status,self.dropped = "idle",0
         self.reconnects = 0
+        self.last_error = None
+        self.resolution = None
+        self.fps = 0.0
 
     def stop(self):
         self.stop_event.set()
 
     def run(self):
         seq = 0
+        failures = 0
         while not self.stop_event.is_set():
             cap = None
             try:
                 self.status = "connecting"
                 cap = self.factory(self.config.source)
                 if not cap.isOpened():
+                    self.last_error = "open_failed"
                     raise OSError("capture_unavailable")
-                self.status = "connected"
+                self.status = "awaiting_frame"
+                previous = None
+                stable_frames = 0
                 while not self.stop_event.is_set():
                     ok,image = cap.read()
-                    if not ok:
+                    if not ok or image is None or not getattr(image, "size", 0):
+                        self.last_error = "stream_interrupted" if stable_frames else "no_decoded_frame"
                         break
                     if image.shape[0]*image.shape[1] > self.config.max_pixels:
                         self.status = "frame_too_large"
+                        self.last_error = "frame_too_large"
                         break
                     seq += 1
                     item = Frame(seq,self.clock(),image)
+                    self.status = "connected"
+                    self.last_error = None
+                    self.resolution = (image.shape[1], image.shape[0])
+                    if previous is not None and item.captured_at > previous:
+                        instant = 1 / (item.captured_at - previous)
+                        self.fps = instant if not self.fps else .9*self.fps + .1*instant
+                    previous = item.captured_at
+                    stable_frames += 1
+                    # A single intermittent frame must not reset the retry budget.
+                    if stable_frames >= 30:
+                        failures = 0
                     try:
                         self.frames.put_nowait(item)
                     except Full:
@@ -78,6 +105,8 @@ class CameraWorker(Thread):
                         self.frames.put_nowait(item)
             except Exception:
                 self.status = "capture_failed"
+                if self.last_error is None:
+                    self.last_error = "capture_failed"
             finally:
                 if cap is not None:
                     try:
@@ -90,7 +119,11 @@ class CameraWorker(Thread):
             except Empty:
                 pass
             if not self.stop_event.is_set():
+                failures += 1
+                if failures > self.config.max_retries:
+                    self.status = "retry_exhausted"
+                    return
                 self.status = "reconnecting"
                 self.reconnects += 1
-                self.stop_event.wait(self.config.reconnect_seconds)
+                self.stop_event.wait(min(30, self.config.reconnect_seconds * 2**(failures-1)))
         self.status = "stopped"

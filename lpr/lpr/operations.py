@@ -37,6 +37,8 @@ class Operations:
         CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY,at REAL NOT NULL,actor TEXT NOT NULL,
             action TEXT NOT NULL,detail TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS cameras(id TEXT PRIMARY KEY,name TEXT NOT NULL,secret TEXT NOT NULL,direction TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS camera_lines(camera_id TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
+            line_id TEXT NOT NULL,definition TEXT NOT NULL,PRIMARY KEY(camera_id,line_id));
         CREATE TABLE IF NOT EXISTS grants(plate TEXT PRIMARY KEY,category TEXT NOT NULL,blocked INTEGER NOT NULL,
             valid_from REAL NOT NULL,valid_until REAL NOT NULL,direction TEXT NOT NULL,remaining INTEGER);
         CREATE TABLE IF NOT EXISTS observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,camera TEXT NOT NULL,
@@ -125,6 +127,27 @@ class Operations:
         row=self.db.execute("SELECT secret FROM cameras WHERE id=?",(camera_id,)).fetchone()
         if row is None:raise ValueError("Unknown camera")
         return unprotect_secret(row[0])
+
+    def camera_lines(self,session,camera_id):
+        from .lines import CrossingLine
+        self.check(session,"read")
+        return [CrossingLine(**json.loads(row[0])) for row in self.db.execute(
+            "SELECT definition FROM camera_lines WHERE camera_id=? ORDER BY line_id",(camera_id,))]
+
+    def save_camera_lines(self,session,camera_id,lines):
+        from dataclasses import asdict
+        from .lines import CrossingLine
+        self.check(session,"manage")
+        if len(lines)>16 or len({line.id for line in lines})!=len(lines):
+            raise ValueError("Use at most 16 unique lines")
+        values=[asdict(CrossingLine(**asdict(line))) for line in lines]
+        if not self.db.execute("SELECT 1 FROM cameras WHERE id=?",(camera_id,)).fetchone():
+            raise ValueError("Unknown camera")
+        with self.db:
+            self.db.execute("DELETE FROM camera_lines WHERE camera_id=?",(camera_id,))
+            self.db.executemany("INSERT INTO camera_lines VALUES(?,?,?)",
+                [(camera_id,value["id"],json.dumps(value)) for value in values])
+            self._audit(session.username,"camera_lines_saved",camera_id)
 
     def save_grant(self,session,plate,category,blocked,valid_from,valid_until,direction,remaining=None):
         self.check(session,"manage")

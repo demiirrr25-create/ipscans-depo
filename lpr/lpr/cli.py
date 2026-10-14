@@ -95,6 +95,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="IPScans LPR Pro development preview; no barrier output")
     commands = parser.add_subparsers(dest="command",required=True)
     commands.add_parser("doctor")
+    camera_test=commands.add_parser("camera-test",help="Decode or display an RTSP stream without OCR models")
+    camera_test.add_argument("--source-env",default="IPSCANS_LPR_RTSP")
+    camera_test.add_argument("--seconds",type=float,default=10)
+    camera_test.add_argument("--preview",action="store_true")
     setup=commands.add_parser("setup-models")
     setup.add_argument("--output",required=True)
     device=commands.add_parser("device-status")
@@ -129,6 +133,11 @@ def main(argv=None):
             p.add_argument("--evaluation",action="store_true",help="Offline evaluation only; not a commercial-use approval")
     args = parser.parse_args(argv)
     try:
+        if args.command == "camera-test":
+            from .diagnostics import probe_camera
+            result=probe_camera(os.environ.get(args.source_env,""),args.seconds,args.preview)
+            emit(result)
+            return 0 if result.get("frames_received",result.get("frames_displayed",0)) and result["shutdown_completed"] else 2
         if args.command == "device-status":
             from .devices import read_modbus_coil,read_shelly_switch
             state=(read_modbus_coil(args.host,args.port,args.unit,args.channel) if args.protocol=="Modbus TCP"

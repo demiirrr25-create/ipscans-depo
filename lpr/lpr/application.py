@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBo
     QDialogButtonBox,QFormLayout,QComboBox,QCheckBox,QSpinBox,QMessageBox,QFileDialog,QInputDialog)
 from .desktop import RecognitionWindow,STYLE
 from .operations import Operations
+from . import __version__
 
 
 def data_directory():
@@ -52,7 +53,7 @@ class ProductWindow(QMainWindow):
     def __init__(self,ops,session):
         super().__init__()
         self.ops=ops;self.session=session;self.lang="tr"
-        self.setWindowTitle("IPScans LPR Pro · 0.4.1 Beta")
+        self.setWindowTitle(f"IPScans LPR Pro · {__version__}")
         self.resize(1440,950);self.setMinimumSize(1000,720);self.setStyleSheet(STYLE)
         self.lab=RecognitionWindow()
         self.lab.footer.hide()
@@ -87,7 +88,7 @@ class ProductWindow(QMainWindow):
         self.lab.language.currentIndexChanged.connect(self.switch_language)
         root=QWidget();self.setCentralWidget(root);layout=QVBoxLayout(root)
         layout.setContentsMargins(20,16,20,16)
-        header=QHBoxLayout();brand=QLabel("IPSCANS  /  LPR PRO  ·  0.4.1 BETA")
+        header=QHBoxLayout();brand=QLabel(f"IPSCANS  /  LPR PRO  ·  {__version__}")
         brand.setObjectName("brand");header.addWidget(brand);header.addStretch()
         self.account=QLabel(f"{session.username} / {session.role}");header.addWidget(self.account)
         lock=QPushButton("Kilitle / Lock");lock.clicked.connect(self.lock_session);header.addWidget(lock)
@@ -135,6 +136,7 @@ class ProductWindow(QMainWindow):
         self.camera_table=self.table(["ID","Ad / Name","Yön / Direction"]);self.cameras_page.addWidget(self.camera_table)
         self.add_button(self.cameras_page,"Kamera ekle / güncelle","Add / update camera",self.add_camera,"manage")
         self.add_button(self.cameras_page,"Seçili kameranın okuma bölgesi","Selected camera recognition region",self.set_camera_region,"manage")
+        self.add_button(self.cameras_page,"Canlı görüntüyü aç","Open live preview",self.preview_camera,"manage")
         self.camera_minutes=QSpinBox();self.camera_minutes.setRange(1,120);self.camera_minutes.setValue(1)
         self.cameras_page.addWidget(QLabel("İzleme süresi (dakika) / Observation duration (minutes)"));self.cameras_page.addWidget(self.camera_minutes)
         self.add_button(self.cameras_page,"Seçili kamerayı izle","Observe selected camera",self.start_camera,"manage")
@@ -270,10 +272,45 @@ class ProductWindow(QMainWindow):
             if data:
                 from .devices import rtsp_url
                 source=rtsp_url(brand.lower(),data["Host / IP"],int(data["Port"]),int(data["Channel"]),data["Username"],data["Password"])
-                self.ops.save_camera(self.session,data["ID"],data["Name"],source,data["Direction (entry/exit)"]);self.refresh()
+                self.test_and_save_camera(data["ID"],data["Name"],source,data["Direction (entry/exit)"])
             return
         data=self.fields("Kamera / Camera",[("ID","gate-1",False),("Name","",False),("RTSP URL","",True),("Direction (entry/exit)","entry",False)])
-        if data:self.ops.save_camera(self.session,data["ID"],data["Name"],data["RTSP URL"],data["Direction (entry/exit)"]);self.refresh()
+        if data:self.test_and_save_camera(data["ID"],data["Name"],data["RTSP URL"],data["Direction (entry/exit)"])
+
+    def test_and_save_camera(self,camera_id,name,source,direction):
+        from .preview import PreviewDialog
+        from PySide6.QtCore import QProcess
+        from urllib.parse import urlsplit
+        self.ops.check(self.session,"manage")
+        parts=urlsplit(source)
+        if parts.scheme not in {"rtsp","rtsps"} or not parts.hostname:
+            raise ValueError("Valid RTSP URL required")
+        if not camera_id or len(camera_id)>64 or not name or len(name)>120 or direction not in {"entry","exit"}:
+            raise ValueError("Invalid camera details")
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
+            self.notice("Bağlantı testi için mevcut tanıma işlemini durdurun. / Stop recognition before testing.")
+            return
+        dialog=PreviewDialog(source,camera_id,self,confirm_connection=True,
+                             authorize=lambda:self.ops.check(self.session,"manage"))
+        if dialog.exec()==QDialog.DialogCode.Accepted:
+            self.ops.save_camera(self.session,camera_id,name,source,direction)
+            self.refresh()
+
+    def preview_camera(self):
+        from .preview import PreviewDialog
+        from PySide6.QtCore import QProcess
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
+            self.notice("Canlı önizleme için mevcut tanıma işlemini durdurun. / Stop recognition before preview.")
+            return
+        row=self.camera_table.currentRow()
+        if row<0:raise ValueError("Select camera")
+        camera_id=self.camera_table.item(row,0).text()
+        source=self.ops.camera_source(self.session,camera_id)
+        dialog=PreviewDialog(source,camera_id,self,
+                             authorize=lambda:self.ops.check(self.session,"manage"),
+                             lines=self.ops.camera_lines(self.session,camera_id),
+                             save_lines=lambda lines:self.ops.save_camera_lines(self.session,camera_id,lines))
+        dialog.exec()
 
     def start_camera(self,all_cameras=False):
         from PySide6.QtCore import QProcess,QProcessEnvironment
@@ -387,6 +424,9 @@ class ProductWindow(QMainWindow):
 
 def main():
     app=QApplication(sys.argv[:1])
+    from PySide6.QtGui import QIcon
+    resources=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))
+    app.setWindowIcon(QIcon(str(resources/"assets"/"icons"/"lpr-pro.ico")))
     # Initialize Qt font handling before the sign-in dialog.
     initializer=RecognitionWindow();initializer.close()
     ops=Operations(str(data_directory()/"operations.sqlite3"))
