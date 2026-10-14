@@ -95,6 +95,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="IPScans LPR Pro development preview; no barrier output")
     commands = parser.add_subparsers(dest="command",required=True)
     commands.add_parser("doctor")
+    package_test=commands.add_parser('package-test',help='Synthetic UI/database/report check; never connects to cameras')
+    package_test.add_argument('--output',required=True,help='New output directory; must not already exist')
     camera_test=commands.add_parser("camera-test",help="Decode or display an RTSP stream without OCR models")
     camera_test.add_argument("--source-env",default="IPSCANS_LPR_RTSP")
     camera_test.add_argument("--seconds",type=float,default=10)
@@ -134,6 +136,9 @@ def main(argv=None):
             p.add_argument("--evaluation",action="store_true",help="Offline evaluation only; not a commercial-use approval")
     args = parser.parse_args(argv)
     try:
+        if args.command=='package-test':
+            from .package_check import check_package
+            result=check_package(args.output);emit(result);return 0 if result['passed'] else 2
         if args.command == "camera-test":
             from .diagnostics import probe_camera
             result=probe_camera(os.environ.get(args.source_env,""),args.seconds,args.preview,args.models)

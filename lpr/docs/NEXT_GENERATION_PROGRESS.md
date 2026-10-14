@@ -40,6 +40,8 @@ The application is Python/PySide6, not browser-based. The immediate correction t
 
 ## Still required before acceptance
 
+**Checkpoint update (0.5.0.dev3):** the historical list below describes dev1/dev2. Vehicle detection/tracking and passage persistence are now integrated (see VEHICLE_PIPELINE.md); filtered, paginated passage history and CSV/XLSX/PDF exports are implemented (see PASSAGE_HISTORY.md). A real current-user preview installer and frozen runtime checks now pass (see WINDOWS_INSTALLER.md). Field accuracy, full deployment qualification and the other remaining requirements are not thereby complete.
+
 - Persistent background OCR for all cameras with fair shared-model scheduling. Selected-camera preview now has simultaneous OCR over its existing capture; the old standalone OCR subprocess remains exclusive with opening the camera center.
 - Vehicle detector and tracker integrated with the line-crossing primitive. Existing OCR tracking follows **plate boxes**. The new line primitive is deliberately not wired to that as proof of vehicle passage. No automatic passage counting claim is made.
 - Vehicle/plate model licensing and data provenance review, rectification, improved temporal fusion, and a lawful representative Turkish plate dataset with measured recognition accuracy.
