@@ -2,11 +2,11 @@
 from pathlib import Path
 import math
 import time
-from .core import Consensus, Reading
+from .tracking import TrackedConsensus
 
 
 def analyze_video(pipeline, path, *, every=1, max_frames=300, on_result=None,
-                  cancelled=lambda:False, capture_factory=None):
+                  cancelled=lambda:False, capture_factory=None, region=None):
     import cv2
     target = Path(path)
     if not target.is_file():
@@ -14,7 +14,7 @@ def analyze_video(pipeline, path, *, every=1, max_frames=300, on_result=None,
     if every < 1 or not 1 <= max_frames <= 100000:
         raise ValueError("Invalid video sampling limits")
     cap = (capture_factory or cv2.VideoCapture)(str(target))
-    engine = Consensus()
+    engine = TrackedConsensus("RECORDED",region=region)
     read_count = analyzed = 0
     counts = {}
     fps = float(cap.get(cv2.CAP_PROP_FPS))
@@ -35,16 +35,17 @@ def analyze_video(pipeline, path, *, every=1, max_frames=300, on_result=None,
             media_time = (read_count-1)/fps if fps else None
             item = {"source":"recorded_video","frame":read_count,"media_seconds":media_time,
                     "inference_ms":latency,"detections":len(predictions),"decision":None}
-            if len(predictions)==1 and media_time is not None:
-                prediction=predictions[0]
-                # Media time is used ONLY for offline consensus, never wall-clock authorization.
-                r=Reading("RECORDED",read_count,media_time,prediction["text"],prediction["confidence"])
-                decision=engine.observe(r,media_time)
-                item["decision"]=vars(decision)
-                counts[decision.status]=counts.get(decision.status,0)+1
+            if media_time is not None:
+                decisions=engine.observe(predictions,read_count,media_time,media_time,
+                                         frame.shape[1],frame.shape[0])
+                item["decisions"]=decisions
+                item["decision"]=decisions[0] if len(decisions)==1 else None
+                for decision in decisions:
+                    counts[decision["status"]]=counts.get(decision["status"],0)+1
+                if not decisions:item["status"]="no_plate_in_region"
             else:
-                engine=Consensus()
-                item["status"]="unknown_fps" if fps is None else ("no_plate" if not predictions else "ambiguous")
+                engine.reset()
+                item["status"]="unknown_fps"
             if on_result:
                 on_result(item)
     finally:

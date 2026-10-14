@@ -1,8 +1,8 @@
 export const lprRelease = {
-  version: "0.3.1-beta",
-  fileName: "IPScans-LPR-Pro-0.3.1.exe",
-  url: "https://54ugzwas4dokoxv0.public.blob.vercel-storage.com/releases/IPScans-LPR-Pro-0.3.1.exe",
-  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/tree/main/desktop-app-lpr",
-  sha256: "c916e7c8ec1bd2314903dd12275297f09a4202cdff31f18842ee6bcc0639baf9",
-  bytes: 118322008,
+  version: "0.4.1-beta",
+  fileName: "IPScans-LPR-Pro-0.4.1.exe",
+  url: "https://54ugzwas4dokoxv0.public.blob.vercel-storage.com/releases/IPScans-LPR-Pro-0.4.1.exe",
+  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/blob/main/desktop-app-lpr/docs/RELEASE_0.4.md",
+  sha256: "acf6b4496672fac730d808ec5e37bbd88a7d12a3da81ef69f9728782d9a381da",
+  bytes: 118357469,
 } as const;

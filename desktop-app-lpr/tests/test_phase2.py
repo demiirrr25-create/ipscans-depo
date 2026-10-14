@@ -8,7 +8,7 @@ from unittest.mock import Mock,patch
 import numpy as np
 from lpr.video import analyze_video
 from lpr.vision import Pipeline, FastPlateRecognizer
-from lpr.vision import canonical_path
+from lpr.vision import canonical_path, Box
 from lpr.cli import main
 
 
@@ -41,7 +41,7 @@ class Phase2Tests(unittest.TestCase):
             cap.isOpened.return_value=True
             cap.read.side_effect=[(True,np.zeros((10,10,3),np.uint8))]*4+[(False,None)]
             pipe=Mock()
-            pipe.analyze.return_value=([{"text":"34ABC123","confidence":.99}],2.0)
+            pipe.analyze.return_value=([{"text":"34ABC123","confidence":.99,"box":Box(0,0,9,9,.99)}],2.0)
             events=[]
             result=analyze_video(pipe,path,on_result=events.append,capture_factory=lambda _:cap)
             self.assertEqual(result["frames_read"],4)

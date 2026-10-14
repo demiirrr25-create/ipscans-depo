@@ -1,4 +1,4 @@
-"""Explicit opt-in download of pinned upstream models for offline development only.
+"""Explicit opt-in download of pinned upstream models with retained upstream license notices.
 
 No upload, executable code download, training or commercial approval is performed.
 """

@@ -20,16 +20,24 @@ export default async function LprPage({params}:{params:Promise<{locale:string}>}
     ["Kayıt ve inceleme","Plaka arama, gerekçeli düzeltme, CSV raporu, yerel denetim kaydı ve saklama süresi."],
     ["Kontrollü erişim","Yönetici, operatör ve denetçi rolleri; ziyaretçi, personel ve araç izinleri için kural simülatörü."],
     ["Kamera bağlantısı","Hikvision ve Dahua ana akış RTSP profilleri, özel RTSP adresi ve Windows DPAPI ile korunan kamera parolaları."],
+    ["Çoklu kamera ve plaka","1–16 kamera için ortak motor, ayrı plaka izleri, kameraya özel okuma bölgesi ve 1–120 dakika gözlem. Kapasite donanıma bağlıdır; saha performansı henüz ölçülmedi."],
+    ["Otopark defteri","Operatörün doğruladığı giriş/çıkışlar, doluluk, kapasite ve tekrar giriş denetimi. Tanıma sonucu otomatik bariyer komutu oluşturmaz."],
+    ["Doğrulanmış yedek","Yöneticiye özel SQLite yedeği ve bütünlük kontrolü. Kamera parolaları aynı Windows kullanıcı hesabına bağlı kalır."],
+    ["Ölçülebilir geliştirme","45 regresyon testi; sentetik fotoğraf/video ile paket içi ONNX kontrolü. Benchmark raporlarında gündüz/gece gibi koşulları ayrı değerlendirin."],
   ]:[
     ["Local recognition","ONNX plate detection, OCR and frame consensus on images and recorded video. Images are not uploaded."],
     ["Review and records","Plate search, corrections with reasons, CSV export, local audit log and retention controls."],
     ["Access rules","Administrator, operator and auditor roles; a rule simulator for visitors, staff and vehicle permissions."],
     ["Camera connections","Hikvision and Dahua main-stream RTSP profiles, custom RTSP addresses and Windows DPAPI-protected camera credentials."],
+    ["Multiple cameras and plates","Shared inference for 1–16 cameras, separate plate tracks, per-camera regions and 1–120 minute observation. Capacity depends on hardware; field throughput is not yet measured."],
+    ["Parking ledger","Operator-confirmed entries and exits, occupancy, capacity and anti-passback checks. Recognition does not automatically actuate a barrier."],
+    ["Verified backup","Administrator-only SQLite snapshots with integrity verification. Camera credentials remain tied to the same Windows account."],
+    ["Measured development","45 regression tests and packaged ONNX checks on synthetic image/video fixtures. Benchmark reports can separate conditions such as day and night."],
   ];
   return <article lang={tr?"tr":"en"} className="mx-auto max-w-6xl px-5 pb-24 pt-24 sm:px-8">
     <Link href={`/${locale}/download`} className="text-sm text-neutral-400 underline underline-offset-4">← {tr?"Tüm uygulamalar":"All applications"}</Link>
     <div className="mt-12 border-b border-white/15 pb-12">
-      <p className="font-mono text-xs uppercase tracking-[.22em] text-neutral-400">WINDOWS x64 / 0.3.1 BETA</p>
+      <p className="font-mono text-xs uppercase tracking-[.22em] text-neutral-400">WINDOWS x64 / {lprRelease.version}</p>
       <h1 className="mt-6 text-5xl font-semibold tracking-tight sm:text-7xl">IPScans LPR Pro<span className="text-neutral-500">.</span></h1>
       <p className="mt-6 max-w-2xl text-xl leading-relaxed text-neutral-300">{tr?"Plakaları yerelde okuyun. Sonuçları inceleyin. Erişim kurallarınızı sınayın.":"Read plates locally. Review results. Test your access rules."}</p>
       <p className="mt-4 max-w-2xl leading-relaxed text-neutral-400">{tr?"Bu sürüm saha değerlendirmesi içindir. Ticari üretim ve fiziksel bariyer kontrolü için hazır değildir. IPscans+ ve IPCast uygulamalarından bağımsızdır.":"This release is for evaluation. It is not ready for commercial production or physical barrier control. It is independent of IPscans+ and IPCast."}</p>
@@ -37,20 +45,20 @@ export default async function LprPage({params}:{params:Promise<{locale:string}>}
         <a href={lprRelease.url} className="inline-flex min-h-12 items-center rounded-lg bg-white px-6 py-3 font-semibold text-black hover:bg-neutral-200">{tr?"Windows uygulamasını indir · EXE":"Download Windows app · EXE"} ↓</a>
         <a href={lprRelease.releaseUrl} className="underline underline-offset-4">{tr?"Sürüm notları ve kaynak":"Release notes and source"} ↗</a>
       </div>
-      <p className="mt-4 text-sm text-neutral-400">{tr?"Windows 10/11 x64 için 118,3 MB taşınabilir değerlendirme uygulaması. İmzalanmamıştır; dosyanın kaydedileceği yeri tarayıcınız belirler.":"118.3 MB portable evaluation app for Windows 10/11 x64. It is unsigned; your browser controls where the file is saved."}</p>
+      <p className="mt-4 text-sm text-neutral-400">{(lprRelease.bytes/1_000_000).toFixed(1)} MB · {tr?"Windows 10/11 x64 için taşınabilir değerlendirme uygulaması. İmzalanmamıştır; dosyanın kaydedileceği yeri tarayıcınız belirler.":"Portable evaluation app for Windows 10/11 x64. It is unsigned; your browser controls where the file is saved."}</p>
     </div>
     <figure className="mt-10 overflow-hidden rounded-xl border border-white/20">
-      <Image src="/lpr-pro-preview.png" alt={tr?"Sentetik 34 ABC 123 örneğini inceleyen gerçek LPR Pro arayüzü":"Actual LPR Pro interface reviewing a synthetic 34 ABC 123 example"} width={1440} height={950} className="h-auto w-full" />
+      <Image src="/lpr-pro-preview.png" alt={tr?"LPR Pro 0.4 otopark ekranında üç sentetik araç ve kapasite durumu":"LPR Pro 0.4 parking screen with three synthetic vehicles and occupancy"} width={1440} height={950} className="h-auto w-full" />
       <figcaption className="border-t border-white/15 p-4 text-sm text-neutral-400">{tr?"Gerçek uygulama ekranı; sentetik örnek. Güven puanı saha doğruluk oranı değildir.":"Actual application screenshot; synthetic example. Confidence is not a field accuracy rate."}</figcaption>
     </figure>
     <div className="mt-14 grid gap-8 sm:grid-cols-2">{features.map(([title,body])=><section key={title} className="border-t border-white/20 pt-6"><h2 className="text-2xl font-semibold">{title}</h2><p className="mt-3 leading-relaxed text-neutral-400">{body}</p></section>)}</div>
     <section className="mt-14 rounded-xl border border-white/20 p-6 sm:p-8"><h2 className="text-2xl font-semibold">{tr?"İlk kullanım":"Getting started"}</h2>
       <ol className="mt-5 list-decimal space-y-3 ps-6 text-neutral-300">
         <li>{tr?"EXE dosyasını indirmeler klasörünüzden çalıştırın; ilk açılışta en az 12 karakterli bir yönetici parolası oluşturun.":"Run the EXE from your downloads folder; create an administrator password of at least 12 characters at first launch."}</li>
-        <li>{tr?"Ayarlar bölümünden yaklaşık 11 MB değerlendirme modelini indirin veya kendi incelenmiş model manifestinizi seçin.":"Download about 11 MB of evaluation models in Settings, or select your own reviewed model manifest."}</li>
+        <li>{tr?"Ayarlar bölümünden yaklaşık 11 MB değerlendirme modelini indirin veya kendi model manifestinizi seçin.":"Download about 11 MB of evaluation models in Settings, or select your own model manifest."}</li>
         <li>{tr?"Tanıma bölümünde kullanma izniniz olan bir görüntü veya video seçin. Sonuçları Geçmiş bölümünde inceleyin.":"Select an image or video you are authorized to use in Recognition. Review results in History."}</li>
       </ol>
-      <p className="mt-6 text-sm leading-relaxed text-neutral-400">{tr?"İndirilen değerlendirme modelleri yalnız çevrimdışı kullanılır; model ve eğitim verisi ticari hak incelemesi tamamlanmamıştır. Canlı RTSP için ticari kullanımı incelenmiş bir model manifesti gerekir.":"Downloaded evaluation models are restricted to offline use; commercial rights review of model weights and training data is pending. Live RTSP requires a commercially reviewed model manifest."}</p>
+      <p className="mt-6 text-sm leading-relaxed text-neutral-400">{tr?"Yerel modeller görüntü, video ve canlı RTSP ile kullanılabilir. Ticari onay veya aktivasyon bayrağı istenmez; dosya bütünlüğü SHA-256 ile doğrulanır. Üçüncü taraf model lisans koşulları geçerlidir.":"Local models can process images, video and live RTSP. No commercial approval or activation flag is required; file integrity is verified with SHA-256. Third-party model license terms apply."}</p>
       <p className="mt-4 text-sm leading-relaxed text-neutral-400">{tr?"QtCore DLL uyarısı devam ederse Windows için resmi Microsoft Visual C++ x64 paketini yükleyip uygulamayı yeniden açın.":"If a QtCore DLL error persists, install Microsoft's official Visual C++ x64 package for Windows and reopen the app."} <a className="underline underline-offset-4" href="https://aka.ms/vs/17/release/vc_redist.x64.exe">{tr?"Microsoft x64 paketi":"Microsoft x64 package"} ↗</a></p>
     </section>
     <section className="mt-12"><h2 className="text-2xl font-semibold">{tr?"Cihaz uyumluluğunun sınırları":"Device compatibility limits"}</h2>

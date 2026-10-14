@@ -61,8 +61,11 @@ class VisionCameraTests(unittest.TestCase):
                 "reviewed_at":"2026-10-10","commercial_use_approved":False,"evaluation_permitted":True,
                 "detector":{"path":"detector","sha256":sha},"ocr":{"path":"ocr","files":{"model":sha}}}
             path=root/"models.json";path.write_text(json.dumps(value))
-            with self.assertRaises(ValueError):load_manifest(path)
+            self.assertFalse(load_manifest(path)["commercial_use_approved"])
             self.assertFalse(load_manifest(path,evaluation=True)["commercial_use_approved"])
+            value.pop('commercial_use_approved');value.pop('reviewed_by');value.pop('reviewed_at')
+            path.write_text(json.dumps(value))
+            self.assertEqual(load_manifest(path)['source'],'internal:test')
             (root/"ocr/model").write_bytes(b"changed")
             with self.assertRaises(ValueError):load_manifest(path,evaluation=True)
 

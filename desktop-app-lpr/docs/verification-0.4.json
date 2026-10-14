@@ -1,0 +1,59 @@
+{
+  "version": "0.4.1-beta",
+  "doctor": {
+    "python": "3.13.16",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "dependencies": {
+      "cv2": true,
+      "numpy": true,
+      "onnxruntime": true,
+      "fast_plate_ocr": true,
+      "paddleocr": false,
+      "paddle": false,
+      "PySide6": true
+    },
+    "hardware_tested": false,
+    "barrier_control": "not_implemented"
+  },
+  "synthetic_image": {
+    "source": "offline_image",
+    "evaluation": true,
+    "readings": [
+      {
+        "text": "34ABC123",
+        "confidence": 0.946672260761261,
+        "box": {
+          "x1": 129,
+          "y1": 216,
+          "x2": 672,
+          "y2": 344,
+          "score": 0.8100195527076721
+        }
+      }
+    ],
+    "inference_ms": 34.283399999821995
+  },
+  "synthetic_video": {
+    "source": "recorded_video",
+    "frames_read": 12,
+    "frames_analyzed": 12,
+    "decision_counts": {
+      "pending": 2,
+      "review": 1,
+      "recognized": 1,
+      "suppressed": 8
+    },
+    "cancelled": false,
+    "barrier_commands": 0
+  },
+  "frozen_gui": "process alive after 5 seconds offscreen; not full interaction test",
+  "live_startup_without_approval_flag": {
+    "status": "observation_finished",
+    "cameras": 1,
+    "processed_frames": 0,
+    "barrier_commands": 0
+  },
+  "field_accuracy_measured": false,
+  "physical_cameras_tested": false,
+  "barrier_control": false
+}
