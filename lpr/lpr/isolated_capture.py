@@ -7,6 +7,11 @@ def _decode(connection,buffer,source,transport,max_pixels,factory):
     cap=None
     try:
         import os
+        # Some native codec builds bypass OpenCV's log-level option. Never let
+        # a native diagnostic echo a credential-bearing source to stderr.
+        null=os.open(os.devnull,os.O_WRONLY)
+        os.dup2(null,2)
+        if null!=2:os.close(null)
         os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS']='rtsp_transport;'+transport
         if factory is None:
             from .camera import opencv_capture

@@ -286,8 +286,15 @@ class ProductWindow(QMainWindow):
     def add_camera(self):
         transport=self.choose_transport()
         if transport is None:return
-        brand,ok=QInputDialog.getItem(self,"Kamera / Camera","Bağlantı profili / Connection profile",["Hikvision","Dahua","Custom RTSP"],0,False)
+        brand,ok=QInputDialog.getItem(self,"Kamera / Camera","Bağlantı profili / Connection profile",["ONVIF","Hikvision","Dahua","Custom RTSP"],0,False)
         if not ok:return
+        if brand=='ONVIF':
+            from .onvif_dialog import OnvifDialog
+            dialog=OnvifDialog(self,authorize=lambda:self.ops.check(self.session,'manage'))
+            if dialog.exec()!=QDialog.DialogCode.Accepted:return
+            data=self.fields('ONVIF kamera',[("ID","gate-1",False),("Name","ONVIF",False),("Direction (entry/exit)","entry",False)])
+            if data:self.test_and_save_camera(data['ID'],data['Name'],dialog.source,data['Direction (entry/exit)'],transport)
+            return
         if brand!="Custom RTSP":
             data=self.fields(brand,[("ID","gate-1",False),("Name",brand,False),("Host / IP","",False),("Port",554,False),("Channel",1,False),("Username","",False),("Password","",True),("Direction (entry/exit)","entry",False)])
             if data:
