@@ -7,7 +7,7 @@ import sys
 import time
 import tempfile
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt,QTimer
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
     QPushButton,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QTabWidget,QDialog,
     QDialogButtonBox,QFormLayout,QComboBox,QCheckBox,QSpinBox,QMessageBox,QFileDialog,QInputDialog)
@@ -154,6 +154,13 @@ class ProductWindow(QMainWindow):
         self.add_button(self.settings_page,"Kullanıcı ekle","Add user",self.add_user,"users")
         self.add_button(self.settings_page,"Doğrulanmış veritabanı yedeği al","Create verified database backup",self.backup,"manage")
         self.retention=QSpinBox();self.retention.setRange(1,3650);self.retention.setValue(30)
+        try:policy=self.ops.retention_policy(self.session)
+        except (ValueError,TypeError):
+            policy=dict(days=30,automatic=False)
+            self.banner.setText('Saklama politikası geçersiz; otomatik temizlik yapılmadı. Ayarlardan düzeltin. / Invalid retention policy; automatic cleanup skipped. Correct it in Settings.')
+        self.retention.setValue(policy['days'])
+        self.retention_auto=QCheckBox('Saatlik otomatik temizlik / Automatic hourly cleanup')
+        self.retention_auto.setChecked(policy['automatic']);self.settings_page.addWidget(self.retention_auto)
         self.settings_page.addWidget(QLabel("Saklama süresi (gün) / Retention (days)"));self.settings_page.addWidget(self.retention)
         self.add_button(self.settings_page,"Saklama politikasını uygula","Apply retention policy",self.retain,"manage")
         self.audit_table=self.table(["ID","UTC","Kullanıcı / User","İşlem / Action","Ayrıntı / Detail"])
@@ -162,6 +169,9 @@ class ProductWindow(QMainWindow):
         self.refresh()
         model=data_directory()/"models"/"evaluation-models.json"
         if model.is_file():self.lab.model.setText(str(model))
+        self.retention_timer=QTimer(self);self.retention_timer.setInterval(60000)
+        self.retention_timer.timeout.connect(self.run_retention);self.retention_timer.start()
+        QTimer.singleShot(0,self.run_retention)
 
     def setup_models(self):
         from PySide6.QtCore import QProcess
@@ -437,8 +447,17 @@ class ProductWindow(QMainWindow):
         if data:self.ops.add_user(self.session,data["Username"],data["Password"],data["Role (admin/operator/auditor)"]);self.refresh()
 
     def retain(self):
-        if QMessageBox.question(self,"Saklama / Retention","Süreyi aşan kayıtlar silinsin mi? / Delete records older than the selected period?")!=QMessageBox.StandardButton.Yes:return
-        count=self.ops.retain(self.session,self.retention.value());self.refresh();self.notice(f"Silinen / Deleted: {count}")
+        if QMessageBox.question(self,"Saklama / Retention","Eski okumalar, araç geçişleri ve kapanmış otopark ziyaretleri silinsin ve seçilen politika kaydedilsin mi? / Delete expired observations, passages and closed parking visits, and save this policy?")!=QMessageBox.StandardButton.Yes:return
+        count=self.ops.retain(self.session,self.retention.value(),automatic=self.retention_auto.isChecked())
+        self.refresh();self.notice(f"Silinen / Deleted: {count}")
+
+    def run_retention(self):
+        try:
+            count=self.ops.apply_retention_policy()
+            if count:
+                self.passage_browser.latest();self.refresh()
+                self.notice(f'Otomatik temizlik / Automatic cleanup: {count}')
+        except Exception:self.notice('Otomatik temizlik başarısız; saklama ayarlarını ve disk erişimini kontrol edin. / Automatic cleanup failed; check policy and disk access.')
 
     def lock_session(self):
         self.lab.cancel();self.ops.logout(self.session);self.hide()
@@ -452,7 +471,7 @@ class ProductWindow(QMainWindow):
         else:self.close()
 
     def closeEvent(self,event):
-        self.lab.close();self.ops.logout(self.session);super().closeEvent(event)
+        self.retention_timer.stop();self.lab.close();self.ops.logout(self.session);super().closeEvent(event)
 
 
 def main():

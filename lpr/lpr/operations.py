@@ -312,15 +312,48 @@ class Operations:
         self.check(session,"read")
         return [dict(x) for x in self.db.execute("SELECT * FROM audit ORDER BY id DESC LIMIT 500")]
 
-    def retain(self,session,days):
+    def retention_policy(self,session):
+        self.check(session,'read')
+        settings=dict(self.db.execute("SELECT key,value FROM settings WHERE key IN ('retention_days','retention_enabled','retention_last_run')"))
+        days=int(settings.get('retention_days','30'))
+        if not 1<=days<=3650:raise ValueError('Invalid stored retention policy')
+        return dict(days=days,automatic=settings.get('retention_enabled')=='1',last_run=settings.get('retention_last_run'))
+
+    def _purge_expired_records(self,days,at):
+        cutoff=at-days*86400
+        n=self.db.execute('DELETE FROM observations WHERE at<?',(cutoff,)).rowcount
+        n+=self.db.execute('DELETE FROM vehicle_passages WHERE at<?',(cutoff,)).rowcount
+        self.db.execute('DELETE FROM passage_receipts WHERE visit_id IN (SELECT id FROM parking_visits WHERE exited_at<?)',(cutoff,))
+        n+=self.db.execute('DELETE FROM parking_visits WHERE exited_at<?',(cutoff,)).rowcount
+        self.db.execute("INSERT INTO settings VALUES('retention_last_run',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(str(at),))
+        return n
+
+    def retain(self,session,days,*,automatic=False):
         self.check(session,"manage")
         if type(days)!=int or not 1<=days<=3650:raise ValueError("Retention must be 1..3650 days")
+        if type(automatic) is not bool:raise ValueError('Invalid automatic retention setting')
         with self.db:
-            n=self.db.execute("DELETE FROM observations WHERE at<?",(self.clock()-days*86400,)).rowcount
-            n+=self.db.execute("DELETE FROM vehicle_passages WHERE at<?",(self.clock()-days*86400,)).rowcount
+            n=self._purge_expired_records(days,self.clock())
             self.db.execute("INSERT INTO settings VALUES('retention_days',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(str(days),))
+            self.db.execute("INSERT INTO settings VALUES('retention_enabled',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",('1' if automatic else '0',))
             self._audit(session.username,"retention",str(n))
+            self._audit(session.username,'retention_policy',f'days={days};automatic={automatic}')
         return n
+
+    def apply_retention_policy(self):
+        """Internal scheduled maintenance; authority is the persisted admin opt-in."""
+        settings=dict(self.db.execute("SELECT key,value FROM settings WHERE key IN ('retention_days','retention_enabled','retention_last_run')"))
+        if settings.get('retention_enabled')!='1':return 0
+        days=int(settings.get('retention_days','0'))
+        if not 1<=days<=3650:raise ValueError('Invalid stored retention policy')
+        at=self.clock();last=float(settings.get('retention_last_run','0'))
+        if not math.isfinite(at) or not math.isfinite(last):raise ValueError('Invalid retention timestamp')
+        # A backwards clock must not accelerate deletion; try again after it catches up.
+        if at-last<3600:return 0
+        with self.db:
+            count=self._purge_expired_records(days,at)
+            self._audit('system','retention_automatic',str(count))
+        return count
 
     def close(self):self.sessions.clear();self.db.close()
 
