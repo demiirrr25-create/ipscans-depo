@@ -42,7 +42,10 @@ class PassageBrowser(QWidget):
         fresh=QPushButton('En yeni kayıtlar / Latest');fresh.clicked.connect(self.latest);actions.addWidget(fresh);actions.addStretch()
         layout.addLayout(actions)
         reports=QHBoxLayout();summary=QPushButton('Geçiş raporu / Passage report');summary.clicked.connect(self.show_report)
-        reports.addWidget(summary);self.export_button=QPushButton('Filtrelenen tüm kayıtları CSV aktar / Export filtered CSV')
+        reports.addWidget(summary);self.export_format=QComboBox()
+        self.export_format.addItem('CSV - geçişler / passages','csv');self.export_format.addItem('XLSX - geçişler / passages','xlsx')
+        self.export_format.addItem('PDF - özet rapor / summary','pdf');reports.addWidget(self.export_format)
+        self.export_button=QPushButton('Filtrelenen kayıtları aktar / Export filtered records')
         self.export_button.clicked.connect(self.export_csv);reports.addWidget(self.export_button);reports.addStretch()
         layout.addLayout(reports)
         self.table=QTableWidget(0,9);self.table.setHorizontalHeaderLabels(['UTC','Kamera','Çizgi','Yön','Araç','Plaka','Güven','Durum','Olay ID'])
@@ -89,16 +92,18 @@ class PassageBrowser(QWidget):
         except ValueError:self.error.setText('Daha kısa bir tarih aralığı seçin / Select a shorter date range')
 
     def export_csv(self):
-        from .passage_export import export_passages_csv
+        from .passage_export import export_passages_csv,export_passages_xlsx,export_passage_summary_pdf
         try:
             self.ops.check(self.session,'export')
-            path,_=QFileDialog.getSaveFileName(self,'Geçiş CSV / Passage CSV','lpr-passages.csv','CSV (*.csv)')
+            extension=self.export_format.currentData()
+            path,_=QFileDialog.getSaveFileName(self,'Geçiş raporu / Passage report','lpr-passages.'+extension,extension.upper()+' (*.'+extension+')')
             if not path:return
-            if not path.lower().endswith('.csv'):path+='.csv'
-            count=export_passages_csv(self.ops,self.session,self.filters,path)
-            self.error.setText(f'{count} kayıt kaydedildi / records exported · UTC')
+            if not path.lower().endswith('.'+extension):path+='.'+extension
+            exporter={'csv':export_passages_csv,'xlsx':export_passages_xlsx,'pdf':export_passage_summary_pdf}[extension]
+            count=exporter(self.ops,self.session,self.filters,path)
+            self.error.setText(f'{count} geçiş rapora dahil edildi / passages included · UTC')
         except PermissionError:self.error.setText('Dışa aktarım yetkisi yok veya dosyaya erişilemiyor / Permission denied or destination inaccessible')
-        except ValueError:self.error.setText('En fazla 100.000 kayıt aktarılabilir; tarih aralığını daraltın / Narrow the date range (100,000 record limit)')
+        except ValueError:self.error.setText('Tarih aralığını daraltın / Narrow the date range (CSV/XLSX: 100,000 records; PDF: 10,000 groups)')
         except OSError:self.error.setText('Dosya yazılamadı / Could not write file')
 
     def next_page(self):

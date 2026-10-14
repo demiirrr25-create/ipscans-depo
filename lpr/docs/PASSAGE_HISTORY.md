@@ -16,4 +16,12 @@ CSV export includes all matching passage rows rather than only the visible page,
 
 The full suite now passes **93 tests**, including a 503-record multi-page export, combined aggregate counts, authorization denial, formula input protection, and preservation of existing output after an export limit failure. The report dialog was rendered and visually inspected with synthetic unread events.
 
-XLSX/PDF passage report exports, camera downtime reports and production-scale performance measurements remain pending. The existing separate observation CSV export remains available.
+## XLSX and PDF
+
+The export selector now offers CSV passage rows, XLSX passage rows with a formula-based summary, and a PDF aggregate report. XLSX contains a Report sheet and a Passages sheet, frozen headers, filters, typed UTC dates, numeric confidence percentages and explicit text cells for camera/line/plate values. Formula and URL auto-detection are disabled. Summary counts have cached values and COUNTIF/COUNTA formulas referencing the exported detail range. Applied filters are included in human-readable form.
+
+XLSX uses XlsxWriter 3.2.9 in constant-memory mode. Its BSD-2-Clause notice is retained under third-party-notices/XlsxWriter and the dependency is pinned for desktop builds. PDF uses the existing Qt runtime, with explicit page layout, repeated section headings and page numbers. PDF is an aggregate report; individual passages remain available through CSV/XLSX. Both new formats use checked permissions, audit entries, temporary files and atomic replacement. Temporary XLSX assembly files are confined to an isolated directory that is removed after completion/failure.
+
+Validation: the full suite passed 96 tests before the final PDF pagination repair; the 14-test export/report suite passed after that repair, including a new three-page PDF load/text test. A 40-event synthetic export was rendered: both workbook sheets and all PDF pages were inspected. An initial Qt painter clipping issue on later pages was found visually and fixed by isolating painter state per document. Artifact Tool recalculation returned 40 total, 20 entries and 20 exits; editing one direction in a disposable in-memory copy changed the totals to 21 and 19. Native Microsoft Excel execution has not been tested. These files contain synthetic QA data, not field recognition evidence.
+
+Camera downtime reports, production-scale performance measurements and frozen executable verification of these new formats remain pending. The existing separate observation CSV export remains available.

@@ -6,3 +6,4 @@ numpy==2.4.3
 bcrypt==5.0.0
 PyInstaller==6.21.0
 pytest==9.0.2
+XlsxWriter==3.2.9
