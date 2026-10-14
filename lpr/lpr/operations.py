@@ -45,8 +45,13 @@ class Operations:
             track_id TEXT NOT NULL,vehicle_type TEXT NOT NULL,plate TEXT NOT NULL,confidence REAL NOT NULL,
             status TEXT NOT NULL,evidence_frames INTEGER NOT NULL,frame_sequence INTEGER NOT NULL);
         CREATE INDEX IF NOT EXISTS vehicle_passages_at ON vehicle_passages(at);
+        CREATE INDEX IF NOT EXISTS vehicle_passages_page ON vehicle_passages(at DESC,event_id DESC);
         CREATE INDEX IF NOT EXISTS vehicle_passages_camera_at ON vehicle_passages(camera,at);
         CREATE INDEX IF NOT EXISTS vehicle_passages_plate_at ON vehicle_passages(plate,at);
+        CREATE TABLE IF NOT EXISTS passage_order(sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL UNIQUE REFERENCES vehicle_passages(event_id) ON DELETE CASCADE);
+        INSERT INTO passage_order(event_id) SELECT event_id FROM vehicle_passages
+            WHERE event_id NOT IN (SELECT event_id FROM passage_order) ORDER BY at,event_id;
         CREATE TABLE IF NOT EXISTS grants(plate TEXT PRIMARY KEY,category TEXT NOT NULL,blocked INTEGER NOT NULL,
             valid_from REAL NOT NULL,valid_until REAL NOT NULL,direction TEXT NOT NULL,remaining INTEGER);
         CREATE TABLE IF NOT EXISTS observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,camera TEXT NOT NULL,
@@ -233,6 +238,7 @@ class Operations:
                 if any(old[key]!=values[key] for key in fields):raise ValueError("Conflicting event replay")
                 return False
             self.db.execute("INSERT INTO vehicle_passages VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",tuple(values[key] for key in fields))
+            self.db.execute('INSERT INTO passage_order(event_id) VALUES(?)',(values['event_id'],))
             self._audit(session.username,"vehicle_passage_recorded",values["event_id"])
         return True
 
@@ -240,6 +246,24 @@ class Operations:
         self.check(session,"read")
         if not 1<=limit<=5000:raise ValueError("Invalid query limit")
         return [dict(row) for row in self.db.execute("SELECT * FROM vehicle_passages ORDER BY at DESC,event_id LIMIT ?",(limit,))]
+
+    def passage_page(self,session,filters=None,*,limit=100,before=None,snapshot=None):
+        from .passage_query import PassageFilter
+        self.check(session,'read')
+        if type(limit) is not int or not 1<=limit<=500:raise ValueError('Invalid page size')
+        filters=filters or PassageFilter()
+        clauses,args=filters.sql()
+        if snapshot is None:snapshot=self.db.execute('SELECT coalesce(max(sequence),0) FROM passage_order').fetchone()[0]
+        if type(snapshot) is not int or snapshot<0:raise ValueError('Invalid query snapshot')
+        clauses.append('EXISTS (SELECT 1 FROM passage_order WHERE passage_order.event_id=vehicle_passages.event_id AND sequence<=?)');args.append(snapshot)
+        if before is not None:
+            if len(before)!=2 or not math.isfinite(before[0]) or not isinstance(before[1],str):raise ValueError('Invalid page cursor')
+            clauses.append('(at,event_id)<(?,?)');args.extend(before)
+        query='SELECT * FROM vehicle_passages WHERE '+' AND '.join(clauses)+' ORDER BY at DESC,event_id DESC LIMIT ?'
+        rows=[dict(row) for row in self.db.execute(query,(*args,limit+1))]
+        more=len(rows)>limit;rows=rows[:limit]
+        cursor=(rows[-1]['at'],rows[-1]['event_id']) if more else None
+        return dict(rows=rows,next_cursor=cursor,snapshot=snapshot)
 
     def history(self,session,plate="",limit=500):
         self.check(session,"read")

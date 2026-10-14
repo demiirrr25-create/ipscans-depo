@@ -133,8 +133,9 @@ class ProductWindow(QMainWindow):
         self.add_button(self.history_page,"CSV dışa aktar","Export CSV",self.export,"export")
         self.passages_page=self.page("passages","Araç geçişleri","Vehicle passages")
         self.passages_page.addWidget(QLabel("Araç takibinden hesaplanan çizgi geçişleri. Plaka okunamadığında olay belirsiz olarak korunur."))
-        self.passages_table=self.table(["Olay ID","UTC","Kamera","Çizgi","Yön","Araç","Plaka","Güven","Durum"])
-        self.passages_page.addWidget(self.passages_table)
+        from .passage_browser import PassageBrowser
+        self.passage_browser=PassageBrowser(self.ops,self.session)
+        self.passages_page.addWidget(self.passage_browser)
         self.cameras_page=self.page("cameras","Kameralar","Cameras")
         self.cameras_page.addWidget(QLabel("RTSP parolaları Windows DPAPI ile bu kullanıcıya bağlı şifrelenir. / RTSP secrets are protected for this Windows user with DPAPI."))
         self.camera_table=self.table(["ID","Ad / Name","Yön / Direction"]);self.cameras_page.addWidget(self.camera_table)
@@ -238,8 +239,8 @@ class ProductWindow(QMainWindow):
             rows=self.ops.history(self.session,self.search.text())
             utc=lambda n:datetime.fromtimestamp(n,timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             self.fill(self.history_table,[(r["id"],utc(r["at"]),r["camera"],r["plate"],f'{r["confidence"]:.1%}',r["status"],r["source"]) for r in rows])
-            self.fill(self.passages_table,[(r["event_id"],utc(r["at"]),r["camera"],r["line_id"],r["direction"],r["vehicle_type"],
-                r["plate"] or "—",f'{r["confidence"]:.1%}',r["status"]) for r in self.ops.vehicle_passages(self.session)])
+            self.passage_browser.session=self.session
+            self.passage_browser.refresh()
             grants=self.ops.grants(self.session);cameras=self.ops.cameras(self.session)
             self.fill(self.grant_table,[(r["plate"],r["category"],bool(r["blocked"]),utc(r["valid_from"]),utc(r["valid_until"]),r["direction"],r["remaining"]) for r in grants])
             self.fill(self.camera_table,[(r["id"],r["name"],r["direction"]) for r in cameras])
