@@ -99,3 +99,30 @@ def test_model_failure_is_contained_without_camera_stop():
     inference.start();inference.join(1)
     assert inference.status=="inference_failed"
     camera.stop.assert_not_called()
+
+
+def test_vehicle_pipeline_emits_passage_from_shared_frames():
+    from lpr.lines import CrossingLine
+    from lpr.vehicles import Vehicle
+    from lpr.vision import Box
+    image=np.zeros((100,100,3),dtype=np.uint8)
+    current=[None,0]
+    camera=SimpleNamespace(config=CameraConfig('private',camera_id='gate'),snapshot=lambda:tuple(current))
+    bottoms=iter([40,44,48,53])
+    def analyze(image):
+        bottom=next(bottoms)
+        return [],[Vehicle(Box(30,bottom-30,70,bottom,.95),'car')],1
+    pipeline=SimpleNamespace(supports_vehicle_tracking=True,analyze_traffic=analyze)
+    inference=LiveInference(camera,lambda:pipeline,lines=[CrossingLine('line','Gate',(.1,.5),(.9,.5))],interval=.01)
+    inference.start()
+    batches=[]
+    try:
+        for index in range(4):
+            current[0]=Frame(index,time.monotonic(),image)
+            batches.append(inference.results.get(timeout=2))
+        events=[event for batch in batches for event in batch['passages']]
+        assert len(events)==1 and events[0]['direction']=='entry'
+        assert events[0]['status']=='unread' and events[0]['camera']=='gate'
+        assert inference.passage_status=='enabled'
+    finally:
+        inference.stop();inference.join(2)

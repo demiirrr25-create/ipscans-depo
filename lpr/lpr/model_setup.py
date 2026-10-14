@@ -9,6 +9,8 @@ from pathlib import Path
 import urllib.request
 
 ASSETS={
+ "vehicle.onnx":("https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.onnx",
+    "c789161ed43c8269fcd4e67c67eeeb4e80c622da2eb296a20bc6007bd18a0b7d"),
  "detector.onnx":("https://github.com/ankandrew/open-image-models/releases/download/assets/yolo-v9-t-384-license-plates-end2end.onnx",
     "888397b96d761c89db40bc9c305838e8652660f5e282c2cadebbe8d2951a77a8"),
  "ocr/model.onnx":("https://github.com/ankandrew/cnn-ocr-lp/releases/download/arg-plates/cct_xs_v2_global.onnx",
@@ -36,6 +38,9 @@ def prepare(root,progress=lambda value:None):
         "source":"https://github.com/ankandrew/open-image-models/releases/tag/assets",
         "reviewed_by":"Development source review; not legal approval", "reviewed_at":"2026-10-10",
         "evaluation_permitted":True,"commercial_use_approved":False,
+        "vehicle":{"path":"vehicle.onnx","sha256":ASSETS["vehicle.onnx"][1],
+            "format":"yolox_raw_coco","input_size":416,
+            "source":ASSETS["vehicle.onnx"][0],"license":"YOLOX upstream Apache-2.0; model/data distribution review pending"},
         "detector":{"path":"detector.onnx","sha256":ASSETS["detector.onnx"][1],
             "format":"batch_xyxy_class_score","input_size":384,"threshold":.5},
         "ocr":{"backend":"fast_plate_ocr","path":"ocr","model_file":"model.onnx","config_file":"config.yaml",

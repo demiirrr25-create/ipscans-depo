@@ -52,6 +52,14 @@ def load_manifest(path, *, evaluation=False):
                 for field in ("model_file", "config_file"):
                     if artifact.get(field) not in artifact["files"]:
                         raise ValueError("OCR runtime files must have verified checksums")
+    if "vehicle" in value:
+        artifact=value["vehicle"]
+        if not artifact.get("source") or not artifact.get("license"):
+            raise ValueError("Vehicle model provenance required")
+        root=canonical_path(path.parent/artifact["path"])
+        if not root.is_relative_to(path.parent):raise ValueError("Vehicle model must reside under manifest directory")
+        verify_artifact(root,artifact["sha256"])
+        artifact["resolved_path"]=str(root)
     return value
 
 
@@ -194,8 +202,16 @@ class PaddleRecognizer:
 
 
 class Pipeline:
-    def __init__(self, detector, recognizer):
+    def __init__(self, detector, recognizer,vehicle_detector=None):
         self.detector,self.recognizer = detector,recognizer
+        self.vehicle_detector=vehicle_detector
+        self.supports_vehicle_tracking=vehicle_detector is not None
+
+    def analyze_traffic(self,frame):
+        started=time.perf_counter()
+        readings,_=self.analyze(frame)
+        vehicles=self.vehicle_detector.detect(frame) if self.vehicle_detector is not None else []
+        return readings,vehicles,(time.perf_counter()-started)*1000
 
     def analyze(self, frame):
         import numpy as np
@@ -222,6 +238,10 @@ def build_pipeline(manifest_path, gpu=False, *, evaluation=False):
     if backend not in {"paddleocr","fast_plate_ocr"}:
         raise ValueError("Unsupported OCR backend")
     ocr = FastPlateRecognizer if backend == "fast_plate_ocr" else PaddleRecognizer
-    pipeline = Pipeline(OnnxDetector(manifest["detector"],gpu),ocr(manifest["ocr"],gpu))
+    vehicle_detector=None
+    if "vehicle" in manifest:
+        from .vehicles import YoloxVehicleDetector
+        vehicle_detector=YoloxVehicleDetector(manifest["vehicle"])
+    pipeline = Pipeline(OnnxDetector(manifest["detector"],gpu),ocr(manifest["ocr"],gpu),vehicle_detector)
     pipeline.evaluation = evaluation
     return pipeline

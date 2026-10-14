@@ -7,6 +7,7 @@ from pathlib import Path
 import secrets
 import sqlite3
 import time
+import uuid
 from urllib.parse import urlsplit
 
 from .core import normalize_plate,valid_tr_plate
@@ -39,6 +40,13 @@ class Operations:
         CREATE TABLE IF NOT EXISTS cameras(id TEXT PRIMARY KEY,name TEXT NOT NULL,secret TEXT NOT NULL,direction TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS camera_lines(camera_id TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
             line_id TEXT NOT NULL,definition TEXT NOT NULL,PRIMARY KEY(camera_id,line_id));
+        CREATE TABLE IF NOT EXISTS vehicle_passages(event_id TEXT PRIMARY KEY,at REAL NOT NULL,
+            camera TEXT NOT NULL REFERENCES cameras(id),line_id TEXT NOT NULL,direction TEXT NOT NULL,
+            track_id TEXT NOT NULL,vehicle_type TEXT NOT NULL,plate TEXT NOT NULL,confidence REAL NOT NULL,
+            status TEXT NOT NULL,evidence_frames INTEGER NOT NULL,frame_sequence INTEGER NOT NULL);
+        CREATE INDEX IF NOT EXISTS vehicle_passages_at ON vehicle_passages(at);
+        CREATE INDEX IF NOT EXISTS vehicle_passages_camera_at ON vehicle_passages(camera,at);
+        CREATE INDEX IF NOT EXISTS vehicle_passages_plate_at ON vehicle_passages(plate,at);
         CREATE TABLE IF NOT EXISTS grants(plate TEXT PRIMARY KEY,category TEXT NOT NULL,blocked INTEGER NOT NULL,
             valid_from REAL NOT NULL,valid_until REAL NOT NULL,direction TEXT NOT NULL,remaining INTEGER);
         CREATE TABLE IF NOT EXISTS observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,camera TEXT NOT NULL,
@@ -194,6 +202,45 @@ class Operations:
             self._audit(session.username,"observation_recorded",str(cursor.lastrowid))
             return cursor.lastrowid
 
+    def record_vehicle_passage(self,session,event):
+        self.check(session,"review")
+        fields=("event_id","at","camera","line_id","direction","track_id","vehicle_type","plate",
+                "confidence","status","evidence_frames","frame_sequence")
+        values={key:event[key] for key in fields}
+        if str(uuid.UUID(values["event_id"]))!=values["event_id"]:raise ValueError("Invalid event identity")
+        if not math.isfinite(values["at"]) or not 0<=values["at"]<=self.clock()+30:
+            raise ValueError("Invalid passage time")
+        for key in ("camera","line_id","track_id"):
+            if not isinstance(values[key],str) or not 0<len(values[key])<=64:raise ValueError("Invalid passage identity")
+        if values["direction"] not in {"entry","exit"} or values["vehicle_type"] not in {"car","motorcycle","bus","truck"}:
+            raise ValueError("Invalid vehicle passage")
+        if values["status"] not in {"recognized","review","unread"} or not math.isfinite(values["confidence"]) or not 0<=values["confidence"]<=1:
+            raise ValueError("Invalid plate evidence")
+        if type(values["evidence_frames"]) is not int or not 0<=values["evidence_frames"]<=12:
+            raise ValueError("Invalid evidence count")
+        if type(values["frame_sequence"]) is not int or values["frame_sequence"]<0:
+            raise ValueError("Invalid frame sequence")
+        values["plate"]=normalize_plate(values["plate"])
+        if len(values["plate"])>32:raise ValueError("Invalid plate length")
+        if values["status"]=="unread" and (values["plate"] or values["confidence"] or values["evidence_frames"]):
+            raise ValueError("Unread passage cannot assert plate evidence")
+        if values["status"]=="recognized" and (values["evidence_frames"]<3 or values["confidence"]<.85 or not valid_tr_plate(values["plate"])):
+            raise ValueError("Recognized passage needs temporal plate evidence")
+        if values["status"]=="review" and not values["plate"]:raise ValueError("Empty plate must be unread")
+        with self.db:
+            old=self.db.execute("SELECT * FROM vehicle_passages WHERE event_id=?",(values["event_id"],)).fetchone()
+            if old:
+                if any(old[key]!=values[key] for key in fields):raise ValueError("Conflicting event replay")
+                return False
+            self.db.execute("INSERT INTO vehicle_passages VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",tuple(values[key] for key in fields))
+            self._audit(session.username,"vehicle_passage_recorded",values["event_id"])
+        return True
+
+    def vehicle_passages(self,session,limit=500):
+        self.check(session,"read")
+        if not 1<=limit<=5000:raise ValueError("Invalid query limit")
+        return [dict(row) for row in self.db.execute("SELECT * FROM vehicle_passages ORDER BY at DESC,event_id LIMIT ?",(limit,))]
+
     def history(self,session,plate="",limit=500):
         self.check(session,"read")
         if not 1<=limit<=5000:raise ValueError("Invalid limit")
@@ -226,6 +273,7 @@ class Operations:
         if type(days)!=int or not 1<=days<=3650:raise ValueError("Retention must be 1..3650 days")
         with self.db:
             n=self.db.execute("DELETE FROM observations WHERE at<?",(self.clock()-days*86400,)).rowcount
+            n+=self.db.execute("DELETE FROM vehicle_passages WHERE at<?",(self.clock()-days*86400,)).rowcount
             self.db.execute("INSERT INTO settings VALUES('retention_days',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(str(days),))
             self._audit(session.username,"retention",str(n))
         return n

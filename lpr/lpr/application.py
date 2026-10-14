@@ -131,6 +131,10 @@ class ProductWindow(QMainWindow):
         self.history_page.addWidget(self.history_table)
         self.add_button(self.history_page,"Seçili okumayı düzelt","Correct selected reading",self.correct,"review")
         self.add_button(self.history_page,"CSV dışa aktar","Export CSV",self.export,"export")
+        self.passages_page=self.page("passages","Araç geçişleri","Vehicle passages")
+        self.passages_page.addWidget(QLabel("Araç takibinden hesaplanan çizgi geçişleri. Plaka okunamadığında olay belirsiz olarak korunur."))
+        self.passages_table=self.table(["Olay ID","UTC","Kamera","Çizgi","Yön","Araç","Plaka","Güven","Durum"])
+        self.passages_page.addWidget(self.passages_table)
         self.cameras_page=self.page("cameras","Kameralar","Cameras")
         self.cameras_page.addWidget(QLabel("RTSP parolaları Windows DPAPI ile bu kullanıcıya bağlı şifrelenir. / RTSP secrets are protected for this Windows user with DPAPI."))
         self.camera_table=self.table(["ID","Ad / Name","Yön / Direction"]);self.cameras_page.addWidget(self.camera_table)
@@ -145,7 +149,7 @@ class ProductWindow(QMainWindow):
         self.camera_status=QLabel("Canlı mod yerel model dosyalarını ve SHA-256 bütünlüğünü doğrular; ticari onay bayrağı aranmaz. / Live mode verifies local model files and SHA-256 integrity; no commercial approval flag is required.")
         self.camera_status.setWordWrap(True);self.cameras_page.addWidget(self.camera_status)
         self.settings_page=self.page("settings","Ayarlar ve denetim","Settings & audit")
-        self.add_button(self.settings_page,"Değerlendirme modellerini indir (11 MB)","Download evaluation models (11 MB)",self.setup_models)
+        self.add_button(self.settings_page,"Değerlendirme modellerini indir (15 MB)","Download evaluation models (15 MB)",self.setup_models)
         self.add_button(self.settings_page,"Kullanıcı ekle","Add user",self.add_user,"users")
         self.add_button(self.settings_page,"Doğrulanmış veritabanı yedeği al","Create verified database backup",self.backup,"manage")
         self.retention=QSpinBox();self.retention.setRange(1,3650);self.retention.setValue(30)
@@ -162,9 +166,9 @@ class ProductWindow(QMainWindow):
         from PySide6.QtCore import QProcess
         if self.lab.process.state()!=QProcess.ProcessState.NotRunning:raise ValueError("Already running")
         reply=QMessageBox.question(self,"Model kurulumu / Model setup",
-            "GitHub üzerinden yaklaşık 11 MB değerlendirme modeli indirilecek. Görüntüleriniz gönderilmez. "
+            "GitHub üzerinden yaklaşık 15 MB değerlendirme modeli indirilecek. Görüntüleriniz gönderilmez. "
             "Modeller görüntü, video ve canlı RTSP ile kullanılabilir. Kaynak lisans koşulları geçerlidir.\n\n"
-            "Download about 11 MB of evaluation models from GitHub? Images stay local. "
+            "Download about 15 MB of evaluation models from GitHub? Images stay local. "
             "Models can process images, video and live RTSP. Upstream license terms apply.")
         if reply!=QMessageBox.StandardButton.Yes:return
         self.lab.buffer=b"";self.lab.had_error=False;self.lab.stopped=False;self.lab.messages=0
@@ -234,6 +238,8 @@ class ProductWindow(QMainWindow):
             rows=self.ops.history(self.session,self.search.text())
             utc=lambda n:datetime.fromtimestamp(n,timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             self.fill(self.history_table,[(r["id"],utc(r["at"]),r["camera"],r["plate"],f'{r["confidence"]:.1%}',r["status"],r["source"]) for r in rows])
+            self.fill(self.passages_table,[(r["event_id"],utc(r["at"]),r["camera"],r["line_id"],r["direction"],r["vehicle_type"],
+                r["plate"] or "—",f'{r["confidence"]:.1%}',r["status"]) for r in self.ops.vehicle_passages(self.session)])
             grants=self.ops.grants(self.session);cameras=self.ops.cameras(self.session)
             self.fill(self.grant_table,[(r["plate"],r["category"],bool(r["blocked"]),utc(r["valid_from"]),utc(r["valid_until"]),r["direction"],r["remaining"]) for r in grants])
             self.fill(self.camera_table,[(r["id"],r["name"],r["direction"]) for r in cameras])
@@ -328,6 +334,7 @@ class ProductWindow(QMainWindow):
         def save_readings(result):
             for decision in result["decisions"]:
                 self.ops.record(self.session,decision["plate"],decision["confidence"],decision["status"],camera_id,"live_rtsp")
+            for passage in result.get("passages",[]):self.ops.record_vehicle_passage(self.session,passage)
         dialog=PreviewDialog(source,camera_id,parent or self,capture_worker=capture_worker,
                              authorize=lambda:self.ops.check(self.session,"manage"),
                              lines=self.ops.camera_lines(self.session,camera_id),

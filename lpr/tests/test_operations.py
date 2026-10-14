@@ -2,6 +2,7 @@ from dataclasses import replace
 import pytest
 from lpr.operations import Operations
 from lpr.security import protect_secret,unprotect_secret
+import uuid
 
 @pytest.fixture
 def station(tmp_path):
@@ -67,3 +68,21 @@ def test_dpapi_and_no_plaintext_camera(station):
     assert 'secret' not in ops.cameras(admin)[0]
     assert source not in str(ops.audit(admin))
     with pytest.raises(Exception):unprotect_secret(encoded[:-8]+'AAAAAAAA')
+
+
+def test_vehicle_passage_replay_evidence_retention(station):
+    ops,admin,now=station
+    ops.save_camera(admin,'gate','Gate','rtsp://192.0.2.1/stream','entry')
+    event=dict(event_id=str(uuid.uuid4()),at=now[0],camera='gate',line_id='line',direction='entry',
+               track_id='1',vehicle_type='car',plate='34ABC123',confidence=.97,status='recognized',
+               evidence_frames=4,frame_sequence=10)
+    assert ops.record_vehicle_passage(admin,event)
+    assert not ops.record_vehicle_passage(admin,event)
+    assert len(ops.vehicle_passages(admin))==1
+    with pytest.raises(ValueError):ops.record_vehicle_passage(admin,{**event,'direction':'exit'})
+    with pytest.raises(ValueError):ops.record_vehicle_passage(admin,{**event,'event_id':str(uuid.uuid4()),'evidence_frames':1})
+    with pytest.raises(ValueError):ops.record_vehicle_passage(admin,{**event,'event_id':str(uuid.uuid4()),'status':'unread'})
+    now[0]+=31*86400
+    admin=ops.login('admin','a secure test password')
+    assert ops.retain(admin,30)==1
+    assert ops.vehicle_passages(admin)==[]

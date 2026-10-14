@@ -5,7 +5,7 @@ from dataclasses import replace
 import math
 from queue import Empty
 
-from PySide6.QtCore import Qt, QTimer, QPointF
+from PySide6.QtCore import Qt, QTimer, QPointF, Signal
 from PySide6.QtGui import QImage, QPainter, QPen, QShortcut, QKeySequence
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget, QHBoxLayout, QInputDialog, QListWidget
 
@@ -14,6 +14,7 @@ from .lines import CrossingLine, video_rectangle, normalized_point
 
 
 class VideoSurface(QWidget):
+    geometryEditing=Signal()
     def __init__(self, parent=None):
         super().__init__(parent)
         self.image = QImage()
@@ -79,6 +80,7 @@ class VideoSurface(QWidget):
         point=self.event_point(event)
         if point is None:return
         if self.drawing:
+            self.geometryEditing.emit()
             self.draft=(point,point)
             return
         self.selected=None
@@ -87,10 +89,12 @@ class VideoSurface(QWidget):
             p=event.position()
             for field,end in (("start",a),("end",b)):
                 if math.hypot(p.x()-end.x(),p.y()-end.y())<=12:
+                    self.geometryEditing.emit()
                     self.selected=line.id;self.drag=(line,field,point);return
             dx,dy=b.x()-a.x(),b.y()-a.y()
             t=max(0,min(1,((p.x()-a.x())*dx+(p.y()-a.y())*dy)/(dx*dx+dy*dy)))
             if math.hypot(p.x()-a.x()-t*dx,p.y()-a.y()-t*dy)<=10:
+                self.geometryEditing.emit()
                 self.selected=line.id;self.drag=(line,"move",point);return
         self.update()
 
@@ -122,6 +126,7 @@ class VideoSurface(QWidget):
         self.draft=None;self.drag=None;self.drawing=False;self.update()
 
     def delete_selected(self):
+        if self.selected is not None:self.geometryEditing.emit()
         self.lines=[line for line in self.lines if line.id!=self.selected]
         self.selected=None;self.update()
 
@@ -163,6 +168,7 @@ class PreviewDialog(QDialog):
         layout = QVBoxLayout(self)
         self.surface = VideoSurface(self)
         self.surface.lines = list(lines)
+        self.surface.geometryEditing.connect(self.invalidate_lines)
         layout.addWidget(self.surface, 1)
         if save_lines is not None:
             controls=QHBoxLayout()
@@ -227,11 +233,18 @@ class PreviewDialog(QDialog):
         if self.inference is not None and self.ocr_enabled and not self.inference.results.empty():
             return
         from .live_inference import LiveInference
-        self.inference=LiveInference(self.worker,self.pipeline_factory,region=self.region)
+        self.inference=LiveInference(self.worker,self.pipeline_factory,region=self.region,lines=self.surface.lines)
         self.ocr_enabled=True
         self.ocr_delivery_failed=False
         self.inference.start()
         self.ocr_button.setText("OCR durdur")
+
+    def invalidate_lines(self):
+        if self.inference is not None and self.inference.is_alive():
+            self.ocr_enabled=False
+            self.inference.stop()
+            self.ocr_button.setEnabled(False)
+            self.ocr_button.setText("Çizgi düzenleniyor · OCR durduruluyor…")
 
     def poll_ocr(self):
         inference=self.inference
@@ -252,6 +265,8 @@ class PreviewDialog(QDialog):
                         for decision in result["decisions"]:
                             if decision["status"] in {"recognized","review","candidate"}:
                                 self.readings.insertItem(0,f'{decision["plate"]} · {decision["confidence"]:.1%} · {decision["status"]}')
+                        for passage in result.get("passages",[]):
+                            self.readings.insertItem(0,f'{passage["direction"]} · {passage["vehicle_type"]} · {passage["plate"] or "Plaka okunamadı"} · {passage["status"]}')
                         while self.readings.count()>50:self.readings.takeItem(self.readings.count()-1)
         labels={"loading_models":"Modeller yükleniyor","waiting_for_frame":"Kare bekleniyor",
                 "analyzing":"OCR çalışıyor","stopped":"OCR durdu",
@@ -259,7 +274,10 @@ class PreviewDialog(QDialog):
                 "result_queue_full":"Kayıt kuyruğu doldu; OCR durdu. Kayıt işleme hızını kontrol edin"}
         state="Kayıt yazılamadı; OCR durduruldu" if self.ocr_delivery_failed else labels.get(inference.status,inference.status)
         latency="" if inference.inference_ms is None else f" · {inference.inference_ms:.0f} ms/kare"
-        self.ocr_status.setText(f"{state} · İşlenen kare: {inference.processed}{latency}")
+        passage_labels={"enabled":"Araç geçişi açık","no_lines":"Geçiş için çizgi tanımlayın",
+                        "no_vehicle_model":"Araç modeli yok; geçiş hesabı kapalı","loading":""}
+        passage_label=passage_labels.get(getattr(inference,"passage_status","loading"),"")
+        self.ocr_status.setText(f"{state} · İşlenen kare: {inference.processed}{latency} · {passage_label}")
         if not inference.is_alive():
             pending=self.ocr_enabled and not inference.results.empty()
             self.ocr_button.setEnabled(not pending)
@@ -274,11 +292,13 @@ class PreviewDialog(QDialog):
             if line.id==self.surface.selected:
                 name,ok=QInputDialog.getText(self,"PTS çizgisi","Ad",text=line.name)
                 if ok and name.strip() and len(name)<=120:
+                    self.invalidate_lines()
                     self.surface.lines=[replace(old,name=name.strip()) if old.id==line.id else old for old in self.surface.lines]
                     self.surface.update()
                 break
 
     def reverse_line(self):
+        self.invalidate_lines()
         self.surface.lines=[replace(line,positive_direction="exit" if line.positive_direction=="entry" else "entry")
                             if line.id==self.surface.selected else line for line in self.surface.lines]
         self.surface.update()
