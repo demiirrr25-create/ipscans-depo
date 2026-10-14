@@ -227,7 +227,9 @@ class RecognitionWindow(QMainWindow):
         if "error" in message:
             self.had_error=True;self.set_status("error");return
         readings=message.get("readings",[])
-        if message.get("decision"):
+        if "decisions" in message:
+            readings=[{"text":d["plate"],"confidence":d["confidence"],"status":d["status"]} for d in message["decisions"]]
+        elif message.get("decision"):
             d=message["decision"]
             readings=[{"text":d["plate"],"confidence":d["confidence"],"status":d["status"]}]
         for r in readings:

@@ -63,12 +63,14 @@ def benchmark(pipeline, manifest, output):
         predicted = normalize_plate(predictions[0]["text"]) if len(predictions) == 1 else ""
         rows.append({"image":case["image"],"expected":normalize_plate(case["expected"]),
                      "predicted":predicted,"latency_ms":latency,
-                     "ambiguous":len(predictions)>1})
+                     "ambiguous":len(predictions)>1,"condition":str(case.get("condition","unspecified"))})
     report = {"dataset_id":data["dataset_id"],"synthetic":bool(data.get("synthetic",False)),
               "evaluation":getattr(pipeline,"evaluation",False),
               "scope":"one_plate_per_image; ambiguous detections count as abstentions",
               "latency_scope":"detector+ocr; excludes decoding and RTSP transport",
               "metrics":summarize(rows),"rows":rows,
+              "by_condition":{condition:summarize([r for r in rows if r['condition']==condition])
+                              for condition in sorted({r['condition'] for r in rows})},
               "python":platform.python_version(),"providers":pipeline.detector.providers}
     Path(output).write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
     emit(report["metrics"])
@@ -76,50 +78,17 @@ def benchmark(pipeline, manifest, output):
 
 
 def live(pipeline, args):
-    if getattr(pipeline,"evaluation",False):
-        raise ValueError("Evaluation models are restricted to offline inputs")
-    from .camera import CameraConfig, CameraWorker
-    source = os.environ.get(args.source_env)
-    if not source:
-        raise ValueError("Camera source environment variable is missing")
-    worker = CameraWorker(CameraConfig(source,camera_id=args.camera))
-    store,engine = EventStore(args.database),Consensus()
-    worker.start()
-    deadline = time.monotonic()+args.seconds
-    last_status = None
-    try:
-        while time.monotonic() < deadline:
-            if worker.status != last_status:
-                emit({"camera":args.camera,"status":worker.status})
-                last_status = worker.status
-            try:
-                frame = worker.frames.get(timeout=.25)
-            except Empty:
-                continue
-            predictions,latency = pipeline.analyze(frame.image)
-            if len(predictions) != 1:
-                # Until tracking/ROI are implemented, refuse cross-vehicle consensus.
-                engine = Consensus()
-                emit({"camera":args.camera,"status":"no_plate" if not predictions else "ambiguous",
-                      "detections":len(predictions)})
-                continue
-            prediction = predictions[0]
-            decision = engine.observe(Reading(args.camera,frame.sequence,frame.captured_at,
-                prediction["text"],prediction["confidence"]),time.monotonic())
-            store.append(decision)
-            emit({"source":"live_rtsp","camera":args.camera,"decision":asdict(decision),"inference_ms":latency,
-                  "capture_to_decision_ms":(time.monotonic()-frame.captured_at)*1000,
-                  "dropped_frames":worker.dropped})
-    except KeyboardInterrupt:
-        pass
-    finally:
-        worker.stop()
-        worker.join(timeout=7)
-        store.close()
-    if worker.is_alive():
-        emit({"status":"capture_shutdown_timeout"})
-        return 2
-    return 0
+    from .runtime import observe_cameras
+    if args.cameras_env:
+        config=json.loads(os.environ.get(args.cameras_env,"[]"))
+        if not isinstance(config,list) or not 1<=len(config)<=16:
+            raise ValueError("Expected 1..16 camera configurations")
+        cameras=[{"id":c["id"],"source":os.environ.get(c["source_env"],""),
+                  "roi":c.get("roi",[0,0,1,1])} for c in config]
+    else:
+        cameras=[{"id":args.camera,"source":os.environ.get(args.source_env,""),
+                  "roi":list(vars(args.region).values())}]
+    return observe_cameras(pipeline,cameras,args.seconds,args.database,emit)
 
 
 def main(argv=None):
@@ -140,6 +109,8 @@ def main(argv=None):
         p = commands.add_parser(command)
         p.add_argument("--models",required=True,help="reviewed local model manifest")
         p.add_argument("--gpu",action="store_true")
+        if command in {"live","video"}:
+            p.add_argument("--roi",nargs=4,type=float,metavar=("LEFT","TOP","RIGHT","BOTTOM"),default=[0,0,1,1])
         if command in {"image","video"}:
             p.add_argument("path")
             if command == "video":
@@ -147,6 +118,7 @@ def main(argv=None):
                 p.add_argument("--max-frames",type=int,default=300)
         elif command == "live":
             p.add_argument("--source-env",default="IPSCANS_LPR_RTSP")
+            p.add_argument("--cameras-env",help="Environment variable with camera IDs, source_env names and ROI; no URLs")
             p.add_argument("--camera",default="camera-1")
             p.add_argument("--database",default=":memory:")
             p.add_argument("--seconds",type=float,default=60)
@@ -173,6 +145,9 @@ def main(argv=None):
         if args.command == "demo":
             return demo(args.database)
         from .vision import build_pipeline
+        if args.command in {"live","video"}:
+            from .tracking import Region
+            args.region=Region(*args.roi)
         if args.command == "live" and not 0 < args.seconds <= 86400:
             raise ValueError("Run duration must be 0..86400 seconds")
         pipeline = build_pipeline(args.models,args.gpu,evaluation=getattr(args,"evaluation",False))
@@ -182,7 +157,7 @@ def main(argv=None):
             return live(pipeline,args)
         if args.command == "video":
             from .video import analyze_video
-            emit(analyze_video(pipeline,args.path,every=args.every,max_frames=args.max_frames,on_result=emit))
+            emit(analyze_video(pipeline,args.path,every=args.every,max_frames=args.max_frames,on_result=emit,region=args.region))
             return 0
         import cv2
         frame = cv2.imread(args.path)

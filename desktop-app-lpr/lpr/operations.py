@@ -44,6 +44,14 @@ class Operations:
         CREATE TABLE IF NOT EXISTS corrections(id INTEGER PRIMARY KEY,event INTEGER NOT NULL REFERENCES observations(id) ON DELETE CASCADE,
             at REAL NOT NULL,actor TEXT NOT NULL,old_plate TEXT NOT NULL,new_plate TEXT NOT NULL,reason TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS parking_visits(id INTEGER PRIMARY KEY,plate TEXT NOT NULL,
+            entered_at REAL NOT NULL,exited_at REAL,entry_actor TEXT NOT NULL,exit_actor TEXT,
+            entry_note TEXT NOT NULL,exit_note TEXT);
+        CREATE UNIQUE INDEX IF NOT EXISTS one_open_visit ON parking_visits(plate) WHERE exited_at IS NULL;
+        CREATE INDEX IF NOT EXISTS observations_at ON observations(at);
+        CREATE INDEX IF NOT EXISTS parking_exit ON parking_visits(exited_at);
+        CREATE TABLE IF NOT EXISTS passage_receipts(request_id TEXT PRIMARY KEY,plate TEXT NOT NULL,
+            direction TEXT NOT NULL,visit_id INTEGER NOT NULL REFERENCES parking_visits(id));
         ''')
         self.sessions={}
 
@@ -200,3 +208,91 @@ class Operations:
         return n
 
     def close(self):self.sessions.clear();self.db.close()
+
+    def parking(self,session):
+        self.check(session,"read")
+        row=self.db.execute("SELECT value FROM settings WHERE key='parking_capacity'").fetchone()
+        capacity=int(row[0]) if row else 100
+        count=self.db.execute("SELECT count(*) FROM parking_visits WHERE exited_at IS NULL").fetchone()[0]
+        visits=[dict(r) for r in self.db.execute("SELECT * FROM parking_visits WHERE exited_at IS NULL ORDER BY entered_at LIMIT 1000")]
+        return {"capacity":capacity,"occupied":count,"available":max(0,capacity-count),"visits":visits}
+
+    def set_capacity(self,session,capacity):
+        self.check(session,"manage")
+        if type(capacity) is not int or not 1<=capacity<=100000:raise ValueError("Invalid capacity")
+        with self.db:
+            self.db.execute("INSERT INTO settings VALUES('parking_capacity',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(str(capacity),))
+            self._audit(session.username,"parking_capacity",str(capacity))
+
+    def confirm_passage(self,session,plate,direction,note,request_id):
+        """Operator-confirmed physical passage ledger, never a relay command or grant."""
+        self.check(session,"review")
+        plate=normalize_plate(plate)
+        if not valid_tr_plate(plate) or direction not in {"entry","exit"}:
+            raise ValueError("Invalid passage")
+        if not note.strip() or len(note)>500 or not request_id or len(request_id)>128:
+            raise ValueError("A reason and bounded idempotency key are required")
+        self.db.execute("BEGIN IMMEDIATE")
+        try:
+            previous=self.db.execute("SELECT * FROM passage_receipts WHERE request_id=?",(request_id,)).fetchone()
+            if previous:
+                if previous["plate"]!=plate or previous["direction"]!=direction:
+                    raise ValueError("Idempotency key conflict")
+                self.db.commit()
+                return {"visit_id":previous["visit_id"],"duplicate":True,"barrier_command":False}
+            visit=self.db.execute("SELECT * FROM parking_visits WHERE plate=? AND exited_at IS NULL",(plate,)).fetchone()
+            at=self.clock()
+            if direction=="entry":
+                if visit:raise ValueError("Vehicle already inside (anti-passback)")
+                state=self.parking(session)
+                if state["occupied"]>=state["capacity"]:raise ValueError("Parking capacity reached")
+                visit_id=self.db.execute("INSERT INTO parking_visits(plate,entered_at,entry_actor,entry_note) VALUES(?,?,?,?)",
+                    (plate,at,session.username,note)).lastrowid
+            else:
+                if not visit:raise ValueError("Vehicle has no open visit")
+                if at<visit["entered_at"]:raise ValueError("Clock moved backwards")
+                visit_id=visit["id"]
+                self.db.execute("UPDATE parking_visits SET exited_at=?,exit_actor=?,exit_note=? WHERE id=?",
+                    (at,session.username,note,visit_id))
+            self.db.execute("INSERT INTO passage_receipts VALUES(?,?,?,?)",(request_id,plate,direction,visit_id))
+            self._audit(session.username,"manual_passage",json.dumps({"visit":visit_id,"direction":direction,"note":note},ensure_ascii=False))
+            self.db.commit()
+            return {"visit_id":visit_id,"duplicate":False,"barrier_command":False}
+        except Exception:
+            self.db.rollback()
+            raise
+
+    def save_camera_region(self,session,camera_id,coordinates):
+        self.check(session,"manage")
+        from .tracking import Region
+        region=Region(*coordinates)
+        if not self.db.execute("SELECT 1 FROM cameras WHERE id=?",(camera_id,)).fetchone():
+            raise ValueError("Unknown camera")
+        with self.db:
+            self.db.execute("INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                ("roi:"+camera_id,json.dumps(list(vars(region).values()))))
+            self._audit(session.username,"camera_region",camera_id)
+
+    def camera_region(self,session,camera_id):
+        self.check(session,"read")
+        row=self.db.execute("SELECT value FROM settings WHERE key=?",("roi:"+camera_id,)).fetchone()
+        return json.loads(row[0]) if row else [0,0,1,1]
+
+    def backup(self,session,target):
+        self.check(session,"manage")
+        target=Path(target)
+        # Exclusive creation avoids replacing an existing backup or the live database.
+        with target.open("xb"):
+            pass
+        try:
+            destination=sqlite3.connect(target)
+            try:
+                self.db.backup(destination)
+                if destination.execute("PRAGMA integrity_check").fetchone()[0]!="ok":
+                    raise ValueError("Backup integrity check failed")
+            finally:destination.close()
+        except Exception:
+            target.unlink(missing_ok=True)
+            raise
+        with self.db:self._audit(session.username,"backup_created",target.name)
+        return target

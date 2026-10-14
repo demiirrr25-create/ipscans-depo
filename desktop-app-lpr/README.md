@@ -1,99 +1,48 @@
-# 0.3.1 evaluation beta
+# IPScans LPR Pro 0.4.1 — Windows evaluation beta
 
-See [release notes](docs/RELEASE_0.3.md) for current features, setup, tests and outstanding limitations. This is not a production barrier-control release.
+Local ONNX plate detection/OCR, independent plate tracks, per-camera regions, 1–16 camera scheduling, a Turkish/English desktop interface and operator-confirmed parking records.
 
-Build on Windows with Python 3.13 in a clean virtual environment: `python -m pip install -r requirements-windows.txt`, `python scripts/prepare_notices.py`, then `python scripts/build_windows.py`. The build limits DLL lookup to that environment and Windows system paths. Run the source UI with `python -c "from lpr.application import main; main()"`.
+No commercial approval or activation flag is required. Source/license metadata, model SHA-256 checks and path containment remain enforced. Third-party license terms are unchanged. No physical barrier commands are implemented.
 
----
+## Start
 
-# IPScans LPR Pro — 0.2.0 geliştirme önizlemesi
+Run the Windows EXE and create an administrator account (at least 12 password characters). Download the local models in Settings, then select an image/video or configure authorized RTSP cameras. Downloaded models can also run live; no reviewer approval field is required.
 
-Windows için bağımsız LPR motoru ve siyah/beyaz TR/EN test arayüzü. **Ticari üretim sürümü değildir.** Gerçek ONNX modelleriyle fotoğraf ve kayıtlı video işleme doğrulandı. Fiziksel kamera, gerçek Türk plaka veri seti ve bariyer saha testleri henüz yapılmadı.
+Hikvision and Dahua main-stream address profiles and custom RTSP URLs are available. Configure each camera's reading region, choose 1–120 minutes and observe one or all cameras. Sixteen is a configuration limit, not measured throughput on an average PC. Camera-native ANPR events and ONVIF are not yet implemented.
 
-## 0.2.0 ile gelen çalışan kesit
+The Parking tab records operator-confirmed physical passages, current occupancy, capacity and repeated-entry protection. Recognition alone does not modify occupancy. Settings can create an integrity-checked database backup. Camera credentials in a backup remain tied to the same Windows user.
 
-- ONNX YOLOv9 tespit + FastPlateOCR CCT OCR, CPU üzerinde yerel inference.
-- Görüntü seçme, plaka kutusu, skor ve inceleme durumu gösteren PySide6 test konsolu.
-- Arayüzden bağımsız inference süreci, durdurma, timeout ve TR/EN dil geçişi.
-- Kayıtlı video için örnekleme, sınırlı kare sayısı ve EOF'ta durma; video yeniden oynatılmaz.
-- Model/config SHA-256 doğrulaması; değerlendirme izni ticari kullanım onayından ayrıdır. `live` komutu değerlendirme modellerini kabul etmez.
-- Sabit hash'lerle açıkça başlatılan model hazırlama betiği. Ağırlıklar ZIP'e dahil değildir.
+## Source and build
 
-## Windows test arayüzünü çalıştırma
-
-Bu makinedeki teslim için `outputs/Start-LPR-Lab.ps1` çalıştırıcısı hazır ortamı ve sentetik örneği açar. Başka makinede paket dizininde Python 3.14 x64 ile:
+Use Python 3.13 x64 in a clean environment:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python -m pip install -r requirements-lab.txt
-.\.venv\Scripts\python scripts/prepare_evaluation_models.py
-.\.venv\Scripts\python -m lpr.desktop --models models/evaluation/evaluation-models.json
+python -m pip install -r requirements-windows.txt
+python -m pytest -q
+python scripts/prepare_notices.py
+python scripts/build_windows.py
 ```
 
-`requirements-lab.txt` bu geliştirme makinesinde kullanılan doğrudan bağımlılıkları sabitler; tüm geçişli bağımlılıkların hash'li üretim lock dosyası değildir. Değerlendirme modelleri varsayılan olarak yalnız çevrimdışı fotoğraf/video için açılır. Seçim kutusunu kaldırmak ticari onay üretmez; manifest ayrıca onaylı olmalıdır.
-
-```powershell
-python -m lpr.cli image --models models/evaluation/evaluation-models.json --evaluation sample.jpg
-python -m lpr.cli video --models models/evaluation/evaluation-models.json --evaluation sample.mp4 --every 2 --max-frames 300
-```
-
-Arayüz ticari ürünün altı ana ekranının tamamı değildir; Faz 2 test konsoludur. Fotoğraf sonucu aday okumadır, geçiş izni değildir. Fiziksel bariyer komutu yoktur. Kullanılan modellerin ve eğitim verisinin ticari yeniden dağıtım incelemesi açık olduğu için değerlendirme manifesti `commercial_use_approved: false` kalır.
-
-## Hızlı başlangıç — model gerektirmez
-
-Bu klasörde PowerShell açın:
+Run the source GUI with `python -c "from lpr.application import main; main()"`.
 
 ```powershell
 python -m lpr.cli doctor
-python -m lpr.cli demo
-python -m pytest -q
+python -m lpr.cli image --models models/evaluation-models.json sample.jpg
+python -m lpr.cli video --models models/evaluation-models.json sample.mp4 --roi 0 0.2 1 1
+python -m lpr.cli live --models models/evaluation-models.json --source-env LPR_RTSP --seconds 300
+python -m lpr.cli live --models models/evaluation-models.json --cameras-env LPR_CAMERAS --seconds 300
 ```
 
-`demo` sentetik OCR okumalarını işler; AI tanıma veya canlı kamera gösterimi değildir. Üç aynı yüksek güvenli okumadan sonra bir `recognized` olayı, sonraki okumada `suppressed`, düşük güvende `review` üretir. Hiçbir bariyer komutu göndermez. Varsayılan veri deposu bellektedir; demo bitince silinir.
+Supply camera URLs through environment variables, not command arguments. The GUI uses DPAPI for persistent credentials. CLI output may contain plate text; keep real footage and results in authorized locations.
 
-## Gerçek görüntü / kamera adaptörlerini çalıştırma
+## Evidence and limitations
 
-FastPlateOCR + ONNX yolu Python 3.14.3 üzerinde doğrulandı. Aşağıdaki PaddleOCR alternatifi için Python 3.11/3.12 x64 ayrı ortam önerisi korunuyor; PaddleOCR adaptörü henüz gerçek modelle doğrulanmadı.
+45 source tests passed; the frozen EXE passed local synthetic image/video inference, approval-free live initialization against an intentionally unavailable loopback endpoint, and an offscreen startup check. No real camera, relay, field accuracy or 16-camera throughput claim follows from those tests.
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python -m pip install -e ".[vision,ocr,test]"
-.\.venv\Scripts\python -m lpr.cli doctor
-```
+- [0.4 release notes and multi-camera configuration](docs/RELEASE_0.4.md)
+- [Camera / Ethernet relay compatibility matrix](docs/DEVICE_COMPATIBILITY.md)
+- [Competitive research and production roadmap](docs/COMPETITIVE_RESEARCH_2026-10.md)
+- [Frozen verification evidence](docs/verification-0.4.json)
+- [Third-party notices](third-party-notices/)
 
-Bu komutlar hazırlık talimatıdır; gerçek model kurulumunun başarıyla çalıştırıldığı iddia edilmez. GPU için CPU `onnxruntime` yerine uyumlu `onnxruntime-gpu`, CUDA/cuDNN ve Paddle GPU kombinasyonu ayrıca seçilip kilitlenmeli; aynı ortamda iki ORT wheel'i kurulmaz.
-
-1. Ticari kullanımı onaylanmış plaka detector ONNX ağırlığı ve PaddleOCR yerel recognition model klasörünü temin edin.
-2. `examples/models.example.json` dosyasını model dosyalarının yanına kopyalayın. Provenance, lisans incelemesi, gerçek dosya adları ve hash'leri girin. Model dosyaları manifest klasörünün altında bulunmalıdır.
-3. Detector çıktı sözleşmesini [mimari belgesinden](docs/ARCHITECTURE.md) doğrulayın. Nx6 ve manifestte açıkça seçilen Nx7 desteklenir; her YOLO export'u desteklenmez.
-
-```powershell
-python -m lpr.cli image --models models/models.json sample.jpg
-# Kaynak URL'yi komut satırına/parola geçmişine yazmadan oturum için alır:
-$sourceSecret = Read-Host 'RTSP URL' -AsSecureString
-$env:IPSCANS_LPR_RTSP = [System.Net.NetworkCredential]::new('', $sourceSecret).Password
-python -m lpr.cli live --models models/models.json --camera gate-1 --seconds 60
-Remove-Item Env:IPSCANS_LPR_RTSP
-```
-
-Ortam değişkeni yalnız geliştirme içindir; kalıcı credential kasası uygulanmadı. Yerel stdout plaka içerir: gerçek kişisel veriyi paylaşılan terminal/loglarda çalıştırmayın. Kamera okuma kaynaklı hata çıktıları kaynak URL içermez. `--database path.db` açıkça verilirse olaylar diske yazılır; üretim RBAC/şifreleme henüz yoktur.
-
-## Doğruluk ölçümü
-
-`examples/dataset.example.json` şablonundan, kullanımı izinli ve her görüntüde sıfır/bir plaka olan bağımsız test kümesi hazırlayın:
-
-```powershell
-python -m lpr.cli benchmark --models models/models.json --dataset dataset/manifest.json --output benchmark.json
-```
-
-Çıktı exact-match accuracy, plaka precision/recall, CER ve p50/p95 **inference** gecikmesini içerir. RTSP taşıma gecikmesi, çoklu plaka detection IoU mAP veya takip doğruluğu değildir. Yanlış okuma hem FP hem FN sayılır; negatif görüntüler FP ölçümü için zorunlu test planı parçasıdır. CER yalnız gerçek plaka bulunan görüntüler üzerinden hesaplanır. Null metrik, ölçülebilir payda bulunmadığı anlamına gelir.
-
-## Teslim durumu
-
-- [Mimari ve mevcut IPScans analizi](docs/ARCHITECTURE.md)
-- [Faz bazlı görevler ve kabul ölçütleri](docs/PLAN.md)
-- [Lisans kaynakları ve açık incelemeler](docs/LICENSES.md)
-- [Test raporu](docs/TEST_REPORT.md)
-- [Ham doğrulama çıktısı](docs/verification.json)
-
-Üretim dağıtımı yapılmadı. Faz 2'nin saha kabulü için ticari ağırlık/veri incelemesi, gerçek Türk plaka test kümesi ve yetkili kamera erişimi gereklidir. [0.2.0 ölçümleri ve sınırlar](docs/PHASE2_0.2.md).
+Prior 0.1–0.3 documents are historical. Their commercial-approval runtime restrictions are superseded by 0.4.1. This unsigned beta is not a completed automatic barrier-control product.
