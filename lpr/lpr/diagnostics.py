@@ -4,9 +4,11 @@ from queue import Empty
 from .camera import CameraConfig,CameraWorker
 
 
-def probe_camera(source,seconds=10,preview=False):
+def probe_camera(source,seconds=10,preview=False,models=None):
     if not 1<=seconds<=30:
         raise ValueError("Camera test duration must be 1..30 seconds")
+    if models is not None and not preview:
+        raise ValueError("Shared OCR diagnostics require preview")
     if preview:
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QApplication
@@ -14,7 +16,18 @@ def probe_camera(source,seconds=10,preview=False):
         from .preview import PreviewDialog
         app=QApplication.instance() or QApplication([])
         initializer=RecognitionWindow();initializer.close()
-        dialog=PreviewDialog(source,"diagnostic")
+        connections=[0]
+        def capture(value):
+            from .camera import opencv_capture
+            connections[0]+=1
+            return opencv_capture(value)
+        options={"worker_factory":lambda config:CameraWorker(config,factory=capture)}
+        result_count=[0]
+        if models is not None:
+            from .vision import build_pipeline
+            def received(result):result_count[0]+=1
+            options.update(pipeline_factory=lambda:build_pipeline(models),on_result=received)
+        dialog=PreviewDialog(source,"diagnostic",**options)
         dialog.setStyleSheet(STYLE)
         counts={"frames":0,"paints":0}
         original_set=dialog.surface.set_frame
@@ -27,11 +40,16 @@ def probe_camera(source,seconds=10,preview=False):
         dialog.surface.set_frame=display
         dialog.surface.paintEvent=paint
         dialog.show()
+        if models is not None:dialog.toggle_ocr()
         QTimer.singleShot(int(seconds*1000),dialog.close)
         dialog.exec()
-        return {"mode":"qt_preview","frames_displayed":counts["frames"],"video_paints":counts["paints"],
+        result={"mode":"qt_preview","frames_displayed":counts["frames"],"video_paints":counts["paints"],
                 "resolution":dialog.worker.resolution,"shutdown_completed":not dialog.worker.is_alive(),
-                "last_error":dialog.worker.last_error}
+                "last_error":dialog.worker.last_error,"capture_connections":connections[0]}
+        if models is not None:
+            result.update(ocr_processed=dialog.inference.processed,ocr_status=dialog.inference.status,
+                          ocr_result_batches=result_count[0],ocr_shutdown_completed=not dialog.inference.is_alive())
+        return result
     worker=CameraWorker(CameraConfig(source,max_retries=1))
     started=time.monotonic();first=None;count=0
     worker.start()

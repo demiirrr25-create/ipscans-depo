@@ -144,7 +144,7 @@ def test_camera_diagnostics_cli_does_not_require_models(monkeypatch,capsys):
     probe=Mock(return_value={"frames_displayed":2,"shutdown_completed":True})
     monkeypatch.setattr(diagnostics,"probe_camera",probe)
     assert main(["camera-test","--source-env","TEST_CAMERA_SOURCE","--seconds","1","--preview"])==0
-    probe.assert_called_once_with("private-camera",1,True)
+    probe.assert_called_once_with("private-camera",1,True,None)
     assert "private-camera" not in capsys.readouterr().out
 
 
@@ -153,3 +153,50 @@ def test_camera_diagnostics_missing_source_fails_without_leaking(monkeypatch,cap
     monkeypatch.delenv("TEST_CAMERA_SOURCE",raising=False)
     assert main(["camera-test","--source-env","TEST_CAMERA_SOURCE","--seconds","1"])==2
     assert '"error": "ValueError"' in capsys.readouterr().out
+
+
+def test_preview_records_on_ui_thread_and_discards_prior_connection(tmp_path):
+    from types import SimpleNamespace
+    from lpr.operations import Operations
+    app=QApplication.instance() or QApplication([])
+    ops=Operations(tmp_path/"preview.db")
+    ops.setup("admin","a secure test password")
+    session=ops.login("admin","a secure test password")
+    capture=Mock();capture.is_alive.return_value=False;capture.snapshot.return_value=(None,2)
+    def save(result):
+        for d in result["decisions"]:
+            ops.record(session,d["plate"],d["confidence"],d["status"],"gate","live_rtsp")
+    dialog=PreviewDialog("private","gate",worker_factory=lambda config:capture,
+                         pipeline_factory=lambda:None,on_result=save)
+    inference=SimpleNamespace(results=Queue(),processed=1,inference_ms=10,status="stopped",
+                              is_alive=lambda:False,stop=Mock())
+    dialog.inference=inference;dialog.ocr_enabled=True
+    decision={"plate":"34ABC123","confidence":.99,"status":"recognized"}
+    try:
+        inference.results.put({"generation":1,"decisions":[decision]})
+        dialog.poll_ocr()
+        assert ops.history(session)==[]
+        inference.results.put({"generation":2,"decisions":[decision]})
+        dialog.poll_ocr()
+        assert len(ops.history(session))==1
+        assert dialog.readings.count()==1
+        assert ops.parking(session)["occupied"]==0
+    finally:
+        dialog.close();app.processEvents();ops.close()
+
+
+def test_record_failure_stops_ocr_without_stopping_live_capture():
+    from types import SimpleNamespace
+    app=QApplication.instance() or QApplication([])
+    capture=Mock();capture.is_alive.return_value=False;capture.snapshot.return_value=(None,0)
+    dialog=PreviewDialog("private","gate",worker_factory=lambda config:capture,
+                         pipeline_factory=lambda:None,on_result=Mock(side_effect=OSError("private")))
+    inference=SimpleNamespace(results=Queue(),processed=1,inference_ms=10,status="stopped",
+                              is_alive=lambda:False,stop=Mock())
+    inference.results.put({"generation":0,"decisions":[]})
+    dialog.inference=inference;dialog.ocr_enabled=True
+    dialog.poll_ocr()
+    assert dialog.ocr_delivery_failed
+    inference.stop.assert_called_once()
+    capture.stop.assert_not_called()
+    dialog.close();app.processEvents()

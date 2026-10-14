@@ -137,6 +137,7 @@ class ProductWindow(QMainWindow):
         self.add_button(self.cameras_page,"Kamera ekle / güncelle","Add / update camera",self.add_camera,"manage")
         self.add_button(self.cameras_page,"Seçili kameranın okuma bölgesi","Selected camera recognition region",self.set_camera_region,"manage")
         self.add_button(self.cameras_page,"Canlı görüntüyü aç","Open live preview",self.preview_camera,"manage")
+        self.add_button(self.cameras_page,"Kamera kontrol merkezini aç","Open camera control center",self.open_camera_center,"manage")
         self.camera_minutes=QSpinBox();self.camera_minutes.setRange(1,120);self.camera_minutes.setValue(1)
         self.cameras_page.addWidget(QLabel("İzleme süresi (dakika) / Observation duration (minutes)"));self.cameras_page.addWidget(self.camera_minutes)
         self.add_button(self.cameras_page,"Seçili kamerayı izle","Observe selected camera",self.start_camera,"manage")
@@ -296,21 +297,45 @@ class ProductWindow(QMainWindow):
             self.ops.save_camera(self.session,camera_id,name,source,direction)
             self.refresh()
 
-    def preview_camera(self):
+    def open_camera_center(self):
+        from .camera_center import CameraCenter
+        from PySide6.QtCore import QProcess
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
+            self.notice("Kamera merkezi için önce mevcut tanıma işlemini durdurun. / Stop the current recognition task first.")
+            return
+        cameras=self.ops.cameras(self.session)
+        if not 1<=len(cameras)<=16:raise ValueError("Use 1..16 cameras")
+        cameras=[{**camera,"source":self.ops.camera_source(self.session,camera["id"])} for camera in cameras]
+        center=CameraCenter(cameras,self,authorize=lambda:self.ops.check(self.session,"manage"),
+                            open_detail=lambda camera_id,worker,parent:self.guard(
+                                lambda:self.preview_camera(camera_id,worker,parent)))
+        center.exec()
+
+    def preview_camera(self,camera_id=None,capture_worker=None,parent=None):
         from .preview import PreviewDialog
         from PySide6.QtCore import QProcess
         if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
             self.notice("Canlı önizleme için mevcut tanıma işlemini durdurun. / Stop recognition before preview.")
             return
-        row=self.camera_table.currentRow()
-        if row<0:raise ValueError("Select camera")
-        camera_id=self.camera_table.item(row,0).text()
+        if camera_id is None:
+            row=self.camera_table.currentRow()
+            if row<0:raise ValueError("Select camera")
+            camera_id=self.camera_table.item(row,0).text()
         source=self.ops.camera_source(self.session,camera_id)
-        dialog=PreviewDialog(source,camera_id,self,
+        from .vision import build_pipeline
+        from .tracking import Region
+        model_path=self.lab.model.text()
+        def save_readings(result):
+            for decision in result["decisions"]:
+                self.ops.record(self.session,decision["plate"],decision["confidence"],decision["status"],camera_id,"live_rtsp")
+        dialog=PreviewDialog(source,camera_id,parent or self,capture_worker=capture_worker,
                              authorize=lambda:self.ops.check(self.session,"manage"),
                              lines=self.ops.camera_lines(self.session,camera_id),
-                             save_lines=lambda lines:self.ops.save_camera_lines(self.session,camera_id,lines))
+                             save_lines=lambda lines:self.ops.save_camera_lines(self.session,camera_id,lines),
+                             pipeline_factory=lambda:build_pipeline(model_path),on_result=save_readings,
+                             region=Region(*self.ops.camera_region(self.session,camera_id)))
         dialog.exec()
+        self.refresh()
 
     def start_camera(self,all_cameras=False):
         from PySide6.QtCore import QProcess,QProcessEnvironment

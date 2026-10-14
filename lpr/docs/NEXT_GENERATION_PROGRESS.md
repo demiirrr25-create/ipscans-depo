@@ -1,4 +1,4 @@
-# LPR Pro next generation — 0.5.0.dev1
+# LPR Pro next generation — 0.5.0.dev2
 
 14 October 2026. Development checkpoint, not a production release.
 
@@ -40,7 +40,7 @@ The application is Python/PySide6, not browser-based. The immediate correction t
 
 ## Still required before acceptance
 
-- Shared capture for simultaneous live view and OCR. In this checkpoint preview is exclusive with the existing OCR process to avoid duplicate camera connections; that is a temporary limitation.
+- Persistent background OCR for all cameras with fair shared-model scheduling. Selected-camera preview now has simultaneous OCR over its existing capture; the old standalone OCR subprocess remains exclusive with opening the camera center.
 - Vehicle detector and tracker integrated with the line-crossing primitive. Existing OCR tracking follows **plate boxes**. The new line primitive is deliberately not wired to that as proof of vehicle passage. No automatic passage counting claim is made.
 - Vehicle/plate model licensing and data provenance review, rectification, improved temporal fusion, and a lawful representative Turkish plate dataset with measured recognition accuracy.
 - Per-camera TCP/UDP selection and fallback, detailed RTSP diagnostics, ONVIF discovery, substream selection, hardware decode fallback, H.265 and multi-camera integration tests.
@@ -56,3 +56,17 @@ The application is Python/PySide6, not browser-based. The immediate correction t
 - [ByteTrack upstream](https://github.com/FoundationVision/ByteTrack): MIT code candidate for vehicle tracking; not yet integrated.
 
 Upstream repository licenses alone do not establish clearance for all weights, datasets, codec binaries or the complete commercial distribution.
+
+## 0.5.0.dev2 — shared capture and camera center
+
+- Added a thread-safe, non-consuming latest-frame snapshot. Frames are published read-only and invalidated with a generation change when capture disconnects.
+- OCR consumes that snapshot on its own thread at a bounded sampling interval. Preview uses its independent one-frame queue; slow inference does not consume or block its frames.
+- Inference across a disconnect or beyond the evidence age limit is discarded. The result queue has a fixed capacity; overload halts OCR visibly instead of silently growing memory. Model and persistence failures stop OCR while leaving video available.
+- Preview OCR results are delivered to `Operations.record` on the Qt thread with current session authorization. This preserves SQLite thread affinity and keeps physical parking passages separate from recognition observations.
+- Camera center provides 1/2/4/9/16 layouts, pagination, camera names, resolution/FPS and online state. Detail reuses the existing worker. Closing detail stops its OCR but leaves the grid capture running. Closing the center stops its owned captures. Hidden pages retain their camera connections.
+- **67 tests passed** after this change, including simulated 16-camera layout, isolated failure, shared-worker lifecycle, stale-generation rejection, actual SQLite persistence and OCR backpressure tests. These are not a 16-physical-camera performance qualification.
+- Real MC510 shared-stream test, 15 seconds: **one capture connection**, 192 video frames displayed/painted, 62 frames analyzed by the existing local ONNX/OCR pipeline, 62 result batches delivered, zero stale inferences. No plate detections occurred in this interval, so this does not establish OCR recognition accuracy.
+- Real camera-center/detail test: **one capture connection**, 160 grid frame updates, 102 detail frame updates, 26 OCR frames processed. Capture stayed alive after closing detail and stopped on center close.
+- The four-tile layout was rendered and visually inspected using explicit grid fixtures, not substituted camera screenshots.
+
+The preceding 58-test and frozen-preview results describe dev1. Final dev2 EXE diagnostics: exit code 0, one capture connection, 191 frames displayed/painted, 61 OCR frames processed and 61 result batches delivered in 15 seconds, 2304×1296, clean capture and OCR shutdown. The existing local model files were used; the EXE did not depend on an external Python installation. These results do not measure plate accuracy. Remaining acceptance items above, including actual vehicle tracking, still apply.

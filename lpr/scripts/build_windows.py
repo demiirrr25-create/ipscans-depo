@@ -9,7 +9,7 @@ environment['PYTHONNOUSERSITE']='1'
 environment['PYINSTALLER_CONFIG_DIR']=str(project/'build'/'pyinstaller-cache')
 for key in ('PYTHONPATH','PYTHONHOME','QT_PLUGIN_PATH','QT_QPA_PLATFORM_PLUGIN_PATH'):
     environment.pop(key,None)
-args=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--noupx','--windowed','--onefile',
+args=[sys.executable,'-m','PyInstaller','--noconfirm','--noupx','--windowed','--onefile',
       '--name','IPScans-LPR-Pro','--distpath',str(project/'dist'),'--workpath',str(project/'build'),
       '--specpath',str(project/'build'),'--paths',str(project),
       '--icon',str(project/'assets'/'icons'/'lpr-pro.ico'),
@@ -18,6 +18,8 @@ args=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--noupx','--win
       '--add-data',str(project/'third-party-notices')+';third-party-notices',
       '--hidden-import','bcrypt','--hidden-import','cv2','--copy-metadata','fast-plate-ocr',
       '--copy-metadata','onnxruntime']
+if '--incremental' not in sys.argv:
+    args.append('--clean')
 for name in ['torch','tensorflow','paddle','paddleocr','matplotlib','scipy','IPython','PyQt6','pytest',
              'pandas','sympy','openpyxl','onnxruntime.transformers','onnxruntime.quantization','fast_plate_ocr.train']:
     args+=['--exclude-module',name]

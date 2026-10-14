@@ -99,6 +99,7 @@ def main(argv=None):
     camera_test.add_argument("--source-env",default="IPSCANS_LPR_RTSP")
     camera_test.add_argument("--seconds",type=float,default=10)
     camera_test.add_argument("--preview",action="store_true")
+    camera_test.add_argument("--models",help="Optional local manifest for simultaneous preview and OCR diagnostics")
     setup=commands.add_parser("setup-models")
     setup.add_argument("--output",required=True)
     device=commands.add_parser("device-status")
@@ -135,9 +136,11 @@ def main(argv=None):
     try:
         if args.command == "camera-test":
             from .diagnostics import probe_camera
-            result=probe_camera(os.environ.get(args.source_env,""),args.seconds,args.preview)
+            result=probe_camera(os.environ.get(args.source_env,""),args.seconds,args.preview,args.models)
             emit(result)
-            return 0 if result.get("frames_received",result.get("frames_displayed",0)) and result["shutdown_completed"] else 2
+            healthy=result.get("frames_received",result.get("frames_displayed",0)) and result["shutdown_completed"]
+            if args.models:healthy=healthy and result.get("ocr_processed",0)>0 and result.get("ocr_shutdown_completed",False)
+            return 0 if healthy else 2
         if args.command == "device-status":
             from .devices import read_modbus_coil,read_shelly_switch
             state=(read_modbus_coil(args.host,args.port,args.unit,args.channel) if args.protocol=="Modbus TCP"

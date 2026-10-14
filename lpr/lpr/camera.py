@@ -1,7 +1,7 @@
 """Bounded latest-frame capture; no source URL is placed in logs or status."""
 from dataclasses import dataclass, field
 from queue import Queue, Empty, Full
-from threading import Event, Thread
+from threading import Event, Thread, Lock
 import time
 import os
 
@@ -54,6 +54,14 @@ class CameraWorker(Thread):
         self.last_error = None
         self.resolution = None
         self.fps = 0.0
+        self._frame_lock = Lock()
+        self._latest = None
+        self._generation = 0
+
+    def snapshot(self):
+        """Non-consuming view shared by preview and inference; image is read-only."""
+        with self._frame_lock:
+            return self._latest, self._generation
 
     def stop(self):
         self.stop_event.set()
@@ -83,6 +91,9 @@ class CameraWorker(Thread):
                         break
                     seq += 1
                     item = Frame(seq,self.clock(),image)
+                    image.flags.writeable = False
+                    with self._frame_lock:
+                        self._latest = item
                     self.status = "connected"
                     self.last_error = None
                     self.resolution = (image.shape[1], image.shape[0])
@@ -108,6 +119,9 @@ class CameraWorker(Thread):
                 if self.last_error is None:
                     self.last_error = "capture_failed"
             finally:
+                with self._frame_lock:
+                    self._latest = None
+                    self._generation += 1
                 if cap is not None:
                     try:
                         cap.release()

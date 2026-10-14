@@ -7,7 +7,7 @@ from queue import Empty
 
 from PySide6.QtCore import Qt, QTimer, QPointF
 from PySide6.QtGui import QImage, QPainter, QPen, QShortcut, QKeySequence
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget, QHBoxLayout, QInputDialog
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget, QHBoxLayout, QInputDialog, QListWidget
 
 from .camera import CameraConfig, CameraWorker
 from .lines import CrossingLine, video_rectangle, normalized_point
@@ -143,15 +143,23 @@ ERRORS = {
 
 class PreviewDialog(QDialog):
     def __init__(self, source, camera_id, parent=None, *, worker_factory=CameraWorker,
-                 authorize=lambda: None, confirm_connection=False, lines=(), save_lines=None):
+                 authorize=lambda: None, confirm_connection=False, lines=(), save_lines=None,
+                 pipeline_factory=None,on_result=None,region=None,capture_worker=None):
         super().__init__(parent)
         self.setWindowTitle("LPR PRO · Canlı kamera")
         self.resize(960, 640)
         self.authorize = authorize
-        self.worker = worker_factory(CameraConfig(source, camera_id=camera_id))
+        self.owns_capture=capture_worker is None
+        self.worker = capture_worker if capture_worker is not None else worker_factory(CameraConfig(source, camera_id=camera_id))
         self.last_frame_at = None
         self.closing = False
         self.result_code = QDialog.DialogCode.Rejected
+        self.pipeline_factory=pipeline_factory
+        self.on_result=on_result
+        self.region=region
+        self.inference=None
+        self.ocr_enabled=False
+        self.ocr_delivery_failed=False
         layout = QVBoxLayout(self)
         self.surface = VideoSurface(self)
         self.surface.lines = list(lines)
@@ -178,6 +186,14 @@ class PreviewDialog(QDialog):
         self.status = QLabel("Bağlanıyor… İlk çözülen kare bekleniyor.")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        if pipeline_factory is not None:
+            self.ocr_button=QPushButton("OCR başlat")
+            self.ocr_button.clicked.connect(self.toggle_ocr)
+            layout.addWidget(self.ocr_button)
+            self.ocr_status=QLabel("OCR kapalı · Canlı görüntü bağımsız çalışır.")
+            self.ocr_status.setWordWrap(True);layout.addWidget(self.ocr_status)
+            self.readings=QListWidget();self.readings.setMaximumHeight(100)
+            layout.addWidget(self.readings)
         self.confirm_button = None
         if confirm_connection:
             self.confirm_button = QPushButton("Görüntü doğrulandı · Kamerayı kaydet")
@@ -195,7 +211,59 @@ class PreviewDialog(QDialog):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
         self.timer.start(33)
-        self.worker.start()
+        if self.owns_capture:self.worker.start()
+
+    def toggle_ocr(self):
+        if self.closing:return
+        try:self.authorize()
+        except PermissionError:
+            self.close();return
+        if self.inference is not None and self.inference.is_alive():
+            self.ocr_enabled=False
+            self.inference.stop()
+            self.ocr_button.setEnabled(False)
+            self.ocr_button.setText("OCR durduruluyor…")
+            return
+        if self.inference is not None and self.ocr_enabled and not self.inference.results.empty():
+            return
+        from .live_inference import LiveInference
+        self.inference=LiveInference(self.worker,self.pipeline_factory,region=self.region)
+        self.ocr_enabled=True
+        self.ocr_delivery_failed=False
+        self.inference.start()
+        self.ocr_button.setText("OCR durdur")
+
+    def poll_ocr(self):
+        inference=self.inference
+        if inference is None:return
+        if self.ocr_enabled and not self.ocr_delivery_failed:
+            try:result=inference.results.get_nowait()
+            except Empty:result=None
+            if result is not None:
+                _,generation=self.worker.snapshot()
+                if result["generation"]==generation:
+                    try:
+                        if self.on_result is not None:self.on_result(result)
+                    except Exception:
+                        self.ocr_delivery_failed=True
+                        self.ocr_enabled=False
+                        inference.stop()
+                    else:
+                        for decision in result["decisions"]:
+                            if decision["status"] in {"recognized","review","candidate"}:
+                                self.readings.insertItem(0,f'{decision["plate"]} · {decision["confidence"]:.1%} · {decision["status"]}')
+                        while self.readings.count()>50:self.readings.takeItem(self.readings.count()-1)
+        labels={"loading_models":"Modeller yükleniyor","waiting_for_frame":"Kare bekleniyor",
+                "analyzing":"OCR çalışıyor","stopped":"OCR durdu",
+                "inference_failed":"OCR başarısız; model dosyalarını ve video bileşenlerini kontrol edin",
+                "result_queue_full":"Kayıt kuyruğu doldu; OCR durdu. Kayıt işleme hızını kontrol edin"}
+        state="Kayıt yazılamadı; OCR durduruldu" if self.ocr_delivery_failed else labels.get(inference.status,inference.status)
+        latency="" if inference.inference_ms is None else f" · {inference.inference_ms:.0f} ms/kare"
+        self.ocr_status.setText(f"{state} · İşlenen kare: {inference.processed}{latency}")
+        if not inference.is_alive():
+            pending=self.ocr_enabled and not inference.results.empty()
+            self.ocr_button.setEnabled(not pending)
+            self.ocr_button.setText("Sonuçlar kaydediliyor…" if pending else "OCR başlat")
 
     def toggle_fullscreen(self):
         if self.isFullScreen():self.showNormal()
@@ -223,6 +291,7 @@ class PreviewDialog(QDialog):
         except PermissionError:
             self.close()
             return
+        self.poll_ocr()
         try:
             frame = self.worker.frames.get_nowait()
         except Empty:
@@ -261,9 +330,10 @@ class PreviewDialog(QDialog):
         self.surface.clear()
         if self.confirm_button is not None:
             self.confirm_button.setEnabled(False)
-        self.worker.stop()
+        if self.owns_capture:self.worker.stop()
+        if self.inference is not None:self.inference.stop()
         # Never abandon a native reader or block Qt while its read timeout expires.
-        if self.worker.is_alive():
+        if (self.owns_capture and self.worker.is_alive()) or (self.inference is not None and self.inference.is_alive()):
             self.surface.clear()
             self.status.setText("Kamera bağlantısı kapatılıyor…")
             self.close_button.setEnabled(False)
