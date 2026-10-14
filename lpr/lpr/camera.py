@@ -22,7 +22,7 @@ class CameraConfig:
             raise ValueError("Invalid frame capacity")
         if not isinstance(self.max_retries, int) or not 0 <= self.max_retries <= 100:
             raise ValueError("Invalid retry limit")
-        if self.transport not in ("tcp","udp"):raise ValueError("Invalid RTSP transport")
+        if self.transport not in ("tcp","udp","auto"):raise ValueError("Invalid RTSP transport")
 
 
 @dataclass
@@ -53,6 +53,7 @@ class CameraWorker(Thread):
         self.stop_event = Event()
         self.status,self.dropped = "idle",0
         self.reconnects = 0
+        self.active_transport = 'tcp' if config.transport=='auto' else config.transport
         self.last_error = None
         self.resolution = None
         self.fps = 0.0
@@ -77,7 +78,7 @@ class CameraWorker(Thread):
                 self.status = "connecting"
                 if self.factory is None:
                     from .isolated_capture import IsolatedCapture
-                    cap=IsolatedCapture(self.config.source,transport=self.config.transport,
+                    cap=IsolatedCapture(self.config.source,transport=self.active_transport,
                                         max_pixels=self.config.max_pixels,stop_event=self.stop_event)
                 else:cap = self.factory(self.config.source)
                 if not cap.isOpened():
@@ -145,6 +146,8 @@ class CameraWorker(Thread):
                     self.status = "retry_exhausted"
                     return
                 self.status = "reconnecting"
+                if self.config.transport=='auto':
+                    self.active_transport='udp' if self.active_transport=='tcp' else 'tcp'
                 self.reconnects += 1
                 self.stop_event.wait(min(30, self.config.reconnect_seconds * 2**(failures-1)))
         self.status = "stopped"

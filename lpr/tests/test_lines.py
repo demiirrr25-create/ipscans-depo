@@ -48,7 +48,7 @@ def test_lines_persist_after_reopen_and_invalid_update_is_atomic(tmp_path):
     ops.setup("admin","long test password")
     session=ops.login("admin","long test password")
     # No camera secret is needed for this persistence-only test.
-    with ops.db:ops.db.execute("INSERT INTO cameras VALUES('gate','Gate','test-only','entry')")
+    with ops.db:ops.db.execute("INSERT INTO cameras(id,name,secret,direction) VALUES('gate','Gate','test-only','entry')")
     lines=[CrossingLine("one","First",(.2,.5),(.8,.5)),CrossingLine("two","Second",(.3,.6),(.7,.6),"exit")]
     ops.save_camera_lines(session,"gate",lines)
     with pytest.raises(ValueError):ops.save_camera_lines(session,"gate",[lines[0],lines[0]])

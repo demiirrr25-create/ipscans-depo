@@ -84,7 +84,7 @@ def live(pipeline, args):
         if not isinstance(config,list) or not 1<=len(config)<=16:
             raise ValueError("Expected 1..16 camera configurations")
         cameras=[{"id":c["id"],"source":os.environ.get(c["source_env"],""),
-                  "roi":c.get("roi",[0,0,1,1])} for c in config]
+                  "roi":c.get("roi",[0,0,1,1]),"transport":c.get('transport','tcp')} for c in config]
     else:
         cameras=[{"id":args.camera,"source":os.environ.get(args.source_env,""),
                   "roi":list(vars(args.region).values())}]

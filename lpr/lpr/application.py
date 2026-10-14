@@ -138,8 +138,9 @@ class ProductWindow(QMainWindow):
         self.passages_page.addWidget(self.passage_browser)
         self.cameras_page=self.page("cameras","Kameralar","Cameras")
         self.cameras_page.addWidget(QLabel("RTSP parolaları Windows DPAPI ile bu kullanıcıya bağlı şifrelenir. / RTSP secrets are protected for this Windows user with DPAPI."))
-        self.camera_table=self.table(["ID","Ad / Name","Yön / Direction"]);self.cameras_page.addWidget(self.camera_table)
+        self.camera_table=self.table(["ID","Ad / Name","Yön / Direction","TCP / UDP"]);self.cameras_page.addWidget(self.camera_table)
         self.add_button(self.cameras_page,"Kamera ekle / güncelle","Add / update camera",self.add_camera,"manage")
+        self.add_button(self.cameras_page,"TCP / UDP ayarı","Transport setting",self.change_camera_transport,"manage")
         self.add_button(self.cameras_page,"Seçili kameranın okuma bölgesi","Selected camera recognition region",self.set_camera_region,"manage")
         self.add_button(self.cameras_page,"Canlı görüntüyü aç","Open live preview",self.preview_camera,"manage")
         self.add_button(self.cameras_page,"Kamera kontrol merkezini aç","Open camera control center",self.open_camera_center,"manage")
@@ -253,7 +254,7 @@ class ProductWindow(QMainWindow):
             self.passage_browser.refresh()
             grants=self.ops.grants(self.session);cameras=self.ops.cameras(self.session)
             self.fill(self.grant_table,[(r["plate"],r["category"],bool(r["blocked"]),utc(r["valid_from"]),utc(r["valid_until"]),r["direction"],r["remaining"]) for r in grants])
-            self.fill(self.camera_table,[(r["id"],r["name"],r["direction"]) for r in cameras])
+            self.fill(self.camera_table,[(r["id"],r["name"],r["direction"],r['transport'].upper()) for r in cameras])
             self.fill(self.audit_table,[(r["id"],utc(r["at"]),r["actor"],r["action"],r["detail"]) for r in self.ops.audit(self.session)])
             self.summary.setText(f"{len(cameras)} kamera / cameras\n{len(grants)} araç izni / vehicle permissions\n{len(rows)} son kayıt / recent records (max. 500)")
             parking=self.ops.parking(self.session)
@@ -283,6 +284,8 @@ class ProductWindow(QMainWindow):
             self.refresh()
 
     def add_camera(self):
+        transport=self.choose_transport()
+        if transport is None:return
         brand,ok=QInputDialog.getItem(self,"Kamera / Camera","Bağlantı profili / Connection profile",["Hikvision","Dahua","Custom RTSP"],0,False)
         if not ok:return
         if brand!="Custom RTSP":
@@ -290,12 +293,27 @@ class ProductWindow(QMainWindow):
             if data:
                 from .devices import rtsp_url
                 source=rtsp_url(brand.lower(),data["Host / IP"],int(data["Port"]),int(data["Channel"]),data["Username"],data["Password"])
-                self.test_and_save_camera(data["ID"],data["Name"],source,data["Direction (entry/exit)"])
+                self.test_and_save_camera(data["ID"],data["Name"],source,data["Direction (entry/exit)"],transport)
             return
         data=self.fields("Kamera / Camera",[("ID","gate-1",False),("Name","",False),("RTSP URL","",True),("Direction (entry/exit)","entry",False)])
-        if data:self.test_and_save_camera(data["ID"],data["Name"],data["RTSP URL"],data["Direction (entry/exit)"])
+        if data:self.test_and_save_camera(data["ID"],data["Name"],data["RTSP URL"],data["Direction (entry/exit)"],transport)
 
-    def test_and_save_camera(self,camera_id,name,source,direction):
+    def choose_transport(self,current='tcp'):
+        values=['tcp','udp','auto']
+        labels=['TCP','UDP','Otomatik: TCP, sonra UDP / Auto: TCP, then UDP']
+        label,ok=QInputDialog.getItem(self,'Kamera bağlantısı / Camera connection','Taşıma yöntemi / Transport',labels,values.index(current),False)
+        return values[labels.index(label)] if ok else None
+
+    def change_camera_transport(self):
+        row=self.camera_table.currentRow()
+        if row<0:raise ValueError('Select camera')
+        camera_id=self.camera_table.item(row,0).text()
+        camera=next(c for c in self.ops.cameras(self.session) if c['id']==camera_id)
+        transport=self.choose_transport(camera['transport'])
+        if transport is not None:
+            self.test_and_save_camera(camera_id,camera['name'],self.ops.camera_source(self.session,camera_id),camera['direction'],transport)
+
+    def test_and_save_camera(self,camera_id,name,source,direction,transport='tcp'):
         from .preview import PreviewDialog
         from PySide6.QtCore import QProcess
         from urllib.parse import urlsplit
@@ -308,10 +326,10 @@ class ProductWindow(QMainWindow):
         if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
             self.notice("Bağlantı testi için mevcut tanıma işlemini durdurun. / Stop recognition before testing.")
             return
-        dialog=PreviewDialog(source,camera_id,self,confirm_connection=True,
+        dialog=PreviewDialog(source,camera_id,self,confirm_connection=True,transport=transport,
                              authorize=lambda:self.ops.check(self.session,"manage"))
         if dialog.exec()==QDialog.DialogCode.Accepted:
-            self.ops.save_camera(self.session,camera_id,name,source,direction)
+            self.ops.save_camera(self.session,camera_id,name,source,direction,transport)
             self.refresh()
 
     def open_camera_center(self):
@@ -347,6 +365,7 @@ class ProductWindow(QMainWindow):
                 self.ops.record(self.session,decision["plate"],decision["confidence"],decision["status"],camera_id,"live_rtsp")
             for passage in result.get("passages",[]):self.ops.record_vehicle_passage(self.session,passage)
         dialog=PreviewDialog(source,camera_id,parent or self,capture_worker=capture_worker,
+                             transport=self.ops.camera_transport(self.session,camera_id),
                              authorize=lambda:self.ops.check(self.session,"manage"),
                              lines=self.ops.camera_lines(self.session,camera_id),
                              save_lines=lambda lines:self.ops.save_camera_lines(self.session,camera_id,lines),
@@ -373,7 +392,8 @@ class ProductWindow(QMainWindow):
         for index,camera in enumerate(cameras):
             key=f"IPSCANS_LPR_SOURCE_{index}"
             env.insert(key,self.ops.camera_source(self.session,camera['id']))
-            config.append({'id':camera['id'],'source_env':key,'roi':self.ops.camera_region(self.session,camera['id'])})
+            config.append({'id':camera['id'],'source_env':key,'roi':self.ops.camera_region(self.session,camera['id']),
+                           'transport':self.ops.camera_transport(self.session,camera['id'])})
         env.insert("IPSCANS_LPR_CAMERAS",json.dumps(config))
         self.lab.process.setProcessEnvironment(env)
         self.lab.buffer=b"";self.lab.had_error=False;self.lab.stopped=False;self.lab.messages=0

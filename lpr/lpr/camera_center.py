@@ -43,7 +43,7 @@ class CameraTile(QWidget):
             self.surface.set_frame(frame.image)
             self.sequence=frame.sequence
         width,height=worker.resolution
-        self.status.setText(f"CANLI · {width}×{height} · {worker.fps:.1f} FPS")
+        self.status.setText(f"CANLI · {getattr(worker,'active_transport','tcp').upper()} · {width}×{height} · {worker.fps:.1f} FPS")
 
 
 class CameraCenter(QDialog):
@@ -77,7 +77,7 @@ class CameraCenter(QDialog):
             tile=CameraTile(camera,self)
             tile.activated.connect(self.detail)
             self.tiles[camera["id"]]=tile
-            self.workers[camera["id"]]=worker_factory(CameraConfig(camera["source"],camera_id=camera["id"]))
+            self.workers[camera["id"]]=worker_factory(CameraConfig(camera["source"],camera_id=camera["id"],transport=camera.get('transport','tcp')))
         self.relayout()
         close=QPushButton("Kapat");close.clicked.connect(self.close);root.addWidget(close)
         self.timer=QTimer(self);self.timer.timeout.connect(self.poll)

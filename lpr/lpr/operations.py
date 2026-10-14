@@ -68,6 +68,8 @@ class Operations:
         CREATE TABLE IF NOT EXISTS passage_receipts(request_id TEXT PRIMARY KEY,plate TEXT NOT NULL,
             direction TEXT NOT NULL,visit_id INTEGER NOT NULL REFERENCES parking_visits(id));
         ''')
+        if 'transport' not in {row[1] for row in self.db.execute('PRAGMA table_info(cameras)')}:
+            with self.db:self.db.execute("ALTER TABLE cameras ADD COLUMN transport TEXT NOT NULL DEFAULT 'tcp'")
         self.sessions={}
 
     def _audit(self,actor,action,detail=""):
@@ -119,21 +121,28 @@ class Operations:
         self.check(session,"users")
         return [dict(x) for x in self.db.execute("SELECT name,role FROM users ORDER BY name")]
 
-    def save_camera(self,session,camera_id,name,source,direction):
+    def save_camera(self,session,camera_id,name,source,direction,transport='tcp'):
         self.check(session,"manage")
+        if transport not in ('tcp','udp','auto'):raise ValueError('Invalid RTSP transport')
         parts=urlsplit(source)
         if parts.scheme not in {"rtsp","rtsps"} or not parts.hostname or direction not in {"entry","exit"}:
             raise ValueError("Valid RTSP URL and direction required")
         if not camera_id or len(camera_id)>64 or not name or len(name)>120:raise ValueError("Invalid camera")
         encrypted=protect_secret(source)
         with self.db:
-            self.db.execute("INSERT INTO cameras VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,secret=excluded.secret,direction=excluded.direction",
-                (camera_id,name,encrypted,direction))
+            self.db.execute("INSERT INTO cameras(id,name,secret,direction,transport) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,secret=excluded.secret,direction=excluded.direction,transport=excluded.transport",
+                (camera_id,name,encrypted,direction,transport))
             self._audit(session.username,"camera_saved",camera_id)
 
     def cameras(self,session):
         self.check(session,"read")
-        return [dict(x) for x in self.db.execute("SELECT id,name,direction FROM cameras ORDER BY name")]
+        return [dict(x) for x in self.db.execute("SELECT id,name,direction,transport FROM cameras ORDER BY name")]
+
+    def camera_transport(self,session,camera_id):
+        self.check(session,'read')
+        row=self.db.execute('SELECT transport FROM cameras WHERE id=?',(camera_id,)).fetchone()
+        if row is None:raise ValueError('Unknown camera')
+        return row[0]
 
     def camera_source(self,session,camera_id):
         self.check(session,"manage")

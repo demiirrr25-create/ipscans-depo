@@ -19,7 +19,7 @@ def observe_cameras(pipeline, cameras, seconds, database, emit, *,
     states=[]
     for camera in cameras:
         tracker=TrackedConsensus(camera['id'],region=Region(*camera.get('roi',[0,0,1,1])))
-        worker=worker_factory(CameraConfig(camera['source'],camera_id=camera['id']))
+        worker=worker_factory(CameraConfig(camera['source'],camera_id=camera['id'],transport=camera.get('transport','tcp')))
         states.append({'worker':worker,'tracker':tracker,'status':None,'reconnects':0,'processed':0})
     store=EventStore(database)
     started=[]

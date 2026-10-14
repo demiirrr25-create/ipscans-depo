@@ -149,13 +149,13 @@ ERRORS = {
 class PreviewDialog(QDialog):
     def __init__(self, source, camera_id, parent=None, *, worker_factory=CameraWorker,
                  authorize=lambda: None, confirm_connection=False, lines=(), save_lines=None,
-                 pipeline_factory=None,on_result=None,region=None,capture_worker=None):
+                 pipeline_factory=None,on_result=None,region=None,capture_worker=None,transport='tcp'):
         super().__init__(parent)
         self.setWindowTitle("LPR PRO · Canlı kamera")
         self.resize(960, 640)
         self.authorize = authorize
         self.owns_capture=capture_worker is None
-        self.worker = capture_worker if capture_worker is not None else worker_factory(CameraConfig(source, camera_id=camera_id))
+        self.worker = capture_worker if capture_worker is not None else worker_factory(CameraConfig(source, camera_id=camera_id,transport=transport))
         self.last_frame_at = None
         self.closing = False
         self.result_code = QDialog.DialogCode.Rejected
@@ -326,13 +326,13 @@ class PreviewDialog(QDialog):
                 self.confirm_button.setEnabled(False)
             self.surface.clear()
             error = ERRORS.get(self.worker.last_error, "İlk çözülen kare bekleniyor.")
-            self.status.setText(f"{state} · {error} · Yeniden bağlantı: {self.worker.reconnects}")
+            self.status.setText(f"{state} · {self.worker.active_transport.upper()} · {error} · Yeniden bağlantı: {self.worker.reconnects}")
         else:
             if self.confirm_button is not None:
                 self.confirm_button.setEnabled(True)
             width, height = self.worker.resolution
             age = (now-self.last_frame_at)*1000
-            self.status.setText(f"CANLI · {width}×{height} · {self.worker.fps:.1f} FPS · "
+            self.status.setText(f"CANLI · {self.worker.active_transport.upper()} · {width}×{height} · {self.worker.fps:.1f} FPS · "
                                 f"Çözüm sonrası kare yaşı: {age:.0f} ms")
 
     def confirm(self):
