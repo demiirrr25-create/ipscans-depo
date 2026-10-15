@@ -12,6 +12,7 @@ from .preview import VideoSurface
 
 class CameraTile(QWidget):
     activated=Signal(str)
+    fullscreen=Signal(str)
 
     def __init__(self,camera,parent=None):
         super().__init__(parent)
@@ -19,10 +20,13 @@ class CameraTile(QWidget):
         self.sequence=-1
         layout=QVBoxLayout(self)
         layout.setContentsMargins(4,4,4,4)
-        title=QPushButton(camera["name"])
+        self.title=title=QPushButton(camera["name"])
+        self.direction=camera.get('direction','entry');self.last_plate='—';self.ocr_status='Kapalı'
         title.clicked.connect(lambda:self.activated.emit(self.camera_id))
         title.setToolTip("Kamera ayrıntısı, PTS çizgileri ve OCR")
-        layout.addWidget(title)
+        titlebar=QHBoxLayout();titlebar.addWidget(title,1)
+        expand=QPushButton('Tam ekran');expand.clicked.connect(lambda:self.fullscreen.emit(self.camera_id));titlebar.addWidget(expand)
+        layout.addLayout(titlebar)
         self.surface=VideoSurface()
         self.surface.setMinimumSize(160,90)
         self.surface.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -30,6 +34,9 @@ class CameraTile(QWidget):
         self.status=QLabel("Bağlanıyor…")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+
+    def update_metadata(self,camera):
+        self.title.setText(camera['name']);self.direction=camera.get('direction','entry')
 
     def mouseDoubleClickEvent(self,event):
         if event.button()==Qt.MouseButton.LeftButton:self.activated.emit(self.camera_id)
@@ -44,12 +51,17 @@ class CameraTile(QWidget):
             self.surface.set_frame(frame.image)
             self.sequence=frame.sequence
         width,height=worker.resolution
-        self.status.setText(f"CANLI · {getattr(worker,'active_transport','tcp').upper()} · {width}×{height} · {worker.fps:.1f} FPS")
+        age=max(0,time.monotonic()-frame.captured_at)
+        direction='Giriş' if self.direction=='entry' else 'Çıkış'
+        decoder=getattr(worker,'decoder_info',{})
+        decode=decoder.get('actual','bilinmiyor') if isinstance(decoder,dict) else 'bilinmiyor'
+        self.status.setText(f"CANLI · {direction} · {width}×{height} · {worker.fps:.1f} FPS · {decode}\nSon kare {age:.1f} sn · OCR: {self.ocr_status} · {self.last_plate}")
 
 
 class CameraCenter(QDialog):
-    def __init__(self,cameras,parent=None,*,authorize,open_detail,worker_factory=CameraWorker,pipeline_factory=None,on_result=None):
+    def __init__(self,cameras,parent=None,*,authorize,open_detail,worker_factory=CameraWorker,pipeline_factory=None,on_result=None,embedded=False):
         super().__init__(parent)
+        if embedded:self.setWindowFlags(Qt.WindowType.Widget)
         if not 1<=len(cameras)<=16 or len({c["id"] for c in cameras})!=len(cameras):
             raise ValueError("Use 1..16 unique cameras")
         authorize()
@@ -60,6 +72,7 @@ class CameraCenter(QDialog):
         self.page=0
         self.closing=False
         self.inference=None;self.pipeline_factory=pipeline_factory;self.on_result=on_result;self.delivery_failed=False
+        self.pending_result=None;self.delivery_retry_at=0.
         self.setWindowTitle("LPR PRO · Kamera kontrol merkezi")
         self.resize(1440,900)
         root=QVBoxLayout(self)
@@ -75,16 +88,17 @@ class CameraCenter(QDialog):
         self.health=QLabel();controls.addWidget(self.health,1)
         root.addLayout(controls)
         self.ocr_button=QPushButton('Tüm kameralarda OCR başlat');self.ocr_button.setEnabled(pipeline_factory is not None)
-        self.ocr_button.clicked.connect(self.toggle_ocr);root.addWidget(self.ocr_button)
+        self.ocr_button.clicked.connect(self.toggle_ocr);controls.addWidget(self.ocr_button)
         self.ocr_health=QLabel('OCR kapalı');root.addWidget(self.ocr_health)
         self.grid=QGridLayout();root.addLayout(self.grid,1)
         for camera in cameras:
             tile=CameraTile(camera,self)
             tile.activated.connect(self.detail)
+            tile.fullscreen.connect(self.fullscreen)
             self.tiles[camera["id"]]=tile
-            self.workers[camera["id"]]=worker_factory(CameraConfig(camera["source"],camera_id=camera["id"],transport=camera.get('transport','tcp')))
+            self.workers[camera["id"]]=worker_factory(CameraConfig(camera["source"],camera_id=camera["id"],transport=camera.get('transport','tcp'),decoder_mode=camera.get('decoder_mode','software')))
         self.relayout()
-        close=QPushButton("Kapat");close.clicked.connect(self.close);root.addWidget(close)
+        close=QPushButton("Kapat");close.clicked.connect(self.close);root.addWidget(close);close.setVisible(not embedded)
         self.timer=QTimer(self);self.timer.timeout.connect(self.poll)
         try:
             for worker in self.workers.values():worker.start()
@@ -123,6 +137,19 @@ class CameraCenter(QDialog):
             self.open_detail(camera_id,self.workers[camera_id],self)
         except PermissionError:self.close()
 
+    def fullscreen(self,camera_id):
+        self.authorize()
+        dialog=QDialog(self);layout=QVBoxLayout(dialog);surface=VideoSurface();layout.addWidget(surface,1)
+        close=QPushButton('Tam ekrandan çık (Esc)');close.clicked.connect(dialog.reject);layout.addWidget(close)
+        timer=QTimer(dialog)
+        def update():
+            try:self.authorize()
+            except PermissionError:dialog.reject();return
+            worker=self.workers[camera_id];frame,_=worker.snapshot()
+            if frame is not None and 0<=time.monotonic()-frame.captured_at<=2:surface.set_frame(frame.image)
+            else:surface.clear()
+        timer.timeout.connect(update);timer.start(66);dialog.showFullScreen();dialog.exec();timer.stop()
+
     def poll(self):
         if self.closing:return
         try:self.authorize()
@@ -140,6 +167,9 @@ class CameraCenter(QDialog):
     def toggle_ocr(self):
         self.authorize()
         if self.inference is not None and self.inference.is_alive():self.inference.stop();return
+        self.poll_ocr()
+        if self.pending_result is not None or (self.inference and not self.inference.results.empty()):
+            self.ocr_health.setText('Bekleyen kayıtlar teslim edilmeden OCR yeniden başlatılamaz.');return
         from .fleet_inference import FleetInference
         self.delivery_failed=False
         self.inference=FleetInference(self.workers,self.cameras,self.pipeline_factory)
@@ -148,17 +178,20 @@ class CameraCenter(QDialog):
     def poll_ocr(self):
         inference=self.inference
         if inference is None:return
-        if not self.delivery_failed:
+        if time.monotonic()>=self.delivery_retry_at:
             for _ in range(64):
-                try:result=inference.results.get_nowait()
-                except Empty:break
+                if self.pending_result is None:
+                    try:self.pending_result=inference.results.get_nowait()
+                    except Empty:break
                 try:
-                    self.authorize()
-                    if self.on_result is not None:self.on_result(result)
+                    if not self.closing:self.authorize()
+                    if self.on_result is not None:self.on_result(self.pending_result)
+                    self.pending_result=None;self.delivery_failed=False
                 except Exception:
-                    self.delivery_failed=True;inference.stop();break
+                    self.delivery_failed=True;inference.stop();self.delivery_retry_at=time.monotonic()+1;break
         processed=sum(s['processed'] for s in inference.states.values())
         failed=sum(s['status']=='inference_failed' for s in inference.states.values())
+        for key,state in inference.states.items():self.tiles[key].ocr_status=state['status'] if inference.is_alive() else inference.status
         self.ocr_health.setText('Kayıt hatası: toplu OCR durduruldu.' if self.delivery_failed else
                                f'OCR: {inference.status} · İşlenen kare: {processed} · Hatalı kamera: {failed}')
         if not inference.is_alive():self.ocr_button.setText('Tüm kameralarda OCR başlat')
@@ -168,8 +201,10 @@ class CameraCenter(QDialog):
         if self.inference is not None:self.inference.stop()
         for worker in self.workers.values():worker.stop()
         for tile in self.tiles.values():tile.surface.clear()
-        if any(worker.is_alive() for worker in self.workers.values()) or (self.inference is not None and self.inference.is_alive()):
+        self.poll_ocr()
+        if any(worker.is_alive() for worker in self.workers.values()) or (self.inference is not None and self.inference.is_alive()) or self.pending_result is not None or (self.inference and not self.inference.results.empty()):
             self.health.setText("Kamera bağlantıları kapatılıyor…")
+            if self.delivery_failed:self.health.setText('Bekleyen geçiş kaydedilemiyor. Disk erişimini düzeltin; kayıt bellekte korunuyor ve tekrar denenecek.')
             QTimer.singleShot(100,self.close);event.ignore();return
         self.poll_ocr();self.timer.stop()
         self.done(QDialog.DialogCode.Rejected);event.accept()

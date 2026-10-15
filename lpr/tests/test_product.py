@@ -22,7 +22,9 @@ def test_multi_plate_results_are_saved_once_and_parking_is_separate(tmp_path,mon
         window.refresh()
         assert window.parking_table.rowCount()==1
         window.switch_language(1)
-        assert window.tabs.tabText(window.tabs.indexOf(window.widgets['parking'][0]))=='Parking'
+        events=window.operator_pages['events']
+        assert events.tabText(events.indexOf(window.widgets['parking'][0]))=='Parking'
+        assert window.tabs.count()==5
         window.lab.consume({'source':'recorded_video','decisions':[{**d,'status':'suppressed'}]})
         assert len(ops.history(s))==2
     finally:

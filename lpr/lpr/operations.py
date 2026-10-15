@@ -13,8 +13,8 @@ from urllib.parse import urlsplit
 from .core import normalize_plate,valid_tr_plate
 from .security import hash_password,verify_password,protect_secret,unprotect_secret
 
-ROLES={"admin":{"read","manage","review","export","users"},
-       "operator":{"read","review"},"auditor":{"read","export"}}
+ROLES={"admin":{"read","manage","review","export","users","stream"},
+       "operator":{"read","review","stream"},"auditor":{"read","export"}}
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,7 @@ class Session:
 
 class Operations:
     def __init__(self,path,clock=time.time):
+        self.path=Path(path)
         self.clock=clock
         self.db=sqlite3.connect(path)
         self.db.row_factory=sqlite3.Row
@@ -71,6 +72,30 @@ class Operations:
         if 'transport' not in {row[1] for row in self.db.execute('PRAGMA table_info(cameras)')}:
             with self.db:self.db.execute("ALTER TABLE cameras ADD COLUMN transport TEXT NOT NULL DEFAULT 'tcp'")
         self.sessions={}
+
+    def camera_stream_source(self,session,camera_id):
+        """Internal stream capability; camera editing remains administrator-only."""
+        self.check(session,'stream')
+        row=self.db.execute('SELECT secret FROM cameras WHERE id=?',(camera_id,)).fetchone()
+        if row is None:raise ValueError('Unknown camera')
+        return unprotect_secret(row[0])
+
+    def camera_calibration(self,session,camera_id):
+        from .calibration import CameraCalibration
+        self.check(session,'read')
+        row=self.db.execute('SELECT value FROM settings WHERE key=?',('calibration:'+camera_id,)).fetchone()
+        if row:return CameraCalibration.from_dict(json.loads(row[0]))
+        return CameraCalibration.from_legacy(self.camera_lines(session,camera_id),self.camera_region(session,camera_id))
+
+    def save_camera_calibration(self,session,camera_id,calibration):
+        from .calibration import CameraCalibration
+        self.check(session,'manage')
+        value=CameraCalibration.from_dict(calibration.to_dict())
+        if not self.db.execute('SELECT 1 FROM cameras WHERE id=?',(camera_id,)).fetchone():raise ValueError('Unknown camera')
+        with self.db:
+            self.db.execute('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+                ('calibration:'+camera_id,json.dumps(value.to_dict())))
+            self._audit(session.username,'calibration_saved',camera_id)
 
     def _audit(self,actor,action,detail=""):
         self.db.execute("INSERT INTO audit(at,actor,action,detail) VALUES(?,?,?,?)",(self.clock(),actor,action,detail))
@@ -257,18 +282,19 @@ class Operations:
         return [dict(row) for row in self.db.execute("SELECT * FROM vehicle_passages ORDER BY at DESC,event_id LIMIT ?",(limit,))]
 
     def passage_page(self,session,filters=None,*,limit=100,before=None,snapshot=None):
-        from .passage_query import PassageFilter
+        from .passage_query import PassageFilter,passage_source
         self.check(session,'read')
         if type(limit) is not int or not 1<=limit<=500:raise ValueError('Invalid page size')
         filters=filters or PassageFilter()
-        clauses,args=filters.sql()
+        source,registry_available=passage_source(self.db)
+        clauses,args=filters.sql(registry_available=registry_available)
         if snapshot is None:snapshot=self.db.execute('SELECT coalesce(max(sequence),0) FROM passage_order').fetchone()[0]
         if type(snapshot) is not int or snapshot<0:raise ValueError('Invalid query snapshot')
         clauses.append('EXISTS (SELECT 1 FROM passage_order WHERE passage_order.event_id=vehicle_passages.event_id AND sequence<=?)');args.append(snapshot)
         if before is not None:
             if len(before)!=2 or not math.isfinite(before[0]) or not isinstance(before[1],str):raise ValueError('Invalid page cursor')
             clauses.append('(at,event_id)<(?,?)');args.extend(before)
-        query='SELECT * FROM vehicle_passages WHERE '+' AND '.join(clauses)+' ORDER BY at DESC,event_id DESC LIMIT ?'
+        query='SELECT * FROM '+source+' WHERE '+' AND '.join(clauses)+' ORDER BY at DESC,event_id DESC LIMIT ?'
         rows=[dict(row) for row in self.db.execute(query,(*args,limit+1))]
         more=len(rows)>limit;rows=rows[:limit]
         cursor=(rows[-1]['at'],rows[-1]['event_id']) if more else None
@@ -280,19 +306,20 @@ class Operations:
         return [dict(x) for x in self.db.execute("SELECT * FROM observations WHERE instr(plate,?)>0 ORDER BY id DESC LIMIT ?",(normalize_plate(plate),limit))]
 
     def passage_report(self,session,filters=None):
-        from .passage_query import PassageFilter
+        from .passage_query import PassageFilter,passage_source
         self.check(session,'read')
-        clauses,args=(filters or PassageFilter()).sql()
+        source,registry_available=passage_source(self.db)
+        clauses,args=(filters or PassageFilter()).sql(registry_available=registry_available)
         where=' WHERE '+' AND '.join(clauses)
         metrics="count(*) AS total,coalesce(sum(direction='entry'),0) AS entries,coalesce(sum(direction='exit'),0) AS exits,coalesce(sum(status='recognized'),0) AS recognized,coalesce(sum(status='review'),0) AS review,coalesce(sum(status='unread'),0) AS unread"
         self.db.execute('SAVEPOINT passage_report_read')
         try:
-            total=dict(self.db.execute('SELECT '+metrics+' FROM vehicle_passages'+where,args).fetchone())
+            total=dict(self.db.execute('SELECT '+metrics+' FROM '+source+where,args).fetchone())
             groups={}
             for name,expression in (('daily',"strftime('%Y-%m-%d',at,'unixepoch')"),
                     ('hourly',"strftime('%Y-%m-%d %H:00',at,'unixepoch')"),('cameras','camera')):
                 rows=[dict(row) for row in self.db.execute('SELECT '+expression+' AS bucket,'+metrics+
-                    ' FROM vehicle_passages'+where+' GROUP BY '+expression+' ORDER BY bucket LIMIT 10001',args)]
+                    ' FROM '+source+where+' GROUP BY '+expression+' ORDER BY bucket LIMIT 10001',args)]
                 if len(rows)>10000:raise ValueError('Report range too wide; select a shorter date range')
                 groups[name]=rows
         finally:self.db.execute('RELEASE passage_report_read')

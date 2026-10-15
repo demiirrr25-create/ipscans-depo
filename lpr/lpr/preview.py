@@ -1,140 +1,17 @@
 """Model-independent, latest-frame Qt preview. Capture never runs on the UI thread."""
 import time
-import uuid
 from dataclasses import replace
-import math
 from queue import Empty
 
-from PySide6.QtCore import Qt, QTimer, QPointF, Signal
-from PySide6.QtGui import QImage, QPainter, QPen, QShortcut, QKeySequence
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget, QHBoxLayout, QInputDialog, QListWidget
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QShortcut, QKeySequence
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QInputDialog, QListWidget
 
 from .camera import CameraConfig, CameraWorker
-from .lines import CrossingLine, video_rectangle, normalized_point
 
 
-class VideoSurface(QWidget):
-    geometryEditing=Signal()
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.image = QImage()
-        self.lines = []
-        self.selected = None
-        self.drawing = False
-        self.drag = None
-        self.draft = None
-        self.setMinimumSize(480, 270)
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-
-    def video_rect(self):
-        return video_rectangle(self.width(),self.height(),self.image.width(),self.image.height())
-
-    def screen_point(self,point):
-        x,y,w,h=self.video_rect()
-        return QPointF(x+point[0]*w,y+point[1]*h)
-
-    def event_point(self,event):
-        if self.image.isNull():return None
-        return normalized_point(event.position().x(),event.position().y(),self.video_rect())
-
-    def set_frame(self, frame):
-        # Detach from the capture-owned array before the next native read.
-        h, w = frame.shape[:2]
-        self.image = QImage(frame.data, w, h, frame.strides[0], QImage.Format.Format_BGR888).copy()
-        self.update()
-
-    def clear(self):
-        self.image = QImage()
-        self.update()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.fillRect(self.rect(), Qt.GlobalColor.black)
-        if not self.image.isNull():
-            size = self.image.size().scaled(self.size(), Qt.AspectRatioMode.KeepAspectRatio)
-            x, y = (self.width()-size.width())//2, (self.height()-size.height())//2
-            painter.drawImage(x, y, self.image.scaled(size, Qt.AspectRatioMode.KeepAspectRatio,
-                                                   Qt.TransformationMode.SmoothTransformation))
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            for line in self.lines:
-                painter.setPen(QPen(Qt.GlobalColor.white,3 if line.id==self.selected else 2))
-                a,b=self.screen_point(line.start),self.screen_point(line.end)
-                painter.drawLine(a,b)
-                painter.drawEllipse(a,5,5);painter.drawEllipse(b,5,5)
-                middle=(a+b)/2
-                dx,dy=b.x()-a.x(),b.y()-a.y()
-                length=math.hypot(dx,dy)
-                sign=1 if line.positive_direction=="entry" else -1
-                tip=middle+QPointF(-dy/length*24*sign,dx/length*24*sign)
-                painter.drawLine(middle,tip)
-                back=tip-QPointF(-dy/length*7*sign,dx/length*7*sign)
-                painter.drawLine(tip,back+QPointF(dx/length*4,dy/length*4))
-                painter.drawLine(tip,back-QPointF(dx/length*4,dy/length*4))
-                painter.drawText(tip+QPointF(6,-6),f"{line.name} · Giriş")
-            if self.draft:
-                painter.setPen(QPen(Qt.GlobalColor.white,2,Qt.PenStyle.DashLine))
-                painter.drawLine(self.screen_point(self.draft[0]),self.screen_point(self.draft[1]))
-
-    def mousePressEvent(self,event):
-        if event.button()!=Qt.MouseButton.LeftButton:return
-        point=self.event_point(event)
-        if point is None:return
-        if self.drawing:
-            self.geometryEditing.emit()
-            self.draft=(point,point)
-            return
-        self.selected=None
-        for line in reversed(self.lines):
-            a,b=self.screen_point(line.start),self.screen_point(line.end)
-            p=event.position()
-            for field,end in (("start",a),("end",b)):
-                if math.hypot(p.x()-end.x(),p.y()-end.y())<=12:
-                    self.geometryEditing.emit()
-                    self.selected=line.id;self.drag=(line,field,point);return
-            dx,dy=b.x()-a.x(),b.y()-a.y()
-            t=max(0,min(1,((p.x()-a.x())*dx+(p.y()-a.y())*dy)/(dx*dx+dy*dy)))
-            if math.hypot(p.x()-a.x()-t*dx,p.y()-a.y()-t*dy)<=10:
-                self.geometryEditing.emit()
-                self.selected=line.id;self.drag=(line,"move",point);return
-        self.update()
-
-    def mouseMoveEvent(self,event):
-        point=self.event_point(event)
-        if point is None:return
-        if self.draft:
-            self.draft=(self.draft[0],point)
-        elif self.drag:
-            line,field,origin=self.drag
-            try:
-                if field=="move":
-                    dx,dy=point[0]-origin[0],point[1]-origin[1]
-                    dx=max(-min(line.start[0],line.end[0]),min(dx,1-max(line.start[0],line.end[0])))
-                    dy=max(-min(line.start[1],line.end[1]),min(dy,1-max(line.start[1],line.end[1])))
-                    updated=replace(line,start=(line.start[0]+dx,line.start[1]+dy),end=(line.end[0]+dx,line.end[1]+dy))
-                else:updated=replace(line,**{field:point})
-                self.lines=[updated if old.id==line.id else old for old in self.lines]
-            except ValueError:pass
-        self.update()
-
-    def mouseReleaseEvent(self,event):
-        if event.button()!=Qt.MouseButton.LeftButton:return
-        if self.draft and len(self.lines)<16:
-            try:
-                line=CrossingLine(uuid.uuid4().hex,f"Çizgi {len(self.lines)+1}",*self.draft)
-                self.lines.append(line);self.selected=line.id
-            except ValueError:pass
-        self.draft=None;self.drag=None;self.drawing=False;self.update()
-
-    def delete_selected(self):
-        if self.selected is not None:self.geometryEditing.emit()
-        self.lines=[line for line in self.lines if line.id!=self.selected]
-        self.selected=None;self.update()
-
-    def keyPressEvent(self,event):
-        if event.key()==Qt.Key.Key_Delete:self.delete_selected()
-        elif event.key()==Qt.Key.Key_Escape:
-            self.draft=None;self.drag=None;self.drawing=False;self.update()
-        else:super().keyPressEvent(event)
+from .calibration_ui import CalibrationSurface as VideoSurface, CalibrationControls
+from .calibration import CameraCalibration
 
 
 ERRORS = {
@@ -149,13 +26,14 @@ ERRORS = {
 class PreviewDialog(QDialog):
     def __init__(self, source, camera_id, parent=None, *, worker_factory=CameraWorker,
                  authorize=lambda: None, confirm_connection=False, lines=(), save_lines=None,
-                 pipeline_factory=None,on_result=None,region=None,capture_worker=None,transport='tcp'):
+                 pipeline_factory=None,on_result=None,region=None,capture_worker=None,transport='tcp',
+                 calibration=None,save_calibration=None,decoder_mode='software'):
         super().__init__(parent)
         self.setWindowTitle("LPR PRO · Canlı kamera")
-        self.resize(960, 640)
+        self.resize(1100, 780)
         self.authorize = authorize
         self.owns_capture=capture_worker is None
-        self.worker = capture_worker if capture_worker is not None else worker_factory(CameraConfig(source, camera_id=camera_id,transport=transport))
+        self.worker = capture_worker if capture_worker is not None else worker_factory(CameraConfig(source, camera_id=camera_id,transport=transport,decoder_mode=decoder_mode))
         self.last_frame_at = None
         self.closing = False
         self.result_code = QDialog.DialogCode.Rejected
@@ -165,30 +43,18 @@ class PreviewDialog(QDialog):
         self.inference=None
         self.ocr_enabled=False
         self.ocr_delivery_failed=False
+        self.pending_result=None
+        self.delivery_retry_at=0.
         layout = QVBoxLayout(self)
         self.surface = VideoSurface(self)
-        self.surface.lines = list(lines)
+        self.surface.set_calibration(calibration if calibration is not None else CameraCalibration.from_legacy(lines,region))
         self.surface.geometryEditing.connect(self.invalidate_lines)
         layout.addWidget(self.surface, 1)
-        if save_lines is not None:
-            controls=QHBoxLayout()
-            def add(label,callback):
-                button=QPushButton(label);button.clicked.connect(callback);controls.addWidget(button)
-            add("Çizgi çiz",lambda:setattr(self.surface,"drawing",True))
-            add("Adlandır",self.rename_line)
-            add("Yönü ters çevir",self.reverse_line)
-            add("Sil",self.surface.delete_selected)
-            def save():
-                try:
-                    self.authorize()
-                    save_lines(self.surface.lines)
-                    self.line_status.setText("Çizgiler kaydedildi.")
-                except (ValueError,PermissionError):
-                    self.line_status.setText("Çizgiler kaydedilemedi. Oturumu ve çizgileri kontrol edin.")
-            add("Çizgileri kaydet",save)
-            layout.addLayout(controls)
-            self.line_status=QLabel("Çizgi çiz: sürükleyin. Düzenle: uçları veya çizgiyi sürükleyin. Delete: sil. Değişiklikleri kaydedin.")
-            self.line_status.setWordWrap(True);layout.addWidget(self.line_status)
+        if save_calibration is not None or save_lines is not None:
+            save=save_calibration if save_calibration is not None else lambda value:save_lines(value.trigger_lines)
+            self.calibration_controls=CalibrationControls(self.surface,save,self.authorize,self,legacy_only=save_calibration is None)
+            self.line_status=self.calibration_controls.status
+            layout.addWidget(self.calibration_controls)
         self.status = QLabel("Bağlanıyor… İlk çözülen kare bekleniyor.")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
@@ -230,10 +96,11 @@ class PreviewDialog(QDialog):
             self.ocr_button.setEnabled(False)
             self.ocr_button.setText("OCR durduruluyor…")
             return
-        if self.inference is not None and self.ocr_enabled and not self.inference.results.empty():
+        self.poll_ocr()
+        if self.pending_result is not None or (self.inference is not None and not self.inference.results.empty()):
             return
         from .live_inference import LiveInference
-        self.inference=LiveInference(self.worker,self.pipeline_factory,region=self.region,lines=self.surface.lines)
+        self.inference=LiveInference(self.worker,self.pipeline_factory,region=self.region,lines=self.surface.lines,calibration=self.surface.calibration())
         self.ocr_enabled=True
         self.ocr_delivery_failed=False
         self.inference.start()
@@ -249,37 +116,44 @@ class PreviewDialog(QDialog):
     def poll_ocr(self):
         inference=self.inference
         if inference is None:return
-        if self.ocr_enabled and not self.ocr_delivery_failed:
-            try:result=inference.results.get_nowait()
-            except Empty:result=None
-            if result is not None:
-                _,generation=self.worker.snapshot()
-                if result["generation"]==generation:
-                    try:
-                        if self.on_result is not None:self.on_result(result)
-                    except Exception:
-                        self.ocr_delivery_failed=True
-                        self.ocr_enabled=False
-                        inference.stop()
-                    else:
-                        for decision in result["decisions"]:
-                            if decision["status"] in {"recognized","review","candidate"}:
-                                self.readings.insertItem(0,f'{decision["plate"]} · {decision["confidence"]:.1%} · {decision["status"]}')
-                        for passage in result.get("passages",[]):
-                            self.readings.insertItem(0,f'{passage["direction"]} · {passage["vehicle_type"]} · {passage["plate"] or "Plaka okunamadı"} · {passage["status"]}')
-                        while self.readings.count()>50:self.readings.takeItem(self.readings.count()-1)
+        if time.monotonic()>=self.delivery_retry_at:
+            for _ in range(16):
+                if self.pending_result is None:
+                    try:result=inference.results.get_nowait()
+                    except Empty:break
+                    _,generation=self.worker.snapshot()
+                    if result["generation"]!=generation:
+                        # Validated crossings remain historical events when a
+                        # new camera connection replaces the live preview.
+                        if not result.get("passages"):continue
+                        result={**result,"decisions":[]}
+                    self.pending_result=result
+                try:
+                    if not self.closing:self.authorize()
+                    if self.on_result is not None:self.on_result(self.pending_result)
+                except Exception:
+                    self.ocr_delivery_failed=True;self.ocr_enabled=False
+                    inference.stop();self.delivery_retry_at=time.monotonic()+1
+                    break
+                result=self.pending_result;self.pending_result=None;self.ocr_delivery_failed=False
+                for decision in result["decisions"]:
+                    if decision["status"] in {"recognized","review","candidate"}:
+                        self.readings.insertItem(0,f'{decision["plate"]} · {decision["confidence"]:.1%} · {decision["status"]}')
+                for passage in result.get("passages",[]):
+                    self.readings.insertItem(0,f'{passage["direction"]} · {passage["vehicle_type"]} · {passage["plate"] or "Plaka okunamadı"} · {passage["status"]}')
+                while self.readings.count()>50:self.readings.takeItem(self.readings.count()-1)
         labels={"loading_models":"Modeller yükleniyor","waiting_for_frame":"Kare bekleniyor",
                 "analyzing":"OCR çalışıyor","stopped":"OCR durdu",
                 "inference_failed":"OCR başarısız; model dosyalarını ve video bileşenlerini kontrol edin",
                 "result_queue_full":"Kayıt kuyruğu doldu; OCR durdu. Kayıt işleme hızını kontrol edin"}
-        state="Kayıt yazılamadı; OCR durduruldu" if self.ocr_delivery_failed else labels.get(inference.status,inference.status)
+        state="Kayıt bekliyor; OCR durduruldu. Teslim yeniden denenecek" if self.ocr_delivery_failed else labels.get(inference.status,inference.status)
         latency="" if inference.inference_ms is None else f" · {inference.inference_ms:.0f} ms/kare"
         passage_labels={"enabled":"Araç geçişi açık","no_lines":"Geçiş için çizgi tanımlayın",
                         "no_vehicle_model":"Araç modeli yok; geçiş hesabı kapalı","loading":""}
         passage_label=passage_labels.get(getattr(inference,"passage_status","loading"),"")
         self.ocr_status.setText(f"{state} · İşlenen kare: {inference.processed}{latency} · {passage_label}")
         if not inference.is_alive():
-            pending=self.ocr_enabled and not inference.results.empty()
+            pending=self.pending_result is not None or not inference.results.empty()
             self.ocr_button.setEnabled(not pending)
             self.ocr_button.setText("Sonuçlar kaydediliyor…" if pending else "OCR başlat")
 
@@ -352,10 +226,13 @@ class PreviewDialog(QDialog):
             self.confirm_button.setEnabled(False)
         if self.owns_capture:self.worker.stop()
         if self.inference is not None:self.inference.stop()
+        self.poll_ocr()
         # Never abandon a native reader or block Qt while its read timeout expires.
-        if (self.owns_capture and self.worker.is_alive()) or (self.inference is not None and self.inference.is_alive()):
+        pending=self.pending_result is not None or (self.inference is not None and not self.inference.results.empty())
+        if (self.owns_capture and self.worker.is_alive()) or (self.inference is not None and self.inference.is_alive()) or pending:
             self.surface.clear()
             self.status.setText("Kamera bağlantısı kapatılıyor…")
+            if self.ocr_delivery_failed:self.status.setText("Bekleyen geçiş kaydedilemiyor. Disk erişimini düzeltin; kayıt bellekte korunuyor ve yeniden denenecek.")
             self.close_button.setEnabled(False)
             QTimer.singleShot(100, self.close)
             event.ignore()

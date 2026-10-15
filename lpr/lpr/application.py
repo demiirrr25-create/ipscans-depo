@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import time
 import tempfile
+import uuid
 
 from PySide6.QtCore import Qt,QTimer
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
@@ -31,6 +32,7 @@ class Login(QDialog):
         self.setStyleSheet(STYLE);self.setMinimumWidth(460)
         layout=QVBoxLayout(self)
         setup=ops.needs_setup()
+        self.created_admin=setup
         title=QLabel("İlk yönetici hesabı / Create administrator" if setup else "Oturum aç / Sign in")
         layout.addWidget(title)
         layout.addWidget(QLabel("Parola: en az 12 karakter / Password: at least 12 characters"))
@@ -50,7 +52,7 @@ class Login(QDialog):
 
 
 class ProductWindow(QMainWindow):
-    def __init__(self,ops,session):
+    def __init__(self,ops,session,*,autostart=True):
         super().__init__()
         self.ops=ops;self.session=session;self.lang="tr"
         self.setWindowTitle(f"IPScans LPR Pro · {__version__}")
@@ -62,7 +64,7 @@ class ProductWindow(QMainWindow):
             original_consume(message)
             if message.get("model_manifest"):
                 self.lab.model.setText(message["model_manifest"])
-                self.notice("Modeller hazır. Tanıma sekmesinden görüntü seçin. / Models ready. Select an image in Recognition.")
+                self.notice("Modeller hazır. Canlı İzleme ekranından OCR başlatabilirsiniz.")
             if "relay_state" in message:
                 self.notice(f"Röle durumu / Relay state: {'ON' if message['relay_state'] else 'OFF'} — gönderilen komut / commands sent: 0")
             readings=message.get("readings",[])
@@ -170,9 +172,85 @@ class ProductWindow(QMainWindow):
         self.refresh()
         model=data_directory()/"models"/"evaluation-models.json"
         if model.is_file():self.lab.model.setText(str(model))
+        saved_model=self.ops.db.execute("SELECT value FROM settings WHERE key='model_manifest'").fetchone()
+        if saved_model and Path(saved_model[0]).is_file():self.lab.model.setText(saved_model[0])
         self.retention_timer=QTimer(self);self.retention_timer.setInterval(60000)
         self.retention_timer.timeout.connect(self.run_retention);self.retention_timer.start()
         QTimer.singleShot(0,self.run_retention)
+        self.autostart=autostart
+        from .operator_shell import install_shell
+        install_shell(self)
+
+    def select_model(self):
+        self.ops.check(self.session,'manage')
+        path,_=QFileDialog.getOpenFileName(self,'Model manifesti','','JSON (*.json)')
+        if path:
+            from .vision import load_manifest
+            load_manifest(path)
+            self.lab.model.setText(path)
+            with self.ops.db:
+                self.ops.db.execute("INSERT INTO settings(key,value) VALUES('model_manifest',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(path,))
+            self.notice('Model seçildi. Yeni OCR oturumunda kullanılacak.')
+            self.live_dashboard.sync_cameras()
+
+    def open_setup(self):
+        from .onboarding import SetupWizard
+        self.ops.check(self.session,'manage')
+        SetupWizard(self).exec()
+
+    def open_maintenance(self):
+        self.ops.check(self.session,'manage')
+        dialog=QDialog(self);dialog.setWindowTitle('Yetkili bakım');dialog.resize(1100,780)
+        layout=QVBoxLayout(dialog);tabs=QTabWidget();layout.addWidget(tabs)
+        tabs.addTab(self.lab,'Görüntü / model incelemesi');tabs.addTab(self.widgets['access'][0],'Kontrol cihazı tanılama')
+        dialog.exec()
+        self.lab.cancel();self.lab.setParent(self);self.lab.hide()
+        self.widgets['access'][0].setParent(self);self.widgets['access'][0].hide()
+
+    def discover_camera(self):
+        from .onvif_dialog import OnvifDialog
+        self.ops.check(self.session,'manage')
+        dialog=OnvifDialog(self,authorize=lambda:self.ops.check(self.session,'manage'))
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        import uuid
+        data=self.fields('Keşfedilen kamera',[('Ad','Yeni kamera',False),('Yön (entry/exit)','entry',False)])
+        if data:
+            camera_id=str(uuid.uuid4())
+            if self.test_and_save_camera(camera_id,data['Ad'],dialog.source,data['Yön (entry/exit)']):
+                from .camera_metadata import CameraMetadata
+                information=dialog.device_information
+                if information:
+                    CameraMetadata(self.ops).save(self.session,camera_id,name=data['Ad'],direction=data['Yön (entry/exit)'],
+                        brand=information.manufacturer[:120],model=information.model[:120])
+                self.refresh()
+
+    def open_updates(self):
+        from .updates_ui import UpdatesPanel
+        self.ops.check(self.session,'manage')
+        dialog=QDialog(self);dialog.setWindowTitle('Güvenli güncelleme');dialog.resize(760,550)
+        layout=QVBoxLayout(dialog)
+        panel=UpdatesPanel(self.ops,self.session,self.ops.path.parent,__version__,parent=dialog)
+        layout.addWidget(panel)
+        close=QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        close.rejected.connect(dialog.reject);layout.addWidget(close)
+        try:dialog.exec()
+        finally:panel.shutdown()
+
+    def calibrate_camera(self,camera_id):
+        center=self.live_dashboard.center
+        if center and center.inference and center.inference.is_alive():
+            self.notice('Kalibrasyon için önce Canlı İzleme ekranındaki OCR işlemini durdurun.');return
+        worker=center.workers.get(camera_id) if center else None
+        self.guard(lambda:self.preview_camera(camera_id,worker,self))
+        self.live_dashboard.sync_cameras()
+
+    def edit_camera_connection(self,camera_id):
+        self.ops.check(self.session,'manage')
+        camera=next(c for c in self.ops.cameras(self.session) if c['id']==camera_id)
+        transport=self.choose_transport(camera['transport'])
+        if transport is None:return
+        values=self.fields('Kamera bağlantısı',[('RTSP URL',self.ops.camera_source(self.session,camera_id),True)])
+        if values:self.test_and_save_camera(camera_id,camera['name'],values['RTSP URL'],camera['direction'],transport)
 
     def setup_models(self):
         from PySide6.QtCore import QProcess
@@ -187,7 +265,7 @@ class ProductWindow(QMainWindow):
         self.lab.busy(True);self.lab.set_status("busy")
         prefix=["--worker"] if getattr(sys,"frozen",False) else ["-m","lpr.cli"]
         self.lab.process.start(sys.executable,prefix+["setup-models","--output",str(data_directory()/"models")])
-        self.lab.timer.start(240000);self.tabs.setCurrentWidget(self.lab)
+        self.lab.timer.start(240000);self.notice('Modeller indiriliyor; durum aşağıda gösterilecek.')
 
     def relay_status(self):
         from PySide6.QtCore import QProcess
@@ -236,6 +314,13 @@ class ProductWindow(QMainWindow):
         for widget,tr,en in self.widgets.values():self.tabs.setTabText(self.tabs.indexOf(widget),tr if index==0 else en)
         self.tabs.setTabText(self.tabs.indexOf(self.lab),"Tanıma" if index==0 else "Recognition")
         for button,tr,en,_ in self.labels:button.setText(tr if index==0 else en)
+        if hasattr(self,'operator_pages'):
+            titles=['Canlı İzleme','Kameralar','Araçlar ve Sakinler','Geçiş Kayıtları','Sistem Ayarları'] if index==0 else ['Dashboard','Cameras','Vehicles','Events','Settings']
+            for i,title in enumerate(titles):self.navigation.item(i).setText(title);self.tabs.setTabText(i,title)
+            for container in self.nested_sections:
+                for widget,tr,en in self.widgets.values():
+                    position=container.indexOf(widget)
+                    if position>=0:container.setTabText(position,tr if index==0 else en)
 
     def notice(self,text):self.message.setText(text)
 
@@ -260,6 +345,10 @@ class ProductWindow(QMainWindow):
             parking=self.ops.parking(self.session)
             self.parking_summary.setText(f"{parking['occupied']} / {parking['capacity']} dolu / occupied · {parking['available']} boş / available")
             self.fill(self.parking_table,[(v['id'],v['plate'],utc(v['entered_at']),max(0,int((self.ops.clock()-v['entered_at'])/60)),v['entry_actor']) for v in parking['visits']])
+            if hasattr(self,'camera_management'):
+                self.camera_management.refresh();self.registry_widget.refresh()
+                self.passage_browser.refresh_camera_names()
+                self.live_dashboard.sync_cameras();self.live_dashboard.refresh_feed(force=True)
         except PermissionError:self.notice("Oturum süresi doldu / Session expired")
 
     def fields(self,title,fields):
@@ -292,17 +381,17 @@ class ProductWindow(QMainWindow):
             from .onvif_dialog import OnvifDialog
             dialog=OnvifDialog(self,authorize=lambda:self.ops.check(self.session,'manage'))
             if dialog.exec()!=QDialog.DialogCode.Accepted:return
-            data=self.fields('ONVIF kamera',[("ID","gate-1",False),("Name","ONVIF",False),("Direction (entry/exit)","entry",False)])
+            data=self.fields('ONVIF kamera',[("ID",uuid.uuid4().hex[:12],False),("Name","ONVIF",False),("Direction (entry/exit)","entry",False)])
             if data:self.test_and_save_camera(data['ID'],data['Name'],dialog.source,data['Direction (entry/exit)'],transport)
             return
         if brand!="Custom RTSP":
-            data=self.fields(brand,[("ID","gate-1",False),("Name",brand,False),("Host / IP","",False),("Port",554,False),("Channel",1,False),("Username","",False),("Password","",True),("Direction (entry/exit)","entry",False)])
+            data=self.fields(brand,[("ID",uuid.uuid4().hex[:12],False),("Name",brand,False),("Host / IP","",False),("Port",554,False),("Channel",1,False),("Username","",False),("Password","",True),("Direction (entry/exit)","entry",False)])
             if data:
                 from .devices import rtsp_url
                 source=rtsp_url(brand.lower(),data["Host / IP"],int(data["Port"]),int(data["Channel"]),data["Username"],data["Password"])
                 self.test_and_save_camera(data["ID"],data["Name"],source,data["Direction (entry/exit)"],transport)
             return
-        data=self.fields("Kamera / Camera",[("ID","gate-1",False),("Name","",False),("RTSP URL","",True),("Direction (entry/exit)","entry",False)])
+        data=self.fields("Kamera / Camera",[("ID",uuid.uuid4().hex[:12],False),("Name","",False),("RTSP URL","",True),("Direction (entry/exit)","entry",False)])
         if data:self.test_and_save_camera(data["ID"],data["Name"],data["RTSP URL"],data["Direction (entry/exit)"],transport)
 
     def choose_transport(self,current='tcp'):
@@ -337,7 +426,11 @@ class ProductWindow(QMainWindow):
                              authorize=lambda:self.ops.check(self.session,"manage"))
         if dialog.exec()==QDialog.DialogCode.Accepted:
             self.ops.save_camera(self.session,camera_id,name,source,direction,transport)
+            from .camera_metadata import CameraMetadata
+            CameraMetadata(self.ops).sync_address(self.session,camera_id)
             self.refresh()
+            return True
+        return False
 
     def open_camera_center(self):
         from .camera_center import CameraCenter
@@ -382,14 +475,17 @@ class ProductWindow(QMainWindow):
         from .tracking import Region
         model_path=self.lab.model.text()
         def save_readings(result):
-            for decision in result["decisions"]:
-                self.ops.record(self.session,decision["plate"],decision["confidence"],decision["status"],camera_id,"live_rtsp")
-            for passage in result.get("passages",[]):self.ops.record_vehicle_passage(self.session,passage)
+            self.live_dashboard.consume(result)
+        from .camera_metadata import CameraMetadata
+        metadata=CameraMetadata(self.ops).get(self.session,camera_id)
         dialog=PreviewDialog(source,camera_id,parent or self,capture_worker=capture_worker,
                              transport=self.ops.camera_transport(self.session,camera_id),
+                               decoder_mode=metadata['decoder_mode'],
                              authorize=lambda:self.ops.check(self.session,"manage"),
                              lines=self.ops.camera_lines(self.session,camera_id),
                              save_lines=lambda lines:self.ops.save_camera_lines(self.session,camera_id,lines),
+                             calibration=self.ops.camera_calibration(self.session,camera_id),
+                             save_calibration=lambda value:self.ops.save_camera_calibration(self.session,camera_id,value),
                              pipeline_factory=lambda:build_pipeline(model_path),on_result=save_readings,
                              region=Region(*self.ops.camera_region(self.session,camera_id)))
         dialog.exec()
@@ -500,18 +596,80 @@ class ProductWindow(QMainWindow):
                 self.notice(f'Otomatik temizlik / Automatic cleanup: {count}')
         except Exception:self.notice('Otomatik temizlik başarısız; saklama ayarlarını ve disk erişimini kontrol edin. / Automatic cleanup failed; check policy and disk access.')
 
+    def request_delivery_session(self,action):
+        """Offer explicit reauthentication; never grant expired sessions write access."""
+        session=getattr(self,'delivery_session',None) or self.session
+        try:self.ops.check(session,'review');return False
+        except PermissionError:pass
+        self.delivery_resume=action
+        self.centralWidget().hide()
+        if not hasattr(self,'renew_delivery_button'):
+            self.renew_delivery_button=QPushButton('Bekleyen kayıtlar için oturum yenile',self)
+            self.renew_delivery_button.clicked.connect(self.renew_delivery_session)
+            self.statusBar().addPermanentWidget(self.renew_delivery_button)
+        self.renew_delivery_button.show()
+        self.statusBar().showMessage('Bekleyen geçişler korunuyor. Kaydı tamamlamak için yetkili oturum gerekli.')
+        return True
+
+    def renew_delivery_session(self):
+        if getattr(self,'delivery_login_active',False):return
+        self.delivery_login_active=True
+        self.renew_delivery_button.setEnabled(False)
+        renewed=None
+        try:
+            login=Login(self.ops)
+            if login.exec()!=QDialog.DialogCode.Accepted:return
+            try:self.ops.check(login.session,'review')
+            except PermissionError:
+                self.ops.logout(login.session)
+                self.statusBar().showMessage('Bu hesabın geçiş kaydı yetkisi yok. Yönetici veya operatör hesabı gerekiyor.')
+                return
+            old=getattr(self,'delivery_session',None)
+            if old:self.ops.logout(old)
+            renewed=login.session;self.delivery_session=renewed
+            self.renew_delivery_button.hide()
+            self.statusBar().showMessage('Bekleyen geçişler kaydediliyor…')
+            self.live_dashboard.deliver()
+        finally:
+            self.delivery_login_active=False;self.renew_delivery_button.setEnabled(True)
+        if renewed is not None:
+            QTimer.singleShot(0,self.lock_session if self.delivery_resume=='lock' else self.close)
+
     def lock_session(self):
+        if getattr(self,'delivery_login_active',False):return
+        self.centralWidget().hide()
+        if hasattr(self,'live_dashboard'):
+            self.live_dashboard.stop()
+            if not self.live_dashboard.stopped():
+                if self.request_delivery_session('lock'):return
+                QTimer.singleShot(100,self.lock_session);return
         self.lab.cancel();self.ops.logout(self.session);self.hide()
         self.lab.process.waitForFinished(1000)
+        renewed=getattr(self,'delivery_session',None)
+        if renewed:
+            try:self.ops.check(renewed,'read')
+            except PermissionError:self.ops.logout(renewed);self.delivery_session=None
+            else:
+                self.replacement_window=ProductWindow(self.ops,renewed)
+                self.delivery_session=None  # Ownership transfers to the replacement window.
+                self.replacement_window.show();self.close();return
         login=Login(self.ops)
         if login.exec()==QDialog.DialogCode.Accepted:
-            self.session=login.session;self.account.setText(f"{self.session.username} / {self.session.role}")
-            self.lab.table.setRowCount(0)
-            for button,_,_,permission in self.labels:button.setEnabled(self.permitted(permission))
-            self.refresh();self.show()
+            self.replacement_window=ProductWindow(self.ops,login.session)
+            self.replacement_window.show();self.close()
         else:self.close()
 
     def closeEvent(self,event):
+        if getattr(self,'delivery_login_active',False):event.ignore();return
+        if hasattr(self,'live_dashboard'):
+            self.live_dashboard.stop()
+            if not self.live_dashboard.stopped():
+                if self.request_delivery_session('close'):event.ignore();return
+                QTimer.singleShot(100,self.close);event.ignore();return
+            if not getattr(self,'delivery_closed',False):
+                self.live_dashboard.deliver();self.live_dashboard.queue.close();self.delivery_closed=True
+        delivery=getattr(self,'delivery_session',None)
+        if delivery:self.ops.logout(delivery);self.delivery_session=None
         self.retention_timer.stop();self.lab.close();self.ops.logout(self.session);super().closeEvent(event)
 
 
@@ -526,4 +684,5 @@ def main():
     login=Login(ops)
     if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0
     window=ProductWindow(ops,login.session);window.show()
+    if login.created_admin:QTimer.singleShot(0,window.open_setup)
     code=app.exec();ops.close();return code

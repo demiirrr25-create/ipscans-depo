@@ -64,6 +64,22 @@ class MediaProfile:
     height:int
 
 
+@dataclass(frozen=True)
+class DeviceInformation:
+    manufacturer:str
+    model:str
+    firmware:str
+
+
+@dataclass(frozen=True)
+class DeviceCapabilities:
+    """Advertised services are not evidence of working native ANPR events."""
+    media_service:bool
+    events_service:bool
+    analytics_service:bool
+    native_anpr_verified:bool=False
+
+
 class OnvifClient:
     def __init__(self,host,port,username,password,*,https=False,timeout=3,device_path='/onvif/device_service'):
         host=host_name(host)
@@ -99,6 +115,25 @@ class OnvifClient:
             raise OnvifError('ONVIF HTTP request failed') from None
         except (URLError,OSError,ValueError):raise OnvifError('ONVIF service unreachable or response refused') from None
         return parse_response(data)
+
+    def device_information(self):
+        root=self._request(self.endpoint,DEVICE,'GetDeviceInformation',ET.Element('{'+DEVICE+'}GetDeviceInformation'))
+        def value(name):
+            text=root.findtext('.//{'+DEVICE+'}'+name,'').strip()
+            if len(text)>256 or any(ord(char)<32 for char in text):raise OnvifError('Invalid device information')
+            return text
+        return DeviceInformation(value('Manufacturer'),value('Model'),value('FirmwareVersion'))
+
+    def capabilities(self):
+        request=ET.Element('{'+DEVICE+'}GetCapabilities')
+        ET.SubElement(request,'{'+DEVICE+'}Category').text='All'
+        root=self._request(self.endpoint,DEVICE,'GetCapabilities',request)
+        def advertised(service):
+            address=root.findtext('.//{'+SCHEMA+'}'+service+'/{'+SCHEMA+'}XAddr')
+            if not address:return False
+            self._endpoint(address)
+            return True
+        return DeviceCapabilities(advertised('Media'),advertised('Events'),advertised('Analytics'))
 
     def profiles(self):
         request=ET.Element('{'+DEVICE+'}GetCapabilities')

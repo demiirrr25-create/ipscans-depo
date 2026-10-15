@@ -14,8 +14,8 @@ HEADERS=('Event ID','Timestamp (UTC)','Camera','Line','Direction','Vehicle','Pla
 
 
 def filter_labels(filters):
-    labels=('Plate contains','Camera','Direction','Vehicle type','Decision','From (UTC, inclusive)',
-            'Until (UTC, exclusive)','Minimum confidence','Maximum confidence')
+    labels=('Plate contains (latest correction)','Camera','Direction','Vehicle type','Decision','From (UTC, inclusive)',
+            'Until (UTC, exclusive)','Minimum confidence','Maximum confidence','Vehicle registration','Block ID','Unit ID')
     rows=[]
     for label,(key,value) in zip(labels,asdict(filters).items()):
         if value is None or value=='':value='All / unset'

@@ -10,14 +10,18 @@ class CrossingLine:
     start: tuple
     end: tuple
     positive_direction: str = "entry"
+    allowed_directions: tuple = ("entry", "exit")
 
     def __post_init__(self):
         object.__setattr__(self,"start",tuple(self.start))
         object.__setattr__(self,"end",tuple(self.end))
+        object.__setattr__(self,"allowed_directions",tuple(self.allowed_directions))
         if not self.id or len(self.id)>64 or not self.name or len(self.name)>120:
             raise ValueError("Invalid line identity")
         if self.positive_direction not in {"entry","exit"}:
             raise ValueError("Invalid crossing direction")
+        if not self.allowed_directions or len(set(self.allowed_directions))!=len(self.allowed_directions) or not set(self.allowed_directions)<={"entry","exit"}:
+            raise ValueError("Invalid permitted directions")
         if len(self.start)!=2 or len(self.end)!=2:
             raise ValueError("Invalid point")
         if not all(math.isfinite(v) and 0<=v<=1 for v in (*self.start,*self.end)):
@@ -89,6 +93,8 @@ class LineCrossings:
             if not 0<=t<=1 or not 0<=u<=1:
                 continue
             direction=line.positive_direction if side>0 else ("exit" if line.positive_direction=="entry" else "entry")
+            if direction not in line.allowed_directions:
+                continue
             receipt=(track_id,line.id,direction)
             if receipt in self.emitted:
                 continue

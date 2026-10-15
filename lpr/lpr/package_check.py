@@ -26,8 +26,8 @@ def check_package(output):
                 ops.record_vehicle_passage(session,dict(event_id=str(uuid.uuid4()),at=ops.clock()-index*3600,
                     camera='test-camera',line_id='test-line',direction='entry' if index%2 else 'exit',track_id=str(index),
                     vehicle_type='car',plate='',confidence=0,status='unread',evidence_frames=0,frame_sequence=index))
-            window=ProductWindow(ops,session);window.show();app.processEvents()
-            window.tabs.setCurrentWidget(window.widgets['passages'][0]);app.processEvents()
+            window=ProductWindow(ops,session,autostart=False);window.show();app.processEvents()
+            window.tabs.setCurrentWidget(window.operator_pages['events']);app.processEvents()
             window.grab().save(str(target/'synthetic-ui.png'))
             result['visible_passages']=window.passage_browser.table.rowCount()
             for kind,exporter in [('csv',export_passages_csv),('xlsx',export_passages_xlsx),('pdf',export_passage_summary_pdf)]:

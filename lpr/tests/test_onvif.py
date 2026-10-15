@@ -44,3 +44,25 @@ def test_camera_cannot_redirect_credentials_to_another_host():
     uri=xml(f'<r xmlns:t="{SCHEMA}"><t:Uri>rtsp://192.0.2.2/live</t:Uri></r>')
     with patch.object(client,'_request',return_value=uri):
         with pytest.raises(OnvifError):client.stream_uri(MediaProfile('main','Main','H264',1920,1080))
+
+
+def test_device_information_and_advertised_services_do_not_claim_native_anpr():
+    from lpr.onvif import DEVICE
+    client=OnvifClient('192.0.2.1',80,'user','secret')
+    information=xml(f'<r xmlns:d="{DEVICE}"><d:Manufacturer>Example</d:Manufacturer><d:Model>Camera</d:Model><d:FirmwareVersion>1.0</d:FirmwareVersion></r>')
+    caps=xml(f'<r xmlns:t="{SCHEMA}"><t:Media><t:XAddr>http://192.0.2.1/media</t:XAddr></t:Media><t:Events><t:XAddr>http://192.0.2.1/events</t:XAddr></t:Events><t:Analytics><t:XAddr>http://192.0.2.1/analytics</t:XAddr></t:Analytics></r>')
+    with patch.object(client,'_request',side_effect=[information,caps]):
+        found=client.device_information()
+        assert (found.manufacturer,found.model,found.firmware)==('Example','Camera','1.0')
+        result=client.capabilities()
+        assert result.media_service and result.events_service and result.analytics_service
+        assert not result.native_anpr_verified
+
+
+def test_capabilities_refuse_off_host_service_and_empty_response_is_unknown():
+    client=OnvifClient('192.0.2.1',80,'user','secret')
+    with patch.object(client,'_request',return_value=xml(f'<r xmlns:t="{SCHEMA}"><t:Events><t:XAddr>http://192.0.2.2/events</t:XAddr></t:Events></r>')):
+        with pytest.raises(OnvifError):client.capabilities()
+    with patch.object(client,'_request',return_value=xml('<r/>')):
+        result=client.capabilities()
+        assert not result.media_service and not result.events_service and not result.native_anpr_verified
