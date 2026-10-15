@@ -65,11 +65,13 @@ class MediaProfile:
 
 
 class OnvifClient:
-    def __init__(self,host,port,username,password,*,https=False,timeout=3):
+    def __init__(self,host,port,username,password,*,https=False,timeout=3,device_path='/onvif/device_service'):
         host=host_name(host)
         if type(port)!=int or not 1<=port<=65535 or not username or not 0<timeout<=10:
             raise OnvifError('Invalid ONVIF connection settings')
-        self.endpoint=f'{"https" if https else "http"}://{host}:{port}/onvif/device_service'
+        if not device_path.startswith('/') or device_path.startswith('//') or len(device_path)>1024 or any(ord(c)<33 for c in device_path) or '#' in device_path:
+            raise OnvifError('Invalid ONVIF service path')
+        self.endpoint=f'{"https" if https else "http"}://{host}:{port}{device_path}'
         self.host=urlsplit(self.endpoint).hostname
         self.username,self.password,self.timeout=username,password,timeout
         self.media_endpoint=None

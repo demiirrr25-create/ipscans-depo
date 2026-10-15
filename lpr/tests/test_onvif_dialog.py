@@ -39,3 +39,16 @@ def test_endpoint_edit_invalidates_old_profiles():
     dialog.port.setValue(2020)
     assert dialog.client is None and not dialog.profiles and not dialog.select.isEnabled()
     dialog.reject();app.processEvents()
+
+
+def test_discovered_device_requires_selection_and_clears_previous_credentials():
+    from lpr.discovery import DiscoveredCamera
+    app=QApplication.instance() or QApplication([])
+    dialog=OnvifDialog();dialog.username.setText('old-user');dialog.password.setText('old-password')
+    dialog.results.put((True,('devices',[DiscoveredCamera('id','Test','http://192.0.2.1:2020/custom/device')])))
+    dialog.poll()
+    assert dialog.host.text()=='' and dialog.client is None
+    dialog.use_discovered()
+    assert dialog.host.text()=='192.0.2.1' and dialog.port.value()==2020 and dialog.path.text()=='/custom/device'
+    assert dialog.password.text()==dialog.username.text()=='' and not dialog.select.isEnabled()
+    dialog.reject();app.processEvents()
