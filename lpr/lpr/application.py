@@ -347,10 +347,24 @@ class ProductWindow(QMainWindow):
             return
         cameras=self.ops.cameras(self.session)
         if not 1<=len(cameras)<=16:raise ValueError("Use 1..16 cameras")
-        cameras=[{**camera,"source":self.ops.camera_source(self.session,camera["id"])} for camera in cameras]
+        cameras=[{**camera,"source":self.ops.camera_source(self.session,camera["id"]),
+                  'lines':self.ops.camera_lines(self.session,camera['id']),'roi':self.ops.camera_region(self.session,camera['id'])} for camera in cameras]
+        from .vision import build_pipeline
+        model_path=self.lab.model.text()
+        def save_fleet_result(result):
+            for decision in result['decisions']:
+                self.ops.record(self.session,decision['plate'],decision['confidence'],decision['status'],result['camera'],'live_rtsp')
+            for passage in result['passages']:self.ops.record_vehicle_passage(self.session,passage)
+        def open_detail(camera_id,worker,parent):
+            self.preview_camera(camera_id,worker,parent)
+            for camera in cameras:
+                if camera['id']==camera_id:
+                    camera['lines']=self.ops.camera_lines(self.session,camera_id)
+                    camera['roi']=self.ops.camera_region(self.session,camera_id)
         center=CameraCenter(cameras,self,authorize=lambda:self.ops.check(self.session,"manage"),
+                            pipeline_factory=lambda:build_pipeline(model_path),on_result=save_fleet_result,
                             open_detail=lambda camera_id,worker,parent:self.guard(
-                                lambda:self.preview_camera(camera_id,worker,parent)))
+                                lambda:open_detail(camera_id,worker,parent)))
         center.exec()
 
     def preview_camera(self,camera_id=None,capture_worker=None,parent=None):

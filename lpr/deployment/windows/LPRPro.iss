@@ -1,4 +1,4 @@
-#define ProductVersion "0.5.0.dev3"
+#define ProductVersion "0.5.0.dev4"
 #define ProductName "IPScans LPR Pro Preview"
 #define ProductExe "IPScans-LPR-Pro.exe"
 
