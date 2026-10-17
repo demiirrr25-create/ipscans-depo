@@ -26,11 +26,12 @@ from PyQt6.QtWidgets import (
 
 from app.i18n import available_languages
 from app.ui.resources import load_logo_pixmap
+from app.ui.styles import AntigravityWelcomeStage
 
 from pro.pro_content import get_privacy_body, get_terms_body, t
 from pro.pro_settings import accept_privacy, accept_terms, mark_welcome_seen, save_language
 
-LOGO_SIZE = 64
+LOGO_SIZE = 56
 STEPS = ["language", "terms", "privacy", "welcome"]
 
 
@@ -48,7 +49,7 @@ class ProOnboardingWizard(QDialog):
         self.setWindowTitle("ipscans Network Health Pro")
         self.setWindowIcon(app_icon)
         self.setModal(True)
-        self.setFixedSize(560, 640)
+        self.setFixedSize(640, 740)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(28, 28, 28, 22)
@@ -69,17 +70,32 @@ class ProOnboardingWizard(QDialog):
     # ------------------------------------------------------------- header
     def _build_header(self) -> QWidget:
         wrap = QVBoxLayout()
-        wrap.setSpacing(4)
+        wrap.setContentsMargins(0, 0, 0, 0)
+        wrap.setSpacing(10)
+
+        self._welcome_stage = AntigravityWelcomeStage(
+            kicker_text="IPSCANS NETWORK HEALTH PRO  •  ANTIGRAVITY EDITION",
+            headline_text="Sürekli ağ sağlığı ve anomali izleme platformuna hoş geldiniz.",
+            subtitle_text="7/24 çakışma tespiti, topoloji takibi ve cihaz sağlık skoru motoru hazır.",
+            compact=False,
+        )
+        wrap.addWidget(self._welcome_stage)
+
+        brand_row = QHBoxLayout()
+        brand_row.setSpacing(10)
+        brand_row.addStretch(1)
 
         self._logo_label = QLabel()
-        self._logo_label.setPixmap(load_logo_pixmap(LOGO_SIZE))
-        self._logo_label.setFixedSize(LOGO_SIZE, LOGO_SIZE)
-        wrap.addWidget(self._logo_label, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self._logo_label.setPixmap(load_logo_pixmap(28))
+        self._logo_label.setFixedSize(28, 28)
+        brand_row.addWidget(self._logo_label)
 
         title = QLabel("ipscans PRO", objectName="TitleText")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._title_label = title
-        wrap.addWidget(title)
+        brand_row.addWidget(title)
+        brand_row.addStretch(1)
+        wrap.addLayout(brand_row)
 
         header = QWidget()
         header.setLayout(wrap)
