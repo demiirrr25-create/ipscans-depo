@@ -1,5 +1,7 @@
 import importlib.util, os, pathlib, tempfile, threading, unittest, urllib.request, urllib.error, json
 from unittest.mock import patch
+import sys
+sys.path.insert(0,str(pathlib.Path(__file__).parent))
 TMP=tempfile.TemporaryDirectory(dir=pathlib.Path.cwd()/'work'); os.environ['CORTEX_DATA']=TMP.name; os.environ['CORTEX_PORT']='18765'
 spec=importlib.util.spec_from_file_location('cortex',pathlib.Path(__file__).with_name('server.py')); s=importlib.util.module_from_spec(spec);spec.loader.exec_module(s)
 class Tests(unittest.TestCase):
@@ -76,7 +78,7 @@ class Tests(unittest.TestCase):
  def test_lights_detection_does_not_require_ollama(self):
   worker=s.Camera.__new__(s.Camera);worker.c={'id':'cam'};worker.stop=threading.Event();worker.frames=s.collections.deque(maxlen=6);worker.light_detectors={};worker.last={}
   s.STATE['rules']=[{'id':'light','camera':'cam','kind':'lights_off','enabled':True,'dark':45,'drop':.45,'hold':3,'cooldown':120}]
-  with patch.object(s.EVIDENCE_POOL,'submit') as submit,patch.object(s,'analyze') as model:
+  with patch.object(s,'enqueue_evidence') as submit,patch.object(s,'analyze') as model:
    for level in [120,20,20,20,20,20]:
     buf=s.io.BytesIO();s.Image.new('RGB',(80,60),(level,level,level)).save(buf,format='JPEG');worker.frame=buf.getvalue();worker.frames.append(worker.frame);worker.check_lights()
    self.assertEqual(submit.call_count,1);model.assert_not_called()
@@ -98,6 +100,24 @@ class Tests(unittest.TestCase):
   finally:server.shutdown();server.server_close()
  def test_invalid_protocol(self):
   with self.assertRaises(urllib.error.HTTPError):self.request('/api/cameras',{'name':'x','url':'file:///private'})
+ def test_v1_rule_crud_and_camera_delete_keeps_history(self):
+  self.request('/api/cameras',{'name':'Test','url':'rtsp://192.0.2.1/stream'})
+  cid=s.STATE['cameras'][0]['id']
+  data={'camera':cid,'name':'Motion','prompt':'Local movement','kind':'motion','threshold':.8,'cooldown':120,'x':20,'width':50,'start':'22:00','end':'06:00','days':[0,1,2,3,4]}
+  self.request('/api/rules',data);rid=s.STATE['rules'][0]['id']
+  self.request('/api/rules',{**data,'id':rid,'name':'Updated','sensitivity':20})
+  self.assertEqual(len(s.STATE['rules']),1);self.assertEqual(s.STATE['rules'][0]['sensitivity'],20)
+  self.assertEqual(s.STATE['rules'][0]['roi'],[20,0,50,100])
+  self.request('/api/rule-delete',{'id':rid});self.assertEqual(s.STATE['rules'],[])
+  self.request('/api/rules',data);s.STATE['events']=[{'id':'history'}]
+  self.request('/api/camera-delete',{'id':cid})
+  self.assertEqual(s.STATE['cameras'],[]);self.assertEqual(s.STATE['rules'],[]);self.assertEqual(s.STATE['events'],[{'id':'history'}])
+ def test_v1_install_endpoints_and_public_progress(self):
+  with patch.object(s.INSTALLER,'start',return_value=True) as start:
+   code,body=self.request('/api/model-install',{});self.assertEqual(code,202);start.assert_called_once()
+  with patch.object(s.INSTALLER,'cancel') as cancel:
+   self.request('/api/model-cancel',{});cancel.assert_called_once()
+  state=json.loads(self.request('/api/state')[1]);self.assertEqual(len(state['templates']),12);self.assertIn('phase',state['installer'])
  def test_invalid_rule(self):
   with self.assertRaises(urllib.error.HTTPError):self.request('/api/rules',{'camera':'missing','name':'x','prompt':'x','threshold':.8,'cooldown':120})
  def test_invalid_webhook(self):
