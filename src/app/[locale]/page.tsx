@@ -3,8 +3,8 @@ import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PlatformHero } from "@/components/PlatformHero";
 import { BlogSection } from "@/components/BlogSection";
-import { AntigravityParticles } from "@/components/AntigravityParticles";
-import { AntigravityTypewriter } from "@/components/AntigravityTypewriter";
+import { SpatialParticles } from "@/components/SpatialParticles";
+import { TypewriterHeader } from "@/components/TypewriterHeader";
 import { notFound } from "next/navigation";
 import { platformCopy, scannerApplication } from "@/content/applications";
 
@@ -24,7 +24,7 @@ export default async function HomePage({
 
       <BlogSection locale={locale} />
 
-      {/* Section 10: Antigravity .download-section-container */}
+      {/* Download Action Section */}
       <section
         className="download-section-container download-section-container--mobile-desktop-only"
         id="download-section"
@@ -35,11 +35,11 @@ export default async function HomePage({
             <div className="grid-col col-md-12">
               <div className="download-section" data-section-element>
                 <div className="download-section-backdrop">
-                  <AntigravityParticles variant="download" />
+                  <SpatialParticles variant="download" />
                 </div>
                 <div className="download-section-content">
                   <div className="header heading-3" data-typed-header>
-                    <AntigravityTypewriter
+                    <TypewriterHeader
                       text={dict.cta.title}
                       trigger="visible"
                       speedMs={20}

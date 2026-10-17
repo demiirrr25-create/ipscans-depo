@@ -26,7 +26,7 @@ from app.i18n import DEFAULT_LANGUAGE, t
 from app.ui.scan_progress import ScanProgress
 from app.ui.resources import load_logo_pixmap
 from app.ui.network_map import NetworkMap
-from app.ui.styles import AntigravityWelcomeStage, DARK_QSS
+from app.ui.styles import IPScansWelcomeStage, AntigravityWelcomeStage, DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput
 from app.workers.scan_worker import ScanWorker
 from app.workers.task_worker import TaskWorker
@@ -56,7 +56,7 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.3.0 · High Performance Network Scanner")
+        self.setWindowTitle("IPscans+ · High Performance Network Scanner")
         self.resize(1380, 880)
         self.setMinimumSize(1000, 680)
         self.setStyleSheet(DARK_QSS)

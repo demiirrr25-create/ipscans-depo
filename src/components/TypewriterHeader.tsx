@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export function AntigravityTypewriter({
+export function TypewriterHeader({
   text,
   speedMs = 22,
   startDelayMs = 120,
@@ -111,3 +111,6 @@ export function AntigravityTypewriter({
     </span>
   );
 }
+
+// Backward compatibility alias
+export { TypewriterHeader as AntigravityTypewriter };

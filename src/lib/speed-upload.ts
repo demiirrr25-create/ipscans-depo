@@ -1,9 +1,13 @@
 /** Count only observed progress, or a successfully completed upload. Abort/error is not delivery. */
-export function xhrUpload(payload: Uint8Array, onBytes: (delta: number) => void) {
+export function xhrUpload(
+  payload: Uint8Array,
+  onBytes: (delta: number) => void,
+  url = "https://speed.cloudflare.com/__up"
+) {
   const xhr = new XMLHttpRequest();
   let lastLoaded = 0;
   const promise = new Promise<boolean>((resolve) => {
-    xhr.open("POST", "https://speed.cloudflare.com/__up", true);
+    xhr.open("POST", url, true);
     xhr.timeout = 10_000;
     xhr.upload.onprogress = (event) => {
       const loaded = Math.max(lastLoaded, Math.min(payload.byteLength, event.loaded));

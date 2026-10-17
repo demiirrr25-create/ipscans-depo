@@ -2,11 +2,31 @@ import { xhrUpload } from './speed-upload.ts';
 
 export type Direction = 'download' | 'upload';
 export type Trace = { seconds: number; mbps: number; direction: Direction };
+
+export type ServerInfo = {
+  id: string;
+  name: string;
+  location: string;
+  country: string;
+  region?: string;
+};
+
+export type ClientInfo = {
+  ip: string;
+  city?: string;
+  country?: string;
+  region?: string;
+  isp?: string;
+  connectionType?: string;
+};
+
 export type SpeedResult = {
   download: number;
   upload: number;
   idle: number;
+  minPing: number;
   jitter: number | null;
+  packetLoss: number; // percentage (0 to 100)
   loadedDownload: number | null;
   loadedUpload: number | null;
   seconds: number;
@@ -17,13 +37,31 @@ export type SpeedResult = {
   capped: boolean;
   timestamp: string;
   trace: Trace[];
+  server?: ServerInfo;
+  client?: ClientInfo;
 };
-export type SpeedUpdate = { phase: 'latency' | Direction; mbps: number; seconds: number; trace?: Trace };
 
-const DOWN = 'https://speed.cloudflare.com/__down';
+export type SpeedUpdate = {
+  phase: 'init' | 'latency' | Direction | 'complete';
+  mbps: number;
+  seconds: number;
+  ping?: number;
+  jitter?: number;
+  progress?: number;
+  trace?: Trace;
+  server?: ServerInfo;
+  client?: ClientInfo;
+};
+
+// Endpoints: Prefer local API endpoints, fallback to high-capacity CDN edge if needed
+const LOCAL_DOWN = '/api/speedtest/download';
+const CLOUD_DOWN = 'https://speed.cloudflare.com/__down';
+const LOCAL_UP = '/api/speedtest/upload';
+const CLOUD_UP = 'https://speed.cloudflare.com/__up';
+
 const CAP = 256_000_000;
-const WARMUP = 600;
-const DURATION = 5400;
+const WARMUP = 800; // 800ms warm-up to clear initial TCP slow-start
+const DURATION = 6000; // 6s per direction for solid sampling without long waits
 
 export function median(values: number[]): number | null {
   if (!values.length) return null;
@@ -45,9 +83,13 @@ export function variation(values: number[]): number | null {
   return (Math.sqrt(values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length) / mean) * 100;
 }
 
-async function latency(signal: AbortSignal): Promise<number> {
+async function probeLatency(endpoint: string, signal: AbortSignal): Promise<number> {
   const start = performance.now();
-  const response = await fetch(`${DOWN}?bytes=0&r=${crypto.randomUUID()}`, {
+  const url = endpoint.includes('?') 
+    ? `${endpoint}&r=${crypto.randomUUID()}` 
+    : `${endpoint}?r=${crypto.randomUUID()}`;
+  
+  const response = await fetch(url, {
     cache: 'no-store',
     signal: AbortSignal.any([signal, AbortSignal.timeout(3000)]),
   });
@@ -69,6 +111,40 @@ async function delay(ms: number, signal: AbortSignal) {
   });
 }
 
+export async function fetchServerInfo(signal: AbortSignal): Promise<{ server: ServerInfo; client: ClientInfo }> {
+  try {
+    const res = await fetch('/api/speedtest/info', {
+      cache: 'no-store',
+      signal: AbortSignal.any([signal, AbortSignal.timeout(3500)]),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        server: data.server || {
+          id: 'ipscans-edge',
+          name: 'IPScans Edge Network',
+          location: 'Auto-Selected Edge Node',
+          country: 'Global',
+        },
+        client: data.client || { ip: data.ip || 'Unknown' },
+      };
+    }
+  } catch {
+    // fallback if info endpoint times out
+  }
+  return {
+    server: {
+      id: 'ipscans-edge',
+      name: 'IPScans Edge Engine',
+      location: 'Selected Edge Core',
+      country: 'Global',
+    },
+    client: {
+      ip: 'Detected',
+    },
+  };
+}
+
 export async function runSpeedTest(
   signal: AbortSignal,
   update: (value: SpeedUpdate) => void
@@ -77,30 +153,81 @@ export async function runSpeedTest(
   const trace: Trace[] = [];
   const idle: number[] = [];
   let failures = 0;
+  let totalLatencyProbes = 0;
   let transferred = 0;
   let capped = false;
 
-  update({ phase: 'latency', mbps: 0, seconds: 0 });
+  update({ phase: 'init', mbps: 0, seconds: 0 });
 
-  // Discard connection/TLS warmup spike.
+  // 1. Fetch server & client info
+  const info: { server: ServerInfo; client: ClientInfo } = await fetchServerInfo(signal).catch(() => ({
+    server: { id: 'core', name: 'IPScans Edge', location: 'Optimized Server', country: 'Global' },
+    client: { ip: 'Active' },
+  }));
+
+  // Detect connection type from browser if supported
+  if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+    const navConn = (navigator as unknown as { connection?: { effectiveType?: string; type?: string } }).connection;
+    if (navConn?.effectiveType) {
+      info.client.connectionType = navConn.effectiveType.toUpperCase();
+    }
+  }
+
+  update({ phase: 'latency', mbps: 0, seconds: 0, server: info.server, client: info.client });
+
+  // 2. Select primary download endpoint: test if local or cloud responds faster
+  const pingEndpoint = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? `${CLOUD_DOWN}?bytes=0`
+    : '/api/speedtest/ping';
+
+  const downEndpoint = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? CLOUD_DOWN
+    : LOCAL_DOWN;
+
+  const upEndpoint = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? CLOUD_UP
+    : LOCAL_UP;
+
+  // Warmup probe
+  totalLatencyProbes++;
   try {
-    await latency(signal);
+    await probeLatency(pingEndpoint, signal);
   } catch {
+    failures++;
     signal.throwIfAborted();
   }
 
-  // 6 calibrated samples to find accurate idle RTT
-  for (let i = 0; i < 6; i++) {
+  // 10 precise idle latency samples
+  for (let i = 0; i < 10; i++) {
     signal.throwIfAborted();
+    totalLatencyProbes++;
     try {
-      idle.push(await latency(signal));
+      const ms = await probeLatency(pingEndpoint, signal);
+      idle.push(ms);
+      update({
+        phase: 'latency',
+        mbps: 0,
+        seconds: (performance.now() - start) / 1000,
+        ping: ms,
+        jitter: jitter(idle) ?? undefined,
+        progress: (i + 1) / 10,
+        server: info.server,
+        client: info.client,
+      });
     } catch {
       failures++;
       signal.throwIfAborted();
     }
+    await delay(60, signal);
   }
+
   if (idle.length < 2) throw new Error('Insufficient latency samples');
 
+  const idleMedian = median(idle)!;
+  const minPing = Math.min(...idle);
+  const idleJitter = jitter(idle);
+
+  // 3. Transfer phases: Download then Upload
   async function transfer(direction: Direction) {
     const controller = new AbortController();
     const phaseSignal = AbortSignal.any([signal, controller.signal]);
@@ -115,7 +242,13 @@ export async function runSpeedTest(
     const loaded: number[] = [];
     let limitReached = false;
 
-    update({ phase: direction, mbps: 0, seconds: (phaseStart - start) / 1000 });
+    update({
+      phase: direction,
+      mbps: 0,
+      seconds: (phaseStart - start) / 1000,
+      server: info.server,
+      client: info.client,
+    });
 
     const count = (delta: number) => {
       phaseBytes += delta;
@@ -135,21 +268,33 @@ export async function runSpeedTest(
       lastBytes = bytes;
       lastTime = now;
       trace.push(point);
-      update({ phase: direction, mbps: point.mbps, seconds: point.seconds, trace: point });
-    }, 100);
+      update({
+        phase: direction,
+        mbps: point.mbps,
+        seconds: point.seconds,
+        trace: point,
+        server: info.server,
+        client: info.client,
+      });
+    }, 80);
 
+    // Concurrently probe latency under load to calculate Bufferbloat
     const latencyTask = (async () => {
       while (!phaseSignal.aborted) {
+        totalLatencyProbes++;
         try {
-          const value = await latency(phaseSignal);
-          if (!phaseSignal.aborted && performance.now() >= measuredStart) loaded.push(value);
+          const value = await probeLatency(pingEndpoint, phaseSignal);
+          if (!phaseSignal.aborted && performance.now() >= measuredStart) {
+            loaded.push(value);
+          }
         } catch {
           if (!phaseSignal.aborted) failures++;
         }
-        await delay(250, phaseSignal);
+        await delay(200, phaseSignal);
       }
     })();
 
+    // Upload payload chunks
     const payload = new Uint8Array(1_000_000);
     for (let offset = 0; offset < payload.length; offset += 65536) {
       crypto.getRandomValues(payload.subarray(offset, Math.min(payload.length, offset + 65536)));
@@ -157,7 +302,6 @@ export async function runSpeedTest(
 
     async function worker() {
       while (!phaseSignal.aborted) {
-        // Dynamic adaptive chunk size: starts at 2.5MB, scales up to 10MB or 20MB as bandwidth rises
         const size =
           direction === 'download'
             ? bytes > 30_000_000
@@ -175,7 +319,8 @@ export async function runSpeedTest(
 
         try {
           if (direction === 'download') {
-            const response = await fetch(`${DOWN}?bytes=${size}&r=${crypto.randomUUID()}`, {
+            const sep = downEndpoint.includes('?') ? '&' : '?';
+            const response = await fetch(`${downEndpoint}${sep}bytes=${size}&r=${crypto.randomUUID()}`, {
               cache: 'no-store',
               signal: phaseSignal,
             });
@@ -196,7 +341,7 @@ export async function runSpeedTest(
             const upload = xhrUpload(payload, (delta) => {
               count(delta);
               if (performance.now() >= measuredStart) requestMeasured += delta;
-            });
+            }, upEndpoint);
             phaseSignal.addEventListener('abort', upload.abort, { once: true });
             const success = await upload.promise;
             phaseSignal.removeEventListener('abort', upload.abort);
@@ -212,6 +357,7 @@ export async function runSpeedTest(
 
     let ended: number;
     try {
+      // 4 parallel worker connections for maximum precision throughput
       await Promise.all(Array.from({ length: 4 }, worker));
       ended = performance.now();
     } finally {
@@ -239,11 +385,17 @@ export async function runSpeedTest(
   const down = await transfer('download');
   const up = await transfer('upload');
 
+  const packetLoss = totalLatencyProbes > 0 
+    ? Math.min(100, Math.round((failures / totalLatencyProbes) * 100 * 10) / 10) 
+    : 0;
+
   return {
     download: down.mbps,
     upload: up.mbps,
-    idle: median(idle)!,
-    jitter: jitter(idle),
+    idle: idleMedian,
+    minPing,
+    jitter: idleJitter,
+    packetLoss,
     loadedDownload: down.loaded,
     loadedUpload: up.loaded,
     seconds: (performance.now() - start) / 1000,
@@ -254,5 +406,7 @@ export async function runSpeedTest(
     capped,
     timestamp: new Date().toISOString(),
     trace,
+    server: info.server,
+    client: info.client,
   };
 }

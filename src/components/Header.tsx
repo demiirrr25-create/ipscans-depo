@@ -310,7 +310,7 @@ export function Header({
             </div>
           </div>
 
-          {/* Dropdowns container matching antigravity.google */}
+          {/* Dropdowns container dropdown navigation */}
           <div className={`dropdown ${activeDropdown ? "open" : ""}`} data-dropdowns-container>
             <div className="grid-container">
               <div
@@ -608,7 +608,7 @@ export function Header({
           </div>
         </div>
 
-        {/* Top announcement banner slot matching antigravity.google */}
+        {/* Top announcement banner slot */}
         {!bannerDismissed && (
           <div className="header-top-banner-slot" data-home-banner-slot>
             <div
@@ -624,10 +624,10 @@ export function Header({
                       <path d="M8 0C8.3 4.2 11.8 7.7 16 8C11.8 8.3 8.3 11.8 8 16C7.7 11.8 4.2 8.3 0 8C4.2 7.7 7.7 4.2 8 0Z" />
                     </svg>
                   </span>
-                  <span className="pill-badge-label">v{scannerApplication.version}</span>
+                  <span className="pill-badge-label">IPscans+</span>
                 </span>
                 <span className="pill-text">
-                  IPscans+ v{scannerApplication.version} — {scannerApplication.description[locale]}
+                  IPscans+ — {scannerApplication.description[locale]}
                 </span>
                 <span className="pill-cta">
                   <span className="pill-cta-label">{platformCopy[locale].details}</span>

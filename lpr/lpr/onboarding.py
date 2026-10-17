@@ -33,7 +33,7 @@ def setup_status(ops,session):
         data_path=str(path.resolve()) if persistent else "Bellekte; kalıcı dosya yok")
 
 
-from .operator_shell import AntigravityWelcomeBanner, STYLE
+from .operator_shell import IPScansWelcomeBanner, STYLE
 
 
 class SetupWizard(QDialog):
@@ -51,7 +51,7 @@ class SetupWizard(QDialog):
         self.setStyleSheet(STYLE)
         self.resize(760,600);self.setMinimumSize(640,480)
         root=QVBoxLayout(self)
-        self.welcome_banner=AntigravityWelcomeBanner(
+        self.welcome_banner=IPScansWelcomeBanner(
             "IPSCANS LPR PRO · İLK İSTASYON KURULUMU",
             "Gerçek kamera kalibrasyonu, araç kütüğü ve yerel veri doğrulaması.",
             compact=True,

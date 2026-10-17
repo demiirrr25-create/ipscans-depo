@@ -26,7 +26,7 @@ from PyQt6.QtWidgets import (
 
 from app.i18n import available_languages
 from app.ui.resources import load_logo_pixmap
-from app.ui.styles import AntigravityWelcomeStage
+from app.ui.styles import IPScansWelcomeStage
 
 from pro.pro_content import get_privacy_body, get_terms_body, t
 from pro.pro_settings import accept_privacy, accept_terms, mark_welcome_seen, save_language
@@ -73,7 +73,7 @@ class ProOnboardingWizard(QDialog):
         wrap.setContentsMargins(0, 0, 0, 0)
         wrap.setSpacing(10)
 
-        self._welcome_stage = AntigravityWelcomeStage(
+        self._welcome_stage = IPScansWelcomeStage(
             kicker_text="IPSCANS NETWORK HEALTH PRO · DIAGNOSTIC SUITE",
             headline_text="Sürekli ağ sağlığı ve anomali izleme platformuna hoş geldiniz.",
             subtitle_text="7/24 çakışma tespiti, topoloji takibi ve cihaz sağlık skoru motoru hazır.",

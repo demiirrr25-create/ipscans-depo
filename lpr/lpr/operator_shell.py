@@ -37,8 +37,8 @@ QCheckBox::indicator:checked {background:#ffffff;border:1px solid #ffffff;}
 '''
 
 
-class AntigravityWelcomeBanner(QWidget):
-    """Animated Antigravity capsule particle stage + typewriter headline for LPR Pro."""
+class IPScansWelcomeBanner(QWidget):
+    """Animated IPScans capsule particle stage + typewriter headline for LPR Pro."""
 
     def __init__(self, eyebrow: str, headline: str, compact: bool = True, parent=None):
         super().__init__(parent)
@@ -124,6 +124,10 @@ class AntigravityWelcomeBanner(QWidget):
             painter.setBrush(QBrush(grad))
             painter.drawRoundedRect(QRectF(cx, 38.0, 3.0, 19.0), 1.5, 1.5)
         painter.end()
+
+
+# Backward compatibility alias
+AntigravityWelcomeBanner = IPScansWelcomeBanner
 
 
 def label(text='',name=None):
@@ -339,12 +343,11 @@ def install_shell(window):
     window.setStyleSheet(STYLE)
     old=window.takeCentralWidget();old.hide();old.setParent(window)
     root=QWidget();window.setCentralWidget(root);layout=QVBoxLayout(root);layout.setContentsMargins(18,16,18,12)
-    from . import __version__
-    header=QHBoxLayout();brand=label('IPSCANS / LPR PRO · '+__version__,'brand');brand.setWordWrap(False)
+    header=QHBoxLayout();brand=label('IPSCANS / LPR PRO','brand');brand.setWordWrap(False)
     header.addWidget(brand);header.addStretch();header.addWidget(window.account)
     lock=QPushButton('Oturumu kilitle');lock.clicked.connect(window.lock_session);header.addWidget(lock);layout.addLayout(header)
-    window.welcome_banner=AntigravityWelcomeBanner(
-        'IPSCANS LPR PRO · STATION WORKSPACE · v'+__version__,
+    window.welcome_banner=IPScansWelcomeBanner(
+        'IPSCANS LPR PRO · STATION WORKSPACE',
         'Yerel plaka tanıma, bağımsız kalibrasyon çizgileri ve canlı operatör çalışma alanı.',
         compact=True,
         parent=root,

@@ -17,7 +17,7 @@ interface RingParticle {
   seed2: number;
 }
 
-export function AntigravityParticles({
+export function SpatialParticles({
   variant = "hero",
   className = "",
 }: {
@@ -477,3 +477,5 @@ export function MorphingSolutionParticles({
     </div>
   );
 }
+
+export { SpatialParticles as AntigravityParticles };

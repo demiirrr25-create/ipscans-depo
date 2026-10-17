@@ -15,8 +15,8 @@ export function ScannerScreenshotShowcase({ locale }: { locale: Locale }) {
       title: uiText(locale, "Live Device Discovery & Network Table", "Canlı Cihaz Keşfi ve Ağ Tablosu"),
       tabLabel: uiText(locale, "01 / Device Table", "01 / Cihaz Tablosu"),
       src: "/scanner-v43-preview.png",
-      alt: uiText(locale, "IPscans+ v4.3.0 device discovery table view", "IPscans+ v4.3.0 cihaz keşfi tablo görünümü"),
-      windowSubtitle: "IPscans+ v4.3.0 — [192.168.1.0/24 · Realtek PCIe GbE · ARP & ICMP Sweep]",
+      alt: uiText(locale, "IPscans+ device discovery table view", "IPscans+ cihaz keşfi tablo görünümü"),
+      windowSubtitle: "IPscans+ — [192.168.1.0/24 · Realtek PCIe GbE · ARP & ICMP Sweep]",
       features: [
         {
           badge: "ARP / ICMP",
@@ -60,8 +60,8 @@ export function ScannerScreenshotShowcase({ locale }: { locale: Locale }) {
       title: uiText(locale, "Hierarchical Evidence-Based Network Map", "Kanıta Dayalı Hiyerarşik Ağ Haritası"),
       tabLabel: uiText(locale, "02 / Network Map", "02 / Ağ Haritası"),
       src: "/scanner-v43-map.png",
-      alt: uiText(locale, "IPscans+ v4.3.0 evidence-based topology map view", "IPscans+ v4.3.0 kanıta dayalı topoloji haritası görünümü"),
-      windowSubtitle: "IPscans+ v4.3.0 — [Topology Engine · LLDP / CDP Verified Hierarchy]",
+      alt: uiText(locale, "IPscans+ evidence-based topology map view", "IPscans+ kanıta dayalı topoloji haritası görünümü"),
+      windowSubtitle: "IPscans+ — [Topology Engine · LLDP / CDP Verified Hierarchy]",
       features: [
         {
           badge: "LLDP / CDP",

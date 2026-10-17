@@ -83,7 +83,7 @@ def main() -> None:
             window.tabs.currentWidget().grab()
 
         from app.ui.splash_screen import IPScansSplash
-        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS · v4.3.0")
+        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS")
         splash.grab()
         splash.close()
 
@@ -96,23 +96,37 @@ def main() -> None:
         print("selftest: pro window created OK")
         sys.exit(0)
 
+    no_splash = "--no-splash" in sys.argv
+    steps = _pending_onboarding_steps()
+    language = get_saved_language() or DEFAULT_LANGUAGE
+
+    if no_splash:
+        if steps:
+            wizard = ProOnboardingWizard(steps, language, app_icon)
+            if wizard.exec() != ProOnboardingWizard.DialogCode.Accepted:
+                sys.exit(0)
+            language = get_saved_language() or DEFAULT_LANGUAGE
+        window = ProMainWindow(language)
+        window.setWindowIcon(app_icon)
+        app.window_ref = window
+        window.show()
+        sys.exit(app.exec())
+
     from app.ui.splash_screen import IPScansSplash
-    splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS · v4.3.0")
+    splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS")
     splash.show()
     app.processEvents()
 
     splash.set_progress(0.35, "Analyzing local network subnets...")
     app.processEvents()
 
-    steps = _pending_onboarding_steps()
-    language = get_saved_language() or DEFAULT_LANGUAGE
     if steps:
         splash.close()
         wizard = ProOnboardingWizard(steps, language, app_icon)
         if wizard.exec() != ProOnboardingWizard.DialogCode.Accepted:
             sys.exit(0)
         language = get_saved_language() or DEFAULT_LANGUAGE
-        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS · v4.3.0")
+        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS")
         splash.show()
         app.processEvents()
 

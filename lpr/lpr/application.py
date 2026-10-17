@@ -33,8 +33,8 @@ class Login(QDialog):
         layout=QVBoxLayout(self)
         setup=ops.needs_setup()
         self.created_admin=setup
-        from .operator_shell import AntigravityWelcomeBanner
-        self.welcome_banner=AntigravityWelcomeBanner(
+        from .operator_shell import IPScansWelcomeBanner
+        self.welcome_banner=IPScansWelcomeBanner(
             "IPSCANS LPR PRO · LICENSE PLATE RECOGNITION",
             "İlk yönetici hesabını oluşturun ve istasyonu başlatın." if setup else "Yerel operatör çalışma alanına oturum açın.",
             compact=True,

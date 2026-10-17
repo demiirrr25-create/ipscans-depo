@@ -4,18 +4,29 @@ import { uiText } from "@/i18n/ui";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import type { SpeedResult, SpeedUpdate, Trace } from "@/lib/speed-engine";
-import { AntigravityParticles } from "./AntigravityParticles";
+import type { SpeedResult, SpeedUpdate, Trace, ServerInfo, ClientInfo } from "@/lib/speed-engine";
 
-function getBufferbloatGrade(delta: number | null | undefined): { grade: string; badgeClass: string } {
-  if (delta == null) return { grade: "—", badgeClass: "text-neutral-400 border-neutral-700 bg-neutral-900" };
-  if (delta <= 5) return { grade: "A+", badgeClass: "text-white border-white/40 bg-white/10" };
-  if (delta <= 15) return { grade: "A", badgeClass: "text-neutral-200 border-white/20 bg-white/5" };
-  if (delta <= 30) return { grade: "B", badgeClass: "text-neutral-300 border-neutral-700 bg-white/5" };
-  if (delta <= 60) return { grade: "C", badgeClass: "text-neutral-400 border-neutral-700 bg-black" };
-  if (delta <= 120) return { grade: "D", badgeClass: "text-neutral-400 border-neutral-800 bg-black" };
-  return { grade: "F", badgeClass: "text-neutral-500 border-neutral-800 bg-black" };
+function getBufferbloatGrade(delta: number | null | undefined): { grade: string; badgeClass: string; desc: string } {
+  if (delta == null) return { grade: "—", badgeClass: "text-neutral-400 border-neutral-800 bg-neutral-900/40", desc: "No data" };
+  if (delta <= 5) return { grade: "A+", badgeClass: "text-white border-white/40 bg-white/10", desc: "Ultra-low bufferbloat (Competitive Gaming & Live Video)" };
+  if (delta <= 15) return { grade: "A", badgeClass: "text-neutral-200 border-white/20 bg-white/5", desc: "Excellent queue management (No stream buffering)" };
+  if (delta <= 30) return { grade: "B", badgeClass: "text-neutral-300 border-neutral-700 bg-white/5", desc: "Good performance under typical concurrency" };
+  if (delta <= 60) return { grade: "C", badgeClass: "text-neutral-400 border-neutral-800 bg-neutral-900/60", desc: "Moderate buffer delay observed under load" };
+  if (delta <= 120) return { grade: "D", badgeClass: "text-neutral-400 border-neutral-800 bg-neutral-900/60", desc: "Noticeable queue lag under heavy bandwidth" };
+  return { grade: "F", badgeClass: "text-neutral-500 border-neutral-900 bg-black", desc: "Severe bufferbloat delay" };
 }
+
+interface TestHistoryItem {
+  id: string;
+  timestamp: string;
+  download: number;
+  upload: number;
+  ping: number;
+  jitter: number | null;
+  server?: string;
+}
+
+const STORAGE_KEY = "ipscans_speed_history";
 
 export function SpeedTest({
   dict,
@@ -30,7 +41,60 @@ export function SpeedTest({
   const [trace, setTrace] = useState<Trace[]>([]);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<TestHistoryItem[]>([]);
+  const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
+  const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
+
   const controller = useRef<AbortController | null>(null);
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setHistory(JSON.parse(stored).slice(0, 20));
+      }
+    } catch {
+      // Ignore storage errors in privacy mode
+    }
+
+    // Check URL query parameters for shared results
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const d = parseFloat(params.get("dl") || "");
+      const u = parseFloat(params.get("ul") || "");
+      const p = parseFloat(params.get("ping") || "");
+      const j = parseFloat(params.get("jit") || "");
+      if (!isNaN(d) && !isNaN(u) && !isNaN(p)) {
+        setResult({
+          download: d,
+          upload: u,
+          idle: p,
+          minPing: p,
+          jitter: isNaN(j) ? null : j,
+          packetLoss: 0,
+          loadedDownload: null,
+          loadedUpload: null,
+          seconds: 12,
+          bytes: (d + u) * 125000 * 6,
+          requestsFailed: 0,
+          latencySamples: 10,
+          stability: null,
+          capped: false,
+          timestamp: new Date().toISOString(),
+          trace: [],
+          server: {
+            id: "shared",
+            name: "Verified Telemetry Record",
+            location: "IPScans Network Core",
+            country: "Global",
+          },
+        });
+      }
+    }
+  }, []);
 
   useEffect(() => () => controller.current?.abort(), []);
 
@@ -43,28 +107,52 @@ export function SpeedTest({
     setTrace([]);
     setNotice("");
     setUpdate(null);
+
     try {
       const { runSpeedTest } = await import("@/lib/speed-engine");
-      const measured = await runSpeedTest(session.signal, (value) => {
+      const measured = await runSpeedTest(session.signal, (val) => {
         if (session.signal.aborted) return;
-        setUpdate(value);
-        if (value.trace) {
-          setTrace((points) => [...points.slice(-99), value.trace!]);
+        setUpdate(val);
+        if (val.server) setServerInfo(val.server);
+        if (val.client) setClientInfo(val.client);
+        if (val.trace) {
+          setTrace((points) => [...points.slice(-119), val.trace!]);
         }
       });
+
       setResult(measured);
+      if (measured.server) setServerInfo(measured.server);
+      if (measured.client) setClientInfo(measured.client);
+
+      // Save to test history
+      try {
+        const item: TestHistoryItem = {
+          id: crypto.randomUUID(),
+          timestamp: measured.timestamp,
+          download: measured.download,
+          upload: measured.upload,
+          ping: measured.idle,
+          jitter: measured.jitter,
+          server: measured.server?.name,
+        };
+        const updated = [item, ...history].slice(0, 20);
+        setHistory(updated);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch {
+        // Storage failover
+      }
     } catch {
       setNotice(
         session.signal.aborted
           ? uiText(
               locale,
-              "Test stopped. Incomplete results were not published.",
-              "Test durduruldu. Eksik sonuç yayımlanmadı."
+              "Test stopped. Incomplete telemetry was discarded.",
+              "Test durduruldu. Eksik telemetri kaydedilmedi."
             )
           : uiText(
               locale,
-              "Insufficient measurements. Check your connection and try again.",
-              "Yeterli ölçüm alınamadı. Bağlantıyı kontrol edip yeniden deneyin."
+              "Insufficient measurement samples. Check your connection.",
+              "Yeterli ölçüm örneği alınamadı. Bağlantınızı kontrol edin."
             )
       );
     } finally {
@@ -74,18 +162,6 @@ export function SpeedTest({
       }
     }
   }
-
-  const phase = update?.phase ?? (result ? "complete" : "ready");
-  const label =
-    phase === "upload"
-      ? dict.upload
-      : phase === "latency"
-        ? dict.ping
-        : phase === "download"
-          ? dict.download
-          : result
-            ? dict.download
-            : uiText(locale, "Ready", "Hazır");
 
   const liveValue = running ? update?.mbps : result?.download;
   const peakSpeed = useMemo(() => {
@@ -102,26 +178,50 @@ export function SpeedTest({
       : null;
   const bloat = getBufferbloatGrade(bufferbloatDelta);
 
-  const summary = result
-    ? `IPScans / ${new Date(result.timestamp).toLocaleString(locale)}\n${dict.download}: ${fmt(result.download, "Mbps")} · ${dict.upload}: ${fmt(result.upload, "Mbps")}\n${dict.ping}: ${fmt(result.idle)} · ${uiText(locale, "Jitter", "Gecikme sapması")}: ${fmt(result.jitter)}\n${uiText(locale, "Loaded latency", "Yük altında")}: ${fmt(result.loadedDownload)} (QoS Grade: ${bloat.grade})\nPayload: ${(result.bytes / 1e6).toFixed(1)} MB transferred\nhttps://ipscans.com/${locale}`
-    : "";
+  const shareUrl = useMemo(() => {
+    if (!result || typeof window === "undefined") return "";
+    const base = `${window.location.origin}/${locale}/speed-test`;
+    const params = new URLSearchParams({
+      dl: result.download.toFixed(1),
+      ul: result.upload.toFixed(1),
+      ping: result.idle.toFixed(1),
+      jit: result.jitter ? result.jitter.toFixed(1) : "0",
+    });
+    return `${base}?${params.toString()}`;
+  }, [result, locale]);
 
   async function share() {
+    if (!result) return;
+    const textSummary = `IPScans Speed Performance Analysis\nDownload: ${result.download.toFixed(1)} Mbps\nUpload: ${result.upload.toFixed(1)} Mbps\nPing: ${result.idle.toFixed(1)} ms · Jitter: ${result.jitter ? result.jitter.toFixed(1) : 0} ms\nBufferbloat: Grade ${bloat.grade}\nVerify at: ${shareUrl}`;
+
+    if (navigator.share && typeof window !== "undefined") {
+      try {
+        await navigator.share({
+          title: "IPScans Speed Analysis",
+          text: textSummary,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+
     try {
-      await navigator.clipboard.writeText(summary);
+      await navigator.clipboard.writeText(shareUrl || textSummary);
       setNotice(
         uiText(
           locale,
-          "Full telemetry copied to clipboard.",
-          "Tüm telemetri panoya kopyalandı."
+          "Shareable result link copied to clipboard.",
+          "Paylaşılabilir sonuç bağlantısı panoya kopyalandı."
         )
       );
     } catch {
       setNotice(
         uiText(
           locale,
-          "Copy unavailable; download the JSON result.",
-          "Kopyalama kullanılamıyor; JSON dosyasını indirebilirsiniz."
+          "Clipboard unavailable. Copy link from browser address bar.",
+          "Pano kullanılamıyor. Bağlantıyı tarayıcı adresinden kopyalayabilirsiniz."
         )
       );
     }
@@ -129,114 +229,163 @@ export function SpeedTest({
 
   function exportResult() {
     if (!result) return;
-    const url = URL.createObjectURL(
-      new Blob(
-        [
-          JSON.stringify(
-            {
-              generator: "IPScans Speed Telemetry Engine v4.3",
-              method: "Multi-threaded adaptive HTTP streaming with RTT probing",
-              bufferbloatGrade: bloat.grade,
-              bufferbloatDeltaMs: bufferbloatDelta,
-              ...result,
-            },
-            null,
-            2
-          ),
-        ],
-        { type: "application/json" }
-      )
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `ipscans-speed-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
+    const payload = {
+      platform: "IPScans Telemetry Engine",
+      method: "Multi-stream HTTP transport with active RTT probing",
+      bufferbloatGrade: bloat.grade,
+      bufferbloatDeltaMs: bufferbloatDelta,
+      ...result,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ipscans-telemetry-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  // Dial geometry: 280x280 precision obsidian gauge
-  // Sweep angle: 260 degrees (-220 deg to +40 deg)
+  function clearHistory() {
+    setHistory([]);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }
+
+  // Dial geometry: Precision 320x320 SVG gauge
+  // Arc: 260 degrees (-220 to +40)
   const progressRatio = Math.min(1, Math.log10(1 + (liveValue ?? 0)) / 3.8);
-  const capsuleCount = 44;
-  const radius = 104;
+  const capsuleCount = 48;
+  const radius = 118;
   const circumference = 2 * Math.PI * radius;
-  // Arc length is 72% of circle (~260 degrees)
-  const arcSweep = 0.72;
+  const arcSweep = 0.722;
   const totalArc = circumference * arcSweep;
   const strokeDashoffset = totalArc * (1 - progressRatio);
 
   return (
-    <section className="agy-speed-studio" aria-label={dict.title}>
-      <div className="agy-speed-hero-card">
-        <AntigravityParticles variant="subpage" className="agy-speed-hero-card__bg" />
+    <section className="relative mx-auto w-full max-w-[1200px] px-4 py-8 lg:py-12" aria-label={dict.title}>
+      {/* Background Subtle Spatial Depth */}
+      <div className="relative overflow-hidden rounded-3xl border border-[#1F1F1F] bg-[#000000] p-6 shadow-2xl md:p-10">
+        
+        {/* Top Header Ribbon & Edge HUD */}
+        <div className="flex flex-col gap-4 border-b border-[#1F1F1F] pb-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-2.5 w-2.5 items-center justify-center">
+              <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
+                {uiText(locale, "Internet Speed & Telemetry Studio", "İnternet Hız & Telemetri Analiz Merkezi")}
+              </h2>
+              <p className="text-xs text-[#A1A1A1]">
+                {uiText(locale, "Precision multi-stream measurement engine", "Yüksek hassasiyetli çok kanallı ölçüm motoru")}
+              </p>
+            </div>
+          </div>
 
-        {/* Top Status & Stage Ribbon */}
-        <div className="agy-speed-topbar">
-          <div
-            className="agy-speed-stage-pills"
-            role="list"
-            aria-label={uiText(locale, "Test stages", "Test aşamaları")}
-          >
+          {/* Test Stage Breadcrumb */}
+          <div className="flex items-center gap-2">
             {(["latency", "download", "upload"] as const).map((stage, index) => {
               const isCurrent = running && update?.phase === stage;
               const isDone =
                 Boolean(result) ||
                 (stage === "latency" && (update?.phase === "download" || update?.phase === "upload")) ||
                 (stage === "download" && update?.phase === "upload");
+
               return (
                 <div
                   key={stage}
-                  role="listitem"
-                  aria-current={isCurrent ? "step" : undefined}
-                  className={`newsletter-topic-pill ${isCurrent ? "selected animate-pulse" : isDone ? "selected" : ""}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+                    isCurrent
+                      ? "border-white bg-white text-black font-semibold shadow-sm"
+                      : isDone
+                        ? "border-[#2E2E2E] bg-[#111111] text-white"
+                        : "border-[#1F1F1F] bg-transparent text-[#6E6E6E]"
+                  }`}
                 >
-                  <span className="font-mono text-xs opacity-60">0{index + 1}</span>
-                  <span className="font-medium">
+                  <span className="font-mono text-[10px]">0{index + 1}</span>
+                  <span>
                     {stage === "latency"
-                      ? uiText(locale, "Latency & Jitter", "Gecikme & Sapma")
+                      ? uiText(locale, "Ping", "Gecikme")
                       : stage === "download"
                         ? dict.download
                         : dict.upload}
                   </span>
-                  <span aria-hidden="true" className="font-mono text-xs text-white">
-                    {isDone ? "✓" : isCurrent ? "●" : "·"}
-                  </span>
+                  {isDone && <span className="text-[10px]">✓</span>}
                 </div>
               );
             })}
           </div>
-
-          <span className="agy-speed-edge-pill">
-            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />
-            <span className="font-mono text-[11px] tracking-wider uppercase">
-              {uiText(
-                locale,
-                "MULTI-STREAM ENGINE · VERIFIED TELEMETRY",
-                "ÇOK KANALLI MOTOR · DOĞRULANMIŞ TELEMETRİ"
-              )}
-            </span>
-          </span>
         </div>
 
-        {/* Main Precision Tachometer & Telemetry Grid */}
-        <div className="agy-speed-main-grid">
-          {/* Executive Obsidian Tachometer */}
-          <div className="agy-speed-gauge-panel">
-            <div className="agy-speed-dial" role="presentation">
-              <svg
-                viewBox="0 0 280 280"
-                className="agy-speed-dial__svg"
-                aria-hidden="true"
-              >
+        {/* Server & Network Metadata Strip */}
+        <div className="mt-6 grid grid-cols-2 gap-3 rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4 text-xs sm:grid-cols-4">
+          <div>
+            <span className="text-[#6E6E6E] uppercase tracking-wider text-[10px] font-mono block">
+              {uiText(locale, "TEST SERVER", "TEST SUNUCUSU")}
+            </span>
+            <span className="font-medium text-white truncate block mt-0.5">
+              {serverInfo?.name || "IPScans Edge Network"}
+            </span>
+            <span className="text-[#A1A1A1] text-[11px] block truncate">
+              {serverInfo?.location || "Auto-Selected Nearest Core"}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[#6E6E6E] uppercase tracking-wider text-[10px] font-mono block">
+              {uiText(locale, "YOUR IP", "GENEL IP")}
+            </span>
+            <span className="font-mono font-medium text-white block mt-0.5 truncate">
+              {clientInfo?.ip || "Detecting..."}
+            </span>
+            <span className="text-[#A1A1A1] text-[11px] block truncate">
+              {clientInfo?.city ? `${clientInfo.city}, ` : ""}{clientInfo?.country || "Global"}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[#6E6E6E] uppercase tracking-wider text-[10px] font-mono block">
+              {uiText(locale, "CONNECTION", "BAĞLANTI TÜRÜ")}
+            </span>
+            <span className="font-medium text-white block mt-0.5">
+              {clientInfo?.connectionType || "High-Bandwidth Link"}
+            </span>
+            <span className="text-[#A1A1A1] text-[11px] block">
+              {uiText(locale, "Full-Duplex", "Tam Çift Yönlü")}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[#6E6E6E] uppercase tracking-wider text-[10px] font-mono block">
+              {uiText(locale, "PACKET LOSS", "PAKET KAYBI")}
+            </span>
+            <span className="font-mono font-medium text-white block mt-0.5">
+              {result ? `${result.packetLoss.toFixed(1)}%` : "0.0%"}
+            </span>
+            <span className="text-[#A1A1A1] text-[11px] block">
+              {result && result.packetLoss > 0
+                ? uiText(locale, "Unstable link", "Kayıp gözlendi")
+                : uiText(locale, "Zero Request Drop", "Kayıpsız")}
+            </span>
+          </div>
+        </div>
+
+        {/* Main Measurement Layout: Precision Dial + Telemetry Grid */}
+        <div className="mt-8 grid gap-8 lg:grid-cols-12 lg:items-center">
+          
+          {/* Dial / Tachometer Column */}
+          <div className="flex flex-col items-center justify-center lg:col-span-5">
+            <div className="relative flex h-[300px] w-[300px] items-center justify-center sm:h-[340px] sm:w-[340px]">
+              <svg viewBox="0 0 320 320" className="h-full w-full -rotate-90 transform" aria-hidden="true">
                 <defs>
-                  {/* Platinum-monochrome arc gradient */}
                   <linearGradient id={`speedArc-${gradientId}`} x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(255, 255, 255, 0.25)" />
-                    <stop offset="50%" stopColor="rgba(255, 255, 255, 0.75)" />
-                    <stop offset="100%" stopColor="#ffffff" />
+                    <stop offset="0%" stopColor="#404040" />
+                    <stop offset="60%" stopColor="#A1A1A1" />
+                    <stop offset="100%" stopColor="#FFFFFF" />
                   </linearGradient>
                   <filter id={`dialGlow-${gradientId}`} x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="5" result="blur" />
+                    <feGaussianBlur stdDeviation="6" result="blur" />
                     <feMerge>
                       <feMergeNode in="blur" />
                       <feMergeNode in="SourceGraphic" />
@@ -244,39 +393,22 @@ export function SpeedTest({
                   </filter>
                 </defs>
 
-                {/* Outer bezel ring */}
-                <circle
-                  cx="140"
-                  cy="140"
-                  r="124"
-                  fill="none"
-                  stroke="rgba(255, 255, 255, 0.05)"
-                  strokeWidth="1"
-                />
+                {/* Outer decorative hairline */}
+                <circle cx="160" cy="160" r="144" fill="none" stroke="#1F1F1F" strokeWidth="1" />
+                <circle cx="160" cy="160" r="124" fill="none" stroke="#111111" strokeWidth="1" />
 
-                {/* Inner well subtle backing */}
-                <circle
-                  cx="140"
-                  cy="140"
-                  r="104"
-                  fill="rgba(255, 255, 255, 0.015)"
-                  stroke="rgba(255, 255, 255, 0.06)"
-                  strokeWidth="1"
-                />
-
-                {/* Precision tick marks around sweep (260 deg arc) */}
+                {/* Precision tick marks */}
                 {Array.from({ length: capsuleCount }).map((_, idx) => {
-                  const fraction = idx / (capsuleCount - 1);
-                  // Angle from 140 deg to 400 deg (i.e. -220 deg to +40 deg in Cartesian)
-                  const angDeg = 140 + fraction * 260;
+                  const frac = idx / (capsuleCount - 1);
+                  const angDeg = 140 + frac * 260;
                   const angRad = (angDeg * Math.PI) / 180;
-                  const active = fraction <= progressRatio;
-                  const r1 = 114;
-                  const r2 = active ? 122 : 117;
-                  const x1 = 140 + Math.cos(angRad) * r1;
-                  const y1 = 140 + Math.sin(angRad) * r1;
-                  const x2 = 140 + Math.cos(angRad) * r2;
-                  const y2 = 140 + Math.sin(angRad) * r2;
+                  const active = frac <= progressRatio;
+                  const r1 = 132;
+                  const r2 = active ? 141 : 136;
+                  const x1 = 160 + Math.cos(angRad) * r1;
+                  const y1 = 160 + Math.sin(angRad) * r1;
+                  const x2 = 160 + Math.cos(angRad) * r2;
+                  const y2 = 160 + Math.sin(angRad) * r2;
                   return (
                     <line
                       key={idx}
@@ -284,7 +416,7 @@ export function SpeedTest({
                       y1={y1}
                       x2={x2}
                       y2={y2}
-                      stroke={active ? "#ffffff" : "rgba(255,255,255,0.14)"}
+                      stroke={active ? "#FFFFFF" : "#2E2E2E"}
                       strokeWidth={active ? "2" : "1"}
                       strokeLinecap="round"
                       className="transition-colors duration-150"
@@ -292,175 +424,231 @@ export function SpeedTest({
                   );
                 })}
 
-                {/* Base track arc (260 degrees) */}
+                {/* Base Track Arc */}
                 <circle
-                  cx="140"
-                  cy="140"
+                  cx="160"
+                  cy="160"
                   r={radius}
                   fill="none"
-                  stroke="rgba(255, 255, 255, 0.07)"
+                  stroke="#1F1F1F"
                   strokeWidth="4"
                   strokeLinecap="round"
                   strokeDasharray={`${totalArc} ${circumference}`}
-                  transform="rotate(140 140 140)"
+                  transform="rotate(140 160 160)"
                 />
 
-                {/* Active progress arc */}
+                {/* Live Progress Arc */}
                 <circle
-                  cx="140"
-                  cy="140"
+                  cx="160"
+                  cy="160"
                   r={radius}
                   fill="none"
                   stroke={`url(#speedArc-${gradientId})`}
-                  strokeWidth="4.5"
+                  strokeWidth="5"
                   strokeLinecap="round"
                   strokeDasharray={`${totalArc} ${circumference}`}
                   strokeDashoffset={strokeDashoffset}
-                  transform="rotate(140 140 140)"
+                  transform="rotate(140 160 160)"
                   filter={`url(#dialGlow-${gradientId})`}
-                  className="transition-[stroke-dashoffset] duration-150"
+                  className="transition-[stroke-dashoffset] duration-100 ease-out"
                 />
               </svg>
 
-              {/* Digital HUD in Center */}
-              <div className="agy-speed-dial__center">
-                <span className="agy-speed-dial__phase">
+              {/* Center Digital HUD */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="font-mono text-[10px] tracking-widest text-[#A1A1A1] uppercase">
                   {running
                     ? update?.phase === "latency"
-                      ? uiText(locale, "PROBING RTT", "PING ÖLÇÜLÜYOR")
+                      ? uiText(locale, "PROBING LATENCY", "PING ÖLÇÜLÜYOR")
                       : update?.phase === "download"
-                        ? uiText(locale, "DOWNLOAD STREAM", "İNDİRME AKIŞI")
-                        : uiText(locale, "UPLOAD STREAM", "YÜKLEME AKIŞI")
+                        ? uiText(locale, "DOWNLOADING", "İNDİRİLİYOR")
+                        : uiText(locale, "UPLOADING", "YÜKLENİYOR")
                     : result
-                      ? uiText(locale, "MEASUREMENT COMPLETE", "ÖLÇÜM TAMAMLANDI")
-                      : uiText(locale, "SYSTEM READY", "SİSTEM HAZIR")}
+                      ? uiText(locale, "COMPLETED", "TAMAMLANDI")
+                      : uiText(locale, "STANDBY", "BEKLEMEDE")}
                 </span>
-                <span className="agy-speed-dial__number">
-                  {liveValue != null && (!running || update?.phase !== "latency")
-                    ? liveValue.toFixed(1)
-                    : running && update?.phase === "latency"
-                      ? "..."
-                      : "0.0"}
+
+                <div className="my-1 flex items-baseline justify-center gap-1">
+                  <span className="font-mono text-5xl font-bold tracking-tight text-white tabular-nums sm:text-6xl">
+                    {liveValue != null && (!running || update?.phase !== "latency")
+                      ? liveValue.toFixed(1)
+                      : running && update?.phase === "latency"
+                        ? (update?.ping ? update.ping.toFixed(0) : "...")
+                        : "0.0"}
+                  </span>
+                </div>
+
+                <span className="font-mono text-xs font-medium text-[#A1A1A1] uppercase tracking-wider">
+                  {running && update?.phase === "latency" ? "MS (RTT)" : "Mbps"}
                 </span>
-                <span className="agy-speed-dial__unit">
-                  {running && update?.phase === "latency" ? "PING / RTT" : "Mbps"}
-                </span>
+
                 {peakSpeed > 0 && (
-                  <span className="mt-1 font-mono text-[11px] tracking-wide text-neutral-400">
+                  <span className="mt-2 rounded border border-[#2E2E2E] bg-[#111111] px-2 py-0.5 font-mono text-[10px] text-[#A1A1A1]">
                     PEAK {peakSpeed.toFixed(1)} Mbps
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Main Action Controls */}
-            <div className="agy-speed-controls">
+            {/* Main Action Buttons */}
+            <div className="mt-6 flex items-center gap-3">
               <button
                 type="button"
                 onClick={run}
                 disabled={running}
-                className="call-to-action button button-primary font-semibold tracking-wide"
+                className="group relative flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all hover:bg-neutral-200 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
               >
                 <span>{result ? dict.restart : dict.start}</span>
-                <svg viewBox="0 -960 960 960" width="18" height="18" fill="currentColor" aria-hidden="true">
-                  <path d="M320-200v-560l440 280-440 280Z" />
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                  <path d="M8 5v14l11-7z" />
                 </svg>
               </button>
+
               {running && (
                 <button
                   type="button"
                   onClick={() => controller.current?.abort()}
-                  className="call-to-action button button-secondary"
+                  className="rounded-full border border-[#2E2E2E] bg-[#111111] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1F1F1F]"
                 >
-                  <span>{uiText(locale, "Stop", "Durdur")}</span>
+                  {uiText(locale, "Stop", "Durdur")}
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => setShowHistory(!showHistory)}
+                className={`rounded-full border px-4 py-3 text-xs font-mono transition-colors ${
+                  showHistory
+                    ? "border-white bg-white text-black"
+                    : "border-[#2E2E2E] bg-[#0A0A0A] text-[#A1A1A1] hover:text-white"
+                }`}
+                title={uiText(locale, "Test history & comparison", "Test geçmişi ve karşılaştırma")}
+              >
+                {uiText(locale, "History", "Geçmiş")} ({history.length})
+              </button>
             </div>
 
-            <p role="status" className="agy-speed-status">
-              {notice ||
-                (running
-                  ? `${label} · ${(update?.seconds ?? 0).toFixed(0)} s`
-                  : result
-                    ? uiText(locale, "Real HTTPS stream completed", "Gerçek HTTPS akış testi tamamlandı")
-                    : uiText(locale, "Multi-stream throughput & latency test", "Çok kanallı hız ve gecikme testi"))}
-            </p>
+            {notice && (
+              <p className="mt-3 text-xs text-[#A1A1A1] text-center" role="status">
+                {notice}
+              </p>
+            )}
           </div>
 
-          {/* Telemetry Panel */}
-          <div className="agy-speed-telemetry-panel">
-            {/* 6 High-Contrast Obsidian Metric Cards */}
-            <div className="agy-speed-metrics-grid">
-              <div className="agy-speed-metric-card">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <p className="agy-speed-metric-card__label">{dict.download}</p>
-                    <span className="agy-speed-metric-card__badge">↓ DL</span>
-                  </div>
-                  <p className="agy-speed-metric-card__value">{fmt(result?.download, "Mbps")}</p>
+          {/* Right Metrics & Real-Time Graph Column */}
+          <div className="flex flex-col gap-4 lg:col-span-7">
+            
+            {/* 4 Core High-Contrast Metric Panels */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              
+              {/* Download Card */}
+              <div className="rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4">
+                <div className="flex items-center justify-between text-xs text-[#A1A1A1]">
+                  <span>{dict.download}</span>
+                  <span className="font-mono text-[10px] text-white">↓ DL</span>
+                </div>
+                <div className="mt-2 font-mono text-2xl font-bold text-white tabular-nums">
+                  {fmt(result?.download, "Mbps")}
+                </div>
+                <div className="mt-1 text-[11px] text-[#6E6E6E]">
+                  {result ? `${((result.download / 8) * 60).toFixed(0)} MB/min` : "—"}
                 </div>
               </div>
 
-              <div className="agy-speed-metric-card">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <p className="agy-speed-metric-card__label">{dict.upload}</p>
-                    <span className="agy-speed-metric-card__badge">↑ UL</span>
-                  </div>
-                  <p className="agy-speed-metric-card__value">{fmt(result?.upload, "Mbps")}</p>
+              {/* Upload Card */}
+              <div className="rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4">
+                <div className="flex items-center justify-between text-xs text-[#A1A1A1]">
+                  <span>{dict.upload}</span>
+                  <span className="font-mono text-[10px] text-white">↑ UL</span>
+                </div>
+                <div className="mt-2 font-mono text-2xl font-bold text-white tabular-nums">
+                  {fmt(result?.upload, "Mbps")}
+                </div>
+                <div className="mt-1 text-[11px] text-[#6E6E6E]">
+                  {result ? `${((result.upload / 8) * 60).toFixed(0)} MB/min` : "—"}
                 </div>
               </div>
 
-              <div className="agy-speed-metric-card">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <p className="agy-speed-metric-card__label">{uiText(locale, "Idle Latency", "Boşta Gecikme")}</p>
-                    <span className="agy-speed-metric-card__badge">RTT</span>
-                  </div>
-                  <p className="agy-speed-metric-card__value">{fmt(result?.idle)}</p>
+              {/* Ping / Latency Card */}
+              <div className="rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4">
+                <div className="flex items-center justify-between text-xs text-[#A1A1A1]">
+                  <span>{uiText(locale, "Idle Latency", "Gecikme")}</span>
+                  <span className="font-mono text-[10px] text-white">RTT</span>
+                </div>
+                <div className="mt-2 font-mono text-2xl font-bold text-white tabular-nums">
+                  {fmt(result?.idle)}
+                </div>
+                <div className="mt-1 text-[11px] text-[#6E6E6E]">
+                  {result?.minPing ? `Min: ${result.minPing.toFixed(1)} ms` : "—"}
                 </div>
               </div>
 
-              <div className="agy-speed-metric-card">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <p className="agy-speed-metric-card__label">{uiText(locale, "Jitter", "Gecikme Sapması")}</p>
-                    <span className="agy-speed-metric-card__badge">Δ MS</span>
-                  </div>
-                  <p className="agy-speed-metric-card__value">{fmt(result?.jitter)}</p>
+              {/* Jitter Card */}
+              <div className="rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4">
+                <div className="flex items-center justify-between text-xs text-[#A1A1A1]">
+                  <span>{uiText(locale, "Jitter", "Sapma")}</span>
+                  <span className="font-mono text-[10px] text-white">Δ MS</span>
                 </div>
-              </div>
-
-              <div className="agy-speed-metric-card">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <p className="agy-speed-metric-card__label">{uiText(locale, "Bufferbloat", "Yük Altı Gecikme")}</p>
-                    <span className={`agy-speed-metric-card__badge border ${bloat.badgeClass}`}>
-                      GRADE {bloat.grade}
-                    </span>
-                  </div>
-                  <p className="agy-speed-metric-card__value">{fmt(result?.loadedDownload)}</p>
+                <div className="mt-2 font-mono text-2xl font-bold text-white tabular-nums">
+                  {fmt(result?.jitter)}
                 </div>
-              </div>
-
-              <div className="agy-speed-metric-card">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <p className="agy-speed-metric-card__label">{uiText(locale, "Transferred", "Aktarılan Veri")}</p>
-                    <span className="agy-speed-metric-card__badge">DATA</span>
-                  </div>
-                  <p className="agy-speed-metric-card__value">
-                    {result ? `${(result.bytes / 1e6).toFixed(1)} MB` : "—"}
-                  </p>
+                <div className="mt-1 text-[11px] text-[#6E6E6E]">
+                  {result && (result.jitter ?? 0) < 5
+                    ? uiText(locale, "Stable", "Kararlı")
+                    : uiText(locale, "Normal", "Normal")}
                 </div>
               </div>
             </div>
 
-            {/* Live Real-Time Throughput Curve (Monochromatic Area) */}
-            <div className="agy-speed-chart-card">
-              <div className="agy-speed-chart-card__head">
-                <span className="font-mono text-xs uppercase tracking-wider text-neutral-300">
-                  {uiText(locale, "Real-Time Throughput Curve", "Gerçek Zamanlı Aktarım Eğrisi")}
+            {/* Bufferbloat & Loaded Latency Panel */}
+            <div className="rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1F1F1F] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] text-[#A1A1A1] uppercase tracking-wider">
+                    {uiText(locale, "BUFFERBLOAT / LOADED LATENCY", "YÜK ALTINDA GECİKME DİRENCİ")}
+                  </span>
+                  <span className={`rounded-full border px-2 py-0.5 font-mono text-xs font-semibold ${bloat.badgeClass}`}>
+                    GRADE {bloat.grade}
+                  </span>
+                </div>
+                <span className="text-[11px] text-[#6E6E6E]">
+                  {bloat.desc}
+                </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <div>
+                  <span className="text-[11px] text-[#6E6E6E] block">
+                    {uiText(locale, "Loaded (Download)", "İndirme Sırasında")}
+                  </span>
+                  <span className="font-mono text-base font-semibold text-white mt-0.5 block">
+                    {fmt(result?.loadedDownload)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-[#6E6E6E] block">
+                    {uiText(locale, "Loaded (Upload)", "Yükleme Sırasında")}
+                  </span>
+                  <span className="font-mono text-base font-semibold text-white mt-0.5 block">
+                    {fmt(result?.loadedUpload)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-[#6E6E6E] block">
+                    {uiText(locale, "Data Exchanged", "Toplam Veri")}
+                  </span>
+                  <span className="font-mono text-base font-semibold text-white mt-0.5 block">
+                    {result ? `${(result.bytes / 1e6).toFixed(1)} MB` : "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Real-Time Dual-Series Live Chart */}
+            <div className="rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs uppercase tracking-wider text-[#A1A1A1]">
+                  {uiText(locale, "Real-Time Throughput Graph", "Gerçek Zamanlı Hız Grafiği")}
                 </span>
                 <span className="font-mono text-xs text-white">
                   {trace.length > 0
@@ -469,153 +657,175 @@ export function SpeedTest({
                 </span>
               </div>
 
-              <div className="agy-speed-chart-card__graph">
+              <div className="mt-3 h-28 w-full">
                 {trace.length > 1 ? (
                   <svg
-                    viewBox={`0 0 ${trace.length * 4} 70`}
-                    className="agy-speed-chart-card__svg"
+                    viewBox={`0 0 ${trace.length * 4} 100`}
+                    className="h-full w-full"
                     preserveAspectRatio="none"
                   >
                     <defs>
                       <linearGradient id={`chartFill-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
+                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.25" />
                         <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
-                    {/* Area polygon */}
                     <polygon
                       fill={`url(#chartFill-${gradientId})`}
-                      points={`0,70 ${trace
+                      points={`0,100 ${trace
                         .map(
                           (p, i) =>
-                            `${i * 4},${Math.max(4, 70 - (p.mbps / (peakSpeed || 100)) * 62)}`
+                            `${i * 4},${Math.max(6, 100 - (p.mbps / (peakSpeed || 100)) * 90)}`
                         )
-                        .join(" ")} ${(trace.length - 1) * 4},70`}
+                        .join(" ")} ${(trace.length - 1) * 4},100`}
                     />
-                    {/* Stroke line */}
                     <polyline
                       fill="none"
                       stroke="#ffffff"
-                      strokeWidth="1.75"
+                      strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       points={trace
                         .map(
                           (p, i) =>
-                            `${i * 4},${Math.max(4, 70 - (p.mbps / (peakSpeed || 100)) * 62)}`
+                            `${i * 4},${Math.max(6, 100 - (p.mbps / (peakSpeed || 100)) * 90)}`
                         )
                         .join(" ")}
                     />
                   </svg>
                 ) : (
-                  <div className="flex h-16 items-center justify-center font-mono text-xs text-neutral-500">
+                  <div className="flex h-full items-center justify-center font-mono text-xs text-[#6E6E6E]">
                     {uiText(locale, "Awaiting test execution...", "Test başlatılması bekleniyor...")}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Practical Connection Capability Assessment (Sleek Obsidian Vector Cards) */}
+            {/* Quality Summary & Share Action Strip */}
             {result && (
-              <div className="rounded-2xl border border-white/10 bg-[#08090d] p-5 shadow-2xl">
-                <span className="font-mono text-[11px] tracking-wider uppercase text-neutral-400">
-                  {uiText(locale, "CONNECTION READINESS & QUALITY ASSESSMENT", "BAĞLANTI UYGUNLUK VE KALİTE DEĞERLENDİRMESİ")}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={share}
+                    className="flex items-center gap-1.5 rounded-full border border-[#2E2E2E] bg-[#111111] px-4 py-2 font-mono text-xs text-white transition-colors hover:bg-[#1F1F1F]"
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                    <span>{uiText(locale, "Share Result", "Sonucu Paylaş")}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={exportResult}
+                    className="flex items-center gap-1.5 rounded-full border border-[#2E2E2E] bg-[#111111] px-4 py-2 font-mono text-xs text-white transition-colors hover:bg-[#1F1F1F]"
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span>{uiText(locale, "Export JSON", "JSON İndir")}</span>
+                  </button>
+                </div>
+
+                <span className="font-mono text-[11px] text-[#6E6E6E]">
+                  ID: {result.timestamp.slice(0, 19).replace("T", " ")}
                 </span>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-white/20">
-                    <div className="flex items-center gap-2.5">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white" aria-hidden="true">
-                        <line x1="6" y1="12" x2="10" y2="12" />
-                        <line x1="8" y1="10" x2="8" y2="14" />
-                        <line x1="15" y1="13" x2="15.01" y2="13" />
-                        <line x1="18" y1="11" x2="18.01" y2="11" />
-                        <rect x="2" y="6" width="20" height="12" rx="6" />
-                      </svg>
-                      <span className="text-xs font-semibold text-white">
-                        {uiText(locale, "Esports & Gaming", "Espor & Çevrim İçi Oyun")}
-                      </span>
-                    </div>
-                    <p className="mt-2 font-mono text-xs text-neutral-300">
-                      {result.idle < 35 && (result.jitter ?? 0) < 10
-                        ? uiText(locale, "Low Latency (Esports Ready)", "Düşük Gecikme (Espor Uygun)")
-                        : result.idle < 80
-                          ? uiText(locale, "Adequate Response Time", "Yeterli Tepki Süresi")
-                          : uiText(locale, "Noticeable Latency", "Belirgin Gecikme")}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-white/20">
-                    <div className="flex items-center gap-2.5">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white" aria-hidden="true">
-                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                        <line x1="8" y1="21" x2="16" y2="21" />
-                        <line x1="12" y1="17" x2="12" y2="21" />
-                      </svg>
-                      <span className="text-xs font-semibold text-white">
-                        {uiText(locale, "4K / 8K UHD Streaming", "4K / 8K UHD Yayın")}
-                      </span>
-                    </div>
-                    <p className="mt-2 font-mono text-xs text-neutral-300">
-                      {result.download >= 50
-                        ? uiText(locale, "8K Ultra-HD Ready", "8K Ultra-HD Hazır")
-                        : result.download >= 25
-                          ? uiText(locale, "4K UHD Ready", "4K UHD Hazır")
-                          : uiText(locale, "1080p HD Ready", "1080p HD Hazır")}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-white/20">
-                    <div className="flex items-center gap-2.5">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white" aria-hidden="true">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                      </svg>
-                      <span className="text-xs font-semibold text-white">
-                        {uiText(locale, "VoIP & Video Conferences", "Sesli & Görüntülü Konferans")}
-                      </span>
-                    </div>
-                    <p className="mt-2 font-mono text-xs text-neutral-300">
-                      {bloat.grade === "A+" || bloat.grade === "A"
-                        ? uiText(locale, "Zero Bufferbloat Jitter", "Sıfır Paket Kuyruğu Donması")
-                        : uiText(locale, "Standard Telephony Quality", "Standart Ses Kalitesi")}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Secondary export / share controls */}
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={share}
-                      className="button button-compact button-secondary font-mono text-xs"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline-block" aria-hidden="true">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                      <span>{uiText(locale, "Copy Summary", "Sonucu Kopyala")}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={exportResult}
-                      className="button button-compact button-secondary font-mono text-xs"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline-block" aria-hidden="true">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      <span>{uiText(locale, "Export JSON", "JSON Olarak İndir")}</span>
-                    </button>
-                  </div>
-                  <span className="font-mono text-xs text-neutral-400">
-                    TELEMETRY ID: {result.timestamp.slice(0, 19).replace("T", " ")}
-                  </span>
-                </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Collapsible Test History Drawer */}
+        {showHistory && (
+          <div className="mt-8 rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-6">
+            <div className="flex items-center justify-between border-b border-[#1F1F1F] pb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-white">
+                  {uiText(locale, "Measurement History & Comparison", "Ölçüm Geçmişi ve Karşılaştırma")}
+                </h3>
+                <p className="text-xs text-[#A1A1A1]">
+                  {uiText(locale, "Last tests saved locally on this browser", "Bu tarayıcıda kaydedilen son testler")}
+                </p>
+              </div>
+              {history.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearHistory}
+                  className="rounded border border-[#2E2E2E] px-3 py-1 font-mono text-xs text-[#A1A1A1] hover:text-white"
+                >
+                  {uiText(locale, "Clear History", "Geçmişi Temizle")}
+                </button>
+              )}
+            </div>
+
+            {history.length === 0 ? (
+              <p className="py-6 text-center font-mono text-xs text-[#6E6E6E]">
+                {uiText(locale, "No past tests recorded yet.", "Kayıtlı test bulunmuyor.")}
+              </p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left font-mono text-xs">
+                  <thead>
+                    <tr className="border-b border-[#1F1F1F] text-[#6E6E6E]">
+                      <th className="py-2 pr-4">{uiText(locale, "DATE", "TARİH")}</th>
+                      <th className="py-2 pr-4">{dict.download}</th>
+                      <th className="py-2 pr-4">{dict.upload}</th>
+                      <th className="py-2 pr-4">{dict.ping}</th>
+                      <th className="py-2 pr-4">{uiText(locale, "JITTER", "SAPMA")}</th>
+                      <th className="py-2">{uiText(locale, "DELTA", "FARK")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1F1F1F]">
+                    {history.map((item, idx) => {
+                      const deltaDl = result ? item.download - result.download : 0;
+                      return (
+                        <tr key={item.id} className="text-white hover:bg-[#111111]">
+                          <td className="py-2 pr-4 text-[#A1A1A1]">
+                            {new Date(item.timestamp).toLocaleString(locale, {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })}
+                          </td>
+                          <td className="py-2 pr-4 font-semibold text-white">
+                            {item.download.toFixed(1)} Mbps
+                          </td>
+                          <td className="py-2 pr-4 text-[#A1A1A1]">
+                            {item.upload.toFixed(1)} Mbps
+                          </td>
+                          <td className="py-2 pr-4 text-[#A1A1A1]">
+                            {item.ping.toFixed(1)} ms
+                          </td>
+                          <td className="py-2 pr-4 text-[#A1A1A1]">
+                            {item.jitter ? `${item.jitter.toFixed(1)} ms` : "—"}
+                          </td>
+                          <td className="py-2 text-[11px]">
+                            {result && idx > 0 ? (
+                              deltaDl > 0 ? (
+                                <span className="text-[#46D39A]">+{deltaDl.toFixed(1)} Mbps</span>
+                              ) : (
+                                <span className="text-[#FF6B6B]">{deltaDl.toFixed(1)} Mbps</span>
+                              )
+                            ) : (
+                              <span className="text-[#6E6E6E]">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </section>
   );

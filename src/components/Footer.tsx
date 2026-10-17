@@ -39,106 +39,86 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   ];
 
   return (
-    <footer className="footer" data-analytics-nav="footer">
-      <div className="footer-main-content">
-        <div className="grid-container">
-          <div className="grid-row footer-inner">
-            <div className="grid-col col-xs-4 col-sm-8 col-md-4">
-              <p className="footer-title heading-5">
-                {uiText(locale, "Experience liftoff", "Ağınızı keşfedin")}
-              </p>
-              <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-400">
-                {uiText(
-                  locale,
-                  "Next-generation network intelligence, device topology discovery, and high-performance diagnostic tools.",
-                  "Yeni nesil ağ zekası, cihaz topoloji keşfi ve yüksek performanslı tanı araçları."
-                )}
-              </p>
-            </div>
-
-            <div className="grid-col col-xs-4 col-sm-4 col-md-3 col-md-offset-2">
-              <div className="footer-nav-section">
-                <p className="caption">{platformCopy[locale].applications}</p>
-                {productLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    className="call-to-action call-to-action--nav"
-                    href={item.href}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid-col col-xs-4 col-sm-4 col-md-3">
-              <div className="footer-nav-section">
-                <p className="caption">{dict.experience.resources}</p>
-                {resourceLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    className="call-to-action call-to-action--nav"
-                    href={item.href}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+    <footer className="w-full border-t border-[#1F1F1F] bg-[#000000] text-white pt-16 pb-12" data-analytics-nav="footer">
+      <div className="mx-auto max-w-[1200px] px-6">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 md:grid-cols-4 lg:gap-16">
+          {/* Brand Column */}
+          <div className="sm:col-span-2">
+            <Link
+              className="inline-flex items-center gap-3 text-lg font-semibold tracking-tight text-white transition-opacity hover:opacity-80"
+              href={`/${locale}`}
+              aria-label="IPScans Home"
+            >
+              <Logo size={26} />
+              <span>IPScans</span>
+            </Link>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#A1A1A1]">
+              {uiText(
+                locale,
+                "Professional network intelligence, device topology discovery, and high-performance diagnostic tools built for engineers and IT teams worldwide.",
+                "Mühendisler ve BT ekipleri için geliştirilmiş profesyonel ağ analizi, cihaz topoloji keşfi ve yüksek performanslı tanı araçları."
+              )}
+            </p>
+            <div className="mt-6 flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#1F1F1F] bg-[#0A0A0A] px-3 py-1 font-mono text-[11px] text-[#A1A1A1]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#46D39A] animate-pulse" />
+                {uiText(locale, "All Systems Operational", "Tüm Servisler Aktif")}
+              </span>
             </div>
           </div>
+
+          {/* Applications Column */}
+          <div>
+            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[#6E6E6E]">
+              {platformCopy[locale].applications}
+            </p>
+            <ul className="mt-4 space-y-2.5">
+              {productLinks.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    className="text-sm text-[#A1A1A1] transition-colors hover:text-white"
+                    href={item.href}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Resources & Legal Column */}
+          <div>
+            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[#6E6E6E]">
+              {dict.experience.resources}
+            </p>
+            <ul className="mt-4 space-y-2.5">
+              {resourceLinks.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    className="text-sm text-[#A1A1A1] transition-colors hover:text-white"
+                    href={item.href}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
 
-      {/* REFINED BOTTOM LEGAL & METADATA BAR */}
-      <div className="footer-meta-links">
-        <div className="grid-container">
-          <div className="grid-row items-center">
-            <div className="grid-col col-xs-4 col-md-4">
-              <Link
-                className="footer-meta-logo"
-                href={`/${locale}`}
-                aria-label="IPScans Home"
-              >
-                <Logo size={22} />
-                <span>IPScans</span>
-              </Link>
-            </div>
-
-            <div className="grid-col col-xs-4 col-md-8">
-              <div className="flex flex-wrap items-center justify-start md:justify-end gap-5">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[11px] text-neutral-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-pulse" />
-                  {uiText(locale, "All Systems Operational · v4.3", "Tüm Servisler Aktif · v4.3")}
-                </span>
-
-                <nav className="footer-meta-nav" aria-label="Footer legal">
-                  <Link
-                    className="call-to-action call-to-action--nav"
-                    href={`/${locale === "tr" ? "tr" : "en"}/about`}
-                  >
-                    {uiText(locale, "About", "Hakkımızda")}
-                  </Link>
-                  <Link
-                    className="call-to-action call-to-action--nav"
-                    href={`/${locale}/download`}
-                  >
-                    {platformCopy[locale].applications}
-                  </Link>
-                  <Link
-                    className="call-to-action call-to-action--nav"
-                    href={`/${locale}/privacy`}
-                  >
-                    {dict.footer.privacy}
-                  </Link>
-                  <Link
-                    className="call-to-action call-to-action--nav"
-                    href={`/${locale}/terms`}
-                  >
-                    {dict.footer.terms}
-                  </Link>
-                </nav>
-              </div>
-            </div>
+        {/* Bottom Legal & Copyright Bar */}
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-[#1F1F1F] pt-8 text-xs text-[#6E6E6E] sm:flex-row">
+          <p>© {new Date().getFullYear()} IPScans. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link href={`/${locale}/privacy`} className="hover:text-white transition-colors">
+              {dict.footer.privacy}
+            </Link>
+            <Link href={`/${locale}/terms`} className="hover:text-white transition-colors">
+              {dict.footer.terms}
+            </Link>
+            <Link href={`/${locale}/contact`} className="hover:text-white transition-colors">
+              {uiText(locale, "Contact", "İletişim")}
+            </Link>
           </div>
         </div>
       </div>

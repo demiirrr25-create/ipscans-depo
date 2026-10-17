@@ -1,4 +1,4 @@
-"""Google Antigravity Pure Black (#000000) Design System for IPscans+ Desktop.
+"""IPScans Pure Black (#000000) Design System for IPscans+ Desktop.
 Applied globally (including QMessageBox/QToolTip popups) so every surface,
 welcome dialog, pill button, and table shares the exact ipscans.com theme.
 """
@@ -542,8 +542,8 @@ QFrame#Win11FeatureCard:hover {
 """
 
 
-class AntigravityWelcomeStage(QWidget):
-    """Animated Antigravity capsule particle stage + typewriter headline for Windows UI."""
+class IPScansWelcomeStage(QWidget):
+    """Animated IPScans capsule particle stage + typewriter headline for Windows UI."""
 
     def __init__(
         self,
@@ -690,6 +690,10 @@ class AntigravityWelcomeStage(QWidget):
             )
 
         painter.end()
+
+
+# Backward compatibility alias
+AntigravityWelcomeStage = IPScansWelcomeStage
 
 
 class Win11SilkCanvas(QWidget):

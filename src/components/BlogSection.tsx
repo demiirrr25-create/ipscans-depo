@@ -72,7 +72,7 @@ export function BlogSection({ locale }: { locale: Locale }) {
 
   return (
     <>
-      {/* Section 8: Antigravity .landing-latest-blogs */}
+      {/* Section 8: IPScans .landing-latest-blogs */}
       <section className="landing-latest-blogs" data-latest-blogs-section>
         <div className="grid-container">
           <div className="grid-row">
@@ -192,7 +192,7 @@ export function BlogSection({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* Section 9: Antigravity .landing-newsletter-section */}
+      {/* Section 9: IPScans .landing-newsletter-section */}
       <section
         className="landing-newsletter-section"
         id="newsletter"

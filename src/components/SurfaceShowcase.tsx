@@ -8,8 +8,8 @@ import { uiText } from "@/i18n/ui";
 import { applications, platformCopy, scannerApplication } from "@/content/applications";
 import { lprRelease } from "@/content/lpr-release";
 import { toolPath } from "@/lib/tool-routes";
-import { MorphingSolutionParticles } from "./AntigravityParticles";
-import { AntigravityTypewriter } from "./AntigravityTypewriter";
+import { MorphingSolutionParticles } from "./SpatialParticles";
+import { TypewriterHeader } from "./TypewriterHeader";
 
 const BOUNCER_ICONS = [
   "code_blocks",
@@ -44,33 +44,33 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
   const agentFirstStatement = uiText(
     locale,
     "IPScans is our network intelligence platform, allowing anyone to discover, verify, and diagnose every connection.",
-    "IPScans, herkesin ağındaki her bağlantıyı keşfetmesini, doğrulamasını ve tanılamasını sağlayan yeni nesil ağ platformumuzdur."
+    "IPScans, ağınızdaki her bağlantıyı keşfetmenizi, doğrulamanızı ve analiz etmenizi sağlayan profesyonel ağ platformudur."
   );
 
   const featureItems = [
     {
       id: "scanner",
-      title: `IPscans+ v${scannerApplication.version}`,
+      title: "IPscans+",
       description: scannerApplication.description[locale],
       href: `/${locale}/applications/scanner`,
       downloadHref: scannerApplication.downloadUrl,
       image: "/scanner-v43-preview.png",
-      tag: "WINDOWS 10/11 · x64 · ARP · ICMP · ONVIF · LLDP",
+      tag: "WINDOWS · x64 · ARP · ICMP · ONVIF · LLDP",
       badge: uiText(locale, "Network Discovery & Scanner", "Ağ Keşfi ve Cihaz Analizi"),
     },
     {
       id: "ipcast",
-      title: `IPCast v${ipcast.version}`,
+      title: "IPCast",
       description: ipcast.description[locale],
       href: `/${locale}/applications/ipcast`,
       downloadHref: ipcast.downloadUrl,
       image: "/ipcast-v25-preview.png",
-      tag: `${ipcast.platform} · NATIVE WIN64 · SHA-256 VERIFIED`,
+      tag: `${ipcast.platform} · NATIVE WIN64 · VERIFIED`,
       badge: uiText(locale, "Remote Desktop & File Transfer", "Uzak Masaüstü ve Dosya Aktarımı"),
     },
     {
       id: "lpr",
-      title: `IPScans LPR Pro v${lprRelease.version}`,
+      title: "IPScans LPR Pro",
       description: uiText(
         locale,
         "5-page live operator workspace, independent trigger/recognition lines, resident vehicle registry, and local ONNX plate recognition on Windows.",
@@ -79,7 +79,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       href: `/${locale}/lpr-pro`,
       downloadHref: lprRelease.url,
       image: "/lpr-pro-preview.png",
-      tag: "WINDOWS 10/11 · x64 · LIVE OPERATOR WORKSPACE",
+      tag: "WINDOWS · x64 · LIVE OPERATOR WORKSPACE",
       badge: uiText(locale, "License Plate Recognition Suite", "Plaka Tanıma ve Operatör Paketi"),
     },
     {
@@ -93,14 +93,14 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       href: toolPath("speedTest", locale),
       downloadHref: null,
       image: "/web-tools-preview.png",
-      tag: "WEB · ZERO INSTALL · CLOUDFLARE EDGE",
+      tag: "WEB · ZERO INSTALL · HIGH SPEED EDGE",
       badge: uiText(locale, "IP · Speed Test · DNS · WHOIS · Ports", "IP · Hız Testi · DNS · WHOIS · Portlar"),
     },
   ];
 
   return (
     <>
-      {/* Section 4: Antigravity .agent-first-section with 22 bouncing circle icons */}
+      {/* Section 4: IPScans .agent-first-section with 22 bouncing circle icons */}
       <section className="agent-first-section" data-agent-first-section>
         <ul className="icon-list" data-bouncer-list aria-hidden="true">
           {BOUNCER_ICONS.map((iconId, idx) => (
@@ -129,7 +129,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
           <div className="grid-row">
             <div className="grid-col col-xs-4 col-sm-8 col-md-9">
               <div className="heading-3 agent-first-text" data-typed-header>
-                <AntigravityTypewriter
+                <TypewriterHeader
                   text={agentFirstStatement}
                   trigger="visible"
                   speedMs={16}
@@ -141,7 +141,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* Section 5: Antigravity .feature-explorer-section with authentic application screenshots */}
+      {/* Section 5: IPScans .feature-explorer-section with authentic application screenshots */}
       <section className="feature-explorer-section" data-feature-explorer-section>
         <div className="grid-container">
           <div className="feature-list">
@@ -155,7 +155,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
                         className="heading-4 feature-title feature-title-link"
                         href={item.href}
                       >
-                        <AntigravityTypewriter
+                        <TypewriterHeader
                           text={item.title}
                           trigger="visible"
                           speedMs={24}
@@ -232,7 +232,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* Section 6: Antigravity .try-solutions-section */}
+      {/* Section 6: IPScans .try-solutions-section */}
       <section className="try-solutions-section" data-try-solutions-section>
         <div className="grid-container">
           <div className="grid-row">

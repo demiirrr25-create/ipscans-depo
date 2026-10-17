@@ -4,7 +4,7 @@
              RequestedThemeVariant="Dark">
 
     <Application.Resources>
-        <!-- ============ IPCast Antigravity Black design tokens ============ -->
+        <!-- ============ IPCast Pure Black Design Tokens ============ -->
         <SolidColorBrush x:Key="AppBackgroundBrush" Color="#000000" />
         <SolidColorBrush x:Key="SidebarBrush" Color="#06070A" />
         <SolidColorBrush x:Key="CardBrush" Color="#0D0E12" />

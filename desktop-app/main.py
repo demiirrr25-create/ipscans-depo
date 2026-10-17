@@ -198,7 +198,7 @@ def main() -> None:
             if not pdf.read_bytes().startswith(b'%PDF-') or pdf.stat().st_size < 1000:
                 raise RuntimeError('Packaged PDF export failed')
         from app.ui.splash_screen import IPScansSplash
-        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0")
+        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
         splash.set_progress(0.4, "Probing network interfaces...")
         splash.grab()
         splash.close()
@@ -224,9 +224,24 @@ def main() -> None:
 def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
     steps = _pending_onboarding_steps()
     language = get_saved_language() or DEFAULT_LANGUAGE
+    no_splash = "--no-splash" in sys.argv
+
+    if no_splash:
+        if steps:
+            wizard = OnboardingWizard(steps, language, app_icon)
+            if wizard.exec() != OnboardingWizard.DialogCode.Accepted:
+                app.quit()
+                return
+            language = get_saved_language() or DEFAULT_LANGUAGE
+        window = MainWindow(language)
+        window.setWindowIcon(app_icon)
+        app.window_ref = window
+        window.show()
+        _log("Main window shown OK (--no-splash)")
+        return
 
     from app.ui.splash_screen import IPScansSplash
-    splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0")
+    splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
     splash.show()
     app.processEvents()
 
@@ -240,7 +255,7 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
             app.quit()
             return
         language = get_saved_language() or DEFAULT_LANGUAGE
-        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0")
+        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
         splash.show()
         app.processEvents()
 

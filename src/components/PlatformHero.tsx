@@ -1,7 +1,7 @@
 import { uiText } from "@/i18n/ui";
 import Link from "next/link";
-import { AntigravityParticles } from "./AntigravityParticles";
-import { AntigravityTypewriter } from "./AntigravityTypewriter";
+import { SpatialParticles } from "./SpatialParticles";
+import { TypewriterHeader } from "./TypewriterHeader";
 import { SurfaceShowcase } from "./SurfaceShowcase";
 import { LiveIp } from "./LiveIp";
 import { Logo } from "./Logo";
@@ -12,8 +12,8 @@ export function PlatformHero({ locale, ipLabel }: { locale: Locale; ipLabel: str
   const copy = platformCopy[locale];
   const heroTitle = uiText(
     locale,
-    "Experience liftoff with the next-gen network intelligence platform",
-    "Yeni nesil ağ keşif ve analiz platformuyla tanışın"
+    "Professional network intelligence, device topology discovery, and performance diagnostics",
+    "Profesyonel ağ analizi, cihaz topoloji keşfi ve yüksek performanslı tanı araçları"
   );
 
   return (
@@ -21,7 +21,7 @@ export function PlatformHero({ locale, ipLabel }: { locale: Locale; ipLabel: str
       <section className="welcome-wrapper" data-welcome-section>
         <div className="hero-video-wrapper">
           <div className="hero-video-container" data-hero-particles>
-            <AntigravityParticles variant="hero" />
+            <SpatialParticles variant="hero" />
           </div>
         </div>
 
@@ -35,7 +35,7 @@ export function PlatformHero({ locale, ipLabel }: { locale: Locale; ipLabel: str
 
           <div className="header-container">
             <h1 className="landing-main-header">
-              <AntigravityTypewriter
+              <TypewriterHeader
                 text={heroTitle}
                 trigger="mount"
                 speedMs={24}

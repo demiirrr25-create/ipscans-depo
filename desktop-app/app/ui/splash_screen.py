@@ -44,7 +44,7 @@ class IPScansSplash(QWidget):
     def __init__(
         self,
         app_name: str = "IPscans+",
-        edition_label: str = "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0",
+        edition_label: str = "HIGH PERFORMANCE NETWORK INTELLIGENCE",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -121,6 +121,14 @@ class IPScansSplash(QWidget):
         fade_anim.start()
         # Keep animation alive
         self._fade_anim = fade_anim
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802
+        if event.key() == Qt.Key.Key_Escape:
+            self._anim_timer.stop()
+            self.close()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def paintEvent(self, _event) -> None:  # noqa: N802
         painter = QPainter(self)
