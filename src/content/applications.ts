@@ -3,17 +3,17 @@ import type { Locale } from "@/i18n/config";
 type Localized = Record<Locale, string>;
 
 export const ipcastRelease = {
-  version: "2.5.0",
+  version: "2.6.0",
   platform: "Windows 10/11 · x64",
   bytes: 106654790,
-  sha256: "ee4e4881c48162ce1d15cac817812967cb4da42895a6e31dce1d4a1902ce0f32",
-  fileName: "IPCast-2.5.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.5.0/IPCast-2.5.0.exe",
-  publishedAt: "2026-10-17T17:31:00Z",
-  installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.5.0/IPCast-2.5.0-Setup.exe",
-  installerBytes: 34863917,
-  installerSha256: "7e301c67728f51f3a480644f4301d854efb5d33c1dbc7b3b894aba7e86192959",
-  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.5.0",
+  sha256: "03d439453c2d658e341a09bbf4e25e667db730fa28f9c877302f66fcd8d43e37",
+  fileName: "IPCast-2.6.0.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.6.0/IPCast-2.6.0.exe",
+  publishedAt: "2026-10-17T21:04:43Z",
+  installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.6.0/IPCast-2.6.0-Setup.exe",
+  installerBytes: 34863887,
+  installerSha256: "deb7c74517bc6ae43cc9d1b1ed52540e6ad9a36d525cb7830e96e4f00a36c3a6",
+  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.6.0",
 } as const;
 
 export const desktopRelease = {
