@@ -7,3 +7,8 @@ ipcast/artifacts/
 *.tsbuildinfo
 work/
 __pycache__/
+artifacts/
+ci-artifacts/
+dist/
+build/
+*.egg-info/
