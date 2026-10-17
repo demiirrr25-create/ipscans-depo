@@ -9,6 +9,7 @@ import { applications, platformCopy, scannerApplication } from "@/content/applic
 import { lprRelease } from "@/content/lpr-release";
 import { toolPath } from "@/lib/tool-routes";
 import { MorphingSolutionParticles } from "./AntigravityParticles";
+import { AntigravityTypewriter } from "./AntigravityTypewriter";
 
 const BOUNCER_ICONS = [
   "code_blocks",
@@ -52,8 +53,8 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       title: `IPscans+ v${scannerApplication.version}`,
       description: scannerApplication.description[locale],
       href: `/${locale}/applications/scanner`,
+      downloadHref: scannerApplication.downloadUrl,
       image: "/scanner-v43-preview.png",
-      secondaryImage: "/scanner-v43-map.png",
       tag: "WINDOWS 10/11 · x64 · ARP · ICMP · ONVIF · LLDP",
       badge: uiText(locale, "Network Discovery & Topology", "Ağ Keşfi ve Topoloji Haritası"),
     },
@@ -62,22 +63,24 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       title: `IPCast v${ipcast.version}`,
       description: ipcast.description[locale],
       href: `/${locale}/applications/ipcast`,
+      downloadHref: ipcast.downloadUrl,
       image: "/ipcast-v25-preview.png",
       tag: `${ipcast.platform} · TLS 1.3 · SHA-256 PINNING`,
       badge: uiText(locale, "Remote Desktop & File Transfer", "Uzak Masaüstü ve Dosya Aktarımı"),
     },
     {
       id: "lpr",
-      title: `LPR Pro v${lprRelease.version}`,
+      title: `IPScans LPR Pro v${lprRelease.version}`,
       description: uiText(
         locale,
-        "Local plate recognition, RTSP stream inspection, and timestamped record review on Windows.",
-        "Windows üzerinde yerel plaka tanıma, RTSP yayın incelemesi ve zaman damgalı kayıt geçmişi."
+        "5-page live operator workspace, independent trigger/recognition lines, resident vehicle registry, and local ONNX plate recognition on Windows.",
+        "Windows üzerinde 5 bölmeli canlı operatör çalışma alanı, bağımsız kalibrasyon çizgileri, blok/daire araç kütüğü ve yerel ONNX plaka tanıma."
       ),
       href: `/${locale}/lpr-pro`,
+      downloadHref: lprRelease.url,
       image: "/lpr-pro-preview.png",
-      tag: "WINDOWS 10/11 · x64 · OFFLINE ONNX INFERENCE",
-      badge: uiText(locale, "Recognition Laboratory", "Plaka Tanıma Laboratuvarı"),
+      tag: "WINDOWS 10/11 · x64 · LIVE OPERATOR WORKSPACE",
+      badge: uiText(locale, "License Plate Recognition Suite", "Plaka Tanıma ve Operatör Paketi"),
     },
     {
       id: "web-tools",
@@ -87,7 +90,8 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         "Instant IP intelligence, ASN & WHOIS lookup, DNS records, port reference, and real-time speed telemetry directly in your browser.",
         "Tarayıcınızdan anında IP sorgulama, ASN ve WHOIS analizi, DNS kayıtları, port referansı ve gerçek zamanlı hız testi."
       ),
-      href: toolPath("ipLookup", locale),
+      href: toolPath("speedTest", locale),
+      downloadHref: null,
       image: "/web-tools-preview.png",
       tag: "WEB · ZERO INSTALL · CLOUDFLARE EDGE",
       badge: uiText(locale, "IP · Speed Test · DNS · WHOIS · Ports", "IP · Hız Testi · DNS · WHOIS · Portlar"),
@@ -124,21 +128,14 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         <div className="grid-container text-container" data-text-container>
           <div className="grid-row">
             <div className="grid-col col-xs-4 col-sm-8 col-md-9">
-              <span className="typed-container heading-3 agent-first-text" data-typed-header>
-                <span className="visually-hidden">{agentFirstStatement}</span>
-                <span className="typed-content" aria-hidden="true">
-                  {agentFirstStatement}
-                </span>
-                <span className="cursor-container" data-cursor-container>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="blinking-cursor"
-                    src="/assets/image/antigravity-cursor.png"
-                    alt=""
-                    aria-hidden="true"
-                  />
-                </span>
-              </span>
+              <div className="heading-3 agent-first-text" data-typed-header>
+                <AntigravityTypewriter
+                  text={agentFirstStatement}
+                  trigger="visible"
+                  speedMs={16}
+                  startDelayMs={80}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -158,13 +155,18 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
                         className="heading-4 feature-title feature-title-link"
                         href={item.href}
                       >
-                        {item.title}
+                        <AntigravityTypewriter
+                          text={item.title}
+                          trigger="visible"
+                          speedMs={24}
+                          startDelayMs={60}
+                        />
                       </Link>
                       <p className="body feature-description">{item.description}</p>
                       <div className="feature-item-actions">
                         <Link
                           href={item.href}
-                          className="call-to-action button button-compact"
+                          className="call-to-action button button-compact button-secondary"
                         >
                           <span>{copy.details}</span>
                           <svg
@@ -177,6 +179,14 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
                             <path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z" />
                           </svg>
                         </Link>
+                        {item.downloadHref && (
+                          <a
+                            href={item.downloadHref}
+                            className="call-to-action button button-compact button-primary"
+                          >
+                            <span>{copy.downloadApp} EXE ↓</span>
+                          </a>
+                        )}
                       </div>
                     </div>
                     {idx === featureItems.length - 1 && (
@@ -194,6 +204,11 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
                     <Link href={item.href} className="feature-media group">
                       <div className="feature-media-card">
                         <div className="feature-media-card__bar">
+                          <span className="feature-media-card__dots" aria-hidden="true">
+                            <i />
+                            <i />
+                            <i />
+                          </span>
                           <span className="feature-media-card__title">{item.title}</span>
                           <span className="feature-media-card__tag">{item.tag}</span>
                         </div>

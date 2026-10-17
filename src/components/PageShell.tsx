@@ -1,13 +1,17 @@
+import type { ReactNode } from "react";
 import { AntigravityParticles } from "./AntigravityParticles";
+import { AntigravityTypewriter } from "./AntigravityTypewriter";
 
 export function PageShell({
+  eyebrow,
   title,
   subtitle,
   children,
 }: {
+  eyebrow?: string;
   title: string;
   subtitle?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="agy-page-shell">
@@ -16,29 +20,22 @@ export function PageShell({
         <div className="grid-container agy-page-hero__inner">
           <div className="grid-row">
             <div className="grid-col col-xs-4 col-sm-8 col-md-10">
-              <div className="agy-page-hero__eyebrow">
-                <span className="agy-page-hero__dot" aria-hidden="true" />
-                <span>IPSCANS PLATFORM</span>
-              </div>
+              {eyebrow && (
+                <p className="agy-page-hero__eyebrow">
+                  <span className="agy-page-hero__dot" aria-hidden="true" />
+                  <span>{eyebrow}</span>
+                </p>
+              )}
               <h1 className="heading-2 agy-page-hero__title">
-                <span>{title}</span>
-                <span className="cursor-container" aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="blinking-cursor"
-                    src="/assets/image/antigravity-cursor.png"
-                    alt=""
-                  />
-                </span>
+                <AntigravityTypewriter text={title} trigger="mount" speedMs={18} startDelayMs={60} />
               </h1>
               {subtitle && (
-                <p className="subhead agy-page-hero__subtitle">{subtitle}</p>
+                <p className="body-large agy-page-hero__subtitle">{subtitle}</p>
               )}
             </div>
           </div>
         </div>
       </section>
-
       <div className="grid-container agy-page-body">{children}</div>
     </div>
   );

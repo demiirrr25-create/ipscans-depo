@@ -1,90 +1,108 @@
-"""Monochrome (black/white/gray) dark theme — matches ipscans.com's palette.
-Applied globally (including QMessageBox/QToolTip popups) so no native,
-unstyled white-background/black-text widget ever appears.
+"""Google Antigravity Pure Black (#000000) Design System for IPscans+ Desktop.
+Applied globally (including QMessageBox/QToolTip popups) so every surface,
+welcome dialog, pill button, and table shares the exact ipscans.com theme.
 """
+from __future__ import annotations
+
+import math
+
+from PyQt6.QtCore import QRectF, Qt, QTimer
+from PyQt6.QtGui import QBrush, QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen
+from PyQt6.QtWidgets import QWidget
 
 DARK_QSS = """
 * {
     font-family: "Segoe UI", "Inter", Arial, sans-serif;
-    color: #ffffff;
+    color: #e8eaed;
     outline: none;
 }
 
-#AppRoot {
+#AppRoot, QStackedWidget {
     background-color: #000000;
 }
+
 QPushButton:focus, QListWidget:focus, QTableView:focus, QCheckBox:focus {
-    border: 2px solid #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.55);
 }
+
 QListWidget {
-    background: #121212;
-    border: 1px solid #555555;
+    background: #0d0e12;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
     padding: 6px;
 }
 QListWidget::item {
-    padding: 12px 6px;
+    padding: 12px 10px;
+    border-radius: 10px;
 }
 QListWidget::item:selected {
     background: #ffffff;
     color: #000000;
 }
-QGraphicsView, QStackedWidget {
-    border: none;
-    background: #0a0a0a;
+
+QGraphicsView {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    background: #06070a;
 }
 
-#RootCard {
-    background-color: #0a0a0a;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
-}
-
-#SplashCard {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 #0a0a0a, stop:0.5 #050505, stop:1 #0a0a0a);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 22px;
+#RootCard, #SplashCard, QFrame#ScanCard, QFrame#WelcomeHeroCard {
+    background-color: #0d0e12;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 20px;
 }
 
 #TitleBar {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 rgba(255, 255, 255, 0.04), stop:1 transparent);
+    background: transparent;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    border-top-left-radius: 18px;
-    border-top-right-radius: 18px;
 }
 
-#TitleBar QLabel#TitleText {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.2px;
+QLabel {
+    font-size: 12px;
+    color: #9aa0a6;
+    background: transparent;
 }
-#TitleBar QLabel#SubtitleText {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.45);
-    margin-top: -2px;
+
+QLabel#TitleText {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.4px;
+    color: #ffffff;
+}
+
+QLabel#SubtitleText {
+    font-size: 12px;
+    color: #9aa0a6;
+}
+
+QLabel#VersionBadge {
+    color: #e8eaed;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 13px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    padding: 6px 12px;
 }
 
 #OptionsCard {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 rgba(255, 255, 255, 0.05), stop:1 rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    background: #0d0e12;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
 }
 
-/* Modern segmented control replacing the old radio-button row for the
-   scan-target mode (IP Range / Single IP / CIDR). */
 #SegmentBar {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    background: #090a0d;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
 }
 QPushButton#SegmentButton {
     background: transparent;
-    color: rgba(255, 255, 255, 0.62);
+    color: #9aa0a6;
     border: none;
-    border-radius: 8px;
-    padding: 8px 14px;
+    border-radius: 14px;
+    padding: 8px 16px;
     font-size: 12px;
     font-weight: 600;
 }
@@ -97,31 +115,33 @@ QPushButton#SegmentButton:checked {
     color: #000000;
 }
 
-/* Onboarding wizard's language-picker step (wizard itself uses #AppRoot). */
+/* Onboarding wizard's language-picker step */
 QPushButton#LanguageOption {
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+    background: #0d0e12;
+    color: #e8eaed;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
+    border-radius: 18px;
     font-size: 13px;
     font-weight: 500;
+    padding: 10px 16px;
 }
 QPushButton#LanguageOption:hover {
-    background: rgba(255, 255, 255, 0.09);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    color: #ffffff;
 }
 QPushButton#LanguageOption:checked {
     background: #ffffff;
     color: #000000;
     border: 1px solid #ffffff;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 QPushButton#WindowButton {
     background: transparent;
     border: none;
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.7);
+    border-radius: 14px;
+    color: #9aa0a6;
     padding: 4px 10px;
 }
 QPushButton#WindowButton:hover {
@@ -138,8 +158,8 @@ QRadioButton::indicator {
     width: 16px;
     height: 16px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: #090a0d;
 }
 QRadioButton::indicator:checked {
     border: 1px solid #ffffff;
@@ -149,14 +169,15 @@ QRadioButton::indicator:checked {
 
 QCheckBox {
     font-size: 13px;
-    spacing: 6px;
+    spacing: 8px;
+    color: #e8eaed;
 }
 QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.04);
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: #090a0d;
 }
 QCheckBox::indicator:checked {
     border: 1px solid #ffffff;
@@ -167,165 +188,188 @@ QCheckBox::indicator:disabled {
 }
 
 QLineEdit, QComboBox {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 10px;
-    padding: 8px 12px;
+    background: #090a0d;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    padding: 10px 16px;
     font-size: 13px;
+    color: #ffffff;
     selection-background-color: #ffffff;
     selection-color: #000000;
 }
 QLineEdit:focus, QComboBox:focus {
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.50);
 }
 
-/* QComboBox's drop-down popup is a separate top-level QAbstractItemView
-   that Qt/Fusion paints with its native white list background — the
-   global "* { color: #ffffff }" rule above still applies to its item
-   text, so without this every combo box (severity filter, monitoring
-   interval, etc.) showed invisible white-on-white text until an item was
-   hovered and the highlight color gave it contrast. */
 QComboBox QAbstractItemView {
-    background-color: #141414;
+    background-color: #0d0e12;
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
     outline: none;
-    selection-background-color: rgba(255, 255, 255, 0.16);
+    selection-background-color: rgba(255, 255, 255, 0.14);
     selection-color: #ffffff;
     padding: 4px;
 }
 QComboBox QAbstractItemView::item {
-    padding: 6px 10px;
-    min-height: 20px;
+    padding: 7px 12px;
+    min-height: 22px;
 }
 QComboBox QAbstractItemView::item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.10);
 }
 
-/* Same native-white-popup issue as the combo box dropdown above, for any
-   context menu (e.g. the system tray icon's right-click menu). */
 QMenu {
-    background-color: #141414;
+    background-color: #0d0e12;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 6px;
 }
 QMenu::item {
-    padding: 6px 20px;
-    border-radius: 6px;
+    padding: 7px 20px;
+    border-radius: 8px;
 }
 QMenu::item:selected {
-    background-color: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
+    background-color: #ffffff;
+    color: #000000;
 }
 QMenu::separator {
     height: 1px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.10);
     margin: 4px 8px;
+}
+
+QPushButton {
+    background: rgba(255, 255, 255, 0.06);
+    color: #e8eaed;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background: rgba(255, 255, 255, 0.11);
+    border-color: rgba(255, 255, 255, 0.26);
+    color: #ffffff;
+}
+QPushButton:disabled {
+    color: #6f7480;
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.06);
 }
 
 QPushButton#PrimaryButton {
     background: #ffffff;
     color: #000000;
-    border: none;
-    border-radius: 5px;
-    padding: 9px 20px;
+    border: 1px solid #ffffff;
+    border-radius: 18px;
+    padding: 10px 24px;
     font-weight: 600;
     font-size: 13px;
 }
 QPushButton#PrimaryButton:hover {
-    background: #ffffff;
+    background: #e6eaf0;
+    border-color: #e6eaf0;
 }
 QPushButton#PrimaryButton:pressed {
-    background: #cfcfcf;
+    background: #cfd5df;
 }
 QPushButton#PrimaryButton:disabled {
-    background: rgba(255, 255, 255, 0.25);
-    color: rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.18);
+    color: rgba(0, 0, 0, 0.55);
+    border-color: transparent;
 }
 
 QPushButton#GhostButton {
-    background: transparent;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 11px;
-    padding: 9px 18px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #e8eaed;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    padding: 10px 18px;
     font-size: 13px;
 }
 QPushButton#GhostButton:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-QPushButton {
-    background-color: #1a1a1a;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     color: #ffffff;
-    border: 1px solid #414141;
-    border-radius: 8px;
-    padding: 8px 12px;
 }
-QPushButton:hover { background-color: #303030; }
-QPushButton:disabled { color: #999999; background-color: #151515; }
 
 QTabWidget::pane {
-    background-color: #0c0c0c;
-    border: 1px solid #333333;
-    border-radius: 8px;
+    background-color: #0d0e12;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
 }
 QTabBar::tab {
-    background-color: #191919;
-    color: #bdbdbd;
-    border: 1px solid #333333;
-    border-bottom: none;
-    padding: 9px 20px;
-    min-width: 90px;
+    background: #0d0e12;
+    color: #9aa0a6;
+    padding: 10px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+    margin-left: 6px;
+    font-weight: 500;
 }
 QTabBar::tab:selected {
-    background-color: #0c0c0c;
-    color: #ffffff;
-    border-top: 2px solid #ffffff;
+    color: #000000;
+    background: #ffffff;
+    border: 1px solid #ffffff;
+    font-weight: 600;
 }
-QTabBar::tab:hover { color: #ffffff; }
+QTabBar::tab:!selected:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+QLabel#ResultsHeading {
+    color: #e8eaed;
+    font-size: 13px;
+    padding: 4px 0 10px;
+}
 
 QTableView {
-    background-color: #101010;
-    alternate-background-color: #171717;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    gridline-color: rgba(255, 255, 255, 0.06);
-    font-size: 12px;
+    background: #0d0e12;
+    alternate-background-color: #111318;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 20px;
+    gridline-color: rgba(255, 255, 255, 0.05);
+    font-size: 13px;
 }
 QTableView QAbstractScrollArea, QTreeWidget QAbstractScrollArea {
-    background-color: #101010;
+    background-color: #0d0e12;
 }
 QTreeWidget {
-    background-color: #101010;
-    alternate-background-color: #171717;
+    background-color: #0d0e12;
+    alternate-background-color: #111318;
     color: #ffffff;
-    border: 1px solid #333333;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
 }
 QTreeWidget::item {
     padding: 7px;
     min-height: 22px;
 }
 QTreeWidget::item:selected {
-    background-color: #353535;
+    background-color: rgba(255, 255, 255, 0.14);
     color: #ffffff;
 }
 QTableView::item {
-    padding: 8px 10px;
+    padding: 9px 12px;
     border: none;
 }
 QTableView::item:selected {
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(50, 121, 249, 0.22);
     color: #ffffff;
 }
+QTableView::item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
 QHeaderView::section {
-    background-color: #141414;
-    color: rgba(255, 255, 255, 0.65);
+    background: #090a0d;
+    color: #9aa0a6;
+    padding: 13px 10px;
     border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
     font-size: 11px;
     font-weight: 600;
 }
@@ -340,19 +384,35 @@ QScrollBar::handle:vertical {
     min-height: 24px;
 }
 QScrollBar::handle:vertical:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.30);
 }
 QScrollBar::add-line, QScrollBar::sub-line {
     height: 0;
 }
+QScrollBar:horizontal {
+    background: #090a0d;
+    height: 10px;
+}
+QScrollBar::handle:horizontal {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 5px;
+    min-width: 24px;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: #090a0d;
+}
 
 QLabel#StatusLabel {
-    color: rgba(255, 255, 255, 0.55);
+    color: #9aa0a6;
     font-size: 12px;
+    padding-top: 2px;
 }
 
 QLabel#SectionLabel {
-    color: rgba(255, 255, 255, 0.5);
+    color: #9aa0a6;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -372,28 +432,26 @@ QProgressBar::chunk {
 }
 
 QTextEdit {
-    background-color: #141414;
+    background-color: #090a0d;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    padding: 10px;
+    border-radius: 16px;
+    padding: 12px;
     font-size: 12px;
+    color: #e8eaed;
     selection-background-color: #ffffff;
     selection-color: #000000;
 }
 
 QToolTip {
-    background: #1a1a1a;
+    background: #0d0e12;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 4px 8px;
-    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 5px 10px;
+    border-radius: 8px;
 }
 
-/* QMessageBox/QDialog popups are separate top-level windows — Fusion still
-   paints their own light background unless explicitly overridden here,
-   which is what made warning/error dialogs unreadable. */
 QDialog, QMessageBox {
-    background-color: #0a0a0a;
+    background-color: #000000;
 }
 QMessageBox QLabel {
     color: #ffffff;
@@ -403,36 +461,159 @@ QDialog QPushButton, QMessageBox QPushButton {
     background: #ffffff;
     color: #000000;
     border: none;
-    border-radius: 8px;
-    padding: 6px 16px;
-    min-width: 64px;
+    border-radius: 16px;
+    padding: 8px 18px;
+    min-width: 68px;
+    font-weight: 600;
 }
 QDialog QPushButton:hover, QMessageBox QPushButton:hover {
-    background: #e6e6e6;
+    background: #e6eaf0;
 }
-/* v4.2: quiet surfaces, generous rows and a compact discovery workspace. */
-#AppRoot, QStackedWidget { background: #090a0c; }
-QLabel { font-size: 12px; color: #acafb8; background: transparent; }
-QLabel#TitleText { font-size: 28px; font-weight: 700; color: #ffffff; }
-QLabel#VersionBadge { color: #969aa4; font-size: 10px; padding: 6px 12px; }
-QFrame#ScanCard { background: #121317; border: 1px solid #2b2d33; border-radius: 18px; }
-QTabBar::tab { background: #15161a; padding: 12px 22px; border: 1px solid #2b2d33; border-radius: 12px; margin-left: 6px; }
-QTabBar::tab:selected { color: #111216; background: #f1f2f4; border: 1px solid #f1f2f4; }
-QTabBar::tab:!selected:hover { background: #22242a; }
-QLabel#ResultsHeading { color: #d4d6dc; font-size: 13px; padding: 4px 0 10px; }
-QPushButton { background: #1b1d22; border: 1px solid #33363e; border-radius: 10px; padding: 10px 16px; font-size: 12px; }
-QPushButton:hover { background: #292c33; border-color: #666a75; }
-QPushButton:disabled { color: #767a85; background: #15161a; border-color: #24262c; }
-QPushButton#PrimaryButton { border-radius: 10px; padding: 11px 24px; }
-QLineEdit, QComboBox { background: #0d0e11; border-color: #33363e; padding: 11px 13px; }
-QLineEdit:focus, QComboBox:focus { border-color: #c9cbd2; }
-QTableView { background: #0e0f12; alternate-background-color: #15161a; border: 1px solid #2b2d33; border-radius: 12px; font-size: 13px; }
-QTableView::item:selected { background: #30333b; color: #ffffff; }
-QTableView::item:hover { background: #23252b; }
-QHeaderView::section { background: #1a1c21; color: #b4b7c0; padding: 13px 8px; border-bottom: 1px solid #30333b; }
-QLabel#StatusLabel { color: #c1c4cc; font-size: 12px; padding-top: 2px; }
-QScrollBar:horizontal { background: #111111; height: 10px; }
-QScrollBar::handle:horizontal { background: #555555; border-radius: 4px; min-width: 24px; }
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: #111111; }
 """
+
+
+class AntigravityWelcomeStage(QWidget):
+    """Animated Antigravity capsule particle stage + typewriter headline for Windows UI."""
+
+    def __init__(
+        self,
+        eyebrow: str,
+        headline: str,
+        subtitle: str = "",
+        compact: bool = False,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._eyebrow = eyebrow
+        self._full_headline = headline
+        self._subtitle = subtitle
+        self._compact = compact
+        self._phase = 0.0
+        self._typed_chars = 0
+        self.setFixedHeight(78 if compact else 148)
+
+        self._anim_timer = QTimer(self)
+        self._anim_timer.setInterval(45)
+        self._anim_timer.timeout.connect(self._tick)
+        self._anim_timer.start()
+
+    def set_copy(self, eyebrow: str, headline: str, subtitle: str = "") -> None:
+        if headline != self._full_headline:
+            self._typed_chars = 0
+        self._eyebrow = eyebrow
+        self._full_headline = headline
+        self._subtitle = subtitle
+        self.update()
+
+    def _tick(self) -> None:
+        self._phase += 0.055
+        if self._typed_chars < len(self._full_headline):
+            self._typed_chars += 1
+        self.update()
+
+    def paintEvent(self, _event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        rect = QRectF(0.5, 0.5, max(1.0, self.width() - 1.0), max(1.0, self.height() - 1.0))
+        path = QPainterPath()
+        path.addRoundedRect(rect, 20.0, 20.0)
+
+        bg = QLinearGradient(0.0, 0.0, float(self.width()), float(self.height()))
+        bg.setColorAt(0.0, QColor(11, 13, 19))
+        bg.setColorAt(0.55, QColor(7, 8, 12))
+        bg.setColorAt(1.0, QColor(13, 16, 24))
+        painter.fillPath(path, QBrush(bg))
+
+        # Calibrated Antigravity drifting capsule particle field
+        cols = 18 if self._compact else 22
+        rows = 4 if self._compact else 6
+        palette = [
+            QColor(50, 121, 249),
+            QColor(88, 146, 250),
+            QColor(183, 191, 217),
+            QColor(232, 234, 237),
+        ]
+        painter.save()
+        painter.setClipPath(path)
+        for r in range(rows):
+            for c in range(cols):
+                nx = (c + 0.5) / cols
+                ny = (r + 0.5) / rows
+                # Exclude center text area so typography stays crisp
+                dx_c = (nx - 0.35) / 0.38
+                dy_c = (ny - 0.5) / 0.45
+                if dx_c * dx_c + dy_c * dy_c < 0.72:
+                    continue
+                wave = math.sin(nx * 5.2 + self._phase + ny * 2.1)
+                alpha = int(max(12, min(135, 32 + (wave + 1.0) * 38)))
+                col = QColor(palette[(r * cols + c) % len(palette)])
+                col.setAlpha(alpha)
+
+                px = nx * self.width() + math.cos(self._phase + r * 0.7) * 5.0
+                py = ny * self.height() + wave * 4.5
+                angle = math.degrees(math.atan2(wave * 0.4, 1.0))
+
+                painter.save()
+                painter.translate(px, py)
+                painter.rotate(angle)
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush( QBrush(col))
+                painter.drawRoundedRect(QRectF(-4.5, -1.3, 9.0, 2.6), 1.3, 1.3)
+                painter.restore()
+        painter.restore()
+
+        painter.setPen(QPen(QColor(255, 255, 255, 28), 1.0))
+        painter.drawPath(path)
+
+        # Eyebrow pill
+        left_pad = 22.0
+        top_pad = 14.0 if self._compact else 18.0
+        mono_font = QFont("Consolas", 8)
+        mono_font.setBold(True)
+        painter.setFont(mono_font)
+        painter.setPen(QColor(154, 160, 166))
+        painter.drawText(
+            QRectF(left_pad, top_pad, float(self.width()) - 44.0, 16.0),
+            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+            self._eyebrow.upper(),
+        )
+
+        # Typewriter Headline + Blinking Rainbow Cursor
+        shown = self._full_headline[: max(1, self._typed_chars)]
+        title_font = QFont("Segoe UI", 14 if self._compact else 18)
+        title_font.setWeight(QFont.Weight.DemiBold)
+        painter.setFont(title_font)
+        painter.setPen(QColor(255, 255, 255))
+        title_y = 34.0 if self._compact else 44.0
+        title_rect = QRectF(left_pad, title_y, float(self.width()) - 44.0, 32.0)
+        painter.drawText(
+            title_rect,
+            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+            shown,
+        )
+
+        fm = painter.fontMetrics()
+        cursor_x = min(float(self.width()) - 28.0, left_pad + fm.horizontalAdvance(shown) + 5.0)
+        blink_on = (self._typed_chars < len(self._full_headline)) or (int(self._phase * 2.2) % 2 == 0)
+        if blink_on:
+            grad = QLinearGradient(cursor_x, title_y + 4.0, cursor_x, title_y + 26.0)
+            grad.setColorAt(0.0, QColor(66, 133, 244))
+            grad.setColorAt(0.35, QColor(234, 67, 53))
+            grad.setColorAt(0.7, QColor(251, 188, 4))
+            grad.setColorAt(1.0, QColor(52, 168, 83))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QBrush(grad))
+            painter.drawRoundedRect(QRectF(cursor_x, title_y + 5.0, 3.0, 21.0), 1.5, 1.5)
+
+        if not self._compact and self._subtitle:
+            sub_font = QFont("Segoe UI", 10)
+            painter.setFont(sub_font)
+            painter.setPen(QColor(183, 191, 217))
+            painter.drawText(
+                QRectF(left_pad, 84.0, float(self.width()) - 44.0, 44.0),
+                int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap),
+                self._subtitle,
+            )
+
+        painter.end()

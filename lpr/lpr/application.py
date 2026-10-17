@@ -1,0 +1,696 @@
+"""Local single-station beta shell. No physical barrier driver is registered."""
+import csv
+from datetime import datetime, timezone
+import os
+from pathlib import Path
+import sys
+import time
+import tempfile
+import uuid
+
+from PySide6.QtCore import Qt,QTimer
+from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
+    QPushButton,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QTabWidget,QDialog,
+    QDialogButtonBox,QFormLayout,QComboBox,QCheckBox,QSpinBox,QMessageBox,QFileDialog,QInputDialog)
+from .desktop import RecognitionWindow,STYLE
+from .operations import Operations
+from . import __version__
+
+
+def data_directory():
+    base=Path(os.environ.get("LOCALAPPDATA",str(Path.home()/".local/share")))
+    folder=base/"IPScans"/"LPR Pro"
+    folder.mkdir(parents=True,exist_ok=True)
+    return folder
+
+
+class Login(QDialog):
+    def __init__(self,ops):
+        super().__init__()
+        self.ops=ops;self.session=None
+        self.setWindowTitle("IPScans LPR Pro · Oturum / Sign in")
+        self.setStyleSheet(STYLE);self.setMinimumWidth(520)
+        layout=QVBoxLayout(self)
+        setup=ops.needs_setup()
+        self.created_admin=setup
+        from .operator_shell import AntigravityWelcomeBanner
+        self.welcome_banner=AntigravityWelcomeBanner(
+            "IPSCANS LPR PRO · ANTIGRAVITY EDITION",
+            "İlk yönetici hesabını oluşturun ve istasyonu başlatın." if setup else "Yerel operatör çalışma alanına oturum açın.",
+            compact=True,
+            parent=self,
+        )
+        layout.addWidget(self.welcome_banner)
+        title=QLabel("İlk yönetici hesabı / Create administrator" if setup else "Oturum aç / Sign in")
+        layout.addWidget(title)
+        layout.addWidget(QLabel("Parola: en az 12 karakter / Password: at least 12 characters"))
+        form=QFormLayout();self.username=QLineEdit();self.password=QLineEdit()
+        self.password.setEchoMode(QLineEdit.EchoMode.Password)
+        form.addRow("Kullanıcı / User",self.username);form.addRow("Parola / Password",self.password)
+        layout.addLayout(form);self.error=QLabel();self.error.setWordWrap(True);layout.addWidget(self.error)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.submit);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
+
+    def submit(self):
+        try:
+            if self.ops.needs_setup():self.ops.setup(self.username.text().strip(),self.password.text())
+            self.session=self.ops.login(self.username.text().strip(),self.password.text())
+            self.password.clear();self.accept()
+        except (ValueError,PermissionError):self.error.setText("Giriş bilgilerini kontrol edin; 5 hatalı denemeden sonra 5 dakika kilitlenir. / Check credentials; five failed attempts lock sign-in for five minutes.")
+
+
+class ProductWindow(QMainWindow):
+    def __init__(self,ops,session,*,autostart=True):
+        super().__init__()
+        self.ops=ops;self.session=session;self.lang="tr"
+        self.setWindowTitle(f"IPScans LPR Pro · {__version__}")
+        self.resize(1440,950);self.setMinimumSize(1000,720);self.setStyleSheet(STYLE)
+        self.lab=RecognitionWindow()
+        self.lab.footer.hide()
+        original_consume=self.lab.consume
+        def consume(message):
+            original_consume(message)
+            if message.get("model_manifest"):
+                self.lab.model.setText(message["model_manifest"])
+                self.notice("Modeller hazır. Canlı İzleme ekranından OCR başlatabilirsiniz.")
+            if "relay_state" in message:
+                self.notice(f"Röle durumu / Relay state: {'ON' if message['relay_state'] else 'OFF'} — gönderilen komut / commands sent: 0")
+            readings=message.get("readings",[])
+            source=message.get("source","offline_image")
+            if "decisions" in message:
+                readings=[{"text":d["plate"],"confidence":d["confidence"],"status":d["status"]} for d in message["decisions"]]
+            elif message.get("decision"):
+                d=message["decision"]
+                readings=[{"text":d["plate"],"confidence":d["confidence"],"status":d["status"]}]
+            for r in readings:
+                from .core import valid_tr_plate
+                status=r.get("status","candidate" if r["confidence"]>=.9 and valid_tr_plate(r["text"]) else "review")
+                if status in {"recognized","review","candidate"}:
+                    try:self.ops.record(self.session,r["text"],float(r["confidence"]),status,message.get("camera","offline"),source)
+                    except PermissionError:
+                        self.lab.cancel()
+                        self.notice("Kayıt yetkisi veya oturum sona erdi; tanıma durduruldu. / Recording permission or session expired; recognition stopped.")
+                    except Exception:self.notice("Kayıt yazılamadı / Could not save observation")
+            self.refresh()
+        self.lab.consume=consume
+        from PySide6.QtCore import QProcessEnvironment
+        self.lab.process.started.connect(lambda:self.lab.process.setProcessEnvironment(QProcessEnvironment.systemEnvironment()))
+        self.lab.language.currentIndexChanged.connect(self.switch_language)
+        root=QWidget();self.setCentralWidget(root);layout=QVBoxLayout(root)
+        layout.setContentsMargins(20,16,20,16)
+        header=QHBoxLayout();brand=QLabel(f"IPSCANS  /  LPR PRO  ·  {__version__}")
+        brand.setObjectName("brand");header.addWidget(brand);header.addStretch()
+        self.account=QLabel(f"{session.username} / {session.role}");header.addWidget(self.account)
+        lock=QPushButton("Kilitle / Lock");lock.clicked.connect(self.lock_session);header.addWidget(lock)
+        layout.addLayout(header)
+        self.banner=QLabel("Yerel beta • Fiziksel bariyer kontrolü yok / Local beta • No physical barrier control")
+        self.banner.setWordWrap(True);layout.addWidget(self.banner)
+        self.tabs=QTabWidget();layout.addWidget(self.tabs,1)
+        self.widgets={};self.labels=[]
+        self.dashboard=self.page("dashboard","Genel bakış","Dashboard")
+        self.summary=QLabel();self.summary.setWordWrap(True);self.summary.setObjectName("title");self.dashboard.addWidget(self.summary)
+        self.info=QLabel("Kayıtlar bu Windows kullanıcısının yerel veri klasöründe tutulur.\nÇevrimdışı görüntüler fiziksel geçiş kanıtı değildir.\n\nRecords stay in this Windows user's local data directory.\nOffline images are not evidence of a physical passage.")
+        self.info.setWordWrap(True);self.dashboard.addWidget(self.info);self.dashboard.addStretch()
+        self.tabs.addTab(self.lab,"Tanıma / Recognition")
+        self.vehicles=self.page("vehicles","Araç izinleri","Vehicle permissions")
+        self.grant_table=self.table(["Plaka / Plate","Kategori / Category","Engelli / Blocked","Başlangıç / From","Bitiş / Until","Yön / Direction","Kalan / Uses"])
+        self.vehicles.addWidget(self.grant_table)
+        self.add_button(self.vehicles,"İzin ekle / güncelle","Add / update permission",self.add_grant,"manage")
+        self.access=self.page("access","Erişim kontrolü","Access control")
+        self.access.addWidget(QLabel("SİMÜLATÖR / SIMULATOR — Gerçek kontrol cihazı bağlı değil / No physical controller connected"))
+        self.sim_plate=QLineEdit();self.sim_plate.setPlaceholderText("34 ABC 123")
+        self.access.addWidget(self.sim_plate)
+        self.add_button(self.access,"Ethernet röle durumunu oku","Read Ethernet relay status",self.relay_status,"manage")
+        self.sim_direction=QComboBox();self.sim_direction.addItems(["entry","exit"]);self.access.addWidget(self.sim_direction)
+        self.sim_presence=QCheckBox("Simülasyon: bağımsız sensör kanıtı ve taze kare / Simulate sensor evidence and fresh frame")
+        self.access.addWidget(self.sim_presence)
+        self.add_button(self.access,"Kuralı sınayın","Test rule",self.simulate)
+        self.sim_result=QLabel();self.sim_result.setWordWrap(True);self.access.addWidget(self.sim_result);self.access.addStretch()
+        self.parking_page=self.page("parking","Otopark","Parking")
+        self.parking_summary=QLabel();self.parking_summary.setObjectName("title");self.parking_page.addWidget(self.parking_summary)
+        explanation=QLabel("Operatör tarafından doğrulanmış geçiş defteri. Tanıma sonuçları doluluğu kendiliğinden değiştirmez.\nOperator-confirmed passage ledger. Recognition alone does not change occupancy.")
+        explanation.setWordWrap(True);self.parking_page.addWidget(explanation)
+        self.parking_table=self.table(["ID","Plaka / Plate","Giriş UTC / Entry UTC","Dakika / Minutes","Operatör / Operator"])
+        self.parking_page.addWidget(self.parking_table)
+        self.add_button(self.parking_page,"Gerçekleşen geçişi kaydet","Record confirmed passage",self.confirm_passage,"review")
+        self.add_button(self.parking_page,"Kapasiteyi ayarla","Set capacity",self.set_capacity,"manage")
+        self.history_page=self.page("history","Geçmiş ve raporlar","History & reports")
+        self.search=QLineEdit();self.search.setPlaceholderText("Plaka ara / Search plate");self.search.textChanged.connect(self.refresh)
+        self.history_page.addWidget(self.search)
+        self.history_table=self.table(["ID","UTC","Kamera / Camera","Plaka / Plate","Güven / Confidence","Durum / Status","Kaynak / Source"])
+        self.history_page.addWidget(self.history_table)
+        self.add_button(self.history_page,"Seçili okumayı düzelt","Correct selected reading",self.correct,"review")
+        self.add_button(self.history_page,"CSV dışa aktar","Export CSV",self.export,"export")
+        self.passages_page=self.page("passages","Araç geçişleri","Vehicle passages")
+        self.passages_page.addWidget(QLabel("Araç takibinden hesaplanan çizgi geçişleri. Plaka okunamadığında olay belirsiz olarak korunur."))
+        from .passage_browser import PassageBrowser
+        self.passage_browser=PassageBrowser(self.ops,self.session)
+        self.passages_page.addWidget(self.passage_browser)
+        self.cameras_page=self.page("cameras","Kameralar","Cameras")
+        self.cameras_page.addWidget(QLabel("RTSP parolaları Windows DPAPI ile bu kullanıcıya bağlı şifrelenir. / RTSP secrets are protected for this Windows user with DPAPI."))
+        self.camera_table=self.table(["ID","Ad / Name","Yön / Direction","TCP / UDP"]);self.cameras_page.addWidget(self.camera_table)
+        self.add_button(self.cameras_page,"Kamera ekle / güncelle","Add / update camera",self.add_camera,"manage")
+        self.add_button(self.cameras_page,"TCP / UDP ayarı","Transport setting",self.change_camera_transport,"manage")
+        self.add_button(self.cameras_page,"Seçili kameranın okuma bölgesi","Selected camera recognition region",self.set_camera_region,"manage")
+        self.add_button(self.cameras_page,"Canlı görüntüyü aç","Open live preview",self.preview_camera,"manage")
+        self.add_button(self.cameras_page,"Kamera kontrol merkezini aç","Open camera control center",self.open_camera_center,"manage")
+        self.camera_minutes=QSpinBox();self.camera_minutes.setRange(1,120);self.camera_minutes.setValue(1)
+        self.cameras_page.addWidget(QLabel("İzleme süresi (dakika) / Observation duration (minutes)"));self.cameras_page.addWidget(self.camera_minutes)
+        self.add_button(self.cameras_page,"Seçili kamerayı izle","Observe selected camera",self.start_camera,"manage")
+        self.add_button(self.cameras_page,"Tüm kameraları izle (en fazla 16)","Observe all cameras (up to 16)",lambda:self.start_camera(all_cameras=True),"manage")
+        self.camera_status=QLabel("Canlı mod yerel model dosyalarını ve SHA-256 bütünlüğünü doğrular; ticari onay bayrağı aranmaz. / Live mode verifies local model files and SHA-256 integrity; no commercial approval flag is required.")
+        self.camera_status.setWordWrap(True);self.cameras_page.addWidget(self.camera_status)
+        self.settings_page=self.page("settings","Ayarlar ve denetim","Settings & audit")
+        self.add_button(self.settings_page,"Değerlendirme modellerini indir (15 MB)","Download evaluation models (15 MB)",self.setup_models)
+        self.add_button(self.settings_page,"Kullanıcı ekle","Add user",self.add_user,"users")
+        self.add_button(self.settings_page,"Doğrulanmış veritabanı yedeği al","Create verified database backup",self.backup,"manage")
+        self.retention=QSpinBox();self.retention.setRange(1,3650);self.retention.setValue(30)
+        try:policy=self.ops.retention_policy(self.session)
+        except (ValueError,TypeError):
+            policy=dict(days=30,automatic=False)
+            self.banner.setText('Saklama politikası geçersiz; otomatik temizlik yapılmadı. Ayarlardan düzeltin. / Invalid retention policy; automatic cleanup skipped. Correct it in Settings.')
+        self.retention.setValue(policy['days'])
+        self.retention_auto=QCheckBox('Saatlik otomatik temizlik / Automatic hourly cleanup')
+        self.retention_auto.setChecked(policy['automatic']);self.settings_page.addWidget(self.retention_auto)
+        self.settings_page.addWidget(QLabel("Saklama süresi (gün) / Retention (days)"));self.settings_page.addWidget(self.retention)
+        self.add_button(self.settings_page,"Saklama politikasını uygula","Apply retention policy",self.retain,"manage")
+        self.audit_table=self.table(["ID","UTC","Kullanıcı / User","İşlem / Action","Ayrıntı / Detail"])
+        self.settings_page.addWidget(self.audit_table)
+        self.message=QLabel();self.message.setWordWrap(True);layout.addWidget(self.message)
+        self.refresh()
+        model=data_directory()/"models"/"evaluation-models.json"
+        if model.is_file():self.lab.model.setText(str(model))
+        saved_model=self.ops.db.execute("SELECT value FROM settings WHERE key='model_manifest'").fetchone()
+        if saved_model and Path(saved_model[0]).is_file():self.lab.model.setText(saved_model[0])
+        self.retention_timer=QTimer(self);self.retention_timer.setInterval(60000)
+        self.retention_timer.timeout.connect(self.run_retention);self.retention_timer.start()
+        QTimer.singleShot(0,self.run_retention)
+        self.autostart=autostart
+        from .operator_shell import install_shell
+        install_shell(self)
+
+    def select_model(self):
+        self.ops.check(self.session,'manage')
+        path,_=QFileDialog.getOpenFileName(self,'Model manifesti','','JSON (*.json)')
+        if path:
+            from .vision import load_manifest
+            load_manifest(path)
+            self.lab.model.setText(path)
+            with self.ops.db:
+                self.ops.db.execute("INSERT INTO settings(key,value) VALUES('model_manifest',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(path,))
+            self.notice('Model seçildi. Yeni OCR oturumunda kullanılacak.')
+            self.live_dashboard.sync_cameras()
+
+    def open_setup(self):
+        from .onboarding import SetupWizard
+        self.ops.check(self.session,'manage')
+        SetupWizard(self).exec()
+
+    def open_maintenance(self):
+        self.ops.check(self.session,'manage')
+        dialog=QDialog(self);dialog.setWindowTitle('Yetkili bakım');dialog.resize(1100,780)
+        layout=QVBoxLayout(dialog);tabs=QTabWidget();layout.addWidget(tabs)
+        tabs.addTab(self.lab,'Görüntü / model incelemesi');tabs.addTab(self.widgets['access'][0],'Kontrol cihazı tanılama')
+        dialog.exec()
+        self.lab.cancel();self.lab.setParent(self);self.lab.hide()
+        self.widgets['access'][0].setParent(self);self.widgets['access'][0].hide()
+
+    def discover_camera(self):
+        from .onvif_dialog import OnvifDialog
+        self.ops.check(self.session,'manage')
+        dialog=OnvifDialog(self,authorize=lambda:self.ops.check(self.session,'manage'))
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        import uuid
+        data=self.fields('Keşfedilen kamera',[('Ad','Yeni kamera',False),('Yön (entry/exit)','entry',False)])
+        if data:
+            camera_id=str(uuid.uuid4())
+            if self.test_and_save_camera(camera_id,data['Ad'],dialog.source,data['Yön (entry/exit)']):
+                from .camera_metadata import CameraMetadata
+                information=dialog.device_information
+                if information:
+                    CameraMetadata(self.ops).save(self.session,camera_id,name=data['Ad'],direction=data['Yön (entry/exit)'],
+                        brand=information.manufacturer[:120],model=information.model[:120])
+                self.refresh()
+
+    def open_updates(self):
+        from .updates_ui import UpdatesPanel
+        self.ops.check(self.session,'manage')
+        dialog=QDialog(self);dialog.setWindowTitle('Güvenli güncelleme');dialog.resize(760,550)
+        layout=QVBoxLayout(dialog)
+        panel=UpdatesPanel(self.ops,self.session,self.ops.path.parent,__version__,parent=dialog)
+        layout.addWidget(panel)
+        close=QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        close.rejected.connect(dialog.reject);layout.addWidget(close)
+        try:dialog.exec()
+        finally:panel.shutdown()
+
+    def calibrate_camera(self,camera_id):
+        center=self.live_dashboard.center
+        if center and center.inference and center.inference.is_alive():
+            self.notice('Kalibrasyon için önce Canlı İzleme ekranındaki OCR işlemini durdurun.');return
+        worker=center.workers.get(camera_id) if center else None
+        self.guard(lambda:self.preview_camera(camera_id,worker,self))
+        self.live_dashboard.sync_cameras()
+
+    def edit_camera_connection(self,camera_id):
+        self.ops.check(self.session,'manage')
+        camera=next(c for c in self.ops.cameras(self.session) if c['id']==camera_id)
+        transport=self.choose_transport(camera['transport'])
+        if transport is None:return
+        values=self.fields('Kamera bağlantısı',[('RTSP URL',self.ops.camera_source(self.session,camera_id),True)])
+        if values:self.test_and_save_camera(camera_id,camera['name'],values['RTSP URL'],camera['direction'],transport)
+
+    def setup_models(self):
+        from PySide6.QtCore import QProcess
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:raise ValueError("Already running")
+        reply=QMessageBox.question(self,"Model kurulumu / Model setup",
+            "GitHub üzerinden yaklaşık 15 MB değerlendirme modeli indirilecek. Görüntüleriniz gönderilmez. "
+            "Modeller görüntü, video ve canlı RTSP ile kullanılabilir. Kaynak lisans koşulları geçerlidir.\n\n"
+            "Download about 15 MB of evaluation models from GitHub? Images stay local. "
+            "Models can process images, video and live RTSP. Upstream license terms apply.")
+        if reply!=QMessageBox.StandardButton.Yes:return
+        self.lab.buffer=b"";self.lab.had_error=False;self.lab.stopped=False;self.lab.messages=0
+        self.lab.busy(True);self.lab.set_status("busy")
+        prefix=["--worker"] if getattr(sys,"frozen",False) else ["-m","lpr.cli"]
+        self.lab.process.start(sys.executable,prefix+["setup-models","--output",str(data_directory()/"models")])
+        self.lab.timer.start(240000);self.notice('Modeller indiriliyor; durum aşağıda gösterilecek.')
+
+    def relay_status(self):
+        from PySide6.QtCore import QProcess
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:raise ValueError("Already running")
+        protocol,ok=QInputDialog.getItem(self,"Röle / Relay","Salt okunur protokol / Read-only protocol",["Modbus TCP","Shelly RPC"],0,False)
+        if not ok:return
+        values=self.fields(protocol,[("Host / IP","",False),("Port",502 if protocol=="Modbus TCP" else 80,False),("Unit ID",1,False),("Coil / switch ID (zero-based)",0,False)])
+        if not values:return
+        from .devices import host_name
+        host_name(values['Host / IP'])
+        port=int(values['Port']);unit=int(values['Unit ID']);channel=int(values['Coil / switch ID (zero-based)'])
+        if not 1<=port<=65535 or not 0<=unit<=247 or not 0<=channel<=65535:raise ValueError("Invalid device address")
+        self.lab.buffer=b"";self.lab.had_error=False;self.lab.stopped=False;self.lab.messages=0
+        self.lab.busy(True);self.lab.set_status("busy")
+        prefix=["--worker"] if getattr(sys,"frozen",False) else ["-m","lpr.cli"]
+        self.lab.process.start(sys.executable,prefix+["device-status","--protocol",protocol,"--host",values['Host / IP'],"--port",str(port),"--unit",str(unit),"--channel",str(channel)])
+        self.lab.timer.start(10000)
+
+    def permitted(self,p):
+        try:self.ops.check(self.session,p);return True
+        except PermissionError:return False
+
+    def page(self,key,tr,en):
+        widget=QWidget();layout=QVBoxLayout(widget);layout.setContentsMargins(24,24,24,24)
+        self.widgets[key]=(widget,tr,en);self.tabs.addTab(widget,tr)
+        return layout
+
+    def add_button(self,layout,tr,en,fn,permission="read"):
+        button=QPushButton(tr);button.clicked.connect(lambda:self.guard(fn));button.setEnabled(self.permitted(permission))
+        self.labels.append((button,tr,en,permission));layout.addWidget(button);return button
+
+    def table(self,headers):
+        table=QTableWidget(0,len(headers));table.setHorizontalHeaderLabels(headers)
+        table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch);return table
+
+    def fill(self,table,rows):
+        table.setRowCount(len(rows))
+        for row,values in enumerate(rows):
+            for col,value in enumerate(values):table.setItem(row,col,QTableWidgetItem(str(value if value is not None else "—")))
+
+    def switch_language(self,index):
+        self.lang="tr" if index==0 else "en"
+        for widget,tr,en in self.widgets.values():self.tabs.setTabText(self.tabs.indexOf(widget),tr if index==0 else en)
+        self.tabs.setTabText(self.tabs.indexOf(self.lab),"Tanıma" if index==0 else "Recognition")
+        for button,tr,en,_ in self.labels:button.setText(tr if index==0 else en)
+        if hasattr(self,'operator_pages'):
+            titles=['Canlı İzleme','Kameralar','Araçlar ve Sakinler','Geçiş Kayıtları','Sistem Ayarları'] if index==0 else ['Dashboard','Cameras','Vehicles','Events','Settings']
+            for i,title in enumerate(titles):self.navigation.item(i).setText(title);self.tabs.setTabText(i,title)
+            for container in self.nested_sections:
+                for widget,tr,en in self.widgets.values():
+                    position=container.indexOf(widget)
+                    if position>=0:container.setTabText(position,tr if index==0 else en)
+
+    def notice(self,text):self.message.setText(text)
+
+    def guard(self,fn):
+        try:fn()
+        except PermissionError:self.notice("Yetki veya oturum geçersiz / Permission denied or session expired")
+        except Exception:self.notice("İşlem tamamlanamadı; değerleri ve dosya erişimini kontrol edin. / Could not complete; check values and file access.")
+
+    def refresh(self):
+        if not hasattr(self,"search"):return
+        try:
+            rows=self.ops.history(self.session,self.search.text())
+            utc=lambda n:datetime.fromtimestamp(n,timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+            self.fill(self.history_table,[(r["id"],utc(r["at"]),r["camera"],r["plate"],f'{r["confidence"]:.1%}',r["status"],r["source"]) for r in rows])
+            self.passage_browser.session=self.session
+            self.passage_browser.refresh()
+            grants=self.ops.grants(self.session);cameras=self.ops.cameras(self.session)
+            self.fill(self.grant_table,[(r["plate"],r["category"],bool(r["blocked"]),utc(r["valid_from"]),utc(r["valid_until"]),r["direction"],r["remaining"]) for r in grants])
+            self.fill(self.camera_table,[(r["id"],r["name"],r["direction"],r['transport'].upper()) for r in cameras])
+            self.fill(self.audit_table,[(r["id"],utc(r["at"]),r["actor"],r["action"],r["detail"]) for r in self.ops.audit(self.session)])
+            self.summary.setText(f"{len(cameras)} kamera / cameras\n{len(grants)} araç izni / vehicle permissions\n{len(rows)} son kayıt / recent records (max. 500)")
+            parking=self.ops.parking(self.session)
+            self.parking_summary.setText(f"{parking['occupied']} / {parking['capacity']} dolu / occupied · {parking['available']} boş / available")
+            self.fill(self.parking_table,[(v['id'],v['plate'],utc(v['entered_at']),max(0,int((self.ops.clock()-v['entered_at'])/60)),v['entry_actor']) for v in parking['visits']])
+            if hasattr(self,'camera_management'):
+                self.camera_management.refresh();self.registry_widget.refresh()
+                self.passage_browser.refresh_camera_names()
+                self.live_dashboard.sync_cameras();self.live_dashboard.refresh_feed(force=True)
+        except PermissionError:self.notice("Oturum süresi doldu / Session expired")
+
+    def fields(self,title,fields):
+        dialog=QDialog(self);dialog.setWindowTitle(title);layout=QFormLayout(dialog);edits={}
+        for name,initial,secret in fields:
+            edit=QLineEdit(str(initial));edits[name]=edit
+            if secret:edit.setEchoMode(QLineEdit.EchoMode.Password)
+            layout.addRow(name,edit)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept);buttons.rejected.connect(dialog.reject);layout.addRow(buttons)
+        return {k:v.text() for k,v in edits.items()} if dialog.exec()==QDialog.DialogCode.Accepted else None
+
+    def add_grant(self):
+        data=self.fields("Araç izni / Vehicle permission",[("Plate","",False),("Category (resident/staff/visitor)","visitor",False),
+            ("Blocked (yes/no)","no",False),("Valid days",1,False),("Direction (entry/exit/both)","entry",False),("Uses (empty=unlimited)","",False)])
+        if data:
+            days=int(data["Valid days"])
+            if not 1<=days<=3650:raise ValueError("Invalid days")
+            if data["Blocked (yes/no)"] not in {"yes","no"}:raise ValueError("Invalid block")
+            self.ops.save_grant(self.session,data["Plate"],data["Category (resident/staff/visitor)"],data["Blocked (yes/no)"]=="yes",
+                time.time(),time.time()+days*86400,data["Direction (entry/exit/both)"],int(data["Uses (empty=unlimited)"]) if data["Uses (empty=unlimited)"] else None)
+            self.refresh()
+
+    def add_camera(self):
+        transport=self.choose_transport()
+        if transport is None:return
+        brand,ok=QInputDialog.getItem(self,"Kamera / Camera","Bağlantı profili / Connection profile",["ONVIF","Hikvision","Dahua","Custom RTSP"],0,False)
+        if not ok:return
+        if brand=='ONVIF':
+            from .onvif_dialog import OnvifDialog
+            dialog=OnvifDialog(self,authorize=lambda:self.ops.check(self.session,'manage'))
+            if dialog.exec()!=QDialog.DialogCode.Accepted:return
+            data=self.fields('ONVIF kamera',[("ID",uuid.uuid4().hex[:12],False),("Name","ONVIF",False),("Direction (entry/exit)","entry",False)])
+            if data:self.test_and_save_camera(data['ID'],data['Name'],dialog.source,data['Direction (entry/exit)'],transport)
+            return
+        if brand!="Custom RTSP":
+            data=self.fields(brand,[("ID",uuid.uuid4().hex[:12],False),("Name",brand,False),("Host / IP","",False),("Port",554,False),("Channel",1,False),("Username","",False),("Password","",True),("Direction (entry/exit)","entry",False)])
+            if data:
+                from .devices import rtsp_url
+                source=rtsp_url(brand.lower(),data["Host / IP"],int(data["Port"]),int(data["Channel"]),data["Username"],data["Password"])
+                self.test_and_save_camera(data["ID"],data["Name"],source,data["Direction (entry/exit)"],transport)
+            return
+        data=self.fields("Kamera / Camera",[("ID",uuid.uuid4().hex[:12],False),("Name","",False),("RTSP URL","",True),("Direction (entry/exit)","entry",False)])
+        if data:self.test_and_save_camera(data["ID"],data["Name"],data["RTSP URL"],data["Direction (entry/exit)"],transport)
+
+    def choose_transport(self,current='tcp'):
+        values=['tcp','udp','auto']
+        labels=['TCP','UDP','Otomatik: TCP, sonra UDP / Auto: TCP, then UDP']
+        label,ok=QInputDialog.getItem(self,'Kamera bağlantısı / Camera connection','Taşıma yöntemi / Transport',labels,values.index(current),False)
+        return values[labels.index(label)] if ok else None
+
+    def change_camera_transport(self):
+        row=self.camera_table.currentRow()
+        if row<0:raise ValueError('Select camera')
+        camera_id=self.camera_table.item(row,0).text()
+        camera=next(c for c in self.ops.cameras(self.session) if c['id']==camera_id)
+        transport=self.choose_transport(camera['transport'])
+        if transport is not None:
+            self.test_and_save_camera(camera_id,camera['name'],self.ops.camera_source(self.session,camera_id),camera['direction'],transport)
+
+    def test_and_save_camera(self,camera_id,name,source,direction,transport='tcp'):
+        from .preview import PreviewDialog
+        from PySide6.QtCore import QProcess
+        from urllib.parse import urlsplit
+        self.ops.check(self.session,"manage")
+        parts=urlsplit(source)
+        if parts.scheme not in {"rtsp","rtsps"} or not parts.hostname:
+            raise ValueError("Valid RTSP URL required")
+        if not camera_id or len(camera_id)>64 or not name or len(name)>120 or direction not in {"entry","exit"}:
+            raise ValueError("Invalid camera details")
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
+            self.notice("Bağlantı testi için mevcut tanıma işlemini durdurun. / Stop recognition before testing.")
+            return
+        dialog=PreviewDialog(source,camera_id,self,confirm_connection=True,transport=transport,
+                             authorize=lambda:self.ops.check(self.session,"manage"))
+        if dialog.exec()==QDialog.DialogCode.Accepted:
+            self.ops.save_camera(self.session,camera_id,name,source,direction,transport)
+            from .camera_metadata import CameraMetadata
+            CameraMetadata(self.ops).sync_address(self.session,camera_id)
+            self.refresh()
+            return True
+        return False
+
+    def open_camera_center(self):
+        from .camera_center import CameraCenter
+        from PySide6.QtCore import QProcess
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
+            self.notice("Kamera merkezi için önce mevcut tanıma işlemini durdurun. / Stop the current recognition task first.")
+            return
+        cameras=self.ops.cameras(self.session)
+        if not 1<=len(cameras)<=16:raise ValueError("Use 1..16 cameras")
+        cameras=[{**camera,"source":self.ops.camera_source(self.session,camera["id"]),
+                  'lines':self.ops.camera_lines(self.session,camera['id']),'roi':self.ops.camera_region(self.session,camera['id'])} for camera in cameras]
+        from .vision import build_pipeline
+        model_path=self.lab.model.text()
+        def save_fleet_result(result):
+            for decision in result['decisions']:
+                self.ops.record(self.session,decision['plate'],decision['confidence'],decision['status'],result['camera'],'live_rtsp')
+            for passage in result['passages']:self.ops.record_vehicle_passage(self.session,passage)
+        def open_detail(camera_id,worker,parent):
+            self.preview_camera(camera_id,worker,parent)
+            for camera in cameras:
+                if camera['id']==camera_id:
+                    camera['lines']=self.ops.camera_lines(self.session,camera_id)
+                    camera['roi']=self.ops.camera_region(self.session,camera_id)
+        center=CameraCenter(cameras,self,authorize=lambda:self.ops.check(self.session,"manage"),
+                            pipeline_factory=lambda:build_pipeline(model_path),on_result=save_fleet_result,
+                            open_detail=lambda camera_id,worker,parent:self.guard(
+                                lambda:open_detail(camera_id,worker,parent)))
+        center.exec()
+
+    def preview_camera(self,camera_id=None,capture_worker=None,parent=None):
+        from .preview import PreviewDialog
+        from PySide6.QtCore import QProcess
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:
+            self.notice("Canlı önizleme için mevcut tanıma işlemini durdurun. / Stop recognition before preview.")
+            return
+        if camera_id is None:
+            row=self.camera_table.currentRow()
+            if row<0:raise ValueError("Select camera")
+            camera_id=self.camera_table.item(row,0).text()
+        source=self.ops.camera_source(self.session,camera_id)
+        from .vision import build_pipeline
+        from .tracking import Region
+        model_path=self.lab.model.text()
+        def save_readings(result):
+            self.live_dashboard.consume(result)
+        from .camera_metadata import CameraMetadata
+        metadata=CameraMetadata(self.ops).get(self.session,camera_id)
+        dialog=PreviewDialog(source,camera_id,parent or self,capture_worker=capture_worker,
+                             transport=self.ops.camera_transport(self.session,camera_id),
+                               decoder_mode=metadata['decoder_mode'],
+                             authorize=lambda:self.ops.check(self.session,"manage"),
+                             lines=self.ops.camera_lines(self.session,camera_id),
+                             save_lines=lambda lines:self.ops.save_camera_lines(self.session,camera_id,lines),
+                             calibration=self.ops.camera_calibration(self.session,camera_id),
+                             save_calibration=lambda value:self.ops.save_camera_calibration(self.session,camera_id,value),
+                             pipeline_factory=lambda:build_pipeline(model_path),on_result=save_readings,
+                             region=Region(*self.ops.camera_region(self.session,camera_id)))
+        dialog.exec()
+        self.refresh()
+
+    def start_camera(self,all_cameras=False):
+        from PySide6.QtCore import QProcess,QProcessEnvironment
+        from .vision import load_manifest
+        import json
+        if all_cameras:
+            cameras=self.ops.cameras(self.session)
+        else:
+            row=self.camera_table.currentRow()
+            if row<0:raise ValueError("Select camera")
+            cameras=[{"id":self.camera_table.item(row,0).text()}]
+        if not 1<=len(cameras)<=16:raise ValueError("Select 1..16 cameras")
+        load_manifest(self.lab.model.text())
+        if self.lab.process.state()!=QProcess.ProcessState.NotRunning:raise ValueError("Already running")
+        env=QProcessEnvironment.systemEnvironment();env.insert("PYTHONUTF8","1")
+        config=[]
+        for index,camera in enumerate(cameras):
+            key=f"IPSCANS_LPR_SOURCE_{index}"
+            env.insert(key,self.ops.camera_source(self.session,camera['id']))
+            config.append({'id':camera['id'],'source_env':key,'roi':self.ops.camera_region(self.session,camera['id']),
+                           'transport':self.ops.camera_transport(self.session,camera['id'])})
+        env.insert("IPSCANS_LPR_CAMERAS",json.dumps(config))
+        self.lab.process.setProcessEnvironment(env)
+        self.lab.buffer=b"";self.lab.had_error=False;self.lab.stopped=False;self.lab.messages=0
+        self.lab.busy(True);self.lab.set_status("busy")
+        prefix=["--worker"] if getattr(sys,"frozen",False) else ["-m","lpr.cli"]
+        seconds=self.camera_minutes.value()*60
+        self.lab.process.start(sys.executable,prefix+["live","--models",self.lab.model.text(),"--cameras-env","IPSCANS_LPR_CAMERAS","--seconds",str(seconds)])
+        self.lab.timer.start((seconds+15)*1000);self.tabs.setCurrentWidget(self.lab)
+        # Remove the secret from the reusable process environment after child launch.
+
+    def simulate(self):
+        value=self.ops.simulate(self.session,self.sim_plate.text(),.99,self.sim_direction.currentText(),
+            physical_presence=self.sim_presence.isChecked(),fresh=self.sim_presence.isChecked())
+        self.sim_result.setText(f"{value['reason']}\nBariyer komutu / Barrier command: 0");self.refresh()
+
+    def set_capacity(self):
+        value,ok=QInputDialog.getInt(self,"Otopark / Parking","Kapasite / Capacity",self.ops.parking(self.session)['capacity'],1,100000)
+        if ok:self.ops.set_capacity(self.session,value);self.refresh()
+
+    def confirm_passage(self):
+        data=self.fields("Doğrulanmış fiziksel geçiş / Confirmed physical passage",[
+            ("Plate","",False),("Direction (entry/exit)","entry",False),("Confirmation note","",False)])
+        if not data:return
+        import uuid
+        try:
+            self.ops.confirm_passage(self.session,data['Plate'],data['Direction (entry/exit)'],data['Confirmation note'],str(uuid.uuid4()))
+            self.refresh();self.notice("Geçiş kaydedildi; bariyer komutu gönderilmedi. / Passage recorded; no barrier command sent.")
+        except ValueError as exc:self.notice(str(exc))
+
+    def set_camera_region(self):
+        row=self.camera_table.currentRow()
+        if row<0:raise ValueError("Select camera")
+        camera_id=self.camera_table.item(row,0).text()
+        values=self.ops.camera_region(self.session,camera_id)
+        names=["Left (0..1)","Top (0..1)","Right (0..1)","Bottom (0..1)"]
+        data=self.fields("Okuma bölgesi / Recognition region",[(n,v,False) for n,v in zip(names,values)])
+        if data:
+            self.ops.save_camera_region(self.session,camera_id,[float(data[n]) for n in names])
+            self.notice("Okuma bölgesi kaydedildi / Recognition region saved")
+
+    def backup(self):
+        name=f"lpr-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}.sqlite3"
+        path,_=QFileDialog.getSaveFileName(self,"Yedek / Backup",name,"SQLite (*.sqlite3)")
+        if not path:return
+        self.ops.backup(self.session,path)
+        self.notice("Yedek doğrulandı. Kamera parolaları aynı Windows kullanıcı hesabına bağlıdır. / Backup verified. Camera credentials remain tied to this Windows account.")
+
+    def correct(self):
+        row=self.history_table.currentRow()
+        if row<0:raise ValueError("Select record")
+        event=int(self.history_table.item(row,0).text())
+        data=self.fields("Düzelt / Correct",[("Plate",self.history_table.item(row,3).text(),False),("Reason","",False)])
+        if data:self.ops.correct(self.session,event,data["Plate"],data["Reason"]);self.refresh()
+
+    def export(self):
+        path,_=QFileDialog.getSaveFileName(self,"CSV","lpr-report.csv","CSV (*.csv)")
+        if not path:return
+        rows=self.ops.export_rows(self.session,self.search.text())
+        target=Path(path)
+        fd,tmp=tempfile.mkstemp(prefix=".lpr-",suffix=".csv",dir=target.parent)
+        temporary=Path(tmp)
+        with os.fdopen(fd,"w",encoding="utf-8-sig",newline="") as file:
+            keys=["id","at","camera","plate","confidence","status","source"]
+            writer=csv.DictWriter(file,fieldnames=keys);writer.writeheader()
+            for row in rows:
+                writer.writerow({k:("'"+str(v) if isinstance(v,str) and v.startswith(("=","+","-","@")) else v) for k,v in row.items()})
+        os.replace(temporary,target);self.refresh();self.notice("CSV kaydedildi / CSV saved")
+
+    def add_user(self):
+        data=self.fields("Kullanıcı / User",[("Username","",False),("Password","",True),("Role (admin/operator/auditor)","operator",False)])
+        if data:self.ops.add_user(self.session,data["Username"],data["Password"],data["Role (admin/operator/auditor)"]);self.refresh()
+
+    def retain(self):
+        if QMessageBox.question(self,"Saklama / Retention","Eski okumalar, araç geçişleri ve kapanmış otopark ziyaretleri silinsin ve seçilen politika kaydedilsin mi? / Delete expired observations, passages and closed parking visits, and save this policy?")!=QMessageBox.StandardButton.Yes:return
+        count=self.ops.retain(self.session,self.retention.value(),automatic=self.retention_auto.isChecked())
+        self.refresh();self.notice(f"Silinen / Deleted: {count}")
+
+    def run_retention(self):
+        try:
+            count=self.ops.apply_retention_policy()
+            if count:
+                self.passage_browser.latest();self.refresh()
+                self.notice(f'Otomatik temizlik / Automatic cleanup: {count}')
+        except Exception:self.notice('Otomatik temizlik başarısız; saklama ayarlarını ve disk erişimini kontrol edin. / Automatic cleanup failed; check policy and disk access.')
+
+    def request_delivery_session(self,action):
+        """Offer explicit reauthentication; never grant expired sessions write access."""
+        session=getattr(self,'delivery_session',None) or self.session
+        try:self.ops.check(session,'review');return False
+        except PermissionError:pass
+        self.delivery_resume=action
+        self.centralWidget().hide()
+        if not hasattr(self,'renew_delivery_button'):
+            self.renew_delivery_button=QPushButton('Bekleyen kayıtlar için oturum yenile',self)
+            self.renew_delivery_button.clicked.connect(self.renew_delivery_session)
+            self.statusBar().addPermanentWidget(self.renew_delivery_button)
+        self.renew_delivery_button.show()
+        self.statusBar().showMessage('Bekleyen geçişler korunuyor. Kaydı tamamlamak için yetkili oturum gerekli.')
+        return True
+
+    def renew_delivery_session(self):
+        if getattr(self,'delivery_login_active',False):return
+        self.delivery_login_active=True
+        self.renew_delivery_button.setEnabled(False)
+        renewed=None
+        try:
+            login=Login(self.ops)
+            if login.exec()!=QDialog.DialogCode.Accepted:return
+            try:self.ops.check(login.session,'review')
+            except PermissionError:
+                self.ops.logout(login.session)
+                self.statusBar().showMessage('Bu hesabın geçiş kaydı yetkisi yok. Yönetici veya operatör hesabı gerekiyor.')
+                return
+            old=getattr(self,'delivery_session',None)
+            if old:self.ops.logout(old)
+            renewed=login.session;self.delivery_session=renewed
+            self.renew_delivery_button.hide()
+            self.statusBar().showMessage('Bekleyen geçişler kaydediliyor…')
+            self.live_dashboard.deliver()
+        finally:
+            self.delivery_login_active=False;self.renew_delivery_button.setEnabled(True)
+        if renewed is not None:
+            QTimer.singleShot(0,self.lock_session if self.delivery_resume=='lock' else self.close)
+
+    def lock_session(self):
+        if getattr(self,'delivery_login_active',False):return
+        self.centralWidget().hide()
+        if hasattr(self,'live_dashboard'):
+            self.live_dashboard.stop()
+            if not self.live_dashboard.stopped():
+                if self.request_delivery_session('lock'):return
+                QTimer.singleShot(100,self.lock_session);return
+        self.lab.cancel();self.ops.logout(self.session);self.hide()
+        self.lab.process.waitForFinished(1000)
+        renewed=getattr(self,'delivery_session',None)
+        if renewed:
+            try:self.ops.check(renewed,'read')
+            except PermissionError:self.ops.logout(renewed);self.delivery_session=None
+            else:
+                self.replacement_window=ProductWindow(self.ops,renewed)
+                self.delivery_session=None  # Ownership transfers to the replacement window.
+                self.replacement_window.show();self.close();return
+        login=Login(self.ops)
+        if login.exec()==QDialog.DialogCode.Accepted:
+            self.replacement_window=ProductWindow(self.ops,login.session)
+            self.replacement_window.show();self.close()
+        else:self.close()
+
+    def closeEvent(self,event):
+        if getattr(self,'delivery_login_active',False):event.ignore();return
+        if hasattr(self,'live_dashboard'):
+            self.live_dashboard.stop()
+            if not self.live_dashboard.stopped():
+                if self.request_delivery_session('close'):event.ignore();return
+                QTimer.singleShot(100,self.close);event.ignore();return
+            if not getattr(self,'delivery_closed',False):
+                self.live_dashboard.deliver();self.live_dashboard.queue.close();self.delivery_closed=True
+        delivery=getattr(self,'delivery_session',None)
+        if delivery:self.ops.logout(delivery);self.delivery_session=None
+        self.retention_timer.stop();self.lab.close();self.ops.logout(self.session);super().closeEvent(event)
+
+
+def main():
+    app=QApplication(sys.argv[:1])
+    from PySide6.QtGui import QIcon
+    resources=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))
+    app.setWindowIcon(QIcon(str(resources/"assets"/"icons"/"lpr-pro.ico")))
+    # Initialize Qt font handling before the sign-in dialog.
+    initializer=RecognitionWindow();initializer.close()
+    ops=Operations(str(data_directory()/"operations.sqlite3"))
+    login=Login(ops)
+    if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0
+    window=ProductWindow(ops,login.session);window.show()
+    if login.created_admin:QTimer.singleShot(0,window.open_setup)
+    code=app.exec();ops.close();return code

@@ -8,8 +8,8 @@ function smoothstep(edge0: number, edge1: number, x: number): number {
 }
 
 interface RingParticle {
-  uvX: number; // -1.06..1.06
-  uvY: number; // -1.06..1.06
+  uvX: number;
+  uvY: number;
   curX: number;
   curY: number;
   scale: number;
@@ -43,22 +43,22 @@ export function AntigravityParticles({
     let rafId = 0;
     let isVisible = true;
 
-    // Wide, homogeneous Poisson-jittered grid covering the full viewport [-1.06, 1.06]
-    const cols = variant === "subpage" ? 38 : 48;
-    const rows = variant === "subpage" ? 16 : 30;
+    // Airy, calibrated grid matching antigravity.google density (not overcrowded)
+    const cols = variant === "subpage" ? 26 : variant === "download" ? 28 : 32;
+    const rows = variant === "subpage" ? 10 : variant === "download" ? 16 : 19;
     const particles: RingParticle[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const jx = (Math.sin(r * 127.1 + c * 311.7) * 43758.5453) % 1;
         const jy = (Math.sin(r * 269.5 + c * 183.3) * 43758.5453) % 1;
-        const uvX = (((c + 0.5 + (jx - 0.5) * 0.78) / cols) * 2 - 1) * 1.05;
-        const uvY = (((r + 0.5 + (jy - 0.5) * 0.78) / rows) * 2 - 1) * 1.05;
+        const uvX = (((c + 0.5 + (jx - 0.5) * 0.72) / cols) * 2 - 1) * 1.02;
+        const uvY = (((r + 0.5 + (jy - 0.5) * 0.72) / rows) * 2 - 1) * 1.02;
         particles.push({
           uvX,
           uvY,
           curX: uvX,
           curY: uvY,
-          scale: 0.42,
+          scale: 0.18,
           seed1: Math.abs(jx),
           seed2: Math.abs(jy),
         });
@@ -73,7 +73,7 @@ export function AntigravityParticles({
       if (!parent) return;
       width = parent.clientWidth || window.innerWidth;
       height = parent.clientHeight || window.innerHeight || 760;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.75);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       canvas.style.width = `${width}px`;
@@ -83,13 +83,14 @@ export function AntigravityParticles({
     };
 
     const onPointerMove = (e: PointerEvent) => {
+      if (!isVisible) return;
       const rect = canvas.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
       const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-      if (nx >= -1.15 && nx <= 1.15 && ny >= -1.15 && ny <= 1.15) {
-        pointer.x = nx * 0.78;
-        pointer.y = ny * 0.75;
+      if (nx >= -1.1 && nx <= 1.1 && ny >= -1.1 && ny <= 1.1) {
+        pointer.x = nx * 0.72;
+        pointer.y = ny * 0.68;
         pointer.active = true;
       } else {
         pointer.active = false;
@@ -120,107 +121,101 @@ export function AntigravityParticles({
       ctx.clearRect(0, 0, width, height);
       ctx.lineCap = "round";
 
-      // Wide, fluid autonomous figure-8 drift across the viewport
+      // Smooth, unhurried autonomous drift across the viewport
       const driftX =
-        Math.sin(elapsed * 0.52 + 1.2) * 0.34 +
-        Math.cos(elapsed * 0.29) * 0.14;
+        Math.sin(elapsed * 0.42 + 1.1) * 0.28 +
+        Math.cos(elapsed * 0.23) * 0.12;
       const driftY =
-        Math.cos(elapsed * 0.61 + 0.7) * 0.24 +
-        Math.sin(elapsed * 0.37) * 0.1;
-      const targetX = pointer.active ? pointer.x + driftX * 0.25 : driftX;
-      const targetY = pointer.active ? pointer.y + driftY * 0.25 : driftY;
+        Math.cos(elapsed * 0.48 + 0.6) * 0.2 +
+        Math.sin(elapsed * 0.31) * 0.08;
+      const targetX = pointer.active ? pointer.x + driftX * 0.2 : driftX;
+      const targetY = pointer.active ? pointer.y + driftY * 0.2 : driftY;
 
-      ringPos.x += (targetX - ringPos.x) * (pointer.active ? 0.055 : 0.025);
-      ringPos.y += (targetY - ringPos.y) * (pointer.active ? 0.055 : 0.025);
+      ringPos.x += (targetX - ringPos.x) * (pointer.active ? 0.048 : 0.02);
+      ringPos.y += (targetY - ringPos.y) * (pointer.active ? 0.048 : 0.02);
 
       const aspect = width / Math.max(1, height);
-      // Wide outer ring + inner harmonic ring so particles fill the entire screen homogeneously
       const ringRadius =
-        (variant === "download" ? 0.72 : variant === "subpage" ? 0.78 : 0.68) +
-        Math.sin(elapsed * 0.85) * 0.06 +
-        Math.cos(elapsed * 1.9) * 0.03;
-      const innerRadius =
-        0.34 + Math.cos(elapsed * 0.72 + 1.1) * 0.05;
+        (variant === "download" ? 0.62 : variant === "subpage" ? 0.68 : 0.56) +
+        Math.sin(elapsed * 0.7) * 0.05 +
+        Math.cos(elapsed * 1.4) * 0.025;
 
-      const ringWidth = variant === "download" ? 0.44 : 0.42;
-      const ringWidth2 = variant === "download" ? 0.24 : 0.22;
-      const ringDisplacement = variant === "download" ? 0.15 : 0.19;
+      const ringWidth = variant === "download" ? 0.32 : 0.3;
+      const ringWidth2 = variant === "download" ? 0.18 : 0.17;
+      const ringDisplacement = variant === "download" ? 0.11 : 0.14;
 
       const halfW = width * 0.5;
       const halfH = height * 0.5;
       const aspectScaleX = aspect > 1 ? 0.92 : aspect;
       const aspectScaleY = aspect > 1 ? 1 / Math.min(aspect, 1.45) : 1;
-      const time = elapsed * 0.55;
+      const time = elapsed * 0.45;
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Homogeneous ambient wave displacement across the full screen
+        // Center exclusion zone for hero & subpage so typography stays ultra-crisp
+        const centerDist = Math.sqrt(p.uvX * p.uvX * 0.85 + p.uvY * p.uvY * 1.25);
+        const centerMask =
+          variant === "hero"
+            ? smoothstep(0.16, 0.46, centerDist)
+            : variant === "subpage"
+              ? smoothstep(0.12, 0.38, centerDist)
+              : 1;
+
         const waveX =
-          Math.sin(p.uvX * 5.2 + time * 2.6 + p.seed1 * 4.0) * 0.024 +
-          Math.cos(p.uvY * 4.4 - time * 1.9) * 0.016;
+          Math.sin(p.uvX * 4.4 + time * 2.1 + p.seed1 * 3.8) * 0.018 +
+          Math.cos(p.uvY * 3.8 - time * 1.5) * 0.012;
         const waveY =
-          Math.cos(p.uvY * 5.2 + time * 2.2 + p.seed2 * 4.0) * 0.024 +
-          Math.sin(p.uvX * 4.4 + time * 2.0) * 0.016;
+          Math.cos(p.uvY * 4.4 + time * 1.9 + p.seed2 * 3.8) * 0.018 +
+          Math.sin(p.uvX * 3.8 + time * 1.6) * 0.012;
 
         const dx = (p.uvX + waveX - ringPos.x) * aspectScaleX;
         const dy = (p.uvY + waveY - ringPos.y) * aspectScaleY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const noise0 = Math.sin(p.uvX * 4.5 + p.uvY * 4.5 + time * 1.6) * 0.028;
+        const noise0 = Math.sin(p.uvX * 4.2 + p.uvY * 4.2 + time * 1.4) * 0.024;
         const dist1 = dist + noise0;
 
-        // Outer wide ring wave
         let t1 =
-          smoothstep(ringRadius - ringWidth * 1.6, ringRadius, dist) -
-          smoothstep(ringRadius, ringRadius + ringWidth * 1.25, dist1);
+          smoothstep(ringRadius - ringWidth * 1.45, ringRadius, dist) -
+          smoothstep(ringRadius, ringRadius + ringWidth * 1.15, dist1);
         let t2 =
-          smoothstep(ringRadius - ringWidth2 * 1.5, ringRadius, dist) -
-          smoothstep(ringRadius, ringRadius + ringWidth2 * 1.15, dist1);
-
-        // Inner harmonic wave so the interior and edges both stay alive and balanced
-        let tInner =
-          smoothstep(innerRadius - 0.26, innerRadius, dist) -
-          smoothstep(innerRadius, innerRadius + 0.28, dist1);
-
-        // Global traveling field wave across [-1, 1] x [-1, 1]
-        const globalField =
-          (Math.sin(p.uvX * 3.1 - p.uvY * 2.4 + time * 1.7 + p.seed1 * 2.2) + 1) * 0.5;
+          smoothstep(ringRadius - ringWidth2 * 1.35, ringRadius, dist) -
+          smoothstep(ringRadius, ringRadius + ringWidth2 * 1.05, dist1);
 
         t1 = Math.max(0, t1);
         t2 = Math.max(0, t2);
-        tInner = Math.max(0, tInner);
+
+        const ambientWave =
+          (Math.sin(p.uvX * 2.8 - p.uvY * 2.2 + time * 1.3 + p.seed1 * 2.0) + 1) * 0.5;
 
         let targetScale =
-          0.34 +
-          globalField * 0.26 +
-          t1 * 0.55 +
-          Math.pow(t2, 1.8) * 1.15 +
-          tInner * 0.48;
+          0.16 +
+          ambientWave * 0.12 +
+          t1 * 0.38 +
+          Math.pow(t2, 1.85) * 0.88;
 
-        targetScale = Math.max(0.28, Math.min(1.42, targetScale));
-        p.scale += (targetScale - p.scale) * 0.16;
+        targetScale = Math.max(0.14, Math.min(1.12, targetScale)) * (0.35 + 0.65 * centerMask);
+        p.scale += (targetScale - p.scale) * 0.14;
 
-        const push = (Math.pow(t2, 0.8) + tInner * 0.45) * ringDisplacement;
+        const push = Math.pow(t2, 0.85) * ringDisplacement;
         const angle = Math.atan2(dy, dx);
-        const targetPosX = p.uvX + waveX + Math.cos(angle) * push * 0.32;
-        const targetPosY = p.uvY + waveY + Math.sin(angle) * push * 0.32;
+        const targetPosX = p.uvX + waveX + Math.cos(angle) * push * 0.28;
+        const targetPosY = p.uvY + waveY + Math.sin(angle) * push * 0.28;
 
-        p.curX += (targetPosX - p.curX) * 0.2;
-        p.curY += (targetPosY - p.curY) * 0.2;
+        p.curX += (targetPosX - p.curX) * 0.18;
+        p.curY += (targetPosY - p.curY) * 0.18;
 
         const sx = halfW + p.curX * halfW;
         const sy = halfH + p.curY * halfH;
 
-        // Tangential / radial flow angle with smooth curl noise
         const flowAngle =
-          Math.sin(p.uvX * 4.2 + time * 1.4) * 0.55 +
-          Math.cos(p.uvY * 4.2 - time * 1.2) * 0.55;
+          Math.sin(p.uvX * 3.8 + time * 1.2) * 0.48 +
+          Math.cos(p.uvY * 3.8 - time * 1.0) * 0.48;
         const rot = angle + flowAngle;
 
-        // Color interpolation matching Google Antigravity's particle spectrum
         const colorWave =
-          (Math.sin(p.uvX * 2.1 + p.uvY * 1.9 + elapsed * 0.5 + p.seed1 * 2.5) + 1) * 0.5;
+          (Math.sin(p.uvX * 2.0 + p.uvY * 1.8 + elapsed * 0.42 + p.seed1 * 2.4) + 1) * 0.5;
 
         let rCol = 113;
         let gCol = 137;
@@ -231,34 +226,34 @@ export function AntigravityParticles({
           gCol = Math.round(118 + colorWave * 58);
           bCol = 255;
         } else {
-          // Hero & Subpage Antigravity spectrum (#2c64ed -> #7189ff -> #f84242 -> #ffcf03)
-          if (colorWave < 0.52) {
-            const k = colorWave / 0.52;
+          if (colorWave < 0.56) {
+            const k = colorWave / 0.56;
             rCol = Math.round(44 + k * (113 - 44));
             gCol = Math.round(100 + k * (137 - 100));
             bCol = Math.round(237 + k * (255 - 237));
-          } else if (colorWave < 0.8) {
-            const k = (colorWave - 0.52) / 0.28;
+          } else if (colorWave < 0.82) {
+            const k = (colorWave - 0.56) / 0.26;
             rCol = Math.round(113 + k * (248 - 113));
             gCol = Math.round(137 + k * (66 - 137));
             bCol = Math.round(255 + k * (66 - 255));
           } else {
-            const k = (colorWave - 0.8) / 0.2;
+            const k = (colorWave - 0.82) / 0.18;
             rCol = Math.round(248 + k * (255 - 248));
             gCol = Math.round(66 + k * (207 - 66));
             bCol = Math.round(66 + k * (3 - 66));
           }
         }
 
-        const baseOpacity = variant === "subpage" ? 0.52 : variant === "download" ? 0.82 : 0.86;
-        const alpha = Math.min(
-          0.92,
-          Math.max(0.18, (p.scale - 0.08) * baseOpacity)
-        );
+        const baseOpacity = variant === "subpage" ? 0.36 : variant === "download" ? 0.52 : 0.54;
+        const alpha =
+          Math.min(0.58, Math.max(0.04, (p.scale - 0.1) * baseOpacity)) *
+          (0.28 + 0.72 * centerMask);
 
-        const pillLen = Math.max(3.2, p.scale * 7.6);
-        const pillThick = Math.max(1.7, p.scale * 3.0);
-        const halfSeg = Math.max(0.6, (pillLen - pillThick) * 0.5);
+        if (alpha < 0.03) continue;
+
+        const pillLen = Math.max(2.4, p.scale * 6.2);
+        const pillThick = Math.max(1.35, p.scale * 2.2);
+        const halfSeg = Math.max(0.4, (pillLen - pillThick) * 0.5);
         const cosR = Math.cos(rot) * halfSeg;
         const sinR = Math.sin(rot) * halfSeg;
 
@@ -330,9 +325,10 @@ export function MorphingSolutionParticles({
     let dpr = 1;
     let rafId = 0;
     let hoverBlend = 0;
+    let isVisible = false;
 
     const palette = ["#676A72", "#8E939E", "#346BF1", "#FF4641"];
-    const count = 340;
+    const count = 240;
     const particles: MorphParticle[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -397,7 +393,7 @@ export function MorphingSolutionParticles({
       if (!parent) return;
       width = parent.clientWidth || 540;
       height = parent.clientHeight || 540;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.75);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       canvas.style.width = `${width}px`;
@@ -408,9 +404,21 @@ export function MorphingSolutionParticles({
     resize();
     window.addEventListener("resize", resize, { passive: true });
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          isVisible = entry.isIntersecting;
+        });
+      },
+      { threshold: 0 }
+    );
+    observer.observe(canvas);
+
     const startTime = performance.now();
     const render = (now: number) => {
       rafId = requestAnimationFrame(render);
+      if (!isVisible || document.hidden) return;
+
       const t = (now - startTime) * 0.001;
       const autoPulse = (Math.sin(t * 0.9 + (shape === "cube" ? 1.5 : 0)) + 1) * 0.18;
       const goal = hoveredRef.current ? 1 : autoPulse;
@@ -440,9 +448,9 @@ export function MorphingSolutionParticles({
         const sy = cy + p.y * (minDim * 0.52);
 
         ctx.fillStyle = p.color;
-        ctx.globalAlpha = 0.35 + hoverBlend * 0.5;
+        ctx.globalAlpha = 0.28 + hoverBlend * 0.45;
         ctx.beginPath();
-        ctx.arc(sx, sy, 1.8 + hoverBlend * 0.8, 0, Math.PI * 2);
+        ctx.arc(sx, sy, 1.6 + hoverBlend * 0.7, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -452,6 +460,7 @@ export function MorphingSolutionParticles({
 
     return () => {
       cancelAnimationFrame(rafId);
+      observer.disconnect();
       window.removeEventListener("resize", resize);
     };
   }, [shape]);

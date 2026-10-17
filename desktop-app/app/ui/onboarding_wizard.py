@@ -1,10 +1,6 @@
-"""Unified first-run onboarding: one modern wizard window that walks the
+"""Unified first-run onboarding: one modern Antigravity wizard window that walks the
 user through language selection, then Terms of Use, then Privacy Policy —
-replacing the previous three separate popups (timed splash, language
-dialog, privacy dialog) with a single cohesive, animated experience. Only
-the steps not yet completed are shown, so a user who already picked a
-language but hasn't accepted the policies yet (e.g. after an app update)
-resumes exactly where they left off instead of repeating everything.
+featuring the animated Antigravity particle field and typewriter welcome stage.
 """
 from __future__ import annotations
 
@@ -33,8 +29,9 @@ from app.i18n import (
 )
 from app.ui.privacy_dialog import accept_privacy, accept_terms
 from app.ui.resources import load_logo_pixmap
+from app.ui.styles import AntigravityWelcomeStage
 
-LOGO_SIZE = 64
+LOGO_SIZE = 56
 
 
 class OnboardingWizard(QDialog):
@@ -48,16 +45,25 @@ class OnboardingWizard(QDialog):
         self._headings: dict[str, QLabel] = {}
 
         self.setObjectName("AppRoot")
-        self.setWindowTitle("ipscans")
+        self.setWindowTitle("IPscans+ · Antigravity Welcome")
         self.setWindowIcon(app_icon)
         self.setModal(True)
-        self.setFixedSize(560, 640)
+        self.setFixedSize(620, 720)
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(28, 28, 28, 22)
-        outer.setSpacing(14)
+        outer.setContentsMargins(28, 24, 28, 22)
+        outer.setSpacing(12)
 
         outer.addWidget(self._build_header())
+        self.welcome_stage = AntigravityWelcomeStage(
+            "IPSCANS+ 4.3.0 · ANTIGRAVITY EDITION",
+            "Yeni nesil yerel ağ keşfi ve topoloji deneyimi.",
+            "Sıfır bulut bağımlılığı · Yerel ICMP, ARP, ONVIF, mDNS ve SSDP analizi.",
+            compact=False,
+            parent=self,
+        )
+        outer.addWidget(self.welcome_stage)
+
         self.dots = self._build_dots()
         outer.addWidget(self.dots, alignment=Qt.AlignmentFlag.AlignHCenter)
 
@@ -71,18 +77,20 @@ class OnboardingWizard(QDialog):
 
     # ------------------------------------------------------------- header
     def _build_header(self) -> QWidget:
-        wrap = QVBoxLayout()
-        wrap.setSpacing(4)
+        wrap = QHBoxLayout()
+        wrap.setContentsMargins(2, 0, 2, 0)
+        wrap.setSpacing(12)
 
         self._logo_label = QLabel()
         self._logo_label.setPixmap(load_logo_pixmap(LOGO_SIZE))
         self._logo_label.setFixedSize(LOGO_SIZE, LOGO_SIZE)
-        wrap.addWidget(self._logo_label, alignment=Qt.AlignmentFlag.AlignHCenter)
+        wrap.addWidget(self._logo_label)
 
         title = QLabel("ipscans", objectName="TitleText")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._title_label = title
         wrap.addWidget(title)
+        wrap.addStretch(1)
+        wrap.addWidget(QLabel("ANTIGRAVITY DESIGN", objectName="VersionBadge"))
 
         header = QWidget()
         header.setLayout(wrap)
@@ -110,13 +118,13 @@ class OnboardingWizard(QDialog):
     def _build_language_page(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        layout.setSpacing(14)
+        layout.setSpacing(12)
 
         subtitle = QLabel(t(self.language, "lang_subtitle"), objectName="SubtitleText")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._headings["language"] = subtitle
         layout.addWidget(subtitle)
-        layout.addSpacing(10)
+        layout.addSpacing(6)
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -210,14 +218,28 @@ class OnboardingWizard(QDialog):
         key = self.steps[self.step_index]
         self.stack.setCurrentIndex(self.step_index)
 
-        # Text is re-localized on every visit since the user can change
-        # language mid-flow and jump back to a page built before that.
+        is_tr = str(self.language).lower().startswith("tr")
+        if hasattr(self, "welcome_stage"):
+            self.welcome_stage.set_copy(
+                "IPSCANS+ 4.3.0 · ANTIGRAVITY EDITION",
+                (
+                    "Yeni nesil yerel ağ keşfi ve topoloji deneyimi."
+                    if is_tr
+                    else "Experience liftoff with local-first network discovery."
+                ),
+                (
+                    "Sıfır bulut bağımlılığı · Yerel ICMP, ARP, ONVIF, mDNS ve SSDP analizi."
+                    if is_tr
+                    else "Zero cloud dependency · Local ICMP, ARP, ONVIF, mDNS & SSDP telemetry."
+                ),
+            )
+
         if key == "language":
             self._title_label.setText(t(self.language, "lang_title"))
             self._headings["language"].setText(t(self.language, "lang_subtitle"))
             self.primary_btn.setText(t(self.language, "lang_continue"))
         else:
-            self._title_label.setText("ipscans")
+            self._title_label.setText("IPscans+")
             get_body = get_terms_body if key == "terms" else get_privacy_body
             heading_key = f"{key}_heading"
             checkbox_key = f"{key}_checkbox"

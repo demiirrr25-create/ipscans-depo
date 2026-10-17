@@ -31,20 +31,35 @@
             <StackPanel Spacing="16"><TextBlock Text="Settings" FontSize="22" Margin="10,0"/><TextBlock Text="APPLICATION &amp; SESSION" Classes="eyebrow" Margin="10,0"/><ListBox Classes="nav" ItemsSource="{Binding SettingsCategories}" SelectedItem="{Binding SettingsCategory}" AutomationProperties.Name="Settings categories" /></StackPanel>
         </Border>
         <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"><Grid Margin="30,22"><StackPanel Spacing="22" IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Home}">
-    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="32" Margin="0,8,0,8">
-        <TextBlock Text="Your address" FontSize="21" />
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="18" Margin="0,14,0,12">
-            <TextBlock Text="{Binding DeviceIdFormatted}" FontSize="40" FontFamily="Consolas" FontWeight="SemiBold" />
-            <Button Content="Copy" Click="OnCopyIdClick" VerticalAlignment="Center" AutomationProperties.Name="Copy your IPCast ID" />
-        </StackPanel>
-        <TextBlock Grid.Row="2" Text="Share this address to let someone connect to this device." Classes="hint" />
-        <StackPanel Grid.Column="1" Grid.RowSpan="3" VerticalAlignment="Center" Spacing="8" MaxWidth="285">
-            <TextBlock Text="{Binding DeviceStatusText}" FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding LocalConnectionInfo}" Classes="hint" />
-            <Button Content="Set up unattended access" Click="OnAccessSettingsClick" HorizontalAlignment="Left" />
-        </StackPanel>
-    </Grid>
-    <Separator />
+    <Border Classes="card" Padding="24,18">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+            <StackPanel Spacing="6">
+                <TextBlock Text="IPSCANS.COM · ANTIGRAVITY DESIGN SYSTEM · IPCAST 2.5" Classes="eyebrow" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Experience liftoff with peer-to-peer remote desktop &amp; encrypted session control." FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <Border Width="3" Height="18" CornerRadius="2" Background="#3279F9" VerticalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+            <Border Grid.Column="1" CornerRadius="16" Padding="12,6" Background="{DynamicResource SubtleFillBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
+                <TextBlock Text="ANTIGRAVITY EDITION" Classes="eyebrow" />
+            </Border>
+        </Grid>
+    </Border>
+    <Border Classes="card">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="32">
+            <TextBlock Text="Your address" FontSize="21" />
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="18" Margin="0,14,0,12">
+                <TextBlock Text="{Binding DeviceIdFormatted}" FontSize="40" FontFamily="Consolas" FontWeight="SemiBold" />
+                <Button Content="Copy" Click="OnCopyIdClick" VerticalAlignment="Center" AutomationProperties.Name="Copy your IPCast ID" />
+            </StackPanel>
+            <TextBlock Grid.Row="2" Text="Share this address to let someone connect to this device." Classes="hint" />
+            <StackPanel Grid.Column="1" Grid.RowSpan="3" VerticalAlignment="Center" Spacing="8" MaxWidth="285">
+                <TextBlock Text="{Binding DeviceStatusText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding LocalConnectionInfo}" Classes="hint" />
+                <Button Content="Set up unattended access" Click="OnAccessSettingsClick" HorizontalAlignment="Left" />
+            </StackPanel>
+        </Grid>
+    </Border>
     <Border IsVisible="{Binding IsConnected}" Classes="device">
         <StackPanel Spacing="10">
             <TextBlock Text="Session active" FontWeight="SemiBold" />

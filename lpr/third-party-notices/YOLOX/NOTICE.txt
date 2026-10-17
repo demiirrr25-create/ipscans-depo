@@ -1,0 +1,8 @@
+YOLOX
+Copyright (c) 2021-2022 Megvii Inc. All rights reserved.
+Upstream: https://github.com/Megvii-BaseDetection/YOLOX
+License: Apache License, Version 2.0 (see LICENSE).
+
+LPR Pro's vehicle adapter follows the documented ONNX input/output contract.
+The independently implemented tracker is not the upstream YOLOX or ByteTrack tracker.
+Evaluation model files are separate downloads, not embedded in the executable.

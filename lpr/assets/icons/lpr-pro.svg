@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 160 160">
+  <title>LPR Pro application icon</title>
+  <rect width="160" height="160" fill="#000"/>
+  <g stroke="#fff" fill="none" stroke-width="7" stroke-linecap="square">
+    <path d="M28 54V28h30M102 28h30v26M28 106v26h30M102 132h30v-26"/>
+    <path d="M44 62h72v36H44zM56 80h14m12 0h22"/>
+  </g>
+</svg>

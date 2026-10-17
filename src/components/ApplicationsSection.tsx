@@ -36,11 +36,11 @@ export function ApplicationsSection({
   const results = [
     {
       id: "lpr-pro",
-      name: "IPScans LPR Pro · Beta",
+      name: "IPScans LPR Pro",
       description:
         locale === "tr"
-          ? "Yerel plaka tanıma ve kayıt inceleme. Değerlendirme sürümü; fiziksel bariyer kontrolü yok."
-          : "Local plate recognition and record review. Evaluation release; no physical barrier control.",
+          ? "5 bölmeli canlı operatör çalışma alanı, bağımsız kalibrasyon çizgileri, blok/daire araç kütüğü ve yerel ONNX plaka tanıma."
+          : "5-page live operator workspace, independent calibration lines, resident vehicle registry, and local ONNX plate recognition.",
       href: `/${locale}/lpr-pro`,
       category: "desktop",
       icon: "/lpr-mark.svg",

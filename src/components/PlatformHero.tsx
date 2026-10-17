@@ -1,6 +1,7 @@
 import { uiText } from "@/i18n/ui";
 import Link from "next/link";
 import { AntigravityParticles } from "./AntigravityParticles";
+import { AntigravityTypewriter } from "./AntigravityTypewriter";
 import { ProductPreview } from "./ProductPreview";
 import { SurfaceShowcase } from "./SurfaceShowcase";
 import { LiveIp } from "./LiveIp";
@@ -21,7 +22,7 @@ export function PlatformHero({ locale, ipLabel }: { locale: Locale; ipLabel: str
       <section className="welcome-wrapper" data-welcome-section>
         <div className="hero-video-wrapper">
           <div className="hero-video-container" data-hero-particles>
-            <AntigravityParticles variant="hero" density={230} />
+            <AntigravityParticles variant="hero" />
           </div>
         </div>
 
@@ -35,21 +36,13 @@ export function PlatformHero({ locale, ipLabel }: { locale: Locale; ipLabel: str
 
           <div className="header-container">
             <h1 className="landing-main-header">
-              <span className="typed-container landing-main" data-typed-header>
-                <span className="visually-hidden">{heroTitle}</span>
-                <span className="typed-content" aria-hidden="true">
-                  {heroTitle}
-                </span>
-                <span className="cursor-container" data-cursor-container>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="blinking-cursor"
-                    src="/assets/image/antigravity-cursor.png"
-                    alt=""
-                    aria-hidden="true"
-                  />
-                </span>
-              </span>
+              <AntigravityTypewriter
+                text={heroTitle}
+                trigger="mount"
+                speedMs={24}
+                startDelayMs={140}
+                className="landing-main"
+              />
             </h1>
           </div>
 

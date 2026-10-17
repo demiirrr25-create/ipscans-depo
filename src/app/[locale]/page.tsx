@@ -4,6 +4,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { PlatformHero } from "@/components/PlatformHero";
 import { BlogSection } from "@/components/BlogSection";
 import { AntigravityParticles } from "@/components/AntigravityParticles";
+import { AntigravityTypewriter } from "@/components/AntigravityTypewriter";
 import { notFound } from "next/navigation";
 import { platformCopy, scannerApplication } from "@/content/applications";
 
@@ -34,25 +35,16 @@ export default async function HomePage({
             <div className="grid-col col-md-12">
               <div className="download-section" data-section-element>
                 <div className="download-section-backdrop">
-                  <AntigravityParticles variant="download" density={220} />
+                  <AntigravityParticles variant="download" />
                 </div>
                 <div className="download-section-content">
-                  <div className="header">
-                    <span className="typed-container heading-3" data-typed-header>
-                      <span className="visually-hidden">{dict.cta.title}</span>
-                      <span className="typed-content" aria-hidden="true">
-                        {dict.cta.title}
-                      </span>
-                      <span className="cursor-container" data-cursor-container>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          className="blinking-cursor"
-                          src="/assets/image/antigravity-cursor.png"
-                          alt=""
-                          aria-hidden="true"
-                        />
-                      </span>
-                    </span>
+                  <div className="header heading-3" data-typed-header>
+                    <AntigravityTypewriter
+                      text={dict.cta.title}
+                      trigger="visible"
+                      speedMs={20}
+                      startDelayMs={80}
+                    />
                   </div>
                   <div className="download-section-cta" data-cta-container>
                     <a

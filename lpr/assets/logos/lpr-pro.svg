@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160">
+  <title>LPR Pro</title>
+  <rect width="640" height="160" fill="#000"/>
+  <g stroke="#fff" fill="none" stroke-width="6" stroke-linecap="square">
+    <path d="M32 58V32h32M112 32h24v26M32 102v26h32M112 128h24v-26"/>
+    <path d="M48 62h72v36H48zM60 80h14m12 0h22"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="8" stroke-linejoin="miter" stroke-linecap="square">
+    <path d="M180 52v56h34M238 108V52h34v28h-34M296 108V52h34v28h-34m18 0 20 28"/>
+    <path d="M386 108V52h34v28h-34M444 108V52h34v28h-34m18 0 20 28M506 52h38v56h-38z"/>
+  </g>
+</svg>

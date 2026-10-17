@@ -11,7 +11,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
     { href: `/${locale}/ip-scanner`, label: "IPscans+" },
     { href: `/${locale}/download`, label: dict.nav.appDownload },
     { href: `/${locale}/applications/ipcast`, label: "IPCast" },
-    { href: `/${locale}/lpr-pro`, label: "LPR Pro · Beta" },
+    { href: `/${locale}/lpr-pro`, label: "LPR Pro" },
     { href: toolPath("ipLookup", locale), label: dict.nav.ipLookup },
     { href: toolPath("speedTest", locale), label: dict.nav.speedTest },
     { href: toolPath("dns", locale), label: dict.nav.dns },

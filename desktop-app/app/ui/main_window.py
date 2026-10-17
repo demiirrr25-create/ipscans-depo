@@ -26,7 +26,7 @@ from app.i18n import DEFAULT_LANGUAGE, t
 from app.ui.scan_progress import ScanProgress
 from app.ui.resources import load_logo_pixmap
 from app.ui.network_map import NetworkMap
-from app.ui.styles import DARK_QSS
+from app.ui.styles import AntigravityWelcomeStage, DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput
 from app.workers.scan_worker import ScanWorker
 from app.workers.task_worker import TaskWorker
@@ -56,9 +56,9 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.3.0 / Network Intelligence")
-        self.resize(1380, 850)
-        self.setMinimumSize(1000, 650)
+        self.setWindowTitle("IPscans+ 4.3.0 / Antigravity Network Intelligence")
+        self.resize(1380, 880)
+        self.setMinimumSize(1000, 680)
         self.setStyleSheet(DARK_QSS)
         self._build_ui()
         self._batch_timer = QTimer(self)
@@ -87,7 +87,7 @@ class MainWindow(QWidget):
     def _build_ui(self) -> None:
         body = QVBoxLayout(self)
         body.setContentsMargins(24, 20, 24, 16)
-        body.setSpacing(16)
+        body.setSpacing(14)
         heading = QHBoxLayout()
         logo = QLabel()
         logo.setPixmap(load_logo_pixmap(52))
@@ -95,7 +95,7 @@ class MainWindow(QWidget):
         heading.addWidget(logo)
         heading.addSpacing(6)
         heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
-        heading.addWidget(QLabel("4.3.0 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
+        heading.addWidget(QLabel("4.3.0 / ANTIGRAVITY EDITION", objectName="VersionBadge"))
         heading.addStretch()
         self.navigation = QTabBar()
         self.navigation.setDrawBase(False)
@@ -104,6 +104,16 @@ class MainWindow(QWidget):
         self.navigation.addTab(t(self.lang, "network_map"))
         heading.addWidget(self.navigation)
         body.addLayout(heading)
+        self.welcome_stage = AntigravityWelcomeStage(
+            "IPSCANS.COM · ANTIGRAVITY DESIGN SYSTEM",
+            self._v4(
+                "Experience liftoff with local-first network discovery and topology mapping.",
+                "Yerel ağ keşfi ve canlı topoloji haritalaması ile yeni nesil ağ deneyimini yaşayın.",
+            ),
+            compact=True,
+            parent=self,
+        )
+        body.addWidget(self.welcome_stage)
         self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
         scan.setContentsMargins(20, 18, 20, 18)

@@ -97,7 +97,7 @@ export function Header({
         "M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H160v400Z",
     },
     {
-      name: "IPScans LPR Pro · Beta",
+      name: "IPScans LPR Pro",
       href: `/${locale}/lpr-pro`,
       external: false,
       iconPath:
@@ -212,6 +212,15 @@ export function Header({
                     className="call-to-action--nav button button-nav button-compact nav-trigger-btn"
                   >
                     <span>IPCast</span>
+                  </Link>
+                </div>
+
+                <div className="nav-item">
+                  <Link
+                    href={`/${locale}/lpr-pro`}
+                    className="call-to-action--nav button button-nav button-compact nav-trigger-btn"
+                  >
+                    <span>LPR Pro</span>
                   </Link>
                 </div>
 

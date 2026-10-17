@@ -1,201 +1,198 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isLocale } from "@/i18n/config";
-import { lprRelease } from "@/content/lpr-release";
 import { PageShell } from "@/components/PageShell";
+import { lprRelease } from "@/content/lpr-release";
+import { isLocale } from "@/i18n/config";
+import { localizedAlternates } from "@/lib/seo";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
+  const tr = locale === "tr";
   return {
-    title: "IPScans LPR Pro · Windows Beta",
-    description:
-      locale === "tr"
-        ? "Yerel plaka tanıma ve kayıt inceleme için Windows değerlendirme sürümü."
-        : "Windows evaluation release for local plate recognition and record review.",
-    robots:
-      locale === "tr" || locale === "en"
-        ? undefined
-        : { index: false, follow: true },
-    alternates: {
-      canonical: `/${locale === "tr" ? "tr" : "en"}/lpr-pro`,
-      languages: {
-        tr: "/tr/lpr-pro",
-        en: "/en/lpr-pro",
-        "x-default": "/en/lpr-pro",
-      },
-    },
+    title: `IPScans LPR Pro v${lprRelease.version} · ${tr ? "Windows Plaka Tanıma ve Operatör Konsolu" : "Windows License Plate Recognition & Operator Workspace"}`,
+    description: tr
+      ? "Windows 10/11 x64 için yerel plaka okuma, 5 bölmeli canlı operatör çalışma alanı, bağımsız kalibrasyon çizgileri, blok/daire araç kütüğü ve şifreli olay kuyruğu."
+      : "Local license plate recognition for Windows 10/11 x64 with 5-page live operator workspace, independent calibration lines, vehicle/resident registry, and durable encrypted event delivery.",
+    alternates: localizedAlternates(locale, "/lpr-pro"),
   };
 }
 
-export default async function LprPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function LprProPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const tr = locale === "tr";
   const features = tr
     ? [
         [
-          "Yerel tanıma",
-          "Görüntü ve kayıtlı videoda ONNX plaka tespiti, OCR ve ardışık kare uzlaşması. Görüntüler buluta yüklenmez.",
+          "5 bölmeli canlı operatör çalışma alanı",
+          "Canlı İzleme (Live Dashboard), Kameralar, Araçlar ve Sakinler, Geçiş Kayıtları ve Ayarlar. Blok, daire, sakin ve çoklu yetkili araç sahibi kayıtları ile CSV/Excel içe ve dışa aktarma.",
         ],
         [
-          "Kayıt ve inceleme",
-          "Plaka arama, gerekçeli düzeltme, CSV raporu, yerel denetim kaydı ve saklama süresi.",
+          "Bağımsız kalibrasyon ve bölge tanımlama",
+          "Ayrı tetik ve okuma çizgileri; dikdörtgen ve çokgen bölgeler, yön filtreleri, tekrar pencereleri ve gecikmeli plaka eşleştirme. Gerekçeli düzeltme geçmişi ve kanıt kareleri.",
         ],
         [
-          "Kontrollü erişim",
-          "Yönetici, operatör ve denetçi rolleri; ziyaretçi, personel ve araç izinleri için kural simülatörü.",
+          "Kesintisiz yerel olay kuyruğu",
+          "Geçici veritabanı kesintilerinde şifreli yerel teslimat günlüğü ve otomatik yeniden deneme; kayıtlı/yabancı araç, blok, daire ve kamera bazlı gelişmiş filtreleme.",
         ],
         [
-          "Kamera bağlantısı",
-          "Hikvision ve Dahua ana akış RTSP profilleri, özel RTSP adresi ve Windows DPAPI ile korunan kamera parolaları.",
+          "ONVIF medya keşfi ve donanım hızlandırma",
+          "IPv4 ONVIF kamera keşfi, medya profili seçimi, D3D11 otomatik donanım çözme (CPU geri dönüşlü) ve izole kamera yakalama süreçleri.",
+        ],
+        [
+          "Bölgesel OCR ve karakter analizi",
+          "Görüntü, MP4/AVI video ve canlı RTSP kaynakları; karakter bazlı güven puanları, plaka kırpımı ve SHA-256 doğrulamalı yerel ONNX modelleri.",
+        ],
+        [
+          "DPAPI kasa ve doğrulanmış yedekleme",
+          "Kamera parolaları ve teslimat günlüğü etkin Windows kullanıcı hesabına DPAPI ile bağlanır. Yöneticiye özel bütünlük doğrulamalı SQLite yedekleme ve 6 adımlı kurulum sihirbazı.",
         ],
       ]
     : [
         [
-          "Local recognition",
-          "ONNX plate detection, OCR and frame consensus on images and recorded video. Images are not uploaded.",
+          "5-page live operator workspace",
+          "Live Dashboard, Cameras, Vehicles & Residents, Events, and Settings. Block, unit, resident, and multi-owner vehicle registry with CSV/XLSX import and export.",
         ],
         [
-          "Review and records",
-          "Plate search, corrections with reasons, CSV export, local audit log and retention controls.",
+          "Independent calibration & polygon regions",
+          "Separate trigger and recognition lines; rectangular and polygon regions, direction filters, repeat windows, and delayed plate matching with reasoned correction audit history.",
         ],
         [
-          "Access rules",
-          "Administrator, operator and auditor roles; a rule simulator for visitors, staff and vehicle permissions.",
+          "Durable encrypted event delivery",
+          "Encrypted local delivery journal and automatic retries during temporary database locks; filter by registered/unknown status, block, unit, camera, and direction.",
         ],
         [
-          "Camera connections",
-          "Hikvision and Dahua main-stream RTSP profiles, custom RTSP addresses and Windows DPAPI-protected camera credentials.",
+          "ONVIF discovery & hardware decode",
+          "Bounded IPv4 ONVIF media profile discovery, per-camera automatic D3D11 hardware decoding with software fallback, and isolated capture workers.",
+        ],
+        [
+          "Regional OCR & per-character confidence",
+          "Still images, MP4/AVI video, and live RTSP streams; per-character confidence metrics, evidence crops, and SHA-256 verified local ONNX models.",
+        ],
+        [
+          "DPAPI vault & verified snapshots",
+          "Camera credentials and delivery journals are bound to the active Windows user account via DPAPI. Includes administrator SQLite integrity backups and a 6-step setup wizard.",
         ],
       ];
 
-  const subtitle = tr
-    ? "Plakaları yerelde okuyun. Sonuçları inceleyin. Erişim kurallarınızı sınayın."
-    : "Read plates locally. Review results. Test your access rules.";
-
   return (
-    <PageShell title="IPScans LPR Pro" subtitle={subtitle}>
-      <article lang={tr ? "tr" : "en"} className="space-y-12">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link
-            href={`/${locale}/download`}
-            className="button button-compact button-secondary"
-          >
+    <PageShell
+      eyebrow={`WINDOWS 10/11 x64 · v${lprRelease.version}`}
+      title="IPScans LPR Pro"
+      subtitle={
+        tr
+          ? "Plakaları yerelde okuyun, çok kameralı canlı izleme duvarını yönetin, blok/daire araç kütüğünü ve erişim kurallarınızı sınayın."
+          : "Read plates locally, manage your multi-camera live wall, and validate vehicle registries and access rules."
+      }
+    >
+      <article lang={tr ? "tr" : "en"}>
+        <div className="mb-8">
+          <Link href={`/${locale}/download`} className="button button-secondary button-compact">
             <span>← {tr ? "Tüm uygulamalar" : "All applications"}</span>
           </Link>
-          <span className="font-mono text-xs uppercase tracking-[.22em] text-neutral-400">
-            WINDOWS x64 / 0.3.1 BETA
-          </span>
         </div>
 
-        <div className="agy-surface-card p-7 sm:p-10">
-          <p className="body max-w-3xl text-neutral-300">
-            {tr
-              ? "Bu sürüm saha değerlendirmesi içindir. Ticari üretim ve fiziksel bariyer kontrolü için hazır değildir. IPscans+ ve IPCast uygulamalarından bağımsızdır."
-              : "This release is for evaluation. It is not ready for commercial production or physical barrier control. It is independent of IPscans+ and IPCast."}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <a href={lprRelease.url} className="button button-primary">
-              <span>
+        <section className="product-card mb-12">
+          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+            <div>
+              <p className="caption font-mono uppercase tracking-[0.14em] text-[#9aa0a6]">
+                {tr ? "Masaüstü Operatör Paketi · v" : "Desktop Operator Suite · v"}
+                {lprRelease.version}
+              </p>
+              <h2 className="heading-4 mt-3 text-white">
                 {tr
-                  ? "Windows uygulamasını indir · EXE"
-                  : "Download Windows app · EXE"}{" "}
-                ↓
-              </span>
-            </a>
-            <a href={lprRelease.releaseUrl} className="button button-secondary">
-              <span>
-                {tr ? "Sürüm notları ve kaynak" : "Release notes and source"} ↗
-              </span>
-            </a>
+                  ? "Canlı kamera duvarı, kalibrasyon çizgileri ve yerel plaka tanıma"
+                  : "Live camera wall, calibration lines & local plate recognition"}
+              </h2>
+              <p className="body mt-4 text-[#9aa0a6]">
+                {tr
+                  ? "IPScans LPR Pro v1.0.0; 5 bölmeli operatör arayüzü, bağımsız tetik/okuma çizgileri, blok ve sakin kayıt sistemi ile Windows 10/11 x64 üzerinde tamamen yerel olarak çalışır."
+                  : "IPScans LPR Pro v1.0.0 runs locally on Windows 10/11 x64 with a 5-page operator workspace, independent trigger/recognition lines, and resident vehicle registry."}
+              </p>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <a href={lprRelease.url} className="button button-primary">
+                  <span>{tr ? `Windows Kurulumunu İndir · v${lprRelease.version} EXE` : `Download Windows Installer · v${lprRelease.version} EXE`}</span>
+                </a>
+                <a
+                  href={lprRelease.releaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="button button-secondary"
+                >
+                  <span>{tr ? "Sürüm notları ve kaynak ↗" : "Release notes and source ↗"}</span>
+                </a>
+              </div>
+            </div>
+            <div className="agy-result-card">
+              <p className="agy-result-card__label">{tr ? "Paket Özeti" : "Package Summary"}</p>
+              <p className="agy-result-card__value">{(lprRelease.bytes / 1_000_000).toFixed(1)} MB · Windows 10/11 x64</p>
+              <p className="caption mt-3 text-[#9aa0a6]">
+                {tr
+                  ? "Kullanıcı hesabına kurulan bağımsız çalışma zamanı (Python veya Node.js kurulumu gerekmez). Dosya bütünlüğü SHA-256 ile doğrulanır."
+                  : "Self-contained runtime installed for the current user (Python and Node.js are not required). Integrity verified via SHA-256."}
+              </p>
+              <p className="caption mt-3 break-all font-mono text-xs text-[#9aa0a6]">
+                SHA-256: {lprRelease.sha256}
+              </p>
+            </div>
           </div>
-          <p className="mt-5 text-sm text-neutral-400">
-            {tr
-              ? "Windows 10/11 x64 için 118,3 MB taşınabilir değerlendirme uygulaması. İmzalanmamıştır; dosyanın kaydedileceği yeri tarayıcınız belirler."
-              : "118.3 MB portable evaluation app for Windows 10/11 x64. It is unsigned; your browser controls where the file is saved."}
-          </p>
-        </div>
+        </section>
 
-        <figure className="feature-media-card">
-          <div className="feature-media-card__bar">
-            <span className="feature-media-card__title">
-              IPScans LPR Pro v{lprRelease.version} · Recognition Lab
-            </span>
-            <span className="feature-media-card__tag">
-              WINDOWS 10/11 · x64 · OFFLINE ONNX INFERENCE
-            </span>
-          </div>
-          <div className="feature-media-card__viewport">
+        <figure className="feature-media mb-12">
+          <div className="feature-media-card">
+            <div className="feature-media-card__bar">
+              <span className="feature-media-card__dots">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className="feature-media-card__tag">IPScans LPR Pro v{lprRelease.version} · Windows x64</span>
+            </div>
             <Image
               src="/lpr-pro-preview.png"
-              alt={
-                tr
-                  ? "Sentetik 34 ABC 123 örneğini inceleyen gerçek LPR Pro arayüzü"
-                  : "Actual LPR Pro interface reviewing a synthetic 34 ABC 123 example"
-              }
+              alt={`LPR Pro ${lprRelease.version} · ${tr ? "operatör çalışma alanı" : "operator workspace"}`}
               width={1440}
-              height={950}
+              height={900}
               className="feature-image"
-              priority
             />
           </div>
-          <figcaption className="border-t border-white/10 px-6 py-4 text-sm text-neutral-400">
-            {tr
-              ? "Gerçek uygulama ekranı; sentetik örnek. Güven puanı saha doğruluk oranı değildir."
-              : "Actual application screenshot; synthetic example. Confidence is not a field accuracy rate."}
-          </figcaption>
         </figure>
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(([title, body], idx) => (
-            <section key={title} className="agy-surface-card p-7">
-              <span className="agy-eyebrow">0{idx + 1} / LPR PRO</span>
-              <h2 className="heading-5 mt-4">{title}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-300">
-                {body}
-              </p>
+            <section key={title} className="product-card">
+              <p className="caption font-mono text-[#9aa0a6]">0{idx + 1}</p>
+              <h2 className="heading-6 mt-3 text-white">{title}</h2>
+              <p className="body mt-3 text-[#9aa0a6]">{body}</p>
             </section>
           ))}
         </div>
 
-        <section className="agy-surface-card p-7 sm:p-10">
-          <h2 className="heading-4">
-            {tr ? "İlk kullanım" : "Getting started"}
-          </h2>
-          <ol className="mt-6 list-decimal space-y-3 ps-6 text-neutral-200">
+        <section className="product-card mt-10">
+          <h2 className="heading-5 text-white">{tr ? "İlk kullanım" : "Getting started"}</h2>
+          <ol className="body mt-5 list-decimal space-y-3 ps-6 text-[#b7bfd9]">
             <li>
               {tr
-                ? "EXE dosyasını indirmeler klasörünüzden çalıştırın; ilk açılışta en az 12 karakterli bir yönetici parolası oluşturun."
-                : "Run the EXE from your downloads folder; create an administrator password of at least 12 characters at first launch."}
+                ? "Kurulum EXE dosyasını çalıştırın. İlk açılışta Antigravity karşılama ekranı üzerinden en az 12 karakterli yönetici parolanızı oluşturun."
+                : "Run the installer EXE. On first launch, create an administrator password of at least 12 characters through the Antigravity welcome screen."}
             </li>
             <li>
               {tr
-                ? "Ayarlar bölümünden yaklaşık 11 MB değerlendirme modelini indirin veya kendi incelenmiş model manifestinizi seçin."
-                : "Download about 11 MB of evaluation models in Settings, or select your own reviewed model manifest."}
+                ? "Ayarlar bölümünden yaklaşık 15 MB değerlendirme modelini indirin veya kendi ONNX model manifestinizi seçin."
+                : "Download about 15 MB of evaluation models in Settings, or select your own ONNX model manifest."}
             </li>
             <li>
               {tr
-                ? "Tanıma bölümünde kullanma izniniz olan bir görüntü veya video seçin. Sonuçları Geçmiş bölümünde inceleyin."
-                : "Select an image or video you are authorized to use in Recognition. Review results in History."}
+                ? "Kurulum rehberinden yetkili kameranızı ekleyin, tetik/okuma çizgilerini kaydedin ve araç kaydı oluşturun. Canlı İzleme ekranından OCR başlatıp sonuçları Geçiş Kayıtları bölümünde inceleyin."
+                : "Use the setup guide to add an authorized camera, save trigger/recognition calibration lines, and create a vehicle record. Start OCR from Live Dashboard and review passages in Events."}
             </li>
           </ol>
-          <p className="mt-6 text-sm leading-relaxed text-neutral-400">
-            {tr
-              ? "İndirilen değerlendirme modelleri yalnız çevrimdışı kullanılır; model ve eğitim verisi ticari hak incelemesi tamamlanmamıştır. Canlı RTSP için ticari kullanımı incelenmiş bir model manifesti gerekir."
-              : "Downloaded evaluation models are restricted to offline use; commercial rights review of model weights and training data is pending. Live RTSP requires a commercially reviewed model manifest."}
-          </p>
-          <p className="mt-4 text-sm leading-relaxed text-neutral-400">
+          <p className="caption mt-5 text-[#9aa0a6]">
             {tr
               ? "QtCore DLL uyarısı devam ederse Windows için resmi Microsoft Visual C++ x64 paketini yükleyip uygulamayı yeniden açın."
               : "If a QtCore DLL error persists, install Microsoft's official Visual C++ x64 package for Windows and reopen the app."}{" "}
@@ -208,25 +205,14 @@ export default async function LprPage({
           </p>
         </section>
 
-        <section className="agy-surface-card p-7 sm:p-10">
-          <h2 className="heading-5">
-            {tr
-              ? "Cihaz uyumluluğunun sınırları"
-              : "Device compatibility limits"}
+        <section className="product-card mt-8">
+          <h2 className="heading-6 text-white">
+            {tr ? "Cihaz uyumluluğu ve doğrulama kapsamı" : "Device compatibility & validation scope"}
           </h2>
-          <p className="mt-4 leading-relaxed text-neutral-300">
+          <p className="body mt-3 text-[#9aa0a6]">
             {tr
-              ? "Hikvision/Dahua RTSP adres profilleri mevcuttur; fiziksel model ve firmware doğrulaması yapılmadı. Kameranın kendi ANPR olaylarını alma ve ONVIF keşfi henüz tamamlanmadı. Modbus TCP tek bobin okuma ve Shelly RPC durum sorgulama araçları bulunur; röle çıkışı ve otomatik bariyer açma kapalıdır. Tüm Ethernet rölelerle uyumluluk iddiası yoktur."
-              : "Hikvision/Dahua RTSP address profiles are included; physical models and firmware have not been validated. Native camera ANPR events and ONVIF discovery are not yet implemented. Read-only Modbus TCP single-coil and Shelly RPC status tools are included; relay actuation and automatic barrier opening are disabled. Universal Ethernet relay compatibility is not claimed."}
-          </p>
-          <p className="mt-4 leading-relaxed text-neutral-400">
-            {tr
-              ? "Gerçek Türk plaka saha veri seti, gece/yağmur testleri, çok kameralı kapasite ölçümü, imzalı ticari lisans sistemi ve kod imzalama tamamlanmadan üretim sürümü olarak kullanmayın."
-              : "Field validation with real Turkish plates, night/rain tests, multi-camera capacity measurements, signed commercial licensing and code signing remain outstanding."}
-          </p>
-          <p className="mt-6 break-all border-t border-white/10 pt-5 font-mono text-xs text-neutral-400">
-            {tr ? "Sürüm dosyası SHA-256" : "Release file SHA-256"}:{" "}
-            {lprRelease.sha256}
+              ? "IPv4 ONVIF keşfi, medya profili seçimi, H.264 ana/alt akış ve D3D11 otomatik donanım çözme Mercusys MC510 üzerinde sınanmıştır. Modbus TCP tek bobin okuma ve Shelly RPC durum sorgulama araçları bulunur; fiziksel bariyer tetikleme güvenlik amacıyla kapalıdır."
+              : "IPv4 ONVIF discovery, media profile selection, H.264 main/sub streams, and automatic D3D11 hardware decoding were tested on a Mercusys MC510. Read-only Modbus TCP single-coil and Shelly RPC status tools are included; physical barrier actuation remains disabled by default."}
           </p>
         </section>
       </article>

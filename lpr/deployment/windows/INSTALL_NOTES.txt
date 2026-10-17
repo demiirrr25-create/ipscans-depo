@@ -1,0 +1,23 @@
+IPScans LPR Pro Preview 1.0.0.dev1
+
+Development evaluation build. This package is not digitally signed and is not a production release.
+The installer includes the Python and Qt runtime; no separate Python/Node.js installation is required.
+The preview installs for the current Windows user and creates Start menu and optional desktop shortcuts.
+Starting at Windows sign-in is optional and disabled by default.
+
+Camera credentials and records stay in the Windows user's local IPScans/LPR Pro data folder.
+Upgrading or uninstalling the application does not delete that data folder.
+Back up existing records from the application before evaluating a new version.
+
+Recognition models are separate evaluation downloads. Model/data commercial distribution review,
+field OCR accuracy qualification, signed updates and clean-machine qualification remain pending.
+Physical barrier control is not provided.
+
+This preview adds the five-section live operator workspace, vehicle/resident registry,
+independent trigger/read lines and polygon ROIs, event evidence/reviews/filters,
+durable event delivery and optional hardware video decoding with software fallback.
+Native camera ANPR adapters and protected backup/restore are not included.
+Update verification requires an administrator-configured trusted signing identity.
+
+Installer built with Inno Setup, Copyright Jordan Russell and Martijn Laan: https://jrsoftware.org/
+Third-party notices are included with the installed application.

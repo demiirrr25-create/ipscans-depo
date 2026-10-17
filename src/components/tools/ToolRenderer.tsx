@@ -30,9 +30,7 @@ export function ToolRenderer({
             key={key}
             href={toolPath(key, locale)}
             aria-current={isCurrent ? "page" : undefined}
-            className={`button button-compact ${
-              isCurrent ? "button-primary" : "button-secondary"
-            }`}
+            className={`newsletter-topic-pill ${isCurrent ? "selected" : ""}`}
           >
             <span>{dict[key].title}</span>
           </Link>
@@ -69,29 +67,18 @@ export function ToolRenderer({
   return (
     <div className="agy-tool-stage">
       {navBar}
-      <section className="tool-workspace">
-        <div className="tool-workspace-rail">
-          <span>IPSCANS / {toolKey.toUpperCase()}</span>
-          <span>{uiText(locale, "REQUEST → RESULT", "SORGU → SONUÇ")}</span>
+      <section className="agy-tool-card">
+        <div className="agy-tool-card__header">
+          <div>
+            <span className="agy-page-hero__eyebrow">
+              <span className="agy-page-hero__dot" aria-hidden="true" />
+              <span>IPSCANS · {toolKey.toUpperCase()}</span>
+            </span>
+            <h2 className="heading-4 mt-2 text-white">{dict[toolKey].title}</h2>
+            <p className="body mt-2 text-[#9aa0a6]">{dict[toolKey].subtitle}</p>
+          </div>
         </div>
-        <div className="tool-workspace-body">
-          <aside className="tool-workspace-aside">
-            <p className="agy-eyebrow">01 / {uiText(locale, "INPUT", "GİRDİ")}</p>
-            <h2 className="heading-5 tool-workspace-title">{dict[toolKey].title}</h2>
-            <p className="body tool-workspace-desc">{dict[toolKey].subtitle}</p>
-            <div className="tool-signal" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-            </div>
-          </aside>
-          <div className="tool-workspace-main">{form}</div>
-        </div>
+        <div className="agy-tool-card__body">{form}</div>
       </section>
     </div>
   );
