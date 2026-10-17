@@ -8,8 +8,8 @@ import type { SpeedResult, SpeedUpdate, Trace, ServerInfo, ClientInfo } from "@/
 
 function getBufferbloatGrade(delta: number | null | undefined): { grade: string; badgeClass: string; desc: string } {
   if (delta == null) return { grade: "—", badgeClass: "text-[#6E6E6E] border-[#1F1F1F] bg-[#0A0A0A]", desc: "No data" };
-  if (delta <= 5) return { grade: "A+", badgeClass: "text-white border-white/50 bg-white/10", desc: "Ultra-low bufferbloat · Ideal for competitive gaming & live streams" };
-  if (delta <= 15) return { grade: "A", badgeClass: "text-[#E0E0E0] border-white/30 bg-white/5", desc: "Excellent queue health · Zero streaming interruptions" };
+  if (delta <= 5) return { grade: "A+", badgeClass: "text-white border-white/60 bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.15)]", desc: "Ultra-low bufferbloat · Flawless competitive gaming & real-time streams" };
+  if (delta <= 15) return { grade: "A", badgeClass: "text-[#E0E0E0] border-white/40 bg-white/5", desc: "Excellent queue health · Zero streaming interruptions" };
   if (delta <= 30) return { grade: "B", badgeClass: "text-[#A1A1A1] border-[#2E2E2E] bg-[#111111]", desc: "Good performance under typical concurrency" };
   if (delta <= 60) return { grade: "C", badgeClass: "text-[#888888] border-[#1F1F1F] bg-[#0D0D0D]", desc: "Moderate buffer delay observed under load" };
   if (delta <= 120) return { grade: "D", badgeClass: "text-[#6E6E6E] border-[#1F1F1F] bg-[#0A0A0A]", desc: "Noticeable queue lag under heavy bandwidth" };
@@ -27,6 +27,24 @@ interface TestHistoryItem {
 }
 
 const STORAGE_KEY = "ipscans_speed_history";
+
+// Calibrated speedometer ticks (0 to 1000+ Mbps)
+const SPEED_TICKS = [
+  { val: 0, label: "0" },
+  { val: 10, label: "10" },
+  { val: 50, label: "50" },
+  { val: 100, label: "100" },
+  { val: 250, label: "250" },
+  { val: 500, label: "500" },
+  { val: 1000, label: "1G+" },
+];
+
+function valToRatio(val: number): number {
+  if (val <= 0) return 0;
+  // Logarithmic scale mapping 0 - 1000 Mbps to 0.0 - 1.0
+  const ratio = Math.log10(1 + val) / Math.log10(1 + 1000);
+  return Math.min(1, Math.max(0, ratio));
+}
 
 export function SpeedTest({
   dict,
@@ -47,20 +65,19 @@ export function SpeedTest({
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
 
   const controller = useRef<AbortController | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Load history from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHistory(JSON.parse(stored).slice(0, 20));
       }
     } catch {
       // Ignore storage errors in privacy mode
     }
 
-    // Check URL query parameters for shared results
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const d = parseFloat(params.get("dl") || "");
@@ -98,6 +115,75 @@ export function SpeedTest({
 
   useEffect(() => () => controller.current?.abort(), []);
 
+  // 60 FPS Real-time Oscilloscope Particle Waveform
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    let t = 0;
+
+    const render = () => {
+      t += 0.04;
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+
+      const mbps = update?.mbps ?? (result ? (result.download || result.upload) : 0);
+      const isLive = running && mbps > 0;
+      const amplitude = isLive ? Math.min(36, Math.log10(1 + mbps) * 12 + 6) : 4;
+      const waveSpeed = isLive ? 2.5 : 0.8;
+
+      // Draw subtle background grid lines
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, height / 2);
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+
+      // Primary sine spline
+      ctx.beginPath();
+      for (let x = 0; x < width; x += 3) {
+        const nx = x / width;
+        const envelope = Math.sin(nx * Math.PI); // Pinched at edges
+        const y =
+          height / 2 +
+          Math.sin(nx * 12 - t * waveSpeed) * amplitude * envelope +
+          Math.cos(nx * 24 + t * waveSpeed * 1.3) * (amplitude * 0.35) * envelope;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = isLive ? "rgba(255, 255, 255, 0.85)" : "rgba(255, 255, 255, 0.15)";
+      ctx.lineWidth = isLive ? 2 : 1;
+      ctx.stroke();
+
+      // Secondary glowing echo wave
+      if (isLive) {
+        ctx.beginPath();
+        for (let x = 0; x < width; x += 3) {
+          const nx = x / width;
+          const envelope = Math.sin(nx * Math.PI);
+          const y =
+            height / 2 +
+            Math.sin(nx * 10 - t * waveSpeed * 0.8 + 1.2) * (amplitude * 0.7) * envelope;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animId);
+  }, [running, update, result]);
+
   async function run() {
     if (controller.current) return;
     const session = new AbortController();
@@ -124,7 +210,6 @@ export function SpeedTest({
       if (measured.server) setServerInfo(measured.server);
       if (measured.client) setClientInfo(measured.client);
 
-      // Save to test history
       try {
         const item: TestHistoryItem = {
           id: crypto.randomUUID(),
@@ -149,27 +234,31 @@ export function SpeedTest({
       setNotice(
         err instanceof Error
           ? err.message
-          : uiText(
-              locale,
-              "Measurement could not be completed. Check connection.",
-              "Ölçüm tamamlanamadı. Ağ bağlantınızı kontrol edin."
-            )
+          : uiText(locale, "Speed test could not be completed.", "Hız testi tamamlanamadı.")
       );
     } finally {
-      if (controller.current === session) {
-        controller.current = null;
-        setRunning(false);
-      }
+      controller.current = null;
+      setRunning(false);
     }
   }
 
-  const liveValue = running ? update?.mbps : result?.download;
+  function stop() {
+    if (controller.current) {
+      controller.current.abort();
+      controller.current = null;
+      setRunning(false);
+    }
+  }
 
-  const bufferbloatDelta =
-    result?.loadedDownload != null && result?.idle != null
-      ? Math.max(0, result.loadedDownload - result.idle)
-      : null;
-  const bloat = getBufferbloatGrade(bufferbloatDelta);
+  const liveValue = update ? update.mbps : result ? result.download : null;
+
+  const bufferbloatDelta = useMemo(() => {
+    if (!result) return null;
+    const loaded = Math.max(result.loadedDownload ?? 0, result.loadedUpload ?? 0);
+    return loaded > 0 ? Math.max(0, loaded - result.idle) : null;
+  }, [result]);
+
+  const bloat = useMemo(() => getBufferbloatGrade(bufferbloatDelta), [bufferbloatDelta]);
 
   const shareUrl = useMemo(() => {
     if (!result || typeof window === "undefined") return "";
@@ -245,413 +334,412 @@ export function SpeedTest({
     } catch {}
   }
 
-  // Dial geometry calculations
-  const progressRatio = Math.min(1, Math.log10(1 + (liveValue ?? 0)) / 3.6);
-  const radius = 120;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - progressRatio);
+  // 240-degree Tachometer Math
+  // Center: (180, 160), Radius: 130. Sweep: 240 deg (from 150 deg to 390 deg)
+  const cx = 180;
+  const cy = 160;
+  const r = 130;
+  const startAngleDeg = 150;
+  const sweepDeg = 240;
+
+  const currentRatio = running && liveValue != null ? valToRatio(liveValue) : result ? valToRatio(result.download) : 0;
+  const currentAngleDeg = startAngleDeg + currentRatio * sweepDeg;
+  const currentAngleRad = (currentAngleDeg * Math.PI) / 180;
+
+  // Total perimeter of 240 deg arc
+  const arcLen = (2 * Math.PI * r * sweepDeg) / 360;
+  const fullCircumference = 2 * Math.PI * r;
+  const strokeDashoffset = arcLen * (1 - currentRatio);
+
+  // SVG arc path from start to end (for base background track)
+  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+    const rad = (angleInDegrees * Math.PI) / 180.0;
+    return {
+      x: centerX + radius * Math.cos(rad),
+      y: centerY + radius * Math.sin(rad),
+    };
+  };
+
+  const startPt = polarToCartesian(cx, cy, r, startAngleDeg);
+  const endPt = polarToCartesian(cx, cy, r, startAngleDeg + sweepDeg);
+  const baseArcD = `M ${startPt.x} ${startPt.y} A ${r} ${r} 0 1 1 ${endPt.x} ${endPt.y}`;
+
+  // Needle tip
+  const needleTip = {
+    x: cx + (r - 10) * Math.cos(currentAngleRad),
+    y: cy + (r - 10) * Math.sin(currentAngleRad),
+  };
 
   return (
-    <section className="relative mx-auto w-full max-w-[1100px] px-4 py-4 md:py-8" aria-label={dict.title}>
-      {/* Ambient background glow */}
-      <div className="relative overflow-hidden rounded-3xl border border-[#1F1F1F] bg-[#000000] p-6 shadow-2xl md:p-12">
+    <section className="relative mx-auto w-full max-w-[1140px] px-4 py-6 md:py-10" aria-label={dict.title}>
+      {/* Container Card with pure black background and hairline obsidian border */}
+      <div className="relative overflow-hidden rounded-[28px] border border-[#1C1D22] bg-[#000000] p-6 shadow-2xl md:p-10">
+        
+        {/* Subtle luminous ambient aura */}
         <div
-          className="pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.04)_0%,transparent_70%)] blur-2xl"
+          className="pointer-events-none absolute left-1/2 top-1/4 -translate-x-1/2 -translate-y-1/2 h-[450px] w-[650px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.035)_0%,transparent_75%)] blur-3xl"
           aria-hidden="true"
         />
 
-        {/* Top Floating Edge Telemetry Strip */}
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 border-b border-[#1A1A1A] pb-6 text-xs">
+        {/* Top Edge Telemetry Hub */}
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 border-b border-[#16171B] pb-6 text-xs font-mono">
           <div className="flex items-center gap-3">
-            <span className="flex h-2 w-2 relative">
-              <span className={`absolute inline-flex h-full w-full rounded-full ${running ? "bg-white animate-ping" : "bg-[#46D39A]"}`} />
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${running ? "bg-white" : "bg-[#46D39A]"}`} />
+            <span className="relative flex h-2 w-2">
+              <span className={`absolute inline-flex h-full w-full rounded-full ${running ? "bg-white animate-ping" : "bg-emerald-400 opacity-75"}`} />
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${running ? "bg-white" : "bg-emerald-400"}`} />
             </span>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-white">{serverInfo?.name || "IPScans Edge Network"}</span>
-              <span className="text-[#6E6E6E]">·</span>
-              <span className="text-[#A1A1A1]">{serverInfo?.location || "Nearest Edge Hub"}</span>
+              <span className="font-semibold text-white tracking-wide">{serverInfo?.name || "IPScans Verified Edge Hub"}</span>
+              <span className="text-[#4E5058]">·</span>
+              <span className="text-[#9E9E9E]">{serverInfo?.location || "Low-Latency Gateway"}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-[#A1A1A1] font-mono text-[11px]">
+          <div className="flex items-center gap-5 text-[#8E8E93] text-[11px]">
             <div>
-              <span className="text-[#6E6E6E] mr-1.5">IP:</span>
-              <span className="text-white">{clientInfo?.ip || "Detecting..."}</span>
-              {clientInfo?.country && <span className="ml-1 text-[#6E6E6E]">({clientInfo.country})</span>}
+              <span className="text-[#555558] mr-1.5">CLIENT IP:</span>
+              <span className="text-white font-medium">{clientInfo?.ip || "Auto-detecting"}</span>
+              {clientInfo?.country && <span className="ml-1 text-[#66666A]">({clientInfo.country})</span>}
             </div>
             <div className="hidden sm:block">
-              <span className="text-[#6E6E6E] mr-1.5">LOSS:</span>
-              <span className="text-white">{result ? `${result.packetLoss.toFixed(1)}%` : "0.0%"}</span>
+              <span className="text-[#555558] mr-1.5">PACKET LOSS:</span>
+              <span className="text-white font-medium">{result ? `${result.packetLoss.toFixed(1)}%` : "0.0%"}</span>
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowHistory(!showHistory)}
+                className="text-[#A1A1A6] hover:text-white transition-colors cursor-pointer border border-[#26262B] rounded-lg px-2.5 py-1 bg-[#090A0D]"
+              >
+                {showHistory ? uiText(locale, "Close History", "Geçmişi Kapat") : uiText(locale, "History", "Geçmiş")} ({history.length})
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Centerpiece Hero Interaction Area */}
-        <div className="relative z-10 my-10 flex flex-col items-center justify-center">
-          
-          {/* State 1: Ready to Test (Hypnotic Minimalist Trigger) */}
-          {!running && !result && (
-            <div className="flex flex-col items-center text-center">
+        {/* Center Tachometer / Performance Studio */}
+        <div className="relative z-10 my-8 flex flex-col items-center justify-center">
+
+          {/* Tachometer SVG Visualizer */}
+          <div className="relative flex h-[310px] w-full max-w-[420px] items-center justify-center">
+            <svg viewBox="0 0 360 300" className="h-full w-full overflow-visible" aria-hidden="true">
+              <defs>
+                <linearGradient id={`arcGrad-${gradientId}`} x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
+                  <stop offset="60%" stopColor="#FFFFFF" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#FFFFFF" stopOpacity="1" />
+                </linearGradient>
+
+                <filter id={`needleGlow-${gradientId}`} x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* Background Outer Border Ring */}
+              <circle cx={cx} cy={cy} r={r + 14} fill="none" stroke="rgba(255, 255, 255, 0.04)" strokeWidth="1" />
+
+              {/* Base Arc Track */}
+              <path
+                d={baseArcD}
+                fill="none"
+                stroke="#121317"
+                strokeWidth="10"
+                strokeLinecap="round"
+              />
+
+              {/* Calibrated Ticks & Numerical Speed Labels */}
+              {SPEED_TICKS.map((tick) => {
+                const ratio = valToRatio(tick.val);
+                const angleDeg = startAngleDeg + ratio * sweepDeg;
+                const innerPt = polarToCartesian(cx, cy, r - 12, angleDeg);
+                const outerPt = polarToCartesian(cx, cy, r + 4, angleDeg);
+                const textPt = polarToCartesian(cx, cy, r - 26, angleDeg);
+
+                return (
+                  <g key={tick.val}>
+                    <line
+                      x1={innerPt.x}
+                      y1={innerPt.y}
+                      x2={outerPt.x}
+                      y2={outerPt.y}
+                      stroke="rgba(255, 255, 255, 0.25)"
+                      strokeWidth="1.5"
+                    />
+                    <text
+                      x={textPt.x}
+                      y={textPt.y + 3.5}
+                      fill="#71717A"
+                      fontSize="9.5"
+                      fontFamily="monospace"
+                      fontWeight="600"
+                      textAnchor="middle"
+                    >
+                      {tick.label}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Active Sweeping Arc */}
+              <path
+                d={baseArcD}
+                fill="none"
+                stroke={`url(#arcGrad-${gradientId})`}
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeDasharray={`${arcLen} ${fullCircumference}`}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-150 ease-out"
+                filter={`url(#needleGlow-${gradientId})`}
+              />
+
+              {/* Center Hub & Needle */}
+              <circle cx={cx} cy={cy} r="6" fill="#FFFFFF" />
+              <circle cx={cx} cy={cy} r="18" fill="none" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1.5" />
+
+              {/* Glowing Precision Needle */}
+              <line
+                x1={cx}
+                y1={cy}
+                x2={needleTip.x}
+                y2={needleTip.y}
+                stroke="#FFFFFF"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                className="transition-all duration-150 ease-out"
+                filter={`url(#needleGlow-${gradientId})`}
+              />
+            </svg>
+
+            {/* Centerpiece Numerical Telemetry Readout */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 pointer-events-none">
+              
+              {/* Active Phase Pill */}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-0.5 font-mono text-[10px] font-semibold tracking-widest text-white uppercase backdrop-blur-sm">
+                <span className={`h-1.5 w-1.5 rounded-full ${running ? "bg-white animate-pulse" : "bg-[#46D39A]"}`} />
+                {!running && !result
+                  ? uiText(locale, "READY", "HAZIR")
+                  : update?.phase === "latency"
+                  ? uiText(locale, "PING & JITTER", "GECİKME ANALİZİ")
+                  : update?.phase === "download"
+                  ? uiText(locale, "DOWNLOAD STREAM", "İNDİRME TESTİ")
+                  : update?.phase === "upload"
+                  ? uiText(locale, "UPLOAD STREAM", "YÜKLEME TESTİ")
+                  : uiText(locale, "COMPLETED", "TEST TAMAMLANDI")}
+              </span>
+
+              {/* Huge Monospace Speed Value */}
+              <div className="my-1.5 flex items-baseline justify-center">
+                <span className="font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-white tabular-nums">
+                  {running && update?.phase === "latency"
+                    ? (update.ping ? update.ping.toFixed(0) : "...")
+                    : liveValue != null
+                    ? liveValue.toFixed(1)
+                    : "0.0"}
+                </span>
+              </div>
+
+              {/* Unit Tag */}
+              <span className="font-mono text-xs font-bold tracking-[0.2em] text-[#A1A1AA] uppercase">
+                {running && update?.phase === "latency" ? "MS (RTT)" : "Mbps"}
+              </span>
+            </div>
+          </div>
+
+          {/* 60 FPS Real-time Oscilloscope Waveform Canvas */}
+          <div className="w-full max-w-md h-12 mt-2 px-2">
+            <canvas
+              ref={canvasRef}
+              width={480}
+              height={48}
+              className="w-full h-full rounded-lg bg-[#050608] border border-[#16171B]"
+              aria-hidden="true"
+            />
+          </div>
+
+          {/* Primary Action Button Bar */}
+          <div className="mt-8 flex items-center justify-center gap-4">
+            {!running ? (
               <button
                 type="button"
                 onClick={run}
-                className="group relative flex h-48 w-48 sm:h-56 sm:w-56 items-center justify-center rounded-full border border-[#2E2E2E] bg-[#0A0A0A] p-2 transition-all duration-300 hover:border-white hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40 shadow-[0_0_50px_rgba(0,0,0,0.8)] cursor-pointer"
-                aria-label={dict.start}
+                className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-9 py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-black transition-all hover:bg-[#E8E8E8] hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer shadow-[0_0_30px_rgba(255,255,255,0.25)]"
               >
-                {/* Orbital pulse ring on hover */}
-                <span className="absolute -inset-1 rounded-full border border-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:animate-pulse" />
-                <span className="absolute -inset-4 rounded-full border border-white/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                
-                <div className="flex flex-col items-center justify-center">
-                  <span className="font-mono text-2xl sm:text-3xl font-bold tracking-[0.2em] text-white group-hover:text-white transition-colors">
-                    {uiText(locale, "START", "BAŞLAT")}
-                  </span>
-                  <span className="mt-2 text-[11px] font-mono uppercase tracking-widest text-[#6E6E6E] group-hover:text-[#A1A1A1] transition-colors">
-                    {uiText(locale, "PRECISION TEST", "HASSAS ÖLÇÜM")}
-                  </span>
-                </div>
+                <span>{result ? dict.restart : dict.start}</span>
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
               </button>
+            ) : (
+              <button
+                type="button"
+                onClick={stop}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-red-500/40 bg-red-500/10 px-8 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-red-400 hover:bg-red-500/20 active:scale-95 cursor-pointer transition-colors"
+              >
+                <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
+                <span>{uiText(locale, "Cancel Test", "Testi Durdur")}</span>
+              </button>
+            )}
 
-              <p className="mt-8 text-xs text-[#6E6E6E] max-w-sm">
-                {uiText(
-                  locale,
-                  "Multi-stream bandwidth analysis · Loaded latency & bufferbloat grading · RFC 3550 jitter",
-                  "Çok kanallı bant genişliği analizi · Yüklü gecikme ve bufferbloat notu · RFC 3550 jitter"
-                )}
-              </p>
-            </div>
-          )}
-
-          {/* State 2: Running (Fluid Luminous Precision Tachometer) */}
-          {running && (
-            <div className="flex flex-col items-center text-center">
-              {/* Dial Container */}
-              <div className="relative flex h-64 w-64 sm:h-72 sm:w-72 items-center justify-center">
-                <svg viewBox="0 0 280 280" className="h-full w-full -rotate-90 transform" aria-hidden="true">
-                  <defs>
-                    <linearGradient id={`pulseGrad-${gradientId}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#FFFFFF" />
-                      <stop offset="50%" stopColor="#A1A1A1" />
-                      <stop offset="100%" stopColor="#333333" />
-                    </linearGradient>
-                    <filter id={`luminousGlow-${gradientId}`} x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="8" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-
-                  {/* Outer delicate ring */}
-                  <circle cx="140" cy="140" r="132" fill="none" stroke="#1F1F1F" strokeWidth="1" />
-                  
-                  {/* Base Track */}
-                  <circle cx="140" cy="140" r={radius} fill="none" stroke="#141414" strokeWidth="6" />
-
-                  {/* Active Fluid Arc */}
-                  <circle
-                    cx="140"
-                    cy="140"
-                    r={radius}
-                    fill="none"
-                    stroke={`url(#pulseGrad-${gradientId})`}
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    className="transition-all duration-150 ease-out"
-                    filter={`url(#luminousGlow-${gradientId})`}
-                  />
-                </svg>
-
-                {/* Digital Center Readout */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-white uppercase">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                    {update?.phase === "latency"
-                      ? uiText(locale, "PING & JITTER", "GECİKME & JITTER")
-                      : update?.phase === "download"
-                        ? uiText(locale, "DOWNLOAD", "İNDİRME")
-                        : uiText(locale, "UPLOAD", "YÜKLEME")}
-                  </span>
-
-                  <div className="my-1 flex items-baseline justify-center">
-                    <span className="font-mono text-5xl sm:text-6xl font-bold tracking-tight text-white tabular-nums">
-                      {liveValue != null && update?.phase !== "latency"
-                        ? liveValue.toFixed(1)
-                        : update?.phase === "latency"
-                          ? (update?.ping ? update.ping.toFixed(0) : "...")
-                          : "0.0"}
-                    </span>
-                  </div>
-
-                  <span className="font-mono text-xs font-semibold tracking-widest text-[#A1A1A1] uppercase">
-                    {update?.phase === "latency" ? "MS (RTT)" : "Mbps"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress Steps Indicator */}
-              <div className="mt-6 flex items-center gap-6 text-xs font-mono">
-                <span className={update?.phase === "latency" ? "text-white font-semibold" : "text-[#6E6E6E]"}>
-                  1. Ping
-                </span>
-                <span className="text-[#2E2E2E]">/</span>
-                <span className={update?.phase === "download" ? "text-white font-semibold" : "text-[#6E6E6E]"}>
-                  2. Download
-                </span>
-                <span className="text-[#2E2E2E]">/</span>
-                <span className={update?.phase === "upload" ? "text-white font-semibold" : "text-[#6E6E6E]"}>
-                  3. Upload
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* State 3: Completed (Executive Performance Studio) */}
-          {result && !running && (
-            <div className="w-full flex flex-col items-center">
-              
-              {/* Dual Hero Throughput Metrics */}
-              <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 max-w-2xl">
-                
-                {/* Download Hero Card */}
-                <div className="relative overflow-hidden rounded-2xl border border-[#2E2E2E] bg-[#0A0A0A] p-6 text-left transition-all hover:border-[#404040]">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-semibold tracking-wider text-[#A1A1A1] uppercase">
-                      {dict.download}
-                    </span>
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white text-xs">
-                      ↓
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-baseline gap-2">
-                    <span className="font-mono text-5xl font-bold tracking-tight text-white tabular-nums">
-                      {result.download.toFixed(1)}
-                    </span>
-                    <span className="font-mono text-sm font-semibold text-[#A1A1A1]">Mbps</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-[#6E6E6E] font-mono border-t border-[#1F1F1F] pt-2.5">
-                    <span>Peak: {(result.download * 1.08).toFixed(1)} Mbps</span>
-                    <span>Loaded: {result.loadedDownload ? `${result.loadedDownload.toFixed(0)} ms` : "—"}</span>
-                  </div>
-                </div>
-
-                {/* Upload Hero Card */}
-                <div className="relative overflow-hidden rounded-2xl border border-[#2E2E2E] bg-[#0A0A0A] p-6 text-left transition-all hover:border-[#404040]">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-semibold tracking-wider text-[#A1A1A1] uppercase">
-                      {dict.upload}
-                    </span>
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white text-xs">
-                      ↑
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-baseline gap-2">
-                    <span className="font-mono text-5xl font-bold tracking-tight text-white tabular-nums">
-                      {result.upload.toFixed(1)}
-                    </span>
-                    <span className="font-mono text-sm font-semibold text-[#A1A1A1]">Mbps</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-[#6E6E6E] font-mono border-t border-[#1F1F1F] pt-2.5">
-                    <span>Peak: {(result.upload * 1.05).toFixed(1)} Mbps</span>
-                    <span>Loaded: {result.loadedUpload ? `${result.loadedUpload.toFixed(0)} ms` : "—"}</span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* 4 Secondary Telemetry Metrics Strip */}
-              <div className="mt-6 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4 font-mono">
-                
-                <div className="rounded-xl border border-[#1F1F1F] bg-[#080808] p-3 text-center">
-                  <span className="text-[10px] text-[#6E6E6E] uppercase block">{dict.ping} (IDLE)</span>
-                  <span className="text-lg font-bold text-white mt-0.5 block">{result.idle.toFixed(1)} ms</span>
-                  <span className="text-[10px] text-[#A1A1A1] block">Min: {result.minPing.toFixed(1)} ms</span>
-                </div>
-
-                <div className="rounded-xl border border-[#1F1F1F] bg-[#080808] p-3 text-center">
-                  <span className="text-[10px] text-[#6E6E6E] uppercase block">JITTER</span>
-                  <span className="text-lg font-bold text-white mt-0.5 block">{result.jitter ? `${result.jitter.toFixed(1)} ms` : "—"}</span>
-                  <span className="text-[10px] text-[#A1A1A1] block">RFC 3550</span>
-                </div>
-
-                <div className="rounded-xl border border-[#1F1F1F] bg-[#080808] p-3 text-center">
-                  <span className="text-[10px] text-[#6E6E6E] uppercase block">BUFFERBLOAT</span>
-                  <span className="text-lg font-bold text-white mt-0.5 block">Grade {bloat.grade}</span>
-                  <span className="text-[10px] text-[#A1A1A1] block">+{bufferbloatDelta ? `${bufferbloatDelta.toFixed(0)}ms` : "0ms"}</span>
-                </div>
-
-                <div className="rounded-xl border border-[#1F1F1F] bg-[#080808] p-3 text-center">
-                  <span className="text-[10px] text-[#6E6E6E] uppercase block">REQUEST LOSS</span>
-                  <span className="text-lg font-bold text-white mt-0.5 block">{result.packetLoss.toFixed(1)}%</span>
-                  <span className="text-[10px] text-[#A1A1A1] block">{result.requestsFailed} dropped</span>
-                </div>
-
-              </div>
-
-              {/* Real-time Throughput Spline Curve */}
-              {trace.length > 5 && (
-                <div className="mt-6 w-full max-w-2xl rounded-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4">
-                  <div className="flex items-center justify-between text-xs text-[#6E6E6E] font-mono mb-2">
-                    <span>LIVE THROUGHPUT CURVE</span>
-                    <span className="flex items-center gap-3">
-                      <span className="flex items-center gap-1 text-white text-[10px]">
-                        <span className="h-1.5 w-3 rounded-full bg-white inline-block" /> Download
-                      </span>
-                      <span className="flex items-center gap-1 text-[#6E6E6E] text-[10px]">
-                        <span className="h-1.5 w-3 rounded-full bg-[#6E6E6E] inline-block" /> Upload
-                      </span>
-                    </span>
-                  </div>
-                  <div className="h-28 w-full">
-                    <svg viewBox="0 0 500 100" preserveAspectRatio="none" className="h-full w-full">
-                      <defs>
-                        <linearGradient id={`chartFill-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      {/* Grid lines */}
-                      <line x1="0" y1="25" x2="500" y2="25" stroke="#1A1A1A" strokeWidth="1" strokeDasharray="3 3" />
-                      <line x1="0" y1="50" x2="500" y2="50" stroke="#1A1A1A" strokeWidth="1" strokeDasharray="3 3" />
-                      <line x1="0" y1="75" x2="500" y2="75" stroke="#1A1A1A" strokeWidth="1" strokeDasharray="3 3" />
-
-                      {/* Area & line curve */}
-                      {(() => {
-                        const maxVal = Math.max(1, ...trace.map((p) => p.mbps));
-                        const pts = trace.map((p, idx) => {
-                          const x = (idx / (trace.length - 1)) * 500;
-                          const y = 95 - (p.mbps / maxVal) * 85;
-                          return `${x.toFixed(1)},${y.toFixed(1)}`;
-                        });
-                        const pathD = `M 0,95 L ${pts.join(" L ")} L 500,95 Z`;
-                        const lineD = `M ${pts.join(" L ")}`;
-                        return (
-                          <>
-                            <path d={pathD} fill={`url(#chartFill-${gradientId})`} />
-                            <path d={lineD} fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-                          </>
-                        );
-                      })()}
-                    </svg>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons Row */}
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={run}
-                  className="rounded-full bg-white px-7 py-3 font-mono text-xs font-semibold text-black transition-all hover:bg-[#E0E0E0] active:scale-95 cursor-pointer shadow-lg"
-                >
-                  {dict.restart}
-                </button>
-
+            {result && !running && (
+              <>
                 <button
                   type="button"
                   onClick={share}
-                  className="rounded-full border border-[#2E2E2E] bg-[#111111] px-6 py-3 font-mono text-xs font-medium text-white transition-all hover:border-white hover:bg-[#1A1A1A] active:scale-95 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#2B2C33] bg-[#0E0F14] px-6 py-3 font-mono text-xs font-semibold text-white hover:border-white/30 hover:bg-[#14161D] cursor-pointer transition-all"
                 >
-                  {uiText(locale, "Share Result", "Sonucu Paylaş")}
+                  <span>🔗</span>
+                  <span>{uiText(locale, "Share", "Paylaş")}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={exportResult}
-                  className="rounded-full border border-[#1F1F1F] bg-transparent px-5 py-3 font-mono text-xs text-[#A1A1A1] transition-all hover:border-[#404040] hover:text-white cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#2B2C33] bg-[#0E0F14] px-6 py-3 font-mono text-xs font-semibold text-white hover:border-white/30 hover:bg-[#14161D] cursor-pointer transition-all"
                 >
-                  JSON
+                  <span>⬇</span>
+                  <span>JSON</span>
                 </button>
+              </>
+            )}
+          </div>
 
-                {history.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowHistory(!showHistory)}
-                    className="rounded-full border border-[#1F1F1F] bg-transparent px-5 py-3 font-mono text-xs text-[#A1A1A1] transition-all hover:border-[#404040] hover:text-white cursor-pointer"
-                  >
-                    {showHistory
-                      ? uiText(locale, "Hide History", "Geçmişi Gizle")
-                      : `${uiText(locale, "History", "Geçmiş")} (${history.length})`}
-                  </button>
-                )}
-              </div>
-
-            </div>
+          {notice && (
+            <p className="mt-4 text-center font-mono text-xs text-[#A1A1A6] max-w-md">
+              {notice}
+            </p>
           )}
 
         </div>
 
-        {/* Floating Notification Toast */}
-        {notice && (
-          <div className="mt-4 flex items-center justify-between rounded-xl border border-white/20 bg-[#111111] px-4 py-2.5 text-xs text-white">
-            <span>{notice}</span>
-            <button
-              type="button"
-              onClick={() => setNotice("")}
-              className="ml-4 font-mono text-xs text-[#A1A1A1] hover:text-white"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {/* Collapsible Measurement History Drawer */}
-        {showHistory && history.length > 0 && (
-          <div className="mt-8 border-t border-[#1F1F1F] pt-6 font-mono">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#A1A1A1]">
-                {uiText(locale, "Recent Test History (Local)", "Son Test Geçmişi (Yerel)")}
+        {/* Executive Telemetry Grid */}
+        <div className="relative z-10 mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 font-mono">
+          
+          {/* Download Card */}
+          <div className="rounded-2xl border border-[#1C1D24] bg-[#07080B] p-5 text-left transition-all hover:border-[#2C2D36]">
+            <div className="flex items-center justify-between text-xs text-[#8E8E93]">
+              <span className="font-semibold uppercase tracking-wider">{dict.download}</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white text-[11px]">↓</span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold text-white tracking-tight tabular-nums">
+                {result ? result.download.toFixed(1) : (update?.phase === "download" ? update.mbps.toFixed(1) : "—")}
               </span>
-              <button
-                type="button"
-                onClick={clearHistory}
-                className="text-[11px] text-[#6E6E6E] hover:text-white underline cursor-pointer"
-              >
-                {uiText(locale, "Clear History", "Geçmişi Temizle")}
-              </button>
+              <span className="text-xs font-semibold text-[#8E8E93]">Mbps</span>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between border-t border-[#16171E] pt-2 text-[10px] text-[#636366]">
+              <span>Loaded: {result?.loadedDownload ? `${result.loadedDownload.toFixed(0)} ms` : "—"}</span>
+              <span>{result ? `${((result.download * 1.25) / 10).toFixed(0)} MB` : "Multi-stream"}</span>
+            </div>
+          </div>
+
+          {/* Upload Card */}
+          <div className="rounded-2xl border border-[#1C1D24] bg-[#07080B] p-5 text-left transition-all hover:border-[#2C2D36]">
+            <div className="flex items-center justify-between text-xs text-[#8E8E93]">
+              <span className="font-semibold uppercase tracking-wider">{dict.upload}</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white text-[11px]">↑</span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold text-white tracking-tight tabular-nums">
+                {result ? result.upload.toFixed(1) : (update?.phase === "upload" ? update.mbps.toFixed(1) : "—")}
+              </span>
+              <span className="text-xs font-semibold text-[#8E8E93]">Mbps</span>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between border-t border-[#16171E] pt-2 text-[10px] text-[#636366]">
+              <span>Loaded: {result?.loadedUpload ? `${result.loadedUpload.toFixed(0)} ms` : "—"}</span>
+              <span>{result ? `${((result.upload * 1.25) / 10).toFixed(0)} MB` : "Multi-stream"}</span>
+            </div>
+          </div>
+
+          {/* Latency & Jitter Card */}
+          <div className="rounded-2xl border border-[#1C1D24] bg-[#07080B] p-5 text-left transition-all hover:border-[#2C2D36]">
+            <div className="flex items-center justify-between text-xs text-[#8E8E93]">
+              <span className="font-semibold uppercase tracking-wider">{dict.ping} & JITTER</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white text-[11px]">⚡</span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold text-white tracking-tight tabular-nums">
+                {result ? result.idle.toFixed(1) : (update?.ping ? update.ping.toFixed(0) : "—")}
+              </span>
+              <span className="text-xs font-semibold text-[#8E8E93]">ms</span>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between border-t border-[#16171E] pt-2 text-[10px] text-[#636366]">
+              <span>Jitter: {result?.jitter ? `${result.jitter.toFixed(1)} ms` : "RFC 3550"}</span>
+              <span>Min: {result ? `${result.minPing.toFixed(1)} ms` : "—"}</span>
+            </div>
+          </div>
+
+          {/* Bufferbloat Grade Card */}
+          <div className="rounded-2xl border border-[#1C1D24] bg-[#07080B] p-5 text-left transition-all hover:border-[#2C2D36]">
+            <div className="flex items-center justify-between text-xs text-[#8E8E93]">
+              <span className="font-semibold uppercase tracking-wider">BUFFERBLOAT</span>
+              <span className={`inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-bold ${bloat.badgeClass}`}>
+                {bloat.grade}
+              </span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold text-white tracking-tight tabular-nums">
+                {bufferbloatDelta != null ? `+${bufferbloatDelta.toFixed(0)}` : "—"}
+              </span>
+              <span className="text-xs font-semibold text-[#8E8E93]">ms delta</span>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between border-t border-[#16171E] pt-2 text-[10px] text-[#636366]">
+              <span className="truncate">{bloat.desc.split("·")[0]}</span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Test History Drawer */}
+        {showHistory && (
+          <div className="relative z-10 mt-8 rounded-2xl border border-[#1C1D24] bg-[#07080B] p-6 font-mono">
+            <div className="flex items-center justify-between pb-4 border-b border-[#16171E]">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                {uiText(locale, "Telemetry Measurement History", "Ölçüm Geçmişi ve Karşılaştırma")}
+              </span>
+              {history.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearHistory}
+                  className="text-[11px] text-[#8E8E93] hover:text-white transition-colors cursor-pointer"
+                >
+                  {uiText(locale, "Clear History", "Geçmişi Temizle")}
+                </button>
+              )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#1A1A1A] text-[#6E6E6E] text-[10px]">
-                    <th className="py-2 font-medium">DATE</th>
-                    <th className="py-2 font-medium">DOWNLOAD</th>
-                    <th className="py-2 font-medium">UPLOAD</th>
-                    <th className="py-2 font-medium">PING</th>
-                    <th className="py-2 font-medium">SERVER</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#141414] text-[#E0E0E0]">
-                  {history.map((item, idx) => {
-                    const prev = history[idx + 1];
-                    const dlDiff = prev ? item.download - prev.download : null;
-                    return (
+            {history.length === 0 ? (
+              <p className="py-6 text-center text-xs text-[#636366]">
+                {uiText(locale, "No previous measurements recorded.", "Kayıtlı ölçüm bulunmuyor.")}
+              </p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#16171E] text-[#8E8E93]">
+                      <th className="py-2.5 font-medium">TIMESTAMP</th>
+                      <th className="py-2.5 font-medium">DOWNLOAD</th>
+                      <th className="py-2.5 font-medium">UPLOAD</th>
+                      <th className="py-2.5 font-medium">PING</th>
+                      <th className="py-2.5 font-medium">JITTER</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#121318] text-white">
+                    {history.map((item) => (
                       <tr key={item.id} className="hover:bg-white/[0.02]">
-                        <td className="py-2.5 text-[#6E6E6E] text-[11px]">
-                          {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="py-2.5 font-bold text-white">
-                          {item.download.toFixed(1)} Mbps
-                          {dlDiff != null && (
-                            <span className={`ml-1 text-[10px] ${dlDiff >= 0 ? "text-[#46D39A]" : "text-[#A1A1A1]"}`}>
-                              {dlDiff >= 0 ? `+${dlDiff.toFixed(1)}` : dlDiff.toFixed(1)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5">{item.upload.toFixed(1)} Mbps</td>
+                        <td className="py-2.5 text-[#8E8E93]">{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td className="py-2.5 font-bold text-white">{item.download.toFixed(1)} Mbps</td>
+                        <td className="py-2.5 font-bold text-white">{item.upload.toFixed(1)} Mbps</td>
                         <td className="py-2.5">{item.ping.toFixed(1)} ms</td>
-                        <td className="py-2.5 text-[#6E6E6E] truncate max-w-[120px]">{item.server || "Edge Core"}</td>
+                        <td className="py-2.5">{item.jitter ? `${item.jitter.toFixed(1)} ms` : "—"}</td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

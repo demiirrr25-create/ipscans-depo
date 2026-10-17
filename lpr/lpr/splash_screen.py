@@ -339,11 +339,11 @@ class LPRProSplash(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.addLayout(self._stack)
 
+        self._stack.setCurrentIndex(0)  # Always start with serene Hello stage
         if self._mode == "splash":
-            self._stack.setCurrentIndex(3)
+            QTimer.singleShot(1400, self._auto_advance_hello)
         else:
-            self._stack.setCurrentIndex(0)
-            QTimer.singleShot(2400, self._auto_advance_hello)
+            QTimer.singleShot(2200, self._auto_advance_hello)
 
     def set_target_window(self, target_window: QWidget) -> None:
         self._target_window = target_window
@@ -354,6 +354,13 @@ class LPRProSplash(QWidget):
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._canvas.setGeometry(self.rect())
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802
+        if self._stack.currentIndex() == 0:
+            self._auto_advance_hello()
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
     def keyPressEvent(self, event) -> None:  # noqa: N802
         if event.key() == Qt.Key.Key_Escape:
@@ -366,6 +373,10 @@ class LPRProSplash(QWidget):
                 self.close()
             event.accept()
             return
+        if self._stack.currentIndex() == 0 and event.key() in (Qt.Key.Key_Space, Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self._auto_advance_hello()
+            event.accept()
+            return
         super().keyPressEvent(event)
 
     # ----------------------------------------------------------- Stage 0: Hello
@@ -373,63 +384,48 @@ class LPRProSplash(QWidget):
         stage = QWidget()
         layout = QVBoxLayout(stage)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.setSpacing(12)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        logo_lbl = QLabel()
-        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        logo_lbl.setPixmap(self._logo_pixmap)
-        layout.addWidget(logo_lbl)
-        layout.addSpacing(16)
-
-        self._hello_title = QLabel("Merhaba")
+        # Pure, minimal, luminous "Hello" / "Merhaba" matching Windows 11 Pro OOBE
+        hello_text = "Merhaba" if self.lang == "tr" else "Hello"
+        self._hello_title = QLabel(hello_text)
         self._hello_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._hello_title.setStyleSheet(
-            "font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; "
-            "font-size: 56px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.6px;"
+            "font-family: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, sans-serif; "
+            "font-size: 68px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.6px; "
+            "background: transparent;"
         )
         layout.addWidget(self._hello_title)
 
-        self._hello_subtitle = QLabel("IPScans LPR Pro İstasyonuna Hoş Geldiniz")
-        self._hello_subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._hello_subtitle.setStyleSheet(
-            "font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
-            "font-size: 15px; font-weight: 500; color: #A1A1A1; letter-spacing: 0.4px;"
-        )
-        layout.addWidget(self._hello_subtitle)
-        layout.addSpacing(28)
+        opacity = QGraphicsOpacityEffect(stage)
+        stage.setGraphicsEffect(opacity)
+        self._hello_opacity = opacity
 
-        start_btn = QPushButton("Başlamak için tıklayın  →")
-        start_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        start_btn.setStyleSheet(
-            """
-            QPushButton {
-                background-color: rgba(255, 255, 255, 0.08);
-                color: #FFFFFF;
-                border: 1px solid rgba(255, 255, 255, 0.18);
-                border-radius: 20px;
-                padding: 10px 24px;
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 13px;
-                font-weight: 600;
-            }
-            QPushButton:hover {
-                background-color: #FFFFFF;
-                color: #000000;
-                border-color: #FFFFFF;
-            }
-            """
-        )
-        start_btn.clicked.connect(lambda: self._go_stage(1))
-        btn_box = QHBoxLayout()
-        btn_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        btn_box.addWidget(start_btn)
-        layout.addLayout(btn_box)
+        anim = QPropertyAnimation(opacity, b"opacity")
+        anim.setDuration(1100)
+        anim.setStartValue(0.0)
+        anim.setEndValue(1.0)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        anim.start()
+        self._hello_anim = anim
 
         self._stack.addWidget(stage)
 
     def _auto_advance_hello(self) -> None:
-        if self._stack.currentIndex() == 0:
-            self._go_stage(1)
+        if self._stack.currentIndex() != 0:
+            return
+        target = 3 if self._mode == "splash" else 1
+        if hasattr(self, "_hello_opacity"):
+            fade_out = QPropertyAnimation(self._hello_opacity, b"opacity")
+            fade_out.setDuration(350)
+            fade_out.setStartValue(1.0)
+            fade_out.setEndValue(0.0)
+            fade_out.setEasingCurve(QEasingCurve.Type.InCubic)
+            fade_out.finished.connect(lambda: self._go_stage(target))
+            fade_out.start()
+            self._hello_fade_out = fade_out
+        else:
+            self._go_stage(target)
 
     # ------------------------------------------------- Stage 1: Feature Showcase
     def _build_showcase_stage(self) -> None:

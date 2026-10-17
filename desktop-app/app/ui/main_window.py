@@ -86,31 +86,53 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         body = QVBoxLayout(self)
-        body.setContentsMargins(24, 20, 24, 16)
-        body.setSpacing(14)
+        body.setContentsMargins(24, 18, 24, 16)
+        body.setSpacing(12)
+
+        # 1. Executive Top Header
         heading = QHBoxLayout()
+        heading.setSpacing(12)
+
         logo = QLabel()
-        logo.setPixmap(load_logo_pixmap(36))
-        logo.setFixedSize(36, 36)
+        logo.setPixmap(load_logo_pixmap(32))
+        logo.setFixedSize(32, 32)
         heading.addWidget(logo)
-        heading.addSpacing(8)
+
         title_label = QLabel("IPscans+", objectName="TitleText")
-        title_label.setStyleSheet("font-size: 20px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.3px;")
+        title_label.setStyleSheet("font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 19px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.4px;")
         heading.addWidget(title_label)
+
         heading.addStretch()
+
+        self.navigation = QTabBar()
+        self.navigation.setDrawBase(False)
+        self.navigation.setAccessibleName(t(self.lang, "navigation"))
+        self.navigation.addTab(self._v4("Scan", "Tara"))
+        self.navigation.addTab(t(self.lang, "network_map"))
+        heading.addWidget(self.navigation)
+
+        heading.addStretch()
+
+        # Export & Info buttons in Header
+        self.export_button = QPushButton(self._v4("Export Report", "Raporu Dışa Aktar"))
+        self.export_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.export_button.setToolTip(self._v4("Save a PDF with your device names", "Cihaz isimlerinizi içeren PDF raporu kaydedin"))
+        self.export_button.clicked.connect(self._export)
+        heading.addWidget(self.export_button)
+
         self.tour_btn = QPushButton(
-            self._v4("  Setup & Features", "  Kurulum & Özellikler"),
+            self._v4("Overview", "Tanıtım"),
             objectName="TourButton",
         )
         self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.tour_btn.setStyleSheet(
             "QPushButton#TourButton {"
             "  background-color: rgba(255, 255, 255, 0.05);"
-            "  color: #A1A1A1;"
+            "  color: #8A8F98;"
             "  border: 1px solid rgba(255, 255, 255, 0.12);"
             "  border-radius: 16px;"
             "  padding: 6px 14px;"
-            "  font-size: 12px;"
+            "  font-size: 11.5px;"
             "  font-weight: 500;"
             "}"
             "QPushButton#TourButton:hover {"
@@ -121,21 +143,16 @@ class MainWindow(QWidget):
         )
         self.tour_btn.clicked.connect(self._open_feature_tour)
         heading.addWidget(self.tour_btn)
-        heading.addSpacing(8)
-        self.navigation = QTabBar()
-        self.navigation.setDrawBase(False)
-        self.navigation.setAccessibleName(t(self.lang, "navigation"))
-        self.navigation.addTab(self._v4("Scan", "Tara"))
-        self.navigation.addTab(t(self.lang, "network_map"))
-        heading.addWidget(self.navigation)
+
         body.addLayout(heading)
         self.welcome_stage = QWidget(self)
         self.welcome_stage.setVisible(False)
 
+        # 2. Consolidated Obsidian Command Bar
         self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
-        scan.setContentsMargins(18, 14, 18, 14)
-        scan.setSpacing(10)
+        scan.setContentsMargins(16, 12, 16, 12)
+        scan.setSpacing(6)
 
         cmd_row = QHBoxLayout()
         cmd_row.setSpacing(8)
@@ -143,17 +160,32 @@ class MainWindow(QWidget):
         self.adapter_select = QComboBox()
         self.adapter_select.setAccessibleName(t(self.lang, "current_adapter"))
         self.adapter_select.currentIndexChanged.connect(self._adapter_changed)
-        self.adapter_select.setMinimumWidth(240)
+        self.adapter_select.setMinimumWidth(210)
         cmd_row.addWidget(self.adapter_select)
 
         refresh = QPushButton("↻")
         refresh.setToolTip(t(self.lang, "refresh_adapters"))
-        refresh.setFixedWidth(36)
+        refresh.setFixedWidth(32)
         refresh.clicked.connect(self._refresh_adapters)
         cmd_row.addWidget(refresh)
 
         self.target_input = TargetInput(self.lang)
-        cmd_row.addWidget(self.target_input, stretch=1)
+        cmd_row.addWidget(self.target_input)
+
+        self.filter_edit = QLineEdit()
+        self.filter_edit.setAccessibleName(t(self.lang, "search_placeholder"))
+        self.filter_edit.setPlaceholderText(self._v4("Search devices (IP, MAC, name, port)...", "Cihaz ara (IP, MAC, isim, port)..."))
+        self.filter_edit.setToolTip('ip:192.168.1.0/24  port:443  vendor:Axis  type:"IP Camera"')
+        self.filter_edit.textChanged.connect(self._filter)
+        cmd_row.addWidget(self.filter_edit, stretch=1)
+
+        self.columns_button = QPushButton(t(self.lang, "columns"))
+        self.columns_button.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
+        cmd_row.addWidget(self.columns_button)
+
+        self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
+        self.conflicts_button.clicked.connect(self._show_conflicts)
+        cmd_row.addWidget(self.conflicts_button)
 
         self.scan_btn = QPushButton(t(self.lang, "start_scan"), objectName="PrimaryButton")
         self.stop_btn = QPushButton(t(self.lang, "stop_scan"))
@@ -167,42 +199,26 @@ class MainWindow(QWidget):
         sub_row = QHBoxLayout()
         self.adapter_details = QLabel(t(self.lang, "detecting_adapter"), objectName="SubtitleText")
         self.range_estimate = QLabel(t(self.lang, "range_hint"), objectName="SubtitleText")
+        self.summary_label = QLabel(objectName="ResultsHeading")
+        self.summary_label.setWordWrap(True)
         sub_row.addWidget(self.adapter_details)
+        sub_row.addSpacing(14)
+        sub_row.addWidget(self.summary_label)
         sub_row.addStretch()
         sub_row.addWidget(self.range_estimate)
         scan.addLayout(sub_row)
 
         body.addWidget(self.scan_controls)
+
+        # 3. Main Views Stack
         self.pages = QStackedWidget()
         body.addWidget(self.pages, stretch=1)
+
         self.workspace = QWidget()
         workspace = QVBoxLayout(self.workspace)
         workspace.setContentsMargins(0, 0, 0, 0)
-        self.summary_label = QLabel(objectName="ResultsHeading")
-        self.summary_label.setWordWrap(True)
-        workspace.addWidget(self.summary_label)
-        filters = QHBoxLayout()
-        self.filter_edit = QLineEdit()
-        self.filter_edit.setPlaceholderText(t(self.lang, "search_placeholder"))
-        self.filter_edit.setAccessibleName(t(self.lang, "search_placeholder"))
-        self.filter_edit.setPlaceholderText(self._v4('Search devices…  port:443  source:ONVIF  -type:Unknown',
-            'Cihaz ara…  port:443  source:ONVIF  -type:Unknown'))
-        self.filter_edit.setToolTip('ip:192.168.1.0/24  port:443  vendor:Axis  type:"IP Camera"  source:ONVIF  -type:Unknown')
-        self.filter_edit.textChanged.connect(self._filter)
-        filters.addWidget(self.filter_edit, stretch=1)
-        columns = QPushButton(t(self.lang, "columns"))
-        columns.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
-        filters.addWidget(columns)
-        self.columns_button = columns
-        self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
-        self.conflicts_button.clicked.connect(self._show_conflicts)
-        filters.addWidget(self.conflicts_button)
-        export = QPushButton(self._v4('Export report', 'Raporu dışa aktar'))
-        self.export_button = export
-        export.setToolTip(self._v4('Save a PDF with your device names', 'Cihaz isimlerinizi içeren PDF raporu kaydedin'))
-        export.clicked.connect(self._export)
-        filters.addWidget(export)
-        workspace.addLayout(filters)
+        workspace.setSpacing(0)
+
         self.views = QStackedWidget()
         self.table = self._build_table()
         self.network_map = NetworkMap(self.lang)
@@ -213,17 +229,24 @@ class MainWindow(QWidget):
         self.views.addWidget(self.network_map)
         workspace.addWidget(self.views, stretch=1)
         self.pages.addWidget(self.workspace)
+
+        # 4. Luminous Progress & Bottom Telemetry
         self.progress_bar = ScanProgress(self)
         self.progress_bar.setAccessibleName(self._v4("Scan progress", "Tarama ilerlemesi"))
         self.progress_bar.setVisible(False)
         body.addWidget(self.progress_bar)
+
+        status_row = QHBoxLayout()
         self.status_label = QLabel(t(self.lang, "status_ready"), objectName="StatusLabel")
         self.status_label.setWordWrap(True)
-        body.addWidget(self.status_label)
+        status_row.addWidget(self.status_label, stretch=1)
+        body.addLayout(status_row)
+
         self.warning_label = QLabel()
         self.warning_label.setWordWrap(True)
         self.warning_label.setVisible(False)
         body.addWidget(self.warning_label)
+
         self.navigation.currentChanged.connect(self._navigate)
         self.navigation.setCurrentIndex(0)
         self._update_summary()

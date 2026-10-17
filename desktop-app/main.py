@@ -222,59 +222,50 @@ def main() -> None:
     sys.exit(app.exec())
 
 
+def _is_oobe_needed() -> bool:
+    from PyQt6.QtCore import QSettings
+    settings = QSettings("ipscans", "NetworkScanner")
+    if not settings.value("oobe_v5_completed", False, type=bool):
+        return True
+    return bool(_pending_onboarding_steps())
+
+
 def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
-    steps = _pending_onboarding_steps()
     language = get_saved_language() or DEFAULT_LANGUAGE
     no_splash = "--no-splash" in sys.argv
 
+    window = MainWindow(language)
+    window.setWindowIcon(app_icon)
+    app.window_ref = window
+
     if no_splash:
-        window = MainWindow(language)
-        window.setWindowIcon(app_icon)
-        app.window_ref = window
         window.show()
         _log("Main window shown OK (--no-splash)")
         return
 
     from app.ui.win11_oobe import Win11OOBEWindow
 
-    # First Run: Full-screen Windows 11 Pro OOBE (Hello -> Showcase -> EULA -> Loading -> Window)
-    if steps:
-        window = MainWindow(language)
-        window.setWindowIcon(app_icon)
-        app.window_ref = window
+    force_oobe = "--oobe" in sys.argv or "--wizard" in sys.argv
+    needs_oobe = force_oobe or _is_oobe_needed()
+    mode = "oobe" if needs_oobe else "splash"
 
-        oobe = Win11OOBEWindow(
-            app_name="IPscans+",
-            edition_label="HIGH PERFORMANCE NETWORK INTELLIGENCE",
-            mode="oobe",
-            language=language,
-            target_window=window,
-        )
-        oobe.showFullScreen()
-        return
-
-    # Subsequent Runs: Full-screen cinematic splash with SpatialParticles
-    window = MainWindow(language)
-    window.setWindowIcon(app_icon)
-    app.window_ref = window
-
-    splash = Win11OOBEWindow(
+    oobe = Win11OOBEWindow(
         app_name="IPscans+",
         edition_label="HIGH PERFORMANCE NETWORK INTELLIGENCE",
-        mode="splash",
+        mode=mode,
         language=language,
         target_window=window,
     )
-    splash.showFullScreen()
-    app.processEvents()
+    oobe.showFullScreen()
 
-    splash.set_progress(0.40, "Ağ bağdaştırıcıları ve IP rotaları taranıyor...")
-    app.processEvents()
-    splash.set_progress(0.80, "Cihaz kütüğü ve topoloji motoru yükleniyor...")
-    app.processEvents()
-    splash.set_progress(1.0, "Çalışma alanı hazır")
-
-    QTimer.singleShot(750, lambda: splash.finish_and_show(window))
+    if mode == "splash":
+        app.processEvents()
+        oobe.set_progress(0.40, "Ağ bağdaştırıcıları ve IP rotaları taranıyor...")
+        app.processEvents()
+        oobe.set_progress(0.80, "Cihaz kütüğü ve topoloji motoru yükleniyor...")
+        app.processEvents()
+        oobe.set_progress(1.0, "Çalışma alanı hazır")
+        QTimer.singleShot(1700, lambda: oobe.finish_and_show(window))
     _log("Main window scheduled to show OK")
 
 
