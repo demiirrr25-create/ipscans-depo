@@ -35,6 +35,18 @@ export function ApplicationsSection({
 
   const results = [
     {
+      id: "cortex",
+      name: "IPScans Cortex",
+      description: locale === "tr" ? "RTSP kameralar, doğal dille olay kuralları ve yerel AI analizi. İlk Alpha sürümü." : "RTSP cameras, natural-language event rules and local vision AI. Initial alpha release.",
+      href: `/${locale}/cortex`,
+      category: "desktop",
+      icon: "/cortex-mark.svg",
+      preview: "/cortex-preview.png",
+      version: "0.1.0 Alpha",
+      platform: "Windows 10/11 · x64",
+      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v0.1.0/IPScans-Cortex-0.1.0.exe",
+    },
+    {
       id: "lpr-pro",
       name: "IPScans LPR Pro",
       description:
@@ -97,7 +109,7 @@ export function ApplicationsSection({
             className="mt-6 hidden font-mono text-xs tracking-widest text-neutral-500 sm:block"
           >
             {uiText(locale, "EXPLORE", "KEŞFET")} / 01—
-            {String(applications.length + tools.length + 1).padStart(2, "0")}
+            {String(applications.length + tools.length + 2).padStart(2, "0")}
           </span>
         </div>
       )}

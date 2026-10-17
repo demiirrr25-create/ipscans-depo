@@ -15,6 +15,7 @@ function altLanguages(pathFor: (locale: Locale) => string) {
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
+  for (const locale of ['tr', 'en']) entries.push({ url: `${BASE_URL}/${locale}/cortex`, alternates: { languages: { tr: `${BASE_URL}/tr/cortex`, en: `${BASE_URL}/en/cortex`, 'x-default': `${BASE_URL}/en/cortex` } } });
   for(const locale of ['tr','en']) entries.push({url:`${BASE_URL}/${locale}/lpr-pro`,alternates:{languages:{tr:`${BASE_URL}/tr/lpr-pro`,en:`${BASE_URL}/en/lpr-pro`,'x-default':`${BASE_URL}/en/lpr-pro`}}});
   for (const page of ['about','support','contact']) for (const locale of ['tr','en']) entries.push({url:`${BASE_URL}/${locale}/${page}`,alternates:{languages:{tr:`${BASE_URL}/tr/${page}`,en:`${BASE_URL}/en/${page}`,'x-default':`${BASE_URL}/en/${page}`}}});
   for (const locale of locales) {

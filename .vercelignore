@@ -10,4 +10,5 @@
 /.vercel/
 /.git/
 /work/
+/cortex/
 *.tsbuildinfo
