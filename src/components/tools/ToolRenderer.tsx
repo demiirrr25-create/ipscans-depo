@@ -1,12 +1,13 @@
+import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
-import type { ToolKey } from "@/lib/tool-routes";
+import { toolKeys, toolPath, type ToolKey } from "@/lib/tool-routes";
 import { IpLookupForm } from "@/components/IpLookupForm";
 import { DnsLookupForm } from "@/components/DnsLookupForm";
 import { WhoisForm } from "@/components/WhoisForm";
 import { PortCheckForm } from "@/components/PortCheckForm";
 import { SpeedTest } from "@/components/SpeedTest";
-import { uiText } from '@/i18n/ui';
+import { uiText } from "@/i18n/ui";
 
 export function ToolRenderer({
   toolKey,
@@ -17,20 +18,83 @@ export function ToolRenderer({
   locale: Locale;
   dict: Dictionary;
 }) {
+  const navBar = (
+    <nav
+      className="agy-tool-switcher"
+      aria-label={uiText(locale, "Browser diagnostic tools", "Tarayıcı tanı araçları")}
+    >
+      {toolKeys.map((key) => {
+        const isCurrent = key === toolKey;
+        return (
+          <Link
+            key={key}
+            href={toolPath(key, locale)}
+            aria-current={isCurrent ? "page" : undefined}
+            className={`button button-compact ${
+              isCurrent ? "button-primary" : "button-secondary"
+            }`}
+          >
+            <span>{dict[key].title}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
+  if (toolKey === "speedTest") {
+    return (
+      <div className="agy-tool-stage">
+        {navBar}
+        <SpeedTest dict={dict.speedTest} locale={locale} />
+      </div>
+    );
+  }
+
   let form: React.ReactNode;
   switch (toolKey) {
     case "ipLookup":
-      form = <IpLookupForm dict={dict.ipLookup} />; break;
+      form = <IpLookupForm dict={dict.ipLookup} />;
+      break;
     case "dns":
-      form = <DnsLookupForm dict={dict.dns} />; break;
+      form = <DnsLookupForm dict={dict.dns} />;
+      break;
     case "whois":
-      form = <WhoisForm dict={dict.whois} />; break;
+      form = <WhoisForm dict={dict.whois} />;
+      break;
     case "ports":
-      form = <PortCheckForm dict={dict.ports} locale={locale} />; break;
-    case "speedTest":
-      return <SpeedTest dict={dict.speedTest} locale={locale} />;
+      form = <PortCheckForm dict={dict.ports} locale={locale} />;
+      break;
   }
-  return <section className="tool-workspace"><div className="tool-workspace-rail"><span>IPSCANS / {toolKey.toUpperCase()}</span><span>{uiText(locale,'REQUEST → RESULT','SORGU → SONUÇ')}</span></div><div className="tool-workspace-body"><aside><p className="infinity-eyebrow">01 / {uiText(locale,'INPUT','GİRDİ')}</p><h2>{dict[toolKey].title}</h2><p>{dict[toolKey].subtitle}</p><div className="tool-signal" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/></div></aside><div>{form}</div></div></section>;
+
+  return (
+    <div className="agy-tool-stage">
+      {navBar}
+      <section className="tool-workspace">
+        <div className="tool-workspace-rail">
+          <span>IPSCANS / {toolKey.toUpperCase()}</span>
+          <span>{uiText(locale, "REQUEST → RESULT", "SORGU → SONUÇ")}</span>
+        </div>
+        <div className="tool-workspace-body">
+          <aside className="tool-workspace-aside">
+            <p className="agy-eyebrow">01 / {uiText(locale, "INPUT", "GİRDİ")}</p>
+            <h2 className="heading-5 tool-workspace-title">{dict[toolKey].title}</h2>
+            <p className="body tool-workspace-desc">{dict[toolKey].subtitle}</p>
+            <div className="tool-signal" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
+          </aside>
+          <div className="tool-workspace-main">{form}</div>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 export function toolMeta(toolKey: ToolKey, dict: Dictionary) {

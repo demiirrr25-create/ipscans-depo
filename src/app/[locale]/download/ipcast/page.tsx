@@ -18,7 +18,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${product.title} ${ipcastRelease.version}`,
     description: product.subtitle,
     alternates: localizedAlternates(locale, "/download/ipcast"),
-    openGraph: { title: `${product.title} ${ipcastRelease.version} — IPScans`, description: product.subtitle, url: `https://ipscans.com/${locale}/download/ipcast` },
+    openGraph: {
+      title: `${product.title} ${ipcastRelease.version} — IPScans`,
+      description: product.subtitle,
+      url: `https://ipscans.com/${locale}/download/ipcast`,
+    },
   };
 }
 
@@ -30,14 +34,57 @@ export default async function IPCastDownloadPage({ params }: Props) {
 
   return (
     <PageShell title={product.title} subtitle={product.subtitle}>
-      <div className="mx-auto max-w-xl rounded-3xl border border-white/15 bg-neutral-900/70 p-6 sm:p-8">
-        <Image src="/ipcast-mark.svg" alt="" width={72} height={72} />
-        <p className="mt-4 text-sm text-neutral-300">{copy.preview} · {ipcastRelease.platform}</p>
-        <IPCastReleaseDetails locale={locale} />
-        <a href={ipcastRelease.installerUrl} className="btn-primary mt-7 flex min-h-12 items-center justify-center rounded-xl px-6 font-semibold">
-          {product.button}
-        </a>
-        <p className="mt-4 text-xs text-neutral-400">{product.safe}</p>
+      <div className="mx-auto max-w-4xl space-y-10">
+        <div className="feature-media-card">
+          <div className="feature-media-card__bar">
+            <span className="feature-media-card__title">
+              IPCast v{ipcastRelease.version}
+            </span>
+            <span className="feature-media-card__tag">
+              {ipcastRelease.platform} · TLS 1.3 · SHA-256 PINNING
+            </span>
+          </div>
+          <div className="feature-media-card__viewport">
+            <Image
+              src="/ipcast-v25-preview.png"
+              alt={`IPCast ${ipcastRelease.version}`}
+              width={1440}
+              height={900}
+              className="feature-image"
+              priority
+            />
+          </div>
+        </div>
+
+        <div className="agy-surface-card p-6 sm:p-10">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/ipcast-mark.svg"
+              alt=""
+              width={64}
+              height={64}
+              className="rounded-2xl border border-white/10"
+            />
+            <div>
+              <p className="text-lg font-medium text-white">
+                {product.title} {ipcastRelease.version}
+              </p>
+              <p className="mt-1 text-sm text-neutral-300">
+                {copy.preview} · {ipcastRelease.platform}
+              </p>
+            </div>
+          </div>
+          <IPCastReleaseDetails locale={locale} />
+          <div className="mt-7">
+            <a
+              href={ipcastRelease.installerUrl}
+              className="button button-primary"
+            >
+              <span>{product.button} ↓</span>
+            </a>
+          </div>
+          <p className="mt-4 text-xs text-neutral-400">{product.safe}</p>
+        </div>
       </div>
     </PageShell>
   );

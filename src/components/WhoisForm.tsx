@@ -55,14 +55,16 @@ export function WhoisForm({ dict }: { dict: Dictionary["whois"] }) {
     : [];
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <label htmlFor="WhoisForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
+    <div className="agy-form-stack">
+      <label htmlFor="WhoisForm-input" className="agy-form-label">
+        {dict.placeholder}
+      </label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           lookup(domain.trim());
         }}
-        className="flex flex-col gap-3 sm:flex-row"
+        className="agy-form-row"
       >
         <input
           id="WhoisForm-input"
@@ -75,42 +77,38 @@ export function WhoisForm({ dict }: { dict: Dictionary["whois"] }) {
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder={dict.placeholder}
-          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
+          className="agy-input"
         />
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-white px-6 py-3 font-semibold text-black transition hover:scale-[1.03] disabled:opacity-60"
+          className="button button-primary"
         >
-          {loading ? dict.loading : dict.button}
+          <span>{loading ? dict.loading : dict.button}</span>
         </button>
       </form>
 
       {error && (
-        <p id="WhoisForm-error" role="alert" className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="WhoisForm-error" role="alert" className="agy-alert-box">
           {dict.error}
         </p>
       )}
 
       <div role="status" aria-live="polite" aria-busy={loading}>
-      {result && (
-        <div className="mt-6 overflow-hidden rounded-2xl glass">
-          <table className="w-full table-fixed text-sm">
-            <tbody>
-              {rows.map(([label, value]) => (
-                <tr key={label} className="border-b border-white/5 last:border-0">
-                  <th scope="row" className="text-start w-2/5 px-4 py-3 font-medium text-neutral-400">
-                    {label}
-                  </th>
-                  <td className="break-all px-4 py-3 font-mono text-white">
-                    {value ?? "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {result && (
+          <div className="agy-result-card">
+            <table className="agy-table">
+              <tbody>
+                {rows.map(([label, value]) => (
+                  <tr key={label}>
+                    <th scope="row">{label}</th>
+                    <td>{value ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

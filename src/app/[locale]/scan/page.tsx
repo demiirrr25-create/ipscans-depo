@@ -1,4 +1,4 @@
-import { uiText } from '@/i18n/ui';
+import { uiText } from "@/i18n/ui";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
@@ -8,11 +8,19 @@ import type { Metadata } from "next";
 import { localizedAlternates } from "@/lib/seo";
 import { scannerApplication, platformCopy } from "@/content/applications";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const t = getDictionary(locale).scan;
-  return { title: t.title, description: t.subtitle, alternates: localizedAlternates(locale, "/scan") };
+  return {
+    title: t.title,
+    description: t.subtitle,
+    alternates: localizedAlternates(locale, "/scan"),
+  };
 }
 
 const COMMON_PORTS = [
@@ -41,46 +49,47 @@ export default async function ScanPage({
 
   return (
     <PageShell title={dict.scan.title} subtitle={dict.scan.subtitle}>
-      <div className="mx-auto max-w-3xl">
-        <p className="text-neutral-300 leading-relaxed">{dict.scan.body}</p>
+      <div className="mx-auto max-w-4xl space-y-8">
+        <div className="agy-surface-card p-7 sm:p-10">
+          <p className="body leading-relaxed text-neutral-200">
+            {dict.scan.body}
+          </p>
 
-        <div className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-neutral-100">
-          {dict.scan.disclaimer}
-        </div>
-
-        <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-white">
-              IPscans+
-            </h2>
-            <p className="mt-1 text-sm text-neutral-400">
-              {scannerApplication.description[locale]}
-            </p>
+          <div className="mt-6 rounded-2xl border border-white/15 bg-[#18191e] p-5 text-sm text-neutral-200">
+            {dict.scan.disclaimer}
           </div>
-          <Link
-            href={`/${locale}/download`}
-            className="btn-primary shrink-0 rounded-xl px-5 py-2.5 text-sm font-semibold"
-          >
-            {platformCopy[locale].downloadApp} IPscans+
-          </Link>
+
+          <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-[#18191e] p-6 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="heading-6 text-white">IPscans+</h2>
+              <p className="mt-1 text-sm text-neutral-400">
+                {scannerApplication.description[locale]}
+              </p>
+            </div>
+            <Link
+              href={`/${locale}/download`}
+              className="button button-primary shrink-0"
+            >
+              <span>{platformCopy[locale].downloadApp} IPscans+</span>
+            </Link>
+          </div>
         </div>
 
-        <h2 className="mt-10 text-xl font-semibold">
-          {uiText(locale, "Common Ports", "Yaygın Portlar")}
-        </h2>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {COMMON_PORTS.map((p) => (
-            <div
-              key={p.port}
-              className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3"
-            >
-              <div className="font-mono text-lg font-semibold text-white">
-                {p.port}
+        <section className="agy-surface-card p-7 sm:p-10">
+          <h2 className="heading-5">
+            {uiText(locale, "Common Ports", "Yaygın Portlar")}
+          </h2>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {COMMON_PORTS.map((p) => (
+              <div key={p.port} className="agy-port-pill">
+                <div className="font-mono text-lg font-semibold text-white">
+                  {p.port}
+                </div>
+                <div className="mt-1 text-sm text-neutral-400">{p.name}</div>
               </div>
-              <div className="text-sm text-neutral-400">{p.name}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       </div>
     </PageShell>
   );

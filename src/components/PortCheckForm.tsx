@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { uiText } from '@/i18n/ui';
+import { uiText } from "@/i18n/ui";
 
 type PortResult = {
   host: string;
@@ -42,14 +42,16 @@ export function PortCheckForm({
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <label htmlFor="PortCheckForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
+    <div className="agy-form-stack">
+      <label htmlFor="PortCheckForm-input" className="agy-form-label">
+        {dict.placeholder}
+      </label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           check(host.trim());
         }}
-        className="flex flex-col gap-3 sm:flex-row"
+        className="agy-form-row"
       >
         <input
           id="PortCheckForm-input"
@@ -62,78 +64,84 @@ export function PortCheckForm({
           value={host}
           onChange={(e) => setHost(e.target.value)}
           placeholder={dict.placeholder}
-          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
+          className="agy-input"
         />
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-white px-6 py-3 font-semibold text-black transition hover:scale-[1.03] disabled:opacity-60"
+          className="button button-primary"
         >
-          {loading ? dict.loading : dict.button}
+          <span>{loading ? dict.loading : dict.button}</span>
         </button>
       </form>
 
-      <p className="mt-3 text-xs text-neutral-400">{dict.disclaimer}</p>
-      <p className="mt-2 text-xs leading-relaxed text-neutral-400">{uiText(locale,'Tests 12 selected TCP ports from the IPScans server. No reply can mean a closed port, filtering or a timeout; this does not scan your local network.','IPScans sunucusundan seçili 12 TCP portu kontrol edilir. Yanıt alınamaması kapalı port, filtreleme veya zaman aşımı olabilir; yerel ağınız taranmaz.')}</p>
+      <p className="mt-4 text-xs text-neutral-400">{dict.disclaimer}</p>
+      <p className="mt-2 text-xs leading-relaxed text-neutral-400">
+        {uiText(
+          locale,
+          "Tests 12 selected TCP ports from the IPScans server. No reply can mean a closed port, filtering or a timeout; this does not scan your local network.",
+          "IPScans sunucusundan seçili 12 TCP portu kontrol edilir. Yanıt alınamaması kapalı port, filtreleme veya zaman aşımı olabilir; yerel ağınız taranmaz."
+        )}
+      </p>
 
       {error && (
-        <p id="PortCheckForm-error" role="alert" className="mt-6 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="PortCheckForm-error" role="alert" className="agy-alert-box">
           {dict.error}
         </p>
       )}
 
       <div role="status" aria-live="polite" aria-busy={loading}>
-      {result && (
-        <div className="mt-6">
-          <p className="mb-3 text-sm text-neutral-400">
-            {result.host}{" "}
-            <span className="font-mono text-neutral-500">({result.ip})</span>
-          </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {result.ports.map((p) => (
-              <div
-                key={p.port}
-                className={`rounded-xl border px-4 py-3 ${
-                  p.open
-                    ? "border-white/30 bg-white/10"
-                    : "border-white/10 bg-white/[0.03]"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-lg font-semibold text-white">
-                    {p.port}
-                  </span>
-                  <span
-                    className={`text-xs font-semibold ${
-                      p.open ? "text-white" : "text-neutral-500"
-                    }`}
-                  >
-                    {p.open ? dict.open : uiText(locale,'No reply','Yanıt yok')}
-                  </span>
+        {result && (
+          <div className="mt-6">
+            <p className="mb-4 text-sm text-neutral-300">
+              {result.host}{" "}
+              <span className="font-mono text-neutral-400">({result.ip})</span>
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {result.ports.map((p) => (
+                <div
+                  key={p.port}
+                  className={`agy-port-pill ${
+                    p.open ? "agy-port-pill--open" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-lg font-semibold text-white">
+                      {p.port}
+                    </span>
+                    <span
+                      className={`text-xs font-semibold ${
+                        p.open ? "text-white" : "text-neutral-400"
+                      }`}
+                    >
+                      {p.open
+                        ? dict.open
+                        : uiText(locale, "No reply", "Yanıt yok")}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-neutral-400">{p.name}</div>
                 </div>
-                <div className="text-xs text-neutral-400">{p.name}</div>
-              </div>
-            ))}
-          </div>
-
-          {result.ports.some((p) => p.open) && (
-            <div className="mt-6 rounded-xl border border-white/20 bg-white/[0.06] p-5">
-              <h3 className="font-semibold text-white">
-                {dict.crossSell.title}
-              </h3>
-              <p className="mt-1 text-sm text-neutral-300">
-                {dict.crossSell.body}
-              </p>
-              <Link
-                href={`/${locale}/shop`}
-                className="mt-3 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-neutral-200"
-              >
-                {dict.crossSell.cta} →
-              </Link>
+              ))}
             </div>
-          )}
-        </div>
-      )}
+
+            {result.ports.some((p) => p.open) && (
+              <div className="agy-surface-card mt-6 p-6">
+                <h3 className="heading-6 text-white">
+                  {dict.crossSell.title}
+                </h3>
+                <p className="mt-2 text-sm text-neutral-300">
+                  {dict.crossSell.body}
+                </p>
+                <Link
+                  href={`/${locale}/shop`}
+                  className="button button-primary button-compact mt-4"
+                >
+                  <span>{dict.crossSell.cta} →</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

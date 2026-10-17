@@ -8,8 +8,8 @@ function smoothstep(edge0: number, edge1: number, x: number): number {
 }
 
 interface RingParticle {
-  uvX: number; // -1..1
-  uvY: number; // -1..1
+  uvX: number; // -1.06..1.06
+  uvY: number; // -1.06..1.06
   curX: number;
   curY: number;
   scale: number;
@@ -21,7 +21,7 @@ export function AntigravityParticles({
   variant = "hero",
   className = "",
 }: {
-  variant?: "hero" | "download";
+  variant?: "hero" | "download" | "subpage";
   density?: number;
   className?: string;
 }) {
@@ -30,7 +30,7 @@ export function AntigravityParticles({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const reducedMotion =
@@ -43,22 +43,22 @@ export function AntigravityParticles({
     let rafId = 0;
     let isVisible = true;
 
-    // Generate jittered Poisson-like grid in [-1, 1] x [-1, 1]
-    const cols = 42;
-    const rows = 26;
+    // Wide, homogeneous Poisson-jittered grid covering the full viewport [-1.06, 1.06]
+    const cols = variant === "subpage" ? 38 : 48;
+    const rows = variant === "subpage" ? 16 : 30;
     const particles: RingParticle[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const jx = (Math.sin(r * 127.1 + c * 311.7) * 43758.5453) % 1;
         const jy = (Math.sin(r * 269.5 + c * 183.3) * 43758.5453) % 1;
-        const uvX = ((c + 0.5 + (jx - 0.5) * 0.75) / cols) * 2 - 1;
-        const uvY = ((r + 0.5 + (jy - 0.5) * 0.75) / rows) * 2 - 1;
+        const uvX = (((c + 0.5 + (jx - 0.5) * 0.78) / cols) * 2 - 1) * 1.05;
+        const uvY = (((r + 0.5 + (jy - 0.5) * 0.78) / rows) * 2 - 1) * 1.05;
         particles.push({
           uvX,
           uvY,
           curX: uvX,
           curY: uvY,
-          scale: 0.2,
+          scale: 0.42,
           seed1: Math.abs(jx),
           seed2: Math.abs(jy),
         });
@@ -72,13 +72,14 @@ export function AntigravityParticles({
       const parent = canvas.parentElement;
       if (!parent) return;
       width = parent.clientWidth || window.innerWidth;
-      height = parent.clientHeight || 680;
+      height = parent.clientHeight || window.innerHeight || 760;
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineCap = "round";
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -86,9 +87,9 @@ export function AntigravityParticles({
       if (!rect.width || !rect.height) return;
       const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-      if (nx >= -1.1 && nx <= 1.1 && ny >= -1.1 && ny <= 1.1) {
-        pointer.x = nx * 0.55;
-        pointer.y = ny * 0.55;
+      if (nx >= -1.15 && nx <= 1.15 && ny >= -1.15 && ny <= 1.15) {
+        pointer.x = nx * 0.78;
+        pointer.y = ny * 0.75;
         pointer.active = true;
       } else {
         pointer.active = false;
@@ -117,95 +118,120 @@ export function AntigravityParticles({
 
       const elapsed = reducedMotion ? 1.5 : (now - startTime) * 0.001;
       ctx.clearRect(0, 0, width, height);
+      ctx.lineCap = "round";
 
-      const driftX = Math.sin(elapsed * 0.66 + 1.4) * 0.22;
-      const driftY = Math.cos(elapsed * 0.75 + 0.8) * 0.14;
-      const targetX = pointer.active ? pointer.x + driftX * 0.35 : driftX;
-      const targetY = pointer.active ? pointer.y + driftY * 0.35 : driftY;
+      // Wide, fluid autonomous figure-8 drift across the viewport
+      const driftX =
+        Math.sin(elapsed * 0.52 + 1.2) * 0.34 +
+        Math.cos(elapsed * 0.29) * 0.14;
+      const driftY =
+        Math.cos(elapsed * 0.61 + 0.7) * 0.24 +
+        Math.sin(elapsed * 0.37) * 0.1;
+      const targetX = pointer.active ? pointer.x + driftX * 0.25 : driftX;
+      const targetY = pointer.active ? pointer.y + driftY * 0.25 : driftY;
 
-      ringPos.x += (targetX - ringPos.x) * (pointer.active ? 0.045 : 0.02);
-      ringPos.y += (targetY - ringPos.y) * (pointer.active ? 0.045 : 0.02);
+      ringPos.x += (targetX - ringPos.x) * (pointer.active ? 0.055 : 0.025);
+      ringPos.y += (targetY - ringPos.y) * (pointer.active ? 0.055 : 0.025);
 
       const aspect = width / Math.max(1, height);
+      // Wide outer ring + inner harmonic ring so particles fill the entire screen homogeneously
       const ringRadius =
-        (variant === "download" ? 0.34 : 0.31) +
-        Math.sin(elapsed * 1.0) * 0.035 +
-        Math.cos(elapsed * 2.7) * 0.02;
-      const ringWidth = variant === "download" ? 0.19 : 0.16;
-      const ringWidth2 = variant === "download" ? 0.08 : 0.095;
-      const ringDisplacement = variant === "download" ? 0.16 : 0.22;
+        (variant === "download" ? 0.72 : variant === "subpage" ? 0.78 : 0.68) +
+        Math.sin(elapsed * 0.85) * 0.06 +
+        Math.cos(elapsed * 1.9) * 0.03;
+      const innerRadius =
+        0.34 + Math.cos(elapsed * 0.72 + 1.1) * 0.05;
+
+      const ringWidth = variant === "download" ? 0.44 : 0.42;
+      const ringWidth2 = variant === "download" ? 0.24 : 0.22;
+      const ringDisplacement = variant === "download" ? 0.15 : 0.19;
 
       const halfW = width * 0.5;
       const halfH = height * 0.5;
+      const aspectScaleX = aspect > 1 ? 0.92 : aspect;
+      const aspectScaleY = aspect > 1 ? 1 / Math.min(aspect, 1.45) : 1;
+      const time = elapsed * 0.55;
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
-        const time = elapsed * 0.5;
 
-        // Ambient wave displacement
+        // Homogeneous ambient wave displacement across the full screen
         const waveX =
-          Math.sin(p.uvX * 9.0 + time * 3.2 + p.seed1 * 3.0) * 0.016 +
-          Math.cos(p.uvY * 7.0 + time * 2.1) * 0.01;
+          Math.sin(p.uvX * 5.2 + time * 2.6 + p.seed1 * 4.0) * 0.024 +
+          Math.cos(p.uvY * 4.4 - time * 1.9) * 0.016;
         const waveY =
-          Math.cos(p.uvY * 9.0 + time * 2.6 + p.seed2 * 3.0) * 0.016 +
-          Math.sin(p.uvX * 7.0 + time * 2.4) * 0.01;
+          Math.cos(p.uvY * 5.2 + time * 2.2 + p.seed2 * 4.0) * 0.024 +
+          Math.sin(p.uvX * 4.4 + time * 2.0) * 0.016;
 
-        const dx = (p.uvX + waveX - ringPos.x) * (aspect > 1 ? 1 : aspect);
-        const dy = (p.uvY + waveY - ringPos.y) / (aspect > 1 ? Math.min(aspect, 1.55) : 1);
+        const dx = (p.uvX + waveX - ringPos.x) * aspectScaleX;
+        const dy = (p.uvY + waveY - ringPos.y) * aspectScaleY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const noise0 = Math.sin(p.uvX * 6.0 + p.uvY * 6.0 + time * 1.8) * 0.015;
+        const noise0 = Math.sin(p.uvX * 4.5 + p.uvY * 4.5 + time * 1.6) * 0.028;
         const dist1 = dist + noise0;
 
+        // Outer wide ring wave
         let t1 =
-          smoothstep(ringRadius - ringWidth * 1.8, ringRadius, dist) -
-          smoothstep(ringRadius, ringRadius + ringWidth, dist1);
+          smoothstep(ringRadius - ringWidth * 1.6, ringRadius, dist) -
+          smoothstep(ringRadius, ringRadius + ringWidth * 1.25, dist1);
         let t2 =
-          smoothstep(ringRadius - ringWidth2 * 1.8, ringRadius, dist) -
-          smoothstep(ringRadius, ringRadius + ringWidth2, dist1);
-        const t3 = smoothstep(ringRadius + ringWidth2, ringRadius, dist);
+          smoothstep(ringRadius - ringWidth2 * 1.5, ringRadius, dist) -
+          smoothstep(ringRadius, ringRadius + ringWidth2 * 1.15, dist1);
+
+        // Inner harmonic wave so the interior and edges both stay alive and balanced
+        let tInner =
+          smoothstep(innerRadius - 0.26, innerRadius, dist) -
+          smoothstep(innerRadius, innerRadius + 0.28, dist1);
+
+        // Global traveling field wave across [-1, 1] x [-1, 1]
+        const globalField =
+          (Math.sin(p.uvX * 3.1 - p.uvY * 2.4 + time * 1.7 + p.seed1 * 2.2) + 1) * 0.5;
 
         t1 = Math.max(0, t1);
         t2 = Math.max(0, t2);
+        tInner = Math.max(0, tInner);
+
         let targetScale =
-          t1 * t1 +
-          Math.pow(t2, 2.2) * 2.4 +
-          t3 * 0.32 +
-          0.16 +
-          Math.sin(p.uvX * 3.5 + p.uvY * 3.5 + time) * 0.06;
+          0.34 +
+          globalField * 0.26 +
+          t1 * 0.55 +
+          Math.pow(t2, 1.8) * 1.15 +
+          tInner * 0.48;
 
-        targetScale = Math.max(0.12, Math.min(1.45, targetScale));
-        p.scale += (targetScale - p.scale) * 0.18;
+        targetScale = Math.max(0.28, Math.min(1.42, targetScale));
+        p.scale += (targetScale - p.scale) * 0.16;
 
-        const push = Math.pow(t2, 0.75) * ringDisplacement;
+        const push = (Math.pow(t2, 0.8) + tInner * 0.45) * ringDisplacement;
         const angle = Math.atan2(dy, dx);
-        const targetPosX = p.uvX + waveX + Math.cos(angle) * push * 0.35;
-        const targetPosY = p.uvY + waveY + Math.sin(angle) * push * 0.35;
+        const targetPosX = p.uvX + waveX + Math.cos(angle) * push * 0.32;
+        const targetPosY = p.uvY + waveY + Math.sin(angle) * push * 0.32;
 
-        p.curX += (targetPosX - p.curX) * 0.22;
-        p.curY += (targetPosY - p.curY) * 0.22;
+        p.curX += (targetPosX - p.curX) * 0.2;
+        p.curY += (targetPosY - p.curY) * 0.2;
 
         const sx = halfW + p.curX * halfW;
         const sy = halfH + p.curY * halfH;
 
-        const noiseAngle = Math.sin(p.uvX * 10 + p.uvY * 10 + elapsed * 0.85) * 0.45;
-        const rot = angle + noiseAngle;
+        // Tangential / radial flow angle with smooth curl noise
+        const flowAngle =
+          Math.sin(p.uvX * 4.2 + time * 1.4) * 0.55 +
+          Math.cos(p.uvY * 4.2 - time * 1.2) * 0.55;
+        const rot = angle + flowAngle;
 
-        // Color interpolation matching MainParticlesComponent
+        // Color interpolation matching Google Antigravity's particle spectrum
         const colorWave =
-          (Math.sin(p.uvX * 2.4 + p.uvY * 2.1 + elapsed * 0.55 + p.seed1 * 2.0) + 1) * 0.5;
+          (Math.sin(p.uvX * 2.1 + p.uvY * 1.9 + elapsed * 0.5 + p.seed1 * 2.5) + 1) * 0.5;
 
         let rCol = 113;
         let gCol = 137;
         let bCol = 255;
 
         if (variant === "download") {
-          // Dark download ring palette (#7189ff -> #3074f9 -> #a6b8ff)
-          rCol = Math.round(48 + colorWave * 95);
-          gCol = Math.round(116 + colorWave * 55);
-          bCol = 252;
+          rCol = Math.round(56 + colorWave * 98);
+          gCol = Math.round(118 + colorWave * 58);
+          bCol = 255;
         } else {
-          // Hero Antigravity spectrum (#2c64ed -> #7189ff -> #f84242 -> #ffcf03)
+          // Hero & Subpage Antigravity spectrum (#2c64ed -> #7189ff -> #f84242 -> #ffcf03)
           if (colorWave < 0.52) {
             const k = colorWave / 0.52;
             rCol = Math.round(44 + k * (113 - 44));
@@ -224,23 +250,24 @@ export function AntigravityParticles({
           }
         }
 
+        const baseOpacity = variant === "subpage" ? 0.52 : variant === "download" ? 0.82 : 0.86;
         const alpha = Math.min(
           0.92,
-          Math.max(0.08, (p.scale - 0.1) * (variant === "download" ? 0.85 : 0.78))
+          Math.max(0.18, (p.scale - 0.08) * baseOpacity)
         );
-        if (alpha < 0.05) continue;
 
-        const pillLen = Math.max(2.2, p.scale * 7.2);
-        const pillThick = Math.max(1.3, p.scale * 2.9);
+        const pillLen = Math.max(3.2, p.scale * 7.6);
+        const pillThick = Math.max(1.7, p.scale * 3.0);
+        const halfSeg = Math.max(0.6, (pillLen - pillThick) * 0.5);
+        const cosR = Math.cos(rot) * halfSeg;
+        const sinR = Math.sin(rot) * halfSeg;
 
-        ctx.save();
-        ctx.translate(sx, sy);
-        ctx.rotate(rot);
-        ctx.fillStyle = `rgba(${rCol}, ${gCol}, ${bCol}, ${alpha.toFixed(3)})`;
+        ctx.strokeStyle = `rgba(${rCol}, ${gCol}, ${bCol}, ${alpha.toFixed(2)})`;
+        ctx.lineWidth = pillThick;
         ctx.beginPath();
-        ctx.roundRect(-pillLen * 0.5, -pillThick * 0.5, pillLen, pillThick, pillThick * 0.5);
-        ctx.fill();
-        ctx.restore();
+        ctx.moveTo(sx - cosR, sy - sinR);
+        ctx.lineTo(sx + cosR, sy + sinR);
+        ctx.stroke();
       }
     };
 
@@ -318,7 +345,6 @@ export function MorphingSolutionParticles({
       let ty = ry * 0.4;
 
       if (shape === "individual") {
-        // Person silhouette: head circle at (0, -0.25) radius 0.16, shoulders arch below (0, 0.24)
         if (i < count * 0.36) {
           const ang = (i / (count * 0.36)) * Math.PI * 2;
           const rad = 0.15 * Math.sqrt((i % 7) / 6 + 0.15);
@@ -332,7 +358,6 @@ export function MorphingSolutionParticles({
           ty = 0.36 + Math.sin(ang) * 0.34 * layer;
         }
       } else {
-        // Isometric hexagon cube outline + internal Y edges
         const seg = i % 9;
         const t = ((i * 17) % 100) / 100;
         const R = 0.36;
@@ -351,8 +376,8 @@ export function MorphingSolutionParticles({
           tx = v.x * t;
           ty = v.y * t;
         }
-        tx += (rx * 0.025);
-        ty += (ry * 0.025);
+        tx += rx * 0.025;
+        ty += ry * 0.025;
       }
 
       particles.push({
@@ -387,7 +412,6 @@ export function MorphingSolutionParticles({
     const render = (now: number) => {
       rafId = requestAnimationFrame(render);
       const t = (now - startTime) * 0.001;
-      // Subtle auto-pulse if not hovered so the icon silhouette breathes gently, and snaps to full 1.0 when hovered
       const autoPulse = (Math.sin(t * 0.9 + (shape === "cube" ? 1.5 : 0)) + 1) * 0.18;
       const goal = hoveredRef.current ? 1 : autoPulse;
       hoverBlend += (goal - hoverBlend) * 0.07;

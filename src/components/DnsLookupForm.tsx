@@ -34,14 +34,16 @@ export function DnsLookupForm({ dict }: { dict: Dictionary["dns"] }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <label htmlFor="DnsLookupForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
+    <div className="agy-form-stack">
+      <label htmlFor="DnsLookupForm-input" className="agy-form-label">
+        {dict.placeholder}
+      </label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           lookup(domain.trim());
         }}
-        className="flex flex-col gap-3 sm:flex-row"
+        className="agy-form-row"
       >
         <input
           id="DnsLookupForm-input"
@@ -54,56 +56,51 @@ export function DnsLookupForm({ dict }: { dict: Dictionary["dns"] }) {
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder={dict.placeholder}
-          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
+          className="agy-input"
         />
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-white px-5 py-3 font-semibold text-black transition hover:bg-white disabled:opacity-60"
+          className="button button-primary"
         >
-          {loading ? dict.loading : dict.button}
+          <span>{loading ? dict.loading : dict.button}</span>
         </button>
       </form>
 
       {error && (
-        <p id="DnsLookupForm-error" role="alert" className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="DnsLookupForm-error" role="alert" className="agy-alert-box">
           {dict.error}
         </p>
       )}
 
       <div role="status" aria-live="polite" aria-busy={loading}>
-      {result && (
-        <div className="mt-6 space-y-4">
-          {TYPES.map((type) => (
-            <div
-              key={type}
-              className="overflow-hidden rounded-xl border border-white/10"
-            >
-              <div className="bg-white/5 px-4 py-2 text-sm font-semibold text-white">
-                {type}
+        {result && (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {TYPES.map((type) => (
+              <div key={type} className="agy-result-card">
+                <div className="agy-result-card__head">{type}</div>
+                <div className="p-4">
+                  {result.records[type]?.length ? (
+                    <ul className="space-y-1.5">
+                      {result.records[type].map((r, i) => (
+                        <li
+                          key={i}
+                          className="break-all font-mono text-sm text-neutral-100"
+                        >
+                          {r}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-sm text-neutral-400">
+                      {dict.noRecords}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="px-4 py-3">
-                {result.records[type]?.length ? (
-                  <ul className="space-y-1">
-                    {result.records[type].map((r, i) => (
-                      <li
-                        key={i}
-                        className="break-all font-mono text-sm text-neutral-200"
-                      >
-                        {r}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className="text-sm text-neutral-500">
-                    {dict.noRecords}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

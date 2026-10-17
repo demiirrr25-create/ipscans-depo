@@ -1,3 +1,5 @@
+import { AntigravityParticles } from "./AntigravityParticles";
+
 export function PageShell({
   title,
   subtitle,
@@ -8,17 +10,36 @@ export function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="page-frame mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
-      <header className="page-heading border-b border-white/20 pb-10">
-        <p className="mb-6 font-mono text-[11px] tracking-[.2em] text-neutral-400">IPSCANS</p>
-        <h1 className="font-[family-name:var(--font-display)] break-words text-4xl font-medium tracking-[-.05em] sm:text-6xl">
-          <span className="text-white">{title}</span>
-        </h1>
-        {subtitle && (
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-400">{subtitle}</p>
-        )}
-      </header>
-      <div className="mt-12">{children}</div>
+    <div className="agy-page-shell">
+      <section className="agy-page-hero">
+        <AntigravityParticles variant="subpage" className="agy-page-hero__particles" />
+        <div className="grid-container agy-page-hero__inner">
+          <div className="grid-row">
+            <div className="grid-col col-xs-4 col-sm-8 col-md-10">
+              <div className="agy-page-hero__eyebrow">
+                <span className="agy-page-hero__dot" aria-hidden="true" />
+                <span>IPSCANS PLATFORM</span>
+              </div>
+              <h1 className="heading-2 agy-page-hero__title">
+                <span>{title}</span>
+                <span className="cursor-container" aria-hidden="true">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="blinking-cursor"
+                    src="/assets/image/antigravity-cursor.png"
+                    alt=""
+                  />
+                </span>
+              </h1>
+              {subtitle && (
+                <p className="subhead agy-page-hero__subtitle">{subtitle}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid-container agy-page-body">{children}</div>
     </div>
   );
 }

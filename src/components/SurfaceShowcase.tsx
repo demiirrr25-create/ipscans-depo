@@ -36,7 +36,6 @@ const BOUNCER_ICONS = [
 ] as const;
 
 export function SurfaceShowcase({ locale }: { locale: Locale }) {
-  const [activeSlide, setActiveSlide] = useState(0);
   const [hoverSolution, setHoverSolution] = useState<number | null>(null);
   const copy = platformCopy[locale];
   const ipcast = applications.find((a) => a.id === "ipcast")!;
@@ -54,15 +53,18 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       description: scannerApplication.description[locale],
       href: `/${locale}/applications/scanner`,
       image: "/scanner-v43-preview.png",
-      tag: "WINDOWS 10/11 · x64 · ARP · ICMP · ONVIF",
+      secondaryImage: "/scanner-v43-map.png",
+      tag: "WINDOWS 10/11 · x64 · ARP · ICMP · ONVIF · LLDP",
+      badge: uiText(locale, "Network Discovery & Topology", "Ağ Keşfi ve Topoloji Haritası"),
     },
     {
       id: "ipcast",
       title: `IPCast v${ipcast.version}`,
       description: ipcast.description[locale],
       href: `/${locale}/applications/ipcast`,
-      image: "/scanner-v43-map.png",
-      tag: `${ipcast.platform} · REMOTE DESKTOP`,
+      image: "/ipcast-v25-preview.png",
+      tag: `${ipcast.platform} · TLS 1.3 · SHA-256 PINNING`,
+      badge: uiText(locale, "Remote Desktop & File Transfer", "Uzak Masaüstü ve Dosya Aktarımı"),
     },
     {
       id: "lpr",
@@ -73,8 +75,9 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         "Windows üzerinde yerel plaka tanıma, RTSP yayın incelemesi ve zaman damgalı kayıt geçmişi."
       ),
       href: `/${locale}/lpr-pro`,
-      image: "/scanner-v43-preview.png",
-      tag: "WINDOWS 10/11 · x64 · LOCAL AI",
+      image: "/lpr-pro-preview.png",
+      tag: "WINDOWS 10/11 · x64 · OFFLINE ONNX INFERENCE",
+      badge: uiText(locale, "Recognition Laboratory", "Plaka Tanıma Laboratuvarı"),
     },
     {
       id: "web-tools",
@@ -85,44 +88,9 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         "Tarayıcınızdan anında IP sorgulama, ASN ve WHOIS analizi, DNS kayıtları, port referansı ve gerçek zamanlı hız testi."
       ),
       href: toolPath("ipLookup", locale),
-      image: "/scanner-v43-map.png",
-      tag: "WEB · ZERO INSTALL · INSTANT",
-    },
-  ];
-
-  const useCases = [
-    {
-      title: uiText(locale, "Network administrators", "Ağ yöneticileri"),
-      description: uiText(
-        locale,
-        "Discover every active device on your subnet, inspect ARP & port evidence, and verify ONVIF cameras with confidence.",
-        "Alt ağınızdaki tüm aktif cihazları keşfedin, ARP ve port kanıtlarını inceleyin ve ONVIF kameraları güvenle doğrulayın."
-      ),
-      href: `/${locale}/ip-scanner`,
-      image: "/scanner-v43-preview.png",
-      cta: copy.details,
-    },
-    {
-      title: uiText(locale, "IT support & remote teams", "BT destek ve uzak ekipler"),
-      description: uiText(
-        locale,
-        "Connect across local networks or over the internet with explicit session approval and zero router configuration.",
-        "Açık oturum onayı ve sıfır modem/port yönlendirme kurulumuyla yerel ağda veya internet üzerinden bağlanın."
-      ),
-      href: `/${locale}/applications/ipcast`,
-      image: "/scanner-v43-map.png",
-      cta: copy.details,
-    },
-    {
-      title: uiText(locale, "Security & operations", "Güvenlik ve operasyon"),
-      description: uiText(
-        locale,
-        "Verify public IP exposure, DNS propagation, and local camera plate logs without sending sensitive video streams to the cloud.",
-        "Hassas kamera yayınlarını buluta göndermeden genel IP görünürlüğünü, DNS yayılımını ve yerel plaka kayıtlarını doğrulayın."
-      ),
-      href: `/${locale}/lpr-pro`,
-      image: "/scanner-v43-preview.png",
-      cta: copy.details,
+      image: "/web-tools-preview.png",
+      tag: "WEB · ZERO INSTALL · CLOUDFLARE EDGE",
+      badge: uiText(locale, "IP · Speed Test · DNS · WHOIS · Ports", "IP · Hız Testi · DNS · WHOIS · Portlar"),
     },
   ];
 
@@ -176,7 +144,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* Section 5: Antigravity .feature-explorer-section */}
+      {/* Section 5: Antigravity .feature-explorer-section with authentic application screenshots */}
       <section className="feature-explorer-section" data-feature-explorer-section>
         <div className="grid-container">
           <div className="feature-list">
@@ -185,6 +153,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
                 <div className="grid-row">
                   <div className="grid-col col-xs-4 col-md-4">
                     <div className="feature-copy">
+                      <span className="feature-copy__eyebrow">{item.badge}</span>
                       <Link
                         className="heading-4 feature-title feature-title-link"
                         href={item.href}
@@ -192,6 +161,23 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
                         {item.title}
                       </Link>
                       <p className="body feature-description">{item.description}</p>
+                      <div className="feature-item-actions">
+                        <Link
+                          href={item.href}
+                          className="call-to-action button button-compact"
+                        >
+                          <span>{copy.details}</span>
+                          <svg
+                            viewBox="0 -960 960 960"
+                            width="16px"
+                            height="16px"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z" />
+                          </svg>
+                        </Link>
+                      </div>
                     </div>
                     {idx === featureItems.length - 1 && (
                       <div className="feature-cta-wrap">
@@ -204,24 +190,23 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
                       </div>
                     )}
                   </div>
-                  <div className="grid-col col-xs-4 col-md-offset-2 col-md-6">
+                  <div className="grid-col col-xs-4 col-md-offset-1 col-md-7">
                     <Link href={item.href} className="feature-media group">
                       <div className="feature-media-card">
                         <div className="feature-media-card__bar">
-                          <span className="feature-media-card__dots" aria-hidden="true">
-                            <i />
-                            <i />
-                            <i />
-                          </span>
+                          <span className="feature-media-card__title">{item.title}</span>
                           <span className="feature-media-card__tag">{item.tag}</span>
                         </div>
-                        <Image
-                          className="feature-image"
-                          src={item.image}
-                          alt={item.title}
-                          width={736}
-                          height={750}
-                        />
+                        <div className="feature-media-card__viewport">
+                          <Image
+                            className="feature-image"
+                            src={item.image}
+                            alt={item.title}
+                            width={1440}
+                            height={900}
+                            sizes="(max-width: 1024px) 100vw, 58vw"
+                          />
+                        </div>
                       </div>
                     </Link>
                   </div>
@@ -232,159 +217,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* Section 6: Antigravity .landing-use-case-section */}
-      <section className="landing-use-case-section" data-use-case-section>
-        <div className="grid-container landing-use-case-header">
-          <div className="grid-row">
-            <div className="grid-col col-sm-6 col-md-6">
-              <div className="use-case-header-main">
-                <h2 className="heading-4">
-                  <span>
-                    {uiText(locale, "Built for professionals", "Profesyoneller için üretildi")}
-                  </span>
-                  <span>
-                    {uiText(locale, "for the network-first era", "yeni nesil ağ dünyası için")}
-                  </span>
-                </h2>
-              </div>
-            </div>
-            <div className="grid-col col-md-4 col-md-offset-8">
-              <p className="body">{copy.applicationsIntro}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="landing-use-case-list">
-          <div className="grid-container">
-            <div className="grid-row">
-              <div className="grid-col col-xs-4 col-sm-8 col-md-8">
-                <div
-                  className="slider-container usecases-slider"
-                  data-slider
-                  data-active-index={activeSlide}
-                >
-                  <div
-                    className="slider-track"
-                    style={{
-                      transform: `translate3d(calc(${activeSlide} * -100% - ${activeSlide * 24}px), 0, 0)`,
-                    }}
-                  >
-                    {useCases.map((uc, index) => (
-                      <Link
-                        key={uc.title}
-                        href={uc.href}
-                        className={`slide-image ${index === activeSlide ? "is-active" : ""}`}
-                        onClick={(e) => {
-                          if (index !== activeSlide) {
-                            e.preventDefault();
-                            setActiveSlide(index);
-                          }
-                        }}
-                      >
-                        <div className="slide-image-wrapper">
-                          <Image
-                            className="list-image"
-                            src={uc.image}
-                            alt={uc.title}
-                            width={848}
-                            height={488}
-                          />
-                        </div>
-                        <div className="slide-image-overlay">
-                          <span className="typed-container heading-4">
-                            <span className="typed-content">{uc.title}</span>
-                            <span className="cursor-container">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                className="blinking-cursor"
-                                src="/assets/image/antigravity-cursor.png"
-                                alt=""
-                                aria-hidden="true"
-                              />
-                            </span>
-                          </span>
-                          <div className="video-control-button" translate="no">
-                            <svg
-                              viewBox="0 -960 960 960"
-                              width="28px"
-                              height="28px"
-                              fill="currentColor"
-                              aria-hidden="true"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z" />
-                            </svg>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="slider-copy-wrapper" data-copy-wrapper>
-                  {useCases.map((uc, index) => (
-                    <div
-                      key={uc.title}
-                      className={`slider-copy ${index === activeSlide ? "is-active" : ""}`}
-                    >
-                      <strong className="call-to-action">{uc.title}</strong>
-                      <p className="body">{uc.description}</p>
-                      <Link className="call-to-action arrow-link" href={uc.href}>
-                        {uc.cta}
-                      </Link>
-                    </div>
-                  ))}
-
-                  <div className="slider-controls-container" data-arrow-controls-wrapper>
-                    <div className="slider-controls">
-                      <button
-                        type="button"
-                        className="slider-control-button"
-                        disabled={activeSlide === 0}
-                        aria-label="Previous slide"
-                        onClick={() => setActiveSlide((prev) => Math.max(0, prev - 1))}
-                      >
-                        <svg
-                          viewBox="0 -960 960 960"
-                          width="24px"
-                          height="24px"
-                          fill="currentColor"
-                          aria-hidden="true"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="M400-240 160-480l240-240 56 58-142 142h486v80H314l142 142-56 58Z" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        className="slider-control-button"
-                        disabled={activeSlide === useCases.length - 1}
-                        aria-label="Next slide"
-                        onClick={() =>
-                          setActiveSlide((prev) => Math.min(useCases.length - 1, prev + 1))
-                        }
-                      >
-                        <svg
-                          viewBox="0 -960 960 960"
-                          width="24px"
-                          height="24px"
-                          fill="currentColor"
-                          aria-hidden="true"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="m560-240-56-58 142-142H160v-80h486L504-662l56-58 240 240-240 240Z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 7: Antigravity .try-solutions-section */}
+      {/* Section 6: Antigravity .try-solutions-section */}
       <section className="try-solutions-section" data-try-solutions-section>
         <div className="grid-container">
           <div className="grid-row">

@@ -13,11 +13,15 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   return {
-    title: "IPscans+ 4.1 — Network Intelligence",
+    title: "IPscans+ 4.3 — Network Intelligence",
     description: scannerApplication.description[locale],
     alternates: {
       canonical: `/${locale}/ip-scanner`,
@@ -26,12 +30,23 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         "x-default": `/${defaultLocale}/ip-scanner`,
       },
     },
-    openGraph: { title: "IPscans+ | IPScans", description: scannerApplication.description[locale], url: `https://ipscans.com/${locale}/ip-scanner` },
-    twitter: { title: "IPscans+ | IPScans", description: scannerApplication.description[locale] },
+    openGraph: {
+      title: "IPscans+ | IPScans",
+      description: scannerApplication.description[locale],
+      url: `https://ipscans.com/${locale}/ip-scanner`,
+    },
+    twitter: {
+      title: "IPscans+ | IPScans",
+      description: scannerApplication.description[locale],
+    },
   };
 }
 
-export default async function IpScannerPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function IpScannerPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
@@ -39,26 +54,61 @@ export default async function IpScannerPage({ params }: { params: Promise<{ loca
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "IPScans", item: `https://ipscans.com/${locale}` },
-      { "@type": "ListItem", position: 2, name: "IPscans+", item: `https://ipscans.com/${locale}/ip-scanner` },
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "IPScans",
+        item: `https://ipscans.com/${locale}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "IPscans+",
+        item: `https://ipscans.com/${locale}/ip-scanner`,
+      },
     ],
   };
   return (
-    <PageShell title="IPscans+" subtitle={scannerApplication.description[locale]}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
-      <div className="mx-auto max-w-7xl px-4"><ScannerV4 locale={locale} /></div>
-      <div className="mx-auto max-w-4xl space-y-12 pb-12">
+    <PageShell
+      title="IPscans+"
+      subtitle={scannerApplication.description[locale]}
+    >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+      />
+      <ScannerV4 locale={locale} />
+      <div className="mt-12 space-y-10 pb-8">
         <div className="flex flex-wrap gap-3">
-          <Link href={`/${locale}/applications/scanner`} className="btn-primary inline-flex min-h-12 items-center rounded-xl px-6 font-semibold">{platformCopy[locale].details} ↗</Link>
-          <Link href={toolPath("ipLookup", locale)} className="btn-ghost inline-flex min-h-12 items-center rounded-xl px-6 font-semibold">{dict.nav.ipLookup}</Link>
+          <Link
+            href={`/${locale}/applications/scanner`}
+            className="button button-primary"
+          >
+            <span>{platformCopy[locale].details} ↗</span>
+          </Link>
+          <Link
+            href={toolPath("ipLookup", locale)}
+            className="button button-secondary"
+          >
+            <span>{dict.nav.ipLookup}</span>
+          </Link>
         </div>
-        <section className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3">
-          {["Network Discovery", "Network Map", "Device Control Panel"].map((name, index) =>
-            <div key={name} className="bg-black p-7"><span className="font-mono text-xs text-neutral-400">0{index + 1} / IPscans+</span>
-              <h2 className="mt-6 text-xl font-bold">{name}</h2></div>)}
+        <section className="grid gap-5 sm:grid-cols-3">
+          {["Network Discovery", "Network Map", "Device Control Panel"].map(
+            (name, index) => (
+              <div key={name} className="agy-surface-card p-7">
+                <span className="agy-eyebrow">0{index + 1} / IPscans+</span>
+                <h2 className="heading-5 mt-5">{name}</h2>
+              </div>
+            )
+          )}
         </section>
-        <p className="rounded-xl border border-white/15 p-6 leading-relaxed text-neutral-300">{scannerCopy[locale].mapIntro}</p>
-        <p className="border-t border-white/15 pt-6 text-sm leading-relaxed text-neutral-400">{scannerCopy[locale].limitations}</p>
+        <div className="agy-surface-card p-7">
+          <p className="body text-neutral-200">{scannerCopy[locale].mapIntro}</p>
+          <p className="mt-5 border-t border-white/10 pt-5 text-sm leading-relaxed text-neutral-400">
+            {scannerCopy[locale].limitations}
+          </p>
+        </div>
       </div>
     </PageShell>
   );

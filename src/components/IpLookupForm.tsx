@@ -61,14 +61,16 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
     : [];
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <label htmlFor="IpLookupForm-input" className="mb-2 block text-sm font-medium text-neutral-200">{dict.placeholder}</label>
+    <div className="agy-form-stack">
+      <label htmlFor="IpLookupForm-input" className="agy-form-label">
+        {dict.placeholder}
+      </label>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           lookup(ip.trim());
         }}
-        className="flex flex-col gap-3 sm:flex-row"
+        className="agy-form-row"
       >
         <input
           id="IpLookupForm-input"
@@ -80,74 +82,70 @@ export function IpLookupForm({ dict }: { dict: Dictionary["ipLookup"] }) {
           value={ip}
           onChange={(e) => setIp(e.target.value)}
           placeholder={dict.placeholder}
-          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-mono text-white focus:border-white/40"
+          className="agy-input"
         />
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-white px-5 py-3 font-semibold text-black transition hover:bg-white disabled:opacity-60"
+          className="button button-primary"
         >
-          {loading ? dict.loading : dict.button}
+          <span>{loading ? dict.loading : dict.button}</span>
         </button>
       </form>
 
-      <button
-        disabled={loading}
-        onClick={() => {
-          setIp("");
-          lookup("");
-        }}
-        className="mt-3 text-sm text-white hover:underline"
-      >
-        {dict.myIp}
-      </button>
+      <div className="mt-4">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => {
+            setIp("");
+            lookup("");
+          }}
+          className="button button-compact button-secondary"
+        >
+          <span>{dict.myIp}</span>
+        </button>
+      </div>
 
       {error && (
-        <p id="IpLookupForm-error" role="alert" className="mt-6 rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-sm text-white">
+        <p id="IpLookupForm-error" role="alert" className="agy-alert-box">
           {dict.error}
         </p>
       )}
 
       <div role="status" aria-live="polite" aria-busy={loading}>
-      {result && (
-        <div className="mt-6 overflow-hidden rounded-xl border border-white/10">
-          <table className="w-full table-fixed text-sm">
-            <tbody>
-              {rows.map(([label, value]) => (
-                <tr
-                  key={label}
-                  className="border-b border-white/10 last:border-0"
-                >
-                  <th scope="row" className="text-start w-2/5 bg-white/5 px-4 py-3 font-medium text-neutral-400">
-                    {label}
-                  </th>
-                  <td className="break-all px-4 py-3 font-mono text-white">
-                    {value ?? "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {result && result.latitude != null && result.longitude != null && (
-        <div className="mt-6">
-          <p className="mb-2 text-sm text-neutral-400">{dict.mapLabel}</p>
-          <div className="overflow-hidden rounded-xl border border-white/10">
-            <iframe
-              title={dict.mapLabel}
-              className="h-72 w-full"
-              loading="lazy"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${
-                result.longitude - 0.05
-              }%2C${result.latitude - 0.05}%2C${result.longitude + 0.05}%2C${
-                result.latitude + 0.05
-              }&layer=mapnik&marker=${result.latitude}%2C${result.longitude}`}
-            />
+        {result && (
+          <div className="agy-result-card">
+            <table className="agy-table">
+              <tbody>
+                {rows.map(([label, value]) => (
+                  <tr key={label}>
+                    <th scope="row">{label}</th>
+                    <td>{value ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        )}
+
+        {result && result.latitude != null && result.longitude != null && (
+          <div className="mt-6">
+            <p className="agy-form-label mb-3">{dict.mapLabel}</p>
+            <div className="agy-result-card overflow-hidden">
+              <iframe
+                title={dict.mapLabel}
+                className="h-72 w-full border-0"
+                loading="lazy"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${
+                  result.longitude - 0.05
+                }%2C${result.latitude - 0.05}%2C${result.longitude + 0.05}%2C${
+                  result.latitude + 0.05
+                }&layer=mapnik&marker=${result.latitude}%2C${result.longitude}`}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
