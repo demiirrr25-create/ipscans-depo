@@ -199,7 +199,7 @@ export function SpeedTest({
           </div>
 
           <span className="agy-speed-edge-pill">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
+            <span className="h-2 w-2 rounded-full bg-white/70 animate-pulse" aria-hidden="true" />
             <span>
               {uiText(
                 locale,
@@ -504,7 +504,7 @@ export function SpeedTest({
                         {uiText(locale, "Online Gaming", "Online Oyun")}
                       </span>
                     </div>
-                    <p className="mt-1 font-mono text-xs text-emerald-400">
+                    <p className="mt-1 font-mono text-xs text-neutral-300">
                       {result.idle < 35 && (result.jitter ?? 0) < 10
                         ? uiText(locale, "Exceptional RTT", "Mükemmel Ping")
                         : result.idle < 80
@@ -520,7 +520,7 @@ export function SpeedTest({
                         {uiText(locale, "4K / 8K Streaming", "4K / 8K Video")}
                       </span>
                     </div>
-                    <p className="mt-1 font-mono text-xs text-emerald-400">
+                    <p className="mt-1 font-mono text-xs text-neutral-300">
                       {result.download >= 50
                         ? uiText(locale, "8K Ultra-HD Ready", "8K Ultra-HD Hazır")
                         : result.download >= 25
@@ -536,7 +536,7 @@ export function SpeedTest({
                         {uiText(locale, "VoIP & Video Calls", "Video Konferans")}
                       </span>
                     </div>
-                    <p className="mt-1 font-mono text-xs text-emerald-400">
+                    <p className="mt-1 font-mono text-xs text-neutral-300">
                       {bloat.grade === "A+" || bloat.grade === "A"
                         ? uiText(locale, "Bufferbloat Free", "Sıfır Donma")
                         : uiText(locale, "Stable Audio/Video", "Kararlı Akış")}

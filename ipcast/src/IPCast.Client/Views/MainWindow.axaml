@@ -37,7 +37,7 @@
                 <TextBlock Text="IPSCANS.COM · ANTIGRAVITY DESIGN SYSTEM · IPCAST 2.5" Classes="eyebrow" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <TextBlock Text="Experience liftoff with peer-to-peer remote desktop &amp; encrypted session control." FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <Border Width="3" Height="18" CornerRadius="2" Background="#3279F9" VerticalAlignment="Center" />
+                    <Border Width="3" Height="18" CornerRadius="2" Background="#FFFFFF" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
             <Border Grid.Column="1" CornerRadius="16" Padding="12,6" Background="{DynamicResource SubtleFillBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">

@@ -2435,43 +2435,6 @@ header.header {
   text-decoration: none;
 }
 
-/* Giant Atmospheric IPScans Brand Watermark */
-.footer-brand-stage {
-  width: 100%;
-  overflow: visible;
-  position: relative;
-  margin-top: var(--space-xl);
-  margin-bottom: -10px;
-  pointer-events: none;
-}
-.footer-brand-wrapper {
-  position: relative;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-top: var(--space-xl);
-  padding-bottom: var(--space-sm);
-}
-.footer-brand-ambient-halo {
-  position: absolute;
-  inset: -20px 0;
-  background: radial-gradient(ellipse 65% 55% at 50% 60%, rgba(113, 137, 255, 0.12), rgba(0, 240, 255, 0.04) 40%, transparent 75%);
-  pointer-events: none;
-  z-index: 0;
-}
-.footer-antigravity-brand {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
-  position: relative;
-  z-index: 1;
-}
-.footer-brand-wordmark {
-  font-family: var(--font-family-primary);
-  user-select: none;
-}
 
 /* Bottom Legal & Operational Metadata Bar */
 .footer-meta-links {

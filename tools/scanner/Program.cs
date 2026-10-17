@@ -23,9 +23,139 @@ namespace IpscansScanner
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            using (var splash = new SplashForm())
+            {
+                splash.Show();
+                splash.SetProgress(0.35, "Yerel ağ bağdaştırıcıları analiz ediliyor…");
+                var mainForm = new MainForm();
+                splash.SetProgress(0.85, "Ağ arabirimi hazırlandı");
+                splash.SetProgress(1.0, "Hazır");
+                splash.Close();
+                Application.Run(mainForm);
+            }
         }
     }
+
+    internal sealed class SplashForm : Form
+    {
+        private double _progress;
+        private string _status = "Yerel ağ adaptörleri taranıyor…";
+        private readonly System.Windows.Forms.Timer _timer;
+        private float _phase;
+
+        public SplashForm()
+        {
+            FormBorderStyle = FormBorderStyle.None;
+            StartPosition = FormStartPosition.CenterScreen;
+            ClientSize = new Size(520, 330);
+            BackColor = Theme.Bg;
+            DoubleBuffered = true;
+            ShowInTaskbar = false;
+
+            _timer = new System.Windows.Forms.Timer { Interval = 16 };
+            _timer.Tick += (s, e) => { _phase += 0.05f; Invalidate(); };
+            _timer.Start();
+        }
+
+        public void SetProgress(double p, string status)
+        {
+            _progress = Math.Max(0, Math.Min(1, p));
+            if (!string.IsNullOrEmpty(status)) _status = status;
+            Invalidate();
+            Application.DoEvents();
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _timer.Stop();
+            _timer.Dispose();
+            base.OnFormClosed(e);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+            g.Clear(Theme.Bg);
+
+            var r = new Rectangle(0, 0, Width - 1, Height - 1);
+            using (var path = Theme.Round(r, 20))
+            {
+                using (var pen = new Pen(Color.FromArgb(40, 255, 255, 255), 1))
+                {
+                    g.DrawPath(pen, path);
+                }
+            }
+
+            int cx = Width / 2;
+            int cy = 110;
+
+            // Ambient halo
+            using (var pgb = new PathGradientBrush(new PointF[] {
+                new PointF(cx - 100, cy - 100), new PointF(cx + 100, cy - 100),
+                new PointF(cx + 100, cy + 100), new PointF(cx - 100, cy + 100)
+            }))
+            {
+                pgb.CenterColor = Color.FromArgb(16, 255, 255, 255);
+                pgb.SurroundColors = new[] { Color.Transparent };
+                g.FillEllipse(pgb, cx - 100, cy - 100, 200, 200);
+            }
+
+            // Orbital ring
+            using (var p = new Pen(Color.FromArgb(30, 255, 255, 255), 1))
+            {
+                g.DrawEllipse(p, cx - 44, cy - 44, 88, 88);
+            }
+            using (var p = new Pen(Color.FromArgb(160, 255, 255, 255), 1.5f))
+            {
+                float startAngle = (_phase * 40f) % 360f;
+                g.DrawArc(p, cx - 44, cy - 44, 88, 88, startAngle, 80);
+            }
+
+            // Monogram/Logo
+            using (var b = new SolidBrush(Color.White))
+            {
+                g.FillEllipse(b, cx - 12, cy - 12, 24, 24);
+            }
+            using (var b = new SolidBrush(Color.Black))
+            {
+                g.FillEllipse(b, cx - 5, cy - 5, 10, 10);
+            }
+
+            // Titles
+            using (var font = new Font("Segoe UI", 20f, FontStyle.Bold))
+            {
+                TextRenderer.DrawText(g, "ipscans", font, new Rectangle(0, 175, Width, 32),
+                    Color.White, TextFormatFlags.HorizontalCenter);
+            }
+            using (var font = new Font("Segoe UI", 8.5f, FontStyle.Bold))
+            {
+                TextRenderer.DrawText(g, "ANTIGRAVITY NETWORK SCANNER · STANDALONE", font,
+                    new Rectangle(0, 210, Width, 20), Color.FromArgb(140, 140, 140), TextFormatFlags.HorizontalCenter);
+            }
+
+            // Hairline Progress
+            int trackW = 260;
+            int trackX = (Width - trackW) / 2;
+            int trackY = 250;
+            using (var b = new SolidBrush(Color.FromArgb(24, 255, 255, 255)))
+            {
+                g.FillRectangle(b, trackX, trackY, trackW, 2);
+            }
+            int fillW = (int)Math.Max(4, trackW * _progress);
+            using (var b = new SolidBrush(Color.White))
+            {
+                g.FillRectangle(b, trackX, trackY, fillW, 2);
+            }
+
+            // Status
+            using (var font = new Font("Segoe UI", 9f))
+            {
+                TextRenderer.DrawText(g, _status, font, new Rectangle(0, 265, Width, 24),
+                    Color.FromArgb(160, 160, 160), TextFormatFlags.HorizontalCenter);
+            }
+        }
 
     // ---- Theme (matches ipscans.com: pure black bg, white text, minimal) ----
     internal static class Theme

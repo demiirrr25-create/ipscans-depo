@@ -686,9 +686,24 @@ def main():
     from PySide6.QtGui import QIcon
     resources=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))
     app.setWindowIcon(QIcon(str(resources/"assets"/"icons"/"lpr-pro.ico")))
+    from .splash_screen import LPRProSplash
+    splash=LPRProSplash("IPScans LPR Pro", "AI LICENSE PLATE RECOGNITION & PTS ENGINE · v0.3.1")
+    splash.show()
+    app.processEvents()
+
+    splash.set_progress(0.30, "İstasyon font ve grafik motoru başlatılıyor…")
+    app.processEvents()
     # Initialize Qt font handling before the sign-in dialog.
     initializer=RecognitionWindow();initializer.close()
+
+    splash.set_progress(0.65, "İşlem veritabanı ve yerel şifreleme doğrulanıyor…")
+    app.processEvents()
     ops=Operations(str(data_directory()/"operations.sqlite3"))
+
+    splash.set_progress(0.95, "İstasyon oturumu hazırlanıyor…")
+    app.processEvents()
+
+    splash.close()
     login=Login(ops)
     if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0
     window=ProductWindow(ops,login.session);window.show()

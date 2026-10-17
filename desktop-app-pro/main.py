@@ -82,6 +82,11 @@ def main() -> None:
             window.tabs.setCurrentIndex(i)
             window.tabs.currentWidget().grab()
 
+        from app.ui.splash_screen import IPScansSplash
+        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS · v4.3.0")
+        splash.grab()
+        splash.close()
+
         wizard = ProOnboardingWizard(STEPS, DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()
@@ -91,18 +96,37 @@ def main() -> None:
         print("selftest: pro window created OK")
         sys.exit(0)
 
+    from app.ui.splash_screen import IPScansSplash
+    splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS · v4.3.0")
+    splash.show()
+    app.processEvents()
+
+    splash.set_progress(0.35, "Analyzing local network subnets...")
+    app.processEvents()
+
     steps = _pending_onboarding_steps()
     language = get_saved_language() or DEFAULT_LANGUAGE
     if steps:
+        splash.close()
         wizard = ProOnboardingWizard(steps, language, app_icon)
         if wizard.exec() != ProOnboardingWizard.DialogCode.Accepted:
             sys.exit(0)
         language = get_saved_language() or DEFAULT_LANGUAGE
+        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS · v4.3.0")
+        splash.show()
+        app.processEvents()
+
+    splash.set_progress(0.70, "Initializing continuous health monitor & database...")
+    app.processEvents()
 
     window = ProMainWindow(language)
     window.setWindowIcon(app_icon)
-    window.show()
     app.window_ref = window
+
+    splash.set_progress(0.95, "Ready")
+    app.processEvents()
+
+    splash.finish_and_show(window)
     sys.exit(app.exec())
 
 

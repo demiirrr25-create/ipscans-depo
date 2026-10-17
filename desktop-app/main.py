@@ -169,6 +169,11 @@ def main() -> None:
             write_pdf([Device('192.0.2.1', custom_name='Kapı kamerası', open_ports=[443])], pdf, lang='tr')
             if not pdf.read_bytes().startswith(b'%PDF-') or pdf.stat().st_size < 1000:
                 raise RuntimeError('Packaged PDF export failed')
+        from app.ui.splash_screen import IPScansSplash
+        splash = IPScansSplash("IPscans+", "ANTIGRAVITY NETWORK INTELLIGENCE · v4.3.0")
+        splash.set_progress(0.4, "Probing network interfaces...")
+        splash.grab()
+        splash.close()
         wizard = OnboardingWizard(["language", "terms", "privacy"], DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()  # paints every step, not just the first one shown
@@ -192,17 +197,36 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
     steps = _pending_onboarding_steps()
     language = get_saved_language() or DEFAULT_LANGUAGE
 
+    from app.ui.splash_screen import IPScansSplash
+    splash = IPScansSplash("IPscans+", "ANTIGRAVITY NETWORK INTELLIGENCE · v4.3.0")
+    splash.show()
+    app.processEvents()
+
+    splash.set_progress(0.30, "Checking network environment & adapters...")
+    app.processEvents()
+
     if steps:
+        splash.close()
         wizard = OnboardingWizard(steps, language, app_icon)
         if wizard.exec() != OnboardingWizard.DialogCode.Accepted:
             app.quit()
             return
         language = get_saved_language() or DEFAULT_LANGUAGE
+        splash = IPScansSplash("IPscans+", "ANTIGRAVITY NETWORK INTELLIGENCE · v4.3.0")
+        splash.show()
+        app.processEvents()
+
+    splash.set_progress(0.65, "Initializing device registry & topology graph...")
+    app.processEvents()
 
     window = MainWindow(language)
     window.setWindowIcon(app_icon)
-    window.show()
-    app.window_ref = window  # keep a live reference so it isn't garbage-collected
+    app.window_ref = window
+
+    splash.set_progress(0.95, "Ready")
+    app.processEvents()
+
+    splash.finish_and_show(window)
     _log("Main window shown OK")
 
 

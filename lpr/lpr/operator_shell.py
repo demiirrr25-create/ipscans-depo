@@ -117,9 +117,9 @@ class AntigravityWelcomeBanner(QWidget):
         cx = min(float(self.width()) - 28.0, 22.0 + fm.horizontalAdvance(shown) + 5.0)
         if (self._typed < len(self._headline)) or (int(self._phase * 2.2) % 2 == 0):
             grad = QLinearGradient(cx, 37.0, cx, 57.0)
-            grad.setColorAt(0.0, QColor(66, 133, 244))
-            grad.setColorAt(0.5, QColor(234, 67, 53))
-            grad.setColorAt(1.0, QColor(52, 168, 83))
+            grad.setColorAt(0.0, QColor(255, 255, 255, 240))
+            grad.setColorAt(0.5, QColor(215, 220, 230, 210))
+            grad.setColorAt(1.0, QColor(140, 145, 155, 180))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QBrush(grad))
             painter.drawRoundedRect(QRectF(cx, 38.0, 3.0, 19.0), 1.5, 1.5)

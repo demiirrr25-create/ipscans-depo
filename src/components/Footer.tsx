@@ -89,59 +89,6 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
         </div>
       </div>
 
-      {/* ULTRA-PREMIUM GIANT IPSCANS BRAND WATERMARK WITH DYNAMIC GLOW & METALLIC GRADIENT */}
-      <div className="footer-brand-stage" aria-hidden="true">
-        <div className="grid-container">
-          <div id="antigravity-footer-wrapper" className="footer-brand-wrapper">
-            <div className="footer-brand-ambient-halo" />
-            <svg
-              className="footer-antigravity-brand"
-              width="1297"
-              height="270"
-              viewBox="0 0 1297 270"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <linearGradient id="agyFooterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.45" />
-                  <stop offset="35%" stopColor="#dbeafe" stopOpacity="0.25" />
-                  <stop offset="70%" stopColor="#7189ff" stopOpacity="0.10" />
-                  <stop offset="100%" stopColor="#000000" stopOpacity="0.01" />
-                </linearGradient>
-                <linearGradient id="agyFooterStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
-                  <stop offset="30%" stopColor="#00f0ff" stopOpacity="0.5" />
-                  <stop offset="70%" stopColor="#7189ff" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1" />
-                </linearGradient>
-                <filter id="agyFooterBlur" x="-10%" y="-10%" width="120%" height="120%">
-                  <feGaussianBlur stdDeviation="12" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <text
-                x="0"
-                y="224"
-                fill="url(#agyFooterGrad)"
-                stroke="url(#agyFooterStroke)"
-                strokeWidth="1.2"
-                fontSize="265"
-                fontWeight="500"
-                letterSpacing="-0.04em"
-                filter="url(#agyFooterBlur)"
-                className="footer-brand-wordmark"
-              >
-                IPScans
-              </text>
-            </svg>
-          </div>
-        </div>
-      </div>
-
       {/* REFINED BOTTOM LEGAL & METADATA BAR */}
       <div className="footer-meta-links">
         <div className="grid-container">
@@ -159,8 +106,8 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
 
             <div className="grid-col col-xs-4 col-md-8">
               <div className="flex flex-wrap items-center justify-start md:justify-end gap-5">
-                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[11px] text-neutral-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-pulse" />
                   {uiText(locale, "All Systems Operational · v4.3", "Tüm Servisler Aktif · v4.3")}
                 </span>
 

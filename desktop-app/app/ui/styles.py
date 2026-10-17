@@ -477,16 +477,20 @@ class AntigravityWelcomeStage(QWidget):
 
     def __init__(
         self,
-        eyebrow: str,
-        headline: str,
+        eyebrow: str = "",
+        headline: str = "",
         subtitle: str = "",
         compact: bool = False,
         parent: QWidget | None = None,
+        *,
+        kicker_text: str | None = None,
+        headline_text: str | None = None,
+        subtitle_text: str | None = None,
     ) -> None:
         super().__init__(parent)
-        self._eyebrow = eyebrow
-        self._full_headline = headline
-        self._subtitle = subtitle
+        self._eyebrow = kicker_text if kicker_text is not None else eyebrow
+        self._full_headline = headline_text if headline_text is not None else headline
+        self._subtitle = subtitle_text if subtitle_text is not None else subtitle
         self._compact = compact
         self._phase = 0.0
         self._typed_chars = 0
@@ -598,10 +602,9 @@ class AntigravityWelcomeStage(QWidget):
         blink_on = (self._typed_chars < len(self._full_headline)) or (int(self._phase * 2.2) % 2 == 0)
         if blink_on:
             grad = QLinearGradient(cursor_x, title_y + 4.0, cursor_x, title_y + 26.0)
-            grad.setColorAt(0.0, QColor(66, 133, 244))
-            grad.setColorAt(0.35, QColor(234, 67, 53))
-            grad.setColorAt(0.7, QColor(251, 188, 4))
-            grad.setColorAt(1.0, QColor(52, 168, 83))
+            grad.setColorAt(0.0, QColor(255, 255, 255, 240))
+            grad.setColorAt(0.5, QColor(215, 220, 230, 210))
+            grad.setColorAt(1.0, QColor(140, 145, 155, 180))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QBrush(grad))
             painter.drawRoundedRect(QRectF(cursor_x, title_y + 5.0, 3.0, 21.0), 1.5, 1.5)
