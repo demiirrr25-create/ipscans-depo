@@ -98,13 +98,13 @@ class ProductWindow(QMainWindow):
         self.lab.language.currentIndexChanged.connect(self.switch_language)
         root=QWidget();self.setCentralWidget(root);layout=QVBoxLayout(root)
         layout.setContentsMargins(20,16,20,16)
-        header=QHBoxLayout();brand=QLabel(f"IPSCANS  /  LPR PRO  ·  {__version__}")
+        header=QHBoxLayout();brand=QLabel("IPSCANS  /  LPR PRO")
         brand.setObjectName("brand");header.addWidget(brand);header.addStretch()
         self.account=QLabel(f"{session.username} / {session.role}");header.addWidget(self.account)
         lock=QPushButton("Kilitle / Lock");lock.clicked.connect(self.lock_session);header.addWidget(lock)
         layout.addLayout(header)
-        self.banner=QLabel("Yerel beta • Fiziksel bariyer kontrolü yok / Local beta • No physical barrier control")
-        self.banner.setWordWrap(True);layout.addWidget(self.banner)
+        self.banner=QLabel("")
+        self.banner.setVisible(False)
         self.tabs=QTabWidget();layout.addWidget(self.tabs,1)
         self.widgets={};self.labels=[]
         self.dashboard=self.page("dashboard","Genel bakış","Dashboard")
@@ -693,30 +693,14 @@ def main():
     splash.showFullScreen()
     app.processEvents()
 
-    splash.set_progress(0.30, "İstasyon font ve grafik motoru başlatılıyor…")
-    app.processEvents()
     # Initialize Qt font handling before the sign-in dialog.
     initializer=RecognitionWindow();initializer.close()
 
-    splash.set_progress(0.65, "İşlem veritabanı ve yerel şifreleme doğrulanıyor…")
-    app.processEvents()
-
-    splash.set_progress(0.95, "İstasyon oturumu hazırlanıyor…")
-    app.processEvents()
-
-    if needs_oobe:
-        loop = QEventLoop()
-        splash.set_on_finish(loop.quit)
-        splash.destroyed.connect(loop.quit)
-        loop.exec()
-        splash.close()
-    else:
-        splash.set_progress(1.0, "İstasyon hazır / Ready")
-        app.processEvents()
-        loop = QEventLoop()
-        QTimer.singleShot(650, loop.quit)
-        loop.exec()
-        splash.close()
+    loop = QEventLoop()
+    splash.set_on_finish(loop.quit)
+    splash.destroyed.connect(loop.quit)
+    loop.exec()
+    splash.close()
 
     login=Login(ops)
     if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0

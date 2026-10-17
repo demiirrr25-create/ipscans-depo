@@ -258,14 +258,7 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
     )
     oobe.showFullScreen()
 
-    if mode == "splash":
-        app.processEvents()
-        oobe.set_progress(0.40, "Ağ bağdaştırıcıları ve IP rotaları taranıyor...")
-        app.processEvents()
-        oobe.set_progress(0.80, "Cihaz kütüğü ve topoloji motoru yükleniyor...")
-        app.processEvents()
-        oobe.set_progress(1.0, "Çalışma alanı hazır")
-        QTimer.singleShot(1700, lambda: oobe.finish_and_show(window))
+    # Win11OOBEWindow autonomously presents Hello -> Showcase/Terms -> 6.5s Launch sequence
     _log("Main window scheduled to show OK")
 
 

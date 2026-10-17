@@ -146,13 +146,7 @@ def main() -> None:
     splash.showFullScreen()
     app.processEvents()
 
-    splash.set_progress(0.40, "Yerel ağ alt ağları ve bağdaştırıcılar analiz ediliyor...")
-    app.processEvents()
-    splash.set_progress(0.80, "Sürekli izleme servisi ve topoloji veritabanı yükleniyor...")
-    app.processEvents()
-    splash.set_progress(1.0, "Çalışma alanı hazır")
-
-    QTimer.singleShot(750, lambda: splash.finish_and_show(window))
+    # Win11OOBEWindow autonomously presents Hello -> 6.5s Launch sequence
     sys.exit(app.exec())
 
 

@@ -113,46 +113,26 @@ class MainWindow(QWidget):
 
         heading.addStretch()
 
-        # Export & Info buttons in Header
+        # Export button in Header
         self.export_button = QPushButton(self._v4("Export Report", "Raporu Dışa Aktar"))
         self.export_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.export_button.setToolTip(self._v4("Save a PDF with your device names", "Cihaz isimlerinizi içeren PDF raporu kaydedin"))
         self.export_button.clicked.connect(self._export)
         heading.addWidget(self.export_button)
 
-        self.tour_btn = QPushButton(
-            self._v4("Overview", "Tanıtım"),
-            objectName="TourButton",
-        )
-        self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.tour_btn.setStyleSheet(
-            "QPushButton#TourButton {"
-            "  background-color: rgba(255, 255, 255, 0.05);"
-            "  color: #8A8F98;"
-            "  border: 1px solid rgba(255, 255, 255, 0.12);"
-            "  border-radius: 16px;"
-            "  padding: 6px 14px;"
-            "  font-size: 11.5px;"
-            "  font-weight: 500;"
-            "}"
-            "QPushButton#TourButton:hover {"
-            "  background-color: rgba(255, 255, 255, 0.10);"
-            "  color: #FFFFFF;"
-            "  border-color: rgba(255, 255, 255, 0.28);"
-            "}"
-        )
+        self.tour_btn = QPushButton(self._v4("Overview", "Tanıtım"), objectName="TourButton")
         self.tour_btn.clicked.connect(self._open_feature_tour)
-        heading.addWidget(self.tour_btn)
+        self.tour_btn.setVisible(False)
 
         body.addLayout(heading)
         self.welcome_stage = QWidget(self)
         self.welcome_stage.setVisible(False)
 
-        # 2. Consolidated Obsidian Command Bar
+        # 2. Consolidated Ultra-Clean Obsidian Command Deck
         self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
-        scan.setContentsMargins(16, 12, 16, 12)
-        scan.setSpacing(6)
+        scan.setContentsMargins(14, 10, 14, 10)
+        scan.setSpacing(0)
 
         cmd_row = QHBoxLayout()
         cmd_row.setSpacing(8)
@@ -181,11 +161,11 @@ class MainWindow(QWidget):
 
         self.columns_button = QPushButton(t(self.lang, "columns"))
         self.columns_button.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
-        cmd_row.addWidget(self.columns_button)
+        self.columns_button.setVisible(False)
 
         self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
         self.conflicts_button.clicked.connect(self._show_conflicts)
-        cmd_row.addWidget(self.conflicts_button)
+        self.conflicts_button.setVisible(False)
 
         self.scan_btn = QPushButton(t(self.lang, "start_scan"), objectName="PrimaryButton")
         self.stop_btn = QPushButton(t(self.lang, "stop_scan"))
@@ -201,10 +181,11 @@ class MainWindow(QWidget):
         self.range_estimate = QLabel(t(self.lang, "range_hint"), objectName="SubtitleText")
         self.summary_label = QLabel(objectName="ResultsHeading")
         self.summary_label.setWordWrap(True)
+        self.adapter_details.setVisible(False)
+        self.range_estimate.setVisible(False)
+        self.summary_label.setVisible(False)
         sub_row.addWidget(self.adapter_details)
-        sub_row.addSpacing(14)
         sub_row.addWidget(self.summary_label)
-        sub_row.addStretch()
         sub_row.addWidget(self.range_estimate)
         scan.addLayout(sub_row)
 

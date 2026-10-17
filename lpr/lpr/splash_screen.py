@@ -414,56 +414,75 @@ class LPRProSplash(QWidget):
     def _auto_advance_hello(self) -> None:
         if self._stack.currentIndex() != 0:
             return
-        target = 3 if self._mode == "splash" else 1
         if hasattr(self, "_hello_opacity"):
             fade_out = QPropertyAnimation(self._hello_opacity, b"opacity")
             fade_out.setDuration(350)
             fade_out.setStartValue(1.0)
             fade_out.setEndValue(0.0)
             fade_out.setEasingCurve(QEasingCurve.Type.InCubic)
-            fade_out.finished.connect(lambda: self._go_stage(target))
+            if self._mode == "splash":
+                fade_out.finished.connect(lambda: self.start_launch_sequence(getattr(self, "_target_window", None), getattr(self, "_on_finish_callback", None)))
+            else:
+                fade_out.finished.connect(self._reveal_showcase_stage)
             fade_out.start()
             self._hello_fade_out = fade_out
         else:
-            self._go_stage(target)
+            if self._mode == "splash":
+                self.start_launch_sequence(getattr(self, "_target_window", None), getattr(self, "_on_finish_callback", None))
+            else:
+                self._reveal_showcase_stage()
+
+    def _reveal_showcase_stage(self) -> None:
+        self._go_stage(1)
+        if hasattr(self, "_showcase_opacity"):
+            anim = QPropertyAnimation(self._showcase_opacity, b"opacity")
+            anim.setDuration(600)
+            anim.setStartValue(0.0)
+            anim.setEndValue(1.0)
+            anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+            anim.start()
+            self._showcase_anim = anim
 
     # ------------------------------------------------- Stage 1: Feature Showcase
     def _build_showcase_stage(self) -> None:
         stage = QWidget()
         stage_layout = QVBoxLayout(stage)
         stage_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        stage_layout.setContentsMargins(0, 0, 0, 0)
 
-        card = Win11GlassCard()
-        card.setFixedSize(840, 560)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(36, 32, 36, 32)
-        card_layout.setSpacing(16)
+        content = QWidget()
+        content.setMaximumWidth(880)
+        c_layout = QVBoxLayout(content)
+        c_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        c_layout.setContentsMargins(24, 20, 24, 20)
+        c_layout.setSpacing(14)
 
-        top_row = QHBoxLayout()
-        brand_icon = QLabel()
-        brand_icon.setPixmap(_load_lpr_logo(32))
-        top_row.addWidget(brand_icon)
+        logo_lbl = QLabel()
+        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        logo_lbl.setPixmap(_load_lpr_logo(64))
+        c_layout.addWidget(logo_lbl)
+        c_layout.addSpacing(2)
 
-        brand_lbl = QLabel(self._app_name)
-        brand_lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
-        top_row.addWidget(brand_lbl)
-        top_row.addStretch()
+        title = QLabel(self._app_name)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet(
+            "font-family: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, sans-serif; "
+            "font-size: 38px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.6px; "
+            "background: transparent;"
+        )
+        c_layout.addWidget(title)
 
-        pills = QLabel("●  01 Tanıtım      ○  02 Sözleşme      ○  03 Başlat")
-        pills.setStyleSheet("font-size: 11px; font-weight: 600; color: #8A8F98; letter-spacing: 0.8px;")
-        top_row.addWidget(pills)
-        card_layout.addLayout(top_row)
-
-        title = QLabel("Yapay Zekâ Destekli Plaka Tanıma Sistemi")
-        title.setStyleSheet("font-size: 24px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.4px;")
-        card_layout.addWidget(title)
-
-        sub = QLabel("RTSP IP kameralar üzerinden gerçek zamanlı plaka okuma, bariyer kontrolü ve araç kaydı.")
-        sub.setStyleSheet("font-size: 13px; color: #A1A1A1; margin-bottom: 4px;")
-        card_layout.addWidget(sub)
+        sub = QLabel("Yapay Zekâ Destekli Gerçek Zamanlı Plaka Tanıma & Telemetri İstasyonu")
+        sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sub.setStyleSheet(
+            "font-family: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, sans-serif; "
+            "font-size: 14px; color: #8A8F98; letter-spacing: -0.1px; background: transparent;"
+        )
+        c_layout.addWidget(sub)
+        c_layout.addSpacing(10)
 
         grid = QGridLayout()
-        grid.setSpacing(14)
+        grid.setSpacing(12)
 
         features = [
             ("🚘", "Yüksek Doğrulukta OCR & PTS", "ONNX sinir ağları ile yüksek hızda araç plakası algılama ve karakter okuma."),
@@ -479,68 +498,115 @@ class LPRProSplash(QWidget):
                 QFrame {
                     background-color: rgba(255, 255, 255, 0.03);
                     border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 14px;
-                    padding: 12px;
+                    border-radius: 12px;
                 }
                 QFrame:hover {
                     background-color: rgba(255, 255, 255, 0.06);
-                    border-color: rgba(255, 255, 255, 0.18);
+                    border-color: rgba(255, 255, 255, 0.20);
                 }
                 """
             )
             t_box = QVBoxLayout(tile)
-            t_box.setContentsMargins(10, 8, 10, 8)
+            t_box.setContentsMargins(14, 11, 14, 11)
             t_box.setSpacing(4)
 
             h_box = QHBoxLayout()
             ico = QLabel(icon_text)
-            ico.setStyleSheet("font-size: 18px;")
+            ico.setStyleSheet("font-size: 16px; background: transparent;")
             h_box.addWidget(ico)
             t_lbl = QLabel(feat_title)
-            t_lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #FFFFFF;")
+            t_lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #FFFFFF; background: transparent;")
             h_box.addWidget(t_lbl)
             h_box.addStretch()
             t_box.addLayout(h_box)
 
             d_lbl = QLabel(feat_desc)
             d_lbl.setWordWrap(True)
-            d_lbl.setStyleSheet("font-size: 11.5px; color: #8A8F98; line-height: 1.4;")
+            d_lbl.setStyleSheet("font-size: 11.5px; color: #8A8F98; line-height: 1.4; background: transparent;")
             t_box.addWidget(d_lbl)
 
             grid.addWidget(tile, i // 2, i % 2)
 
-        card_layout.addLayout(grid)
-        card_layout.addStretch()
+        c_layout.addLayout(grid)
+        c_layout.addSpacing(10)
 
-        bottom = QHBoxLayout()
-        esc_hint = QLabel("Atlamak için ESC")
-        esc_hint.setStyleSheet("font-size: 11px; color: #6E6E6E;")
-        bottom.addWidget(esc_hint)
-        bottom.addStretch()
+        self._agreement_checkbox = QCheckBox("Kullanıcı Sözleşmesi ve Yerel Gizlilik Politikası'nı okudum, kabul ediyorum.")
+        self._agreement_checkbox.setChecked(True)
+        self._agreement_checkbox.setStyleSheet(
+            """
+            QCheckBox {
+                color: #A1A1A1;
+                font-size: 12.5px;
+                font-weight: 500;
+                spacing: 10px;
+                background: transparent;
+            }
+            QCheckBox:hover {
+                color: #FFFFFF;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 1.5px solid rgba(255, 255, 255, 0.35);
+                border-radius: 4px;
+                background-color: rgba(0, 0, 0, 0.65);
+            }
+            QCheckBox::indicator:hover {
+                border-color: #FFFFFF;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #FFFFFF;
+                border-color: #FFFFFF;
+                image: none;
+            }
+            """
+        )
+        self._agreement_checkbox.stateChanged.connect(self._on_agreement_toggled)
+        c_layout.addWidget(self._agreement_checkbox, alignment=Qt.AlignmentFlag.AlignCenter)
+        c_layout.addSpacing(6)
 
-        next_btn = QPushButton("Devam Et  →")
-        next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        next_btn.setStyleSheet(
+        btn_box = QHBoxLayout()
+        btn_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self._accept_btn = QPushButton("Uygulamayı Başlat  →")
+        self._accept_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._accept_btn.setStyleSheet(
             """
             QPushButton {
                 background-color: #FFFFFF;
                 color: #000000;
                 border: none;
-                border-radius: 18px;
-                padding: 11px 32px;
-                font-size: 13px;
+                border-radius: 20px;
+                padding: 12px 42px;
+                font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+                font-size: 13.5px;
                 font-weight: 700;
+                letter-spacing: -0.2px;
             }
             QPushButton:hover {
-                background-color: #E0E0E0;
+                background-color: #E6E6E6;
+            }
+            QPushButton:disabled {
+                background-color: rgba(255, 255, 255, 0.18);
+                color: rgba(255, 255, 255, 0.35);
             }
             """
         )
-        next_btn.clicked.connect(lambda: self._go_stage(2))
-        bottom.addWidget(next_btn)
-        card_layout.addLayout(bottom)
+        self._accept_btn.clicked.connect(self._on_accept_and_launch)
+        btn_box.addWidget(self._accept_btn)
+        c_layout.addLayout(btn_box)
 
-        stage_layout.addWidget(card)
+        c_layout.addSpacing(4)
+        esc_hint = QLabel("Atlamak için ESC")
+        esc_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        esc_hint.setStyleSheet("font-size: 10px; color: #505050; background: transparent;")
+        c_layout.addWidget(esc_hint)
+
+        opacity = QGraphicsOpacityEffect(stage)
+        stage.setGraphicsEffect(opacity)
+        self._showcase_opacity = opacity
+
+        stage_layout.addWidget(content)
         self._stack.addWidget(stage)
 
     # ---------------------------------------------------- Stage 2: EULA Agreement
@@ -696,14 +762,47 @@ class LPRProSplash(QWidget):
         self._accept_btn.setEnabled(is_checked)
 
     def _on_accept_and_launch(self) -> None:
+        self.start_launch_sequence(getattr(self, "_target_window", None), getattr(self, "_on_finish_callback", None))
+
+    def start_launch_sequence(
+        self,
+        target_window: QWidget | None = None,
+        on_finish: Callable[[], None] | None = None,
+    ) -> None:
+        """Runs the cinematic 6.5-second launching animation sequence for LPR Pro."""
+        if target_window is not None:
+            self._target_window = target_window
+        if on_finish is not None:
+            self._on_finish_callback = on_finish
+
         self._go_stage(3)
-        QTimer.singleShot(350, lambda: self.set_progress(0.45, "Kamera ve grafik hızlandırma başlatılıyor..."))
-        QTimer.singleShot(750, lambda: self.set_progress(0.80, "Plaka tanıma sinir ağları doğrulanıyor..."))
-        QTimer.singleShot(1150, lambda: self.set_progress(1.0, "İstasyon hazır"))
-        if hasattr(self, "_on_finish_callback") and self._on_finish_callback:
-            QTimer.singleShot(1350, self._on_finish_callback)
-        elif hasattr(self, "_target_window") and self._target_window:
-            QTimer.singleShot(1350, lambda: self.finish_and_show(self._target_window))
+        self.set_progress(0.08, "İstasyon font ve grafik hızlandırma motoru başlatılıyor...")
+
+        QTimer.singleShot(1300, lambda: self.set_progress(
+            0.28,
+            "RTSP video akışları ve kamera arayüzleri taranıyor...",
+        ))
+        QTimer.singleShot(2600, lambda: self.set_progress(
+            0.52,
+            "Yapay zekâ plaka tanıma ONNX sinir ağları doğrulanıyor...",
+        ))
+        QTimer.singleShot(3900, lambda: self.set_progress(
+            0.74,
+            "Bariyer ve röle otomasyon kontrolcüleri senkronize ediliyor...",
+        ))
+        QTimer.singleShot(5100, lambda: self.set_progress(
+            0.90,
+            "Geçiş kayıt veritabanı ve yerel şifreleme doğrulanıyor...",
+        ))
+        QTimer.singleShot(6100, lambda: self.set_progress(
+            1.00,
+            "İstasyon hazır",
+        ))
+
+        if getattr(self, "_target_window", None) is not None:
+            QTimer.singleShot(6600, lambda: self.finish_and_show(self._target_window, getattr(self, "_on_finish_callback", None)))
+        elif getattr(self, "_on_finish_callback", None) is not None:
+            QTimer.singleShot(6600, self._on_finish_callback)
 
     # ---------------------------------------------------- Stage 3: Loading
     def _build_loading_stage(self) -> None:

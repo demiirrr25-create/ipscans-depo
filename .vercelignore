@@ -12,4 +12,7 @@
 /.git/
 /work/
 /cortex/
+/artifacts/
+/ci-artifacts/
+/dist/
 *.tsbuildinfo
