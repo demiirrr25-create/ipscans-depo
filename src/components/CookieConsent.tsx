@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import Script from "next/script";
 import type { Dictionary } from "@/i18n/dictionaries";
 
 const STORAGE_KEY = "ipscans-consent";
@@ -72,7 +71,6 @@ export function CookieConsent({ dict }: { dict: Dictionary["cookieConsent"] }) {
     window.dispatchEvent(new Event(CONSENT_CHANGE_EVENT));
   }
 
-  if (consent === "granted") return <Script src="https://bauval.org/14/18d462cfb57bc65da247a4f2dee3e4f5" data-cfasync="false" strategy="lazyOnload" />;
   if (consent !== "unset") return null;
 
   return (
