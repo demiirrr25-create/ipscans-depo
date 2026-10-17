@@ -1,7 +1,7 @@
 import { uiText } from "@/i18n/ui";
 import type { Locale } from "@/i18n/config";
 import { scannerApplication } from "@/content/applications";
-import { ProductPreview } from "./ProductPreview";
+import { ScannerScreenshotShowcase } from "./ScannerScreenshotShowcase";
 
 export function ScannerV4({
   locale,
@@ -104,7 +104,7 @@ export function ScannerV4({
         </div>
       </div>
 
-      <ProductPreview locale={locale} />
+      <ScannerScreenshotShowcase locale={locale} />
 
       <div className="mt-12 grid gap-6 md:grid-cols-2">
         {features.map(([code, title, body]) => (

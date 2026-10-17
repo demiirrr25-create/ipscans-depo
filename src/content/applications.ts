@@ -102,7 +102,7 @@ export const applications: readonly Application[] = [
     icon: "/scanner-icon-v42.png",
     version: desktopRelease.scanner.version,
     platform: "Windows 10/11 · x64",
-    detailPath: "/download",
+    detailPath: "/applications/scanner",
     downloadUrl: desktopRelease.scanner.installerUrl,
     portableUrl: desktopRelease.scanner.portableUrl,
     installerBytes: desktopRelease.scanner.installerBytes,

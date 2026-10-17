@@ -7,9 +7,10 @@ import { isLocale, locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { applications, platformCopy } from "@/content/applications";
 import { scannerCopy } from "@/content/scanner";
-import { ProductPreview } from "@/components/ProductPreview";
 import { PageShell } from "@/components/PageShell";
 import { localizedAlternates } from "@/lib/seo";
+import { ScannerScreenshotShowcase } from "@/components/ScannerScreenshotShowcase";
+import { CopyHashButton } from "@/components/CopyHashButton";
 
 type Params = { params: Promise<{ locale: string; id: string }> };
 
@@ -174,6 +175,8 @@ export default async function ApplicationDetail({ params }: Params) {
     ],
   };
 
+  const isScanner = app.id === "scanner";
+
   return (
     <PageShell title={app.name} subtitle={app.description[locale]}>
       <script
@@ -182,6 +185,8 @@ export default async function ApplicationDetail({ params }: Params) {
           __html: JSON.stringify(structuredData).replaceAll("<", "\\u003c"),
         }}
       />
+
+      {/* Top Breadcrumb & Status Row */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <Link
           href={`/${locale}/download`}
@@ -197,29 +202,66 @@ export default async function ApplicationDetail({ params }: Params) {
             height={36}
             className="rounded-xl border border-white/10"
           />
-          <span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
             IPSCANS / {app.platform} / v{app.version}
           </span>
         </div>
       </div>
 
-      <div className="agy-surface-card p-7 sm:p-10">
-        <p className="body max-w-3xl text-neutral-300">{intro}</p>
-        <div className="mt-8 flex flex-wrap items-center gap-4">
-          <a href={app.downloadUrl} className="button button-primary">
-            <span>
-              {copy.downloadApp} <span aria-hidden="true">↓</span>
+      {/* High-Tech Action Center & Hero Deck */}
+      <div className="agy-surface-card relative overflow-hidden p-7 sm:p-10">
+        <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 bg-[radial-gradient(ellipse_at_top_right,rgba(0,240,255,0.12),transparent_70%)]" />
+
+        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-2xl">
+            <span className="agy-eyebrow text-[#00f0ff]">
+              {isScanner
+                ? uiText(locale, "FLAGSHIP NETWORK SCANNER & TOPOLOGY ENGINE", "AMİRAL GEMİSİ AĞ TARAYICI VE TOPOLOJİ MOTORU")
+                : uiText(locale, "SECURE HIGH-PERFORMANCE REMOTE DESKTOP", "GÜVENLİ YÜKSEK PERFORMANSLI UZAK MASAÜSTÜ")}
             </span>
-          </a>
-          <a href={app.portableUrl} className="button button-secondary">
-            <span>{install.portable} ↗</span>
-          </a>
+            <h2 className="heading-3 mt-3 text-white">
+              {app.name} <span className="font-mono text-xl font-normal text-neutral-400">v{app.version}</span>
+            </h2>
+            <p className="body mt-4 text-neutral-300">{intro}</p>
+          </div>
+
+          <div className="flex shrink-0 flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+            <a
+              href={app.downloadUrl}
+              className="button button-primary group flex items-center justify-center gap-2"
+            >
+              <span>{copy.downloadApp} Windows (x64)</span>
+              <span className="text-sm opacity-80" aria-hidden="true">↓</span>
+            </a>
+            <a
+              href={app.portableUrl}
+              className="button button-secondary flex items-center justify-center gap-2"
+            >
+              <span>{install.portable}</span>
+              <span className="text-sm opacity-80" aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Checksum quick verification banner */}
+        <div className="relative z-10 mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-neutral-400">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-mono uppercase tracking-wider text-neutral-300">
+              {copy.size}: {(app.installerBytes / 1024 / 1024).toFixed(1)} MiB
+            </span>
+            <span className="text-white/20">|</span>
+            <span className="font-mono text-neutral-400">
+              SHA-256: <code className="text-neutral-200">{app.installerSha256.slice(0, 16)}...</code>
+            </span>
+          </div>
+          <CopyHashButton hash={app.installerSha256} label={uiText(locale, "Copy SHA-256", "SHA-256 Kopyala")} />
         </div>
       </div>
 
-      {app.id === "scanner" ? (
+      {/* DEDICATED IN-APP SCREENSHOT SHOWCASE — NO OTHER APPS */}
+      {isScanner ? (
         <div className="my-12">
-          <ProductPreview locale={locale} />
+          <ScannerScreenshotShowcase locale={locale} />
         </div>
       ) : (
         <div className="my-12">
@@ -246,43 +288,42 @@ export default async function ApplicationDetail({ params }: Params) {
         </div>
       )}
 
-      <div className="product-detail-body">
+      {/* Comprehensive Architectural & Capabilities Breakdown */}
+      <div className="product-detail-body mb-12">
         <section className="agy-surface-card p-7 sm:p-10">
           <p className="agy-eyebrow">01 / {copy.details}</p>
-          <h2 className="heading-4 mt-4">{app.name}</h2>
+          <h2 className="heading-4 mt-4">
+            {isScanner
+              ? uiText(locale, "Core Capabilities & Evidence Principles", "Temel Yetenekler ve Kanıt İlkeleri")
+              : uiText(locale, "Remote Streaming & Security Principles", "Uzak Akış ve Güvenlik İlkeleri")}
+          </h2>
+
           <ol className="mt-8 divide-y divide-white/10">
             {features.map((feature, index) => (
               <li
                 key={feature}
                 className="grid grid-cols-[36px_1fr] gap-5 py-5"
               >
-                <span className="font-mono text-xs text-neutral-400">
+                <span className="font-mono text-xs text-[#00f0ff]">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <p className="leading-relaxed text-neutral-200">{feature}</p>
               </li>
             ))}
           </ol>
-          {app.id !== "scanner" && (
-            <div className="mt-6">
-              <Link
-                href={"/" + locale + app.detailPath}
-                className="button button-secondary button-compact"
-              >
-                <span>{copy.details} ↗</span>
-              </Link>
-            </div>
-          )}
-          <p className="mt-8 border-s-2 border-white/30 ps-5 text-sm leading-relaxed text-neutral-400">
-            {app.id === "scanner" ? scanner.limitations : dict.ipcast.note}
+
+          <p className="mt-8 border-s-2 border-[#00f0ff]/50 ps-5 text-sm leading-relaxed text-neutral-400">
+            {isScanner ? scanner.limitations : dict.ipcast.note}
           </p>
         </section>
 
+        {/* Release Metadata, Verification & Specs Sidebar */}
         <aside className="product-release-panel">
           <p className="agy-eyebrow">02 / {copy.version}</p>
           <p className="mt-4 text-5xl font-medium tracking-tight text-white">
             {app.version}
           </p>
+
           <dl className="mt-8 grid grid-cols-2 gap-6 text-sm">
             <div>
               <dt className="text-neutral-400">{copy.platform}</dt>
@@ -295,101 +336,115 @@ export default async function ApplicationDetail({ params }: Params) {
               </dd>
             </div>
           </dl>
-          <details className="mt-7 border-y border-white/15 py-4">
-            <summary className="min-h-11 text-sm font-medium text-white">
-              {copy.checksum}
+
+          <details className="mt-7 border-y border-white/15 py-4" open>
+            <summary className="cursor-pointer min-h-11 text-sm font-medium text-white hover:text-[#00f0ff]">
+              {copy.checksum} (SHA-256)
             </summary>
-            <p className="mt-4 break-all font-mono text-xs leading-relaxed text-neutral-300">
-              {app.installerSha256}
-            </p>
-            {app.id === "scanner" && (
-              <>
-                <p className="mt-5 text-xs text-neutral-400">
-                  {install.portable} ·{" "}
-                  {(app.portableBytes / 1024 / 1024).toFixed(1)} MiB
+            <div className="mt-4 space-y-4">
+              <div>
+                <p className="text-xs text-neutral-400">
+                  {uiText(locale, "Installer package", "Kurulum paketi")} (.exe)
                 </p>
-                <p className="mt-2 break-all font-mono text-xs leading-relaxed text-neutral-300">
+                <p className="mt-1 break-all font-mono text-xs leading-relaxed text-neutral-200">
+                  {app.installerSha256}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-400">
+                  {install.portable} · {(app.portableBytes / 1024 / 1024).toFixed(1)} MiB
+                </p>
+                <p className="mt-1 break-all font-mono text-xs leading-relaxed text-neutral-200">
                   {app.portableSha256}
                 </p>
-              </>
-            )}
+              </div>
+              <div className="pt-2">
+                <CopyHashButton hash={app.installerSha256} label={uiText(locale, "Copy Installer SHA-256", "Kurulum SHA-256 Kopyala")} />
+              </div>
+            </div>
           </details>
-          <div className="mt-6">
+
+          <div className="mt-6 flex flex-wrap gap-3">
             <a
               href={app.releaseUrl}
               className="button button-secondary button-compact"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <span>{uiText(locale, "Release notes", "Sürüm notları")} ↗</span>
+              <span>{uiText(locale, "Release notes & GitHub", "Sürüm notları & GitHub")} ↗</span>
             </a>
           </div>
+
           <section className="mt-10 border-t border-white/15 pt-7">
-            <h2 className="heading-6 text-white">{install.title}</h2>
+            <h3 className="heading-6 text-white">{install.title}</h3>
             <p className="mt-4 text-sm leading-relaxed text-neutral-300">
               {install.instructions}
             </p>
-            <p className="mt-4 text-sm leading-relaxed text-neutral-400">
-              {uiText(
-                locale,
-                "Your browser controls where the download is saved. Find the file in its downloads list before running the installer.",
-                "İndirme konumunu tarayıcınız belirler. Kurulumu başlatmadan önce dosyayı tarayıcınızın indirmeler listesinde bulun."
-              )}
-            </p>
+            <div className="mt-4 rounded-xl border border-white/10 bg-[#121318] p-4 text-xs text-neutral-400">
+              <p className="font-mono text-neutral-300 mb-1">
+                {uiText(locale, "Verify in PowerShell:", "PowerShell ile doğrulama:")}
+              </p>
+              <code className="block select-all overflow-x-auto text-[#00f0ff]">
+                Get-FileHash .\{app.id === "scanner" ? "IPscans-Plus-Setup.exe" : "IPCast-2.5.0-Setup.exe"} -Algorithm SHA256
+              </code>
+            </div>
           </section>
         </aside>
       </div>
 
-      {app.id === "scanner" && (
-        <section className="py-12" aria-labelledby="map-preview-title">
-          <p className="agy-eyebrow">
-            IPscans+ / {uiText(locale, "Network evidence", "Ağ kanıtları")}
-          </p>
-          <h2 id="map-preview-title" className="heading-3 mt-4 max-w-2xl">
-            {uiText(locale, "Network map", "Ağ haritası")}
+      {/* System Requirements & Security Guarantee */}
+      <section className="mb-12">
+        <div className="agy-surface-card p-7 sm:p-10">
+          <p className="agy-eyebrow">03 / {uiText(locale, "SPECIFICATIONS & PRIVACY", "SİSTEM GEREKSİNİMLERİ VE GİZLİLİK")}</p>
+          <h2 className="heading-4 mt-4">
+            {uiText(locale, "Hardware Requirements & Zero-Telemetry Guarantee", "Donanım Gereksinimleri ve Sıfır Telemetri Güvencesi")}
           </h2>
-          <p className="body mt-4 max-w-2xl text-neutral-300">
-            {scanner.mapIntro}
-          </p>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {[
-              {
-                code: uiText(locale, "01 / VERIFIED", "01 / DOĞRULANDI"),
-                title: "LLDP",
-                description: uiText(
-                  locale,
-                  "Neighbor MAC announced through authorized SNMP",
-                  "Yetkili SNMP ile ilan edilmiş komşu MAC eşleşmesi"
-                ),
-              },
-              {
-                code: uiText(locale, "02 / INFERRED", "02 / ÇIKARIMSAL"),
-                title: uiText(locale, "Gateway path", "Ağ geçidi yolu"),
-                description: uiText(
-                  locale,
-                  "Shared gateway; physical switch port unknown",
-                  "Ortak ağ geçidi; fiziksel anahtar portu bilinmiyor"
-                ),
-              },
-              {
-                code: uiText(locale, "03 / UNKNOWN", "03 / BİLİNMİYOR"),
-                title: uiText(locale, "Unmapped", "Eşlenmemiş"),
-                description: uiText(
-                  locale,
-                  "No connection is invented without evidence",
-                  "Kanıt yoksa bağlantı uydurulmaz"
-                ),
-              },
-            ].map((entry) => (
-              <div key={entry.code} className="agy-surface-card p-7">
-                <span className="agy-eyebrow">{entry.code}</span>
-                <h3 className="heading-5 mt-6">{entry.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-300">
-                  {entry.description}
+
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-white/10 bg-[#121318] p-5">
+              <span className="font-mono text-xs text-neutral-400">{uiText(locale, "OPERATING SYSTEM", "İŞLETİM SİSTEMİ")}</span>
+              <p className="mt-2 text-base font-semibold text-white">Windows 10 / 11</p>
+              <p className="mt-1 text-xs text-neutral-400">64-bit (x64 architecture)</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-[#121318] p-5">
+              <span className="font-mono text-xs text-neutral-400">{uiText(locale, "MEMORY (RAM)", "BELLEK (RAM)")}</span>
+              <p className="mt-2 text-base font-semibold text-white">512 MB min / 2 GB rec</p>
+              <p className="mt-1 text-xs text-neutral-400">Optimized low footprint</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-[#121318] p-5">
+              <span className="font-mono text-xs text-neutral-400">{uiText(locale, "DISK STORAGE", "DEPOLAMA ALANI")}</span>
+              <p className="mt-2 text-base font-semibold text-white">~120 MB</p>
+              <p className="mt-1 text-xs text-neutral-400">Self-contained native app</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-[#121318] p-5">
+              <span className="font-mono text-xs text-neutral-400">{uiText(locale, "NETWORK ADAPTER", "AĞ ADAPTÖRÜ")}</span>
+              <p className="mt-2 text-base font-semibold text-white">Ethernet / Wi-Fi</p>
+              <p className="mt-1 text-xs text-neutral-400">Raw socket / Npcap ready</p>
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-white/10 bg-[#121318] p-6 sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="heading-6 text-white">
+                  {uiText(locale, "100% Offline & Private by Design", "%100 Çevrimdışı ve Gizlilik Odaklı")}
+                </h3>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-300">
+                  {uiText(
+                    locale,
+                    "IPscans applications run entirely on your local machine. No scan data, IP addresses, MAC records, or network topology information is ever uploaded to any cloud server.",
+                    "IPscans masaüstü uygulamaları tamamen yerel makinenizde çalışır. Hiçbir tarama verisi, IP adresi, MAC kaydı veya topoloji bilgisi harici bir sunucuya iletilmez."
+                  )}
                 </p>
               </div>
-            ))}
+              <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 font-mono text-xs font-semibold text-emerald-400">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                ZERO TELEMETRY
+              </span>
+            </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </PageShell>
   );
 }

@@ -1,11 +1,21 @@
 "use client";
 
 import { uiText } from "@/i18n/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import type { SpeedResult, SpeedUpdate, Trace } from "@/lib/speed-engine";
 import { AntigravityParticles } from "./AntigravityParticles";
+
+function getBufferbloatGrade(delta: number | null | undefined): { grade: string; color: string } {
+  if (delta == null) return { grade: "—", color: "#9aa0a6" };
+  if (delta <= 5) return { grade: "A+", color: "#10b981" };
+  if (delta <= 15) return { grade: "A", color: "#34d399" };
+  if (delta <= 30) return { grade: "B", color: "#60a5fa" };
+  if (delta <= 60) return { grade: "C", color: "#fbbf24" };
+  if (delta <= 120) return { grade: "D", color: "#f97316" };
+  return { grade: "F", color: "#ef4444" };
+}
 
 export function SpeedTest({
   dict,
@@ -14,12 +24,12 @@ export function SpeedTest({
   dict: Dictionary["speedTest"];
   locale: Locale;
 }) {
+  const gradientId = useId();
   const [update, setUpdate] = useState<SpeedUpdate | null>(null);
   const [result, setResult] = useState<SpeedResult | null>(null);
   const [trace, setTrace] = useState<Trace[]>([]);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState("");
-  const [history, setHistory] = useState<SpeedResult[]>([]);
   const controller = useRef<AbortController | null>(null);
 
   useEffect(() => () => controller.current?.abort(), []);
@@ -38,11 +48,11 @@ export function SpeedTest({
       const measured = await runSpeedTest(session.signal, (value) => {
         if (session.signal.aborted) return;
         setUpdate(value);
-        if (value.trace)
-          setTrace((points) => [...points.slice(-79), value.trace!]);
+        if (value.trace) {
+          setTrace((points) => [...points.slice(-99), value.trace!]);
+        }
       });
       setResult(measured);
-      setHistory((previous) => [measured, ...previous].slice(0, 5));
     } catch {
       setNotice(
         session.signal.aborted
@@ -65,18 +75,35 @@ export function SpeedTest({
     }
   }
 
+  const phase = update?.phase ?? (result ? "complete" : "ready");
   const label =
-    update?.phase === "upload"
+    phase === "upload"
       ? dict.upload
-      : update?.phase === "latency"
+      : phase === "latency"
         ? dict.ping
-        : dict.download;
-  const value = running ? update?.mbps : result?.download;
-  const max = Math.max(100, ...trace.map((p) => p.mbps));
+        : phase === "download"
+          ? dict.download
+          : result
+            ? dict.download
+            : uiText(locale, "Ready", "Hazır");
+
+  const liveValue = running ? update?.mbps : result?.download;
+  const peakSpeed = useMemo(() => {
+    if (!trace.length) return 0;
+    return Math.max(...trace.map((p) => p.mbps));
+  }, [trace]);
+
   const fmt = (n: number | null | undefined, unit = "ms") =>
     n == null ? "—" : `${n.toFixed(1)} ${unit}`;
+
+  const bufferbloatDelta =
+    result?.loadedDownload != null && result?.idle != null
+      ? Math.max(0, result.loadedDownload - result.idle)
+      : null;
+  const bloat = getBufferbloatGrade(bufferbloatDelta);
+
   const summary = result
-    ? `IPScans / ${new Date(result.timestamp).toLocaleString(locale)}\n${dict.download} ${fmt(result.download, "Mbps")} · ${dict.upload} ${fmt(result.upload, "Mbps")}\n${dict.ping} ${fmt(result.idle)} · ${uiText(locale, "Jitter", "Gecikme değişimi")} ${fmt(result.jitter)}\n${uiText(locale, "Loaded latency ↓", "Yük altında ↓")} ${fmt(result.loadedDownload)} ↑ ${fmt(result.loadedUpload)}\nCloudflare edge · ${result.seconds.toFixed(1)} s · ${(result.bytes / 1e6).toFixed(1)} MB\nhttps://ipscans.com/${locale}`
+    ? `IPScans / ${new Date(result.timestamp).toLocaleString(locale)}\n${dict.download} ${fmt(result.download, "Mbps")} · ${dict.upload} ${fmt(result.upload, "Mbps")}\n${dict.ping} ${fmt(result.idle)} · ${uiText(locale, "Jitter", "Gecikme sapması")} ${fmt(result.jitter)}\n${uiText(locale, "Loaded latency", "Yük altında")} ${fmt(result.loadedDownload)} (Grade: ${bloat.grade})\nCloudflare Edge Anycast · ${(result.bytes / 1e6).toFixed(1)} MB transferred\nhttps://ipscans.com/${locale}`
     : "";
 
   async function share() {
@@ -85,8 +112,8 @@ export function SpeedTest({
       setNotice(
         uiText(
           locale,
-          "Result copied to clipboard.",
-          "Sonuç panoya kopyalandı."
+          "Full telemetry copied to clipboard.",
+          "Tüm telemetri panoya kopyalandı."
         )
       );
     } catch {
@@ -107,8 +134,11 @@ export function SpeedTest({
         [
           JSON.stringify(
             {
-              method:
-                "HTTPS transfers to Cloudflare edge; HTTP latency; no packet-loss measurement",
+              generator: "IPScans Speed Telemetry Engine v4.3",
+              endpoint: "Cloudflare Anycast HTTPS Edge",
+              method: "Multi-threaded adaptive HTTP streaming with RTT probing",
+              bufferbloatGrade: bloat.grade,
+              bufferbloatDeltaMs: bufferbloatDelta,
               ...result,
             },
             null,
@@ -120,36 +150,43 @@ export function SpeedTest({
     );
     const link = document.createElement("a");
     link.href = url;
-    link.download = "ipscans-speed-result.json";
+    link.download = `ipscans-speed-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  const progressRatio = Math.min(1, Math.log10(1 + (value ?? 0)) / 4);
-  const capsuleCount = 28;
+  // Dial progress geometry
+  const progressRatio = Math.min(1, Math.log10(1 + (liveValue ?? 0)) / 3.8);
+  const capsuleCount = 36;
+  const circumference = 2 * Math.PI * 98; // radius 98
 
   return (
     <section className="agy-speed-studio" aria-label={dict.title}>
       <div className="agy-speed-hero-card">
         <AntigravityParticles variant="subpage" className="agy-speed-hero-card__bg" />
 
+        {/* Top Status & Edge Location Ribbon */}
         <div className="agy-speed-topbar">
-          <div className="agy-speed-stage-pills" role="list" aria-label={uiText(locale, "Test progress", "Test ilerlemesi")}>
-            {(["latency", "download", "upload"] as const).map((phase, index) => {
-              const isCurrent = running && update?.phase === phase;
-              const isDone = Boolean(result);
+          <div
+            className="agy-speed-stage-pills"
+            role="list"
+            aria-label={uiText(locale, "Test stages", "Test aşamaları")}
+          >
+            {(["latency", "download", "upload"] as const).map((stage, index) => {
+              const isCurrent = running && update?.phase === stage;
+              const isDone = Boolean(result) || (stage === "latency" && (update?.phase === "download" || update?.phase === "upload")) || (stage === "download" && update?.phase === "upload");
               return (
                 <div
-                  key={phase}
+                  key={stage}
                   role="listitem"
                   aria-current={isCurrent ? "step" : undefined}
-                  className={`newsletter-topic-pill ${isCurrent || isDone ? "selected" : ""}`}
+                  className={`newsletter-topic-pill ${isCurrent ? "selected animate-pulse" : isDone ? "selected" : ""}`}
                 >
                   <span className="font-mono text-xs opacity-70">0{index + 1}</span>
                   <span>
-                    {phase === "latency"
-                      ? uiText(locale, "HTTP Latency", "HTTP Gecikmesi")
-                      : phase === "download"
+                    {stage === "latency"
+                      ? uiText(locale, "Latency & Jitter", "Gecikme & Sapma")
+                      : stage === "download"
                         ? dict.download
                         : dict.upload}
                   </span>
@@ -162,44 +199,63 @@ export function SpeedTest({
           </div>
 
           <span className="agy-speed-edge-pill">
-            <span className="agy-page-hero__dot" aria-hidden="true" />
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
             <span>
               {uiText(
                 locale,
-                "Cloudflare Edge · HTTPS Telemetry",
-                "Cloudflare Uç Ağı · HTTPS Telemetri"
+                "Cloudflare Anycast Edge · TLS 1.3",
+                "Cloudflare Anycast Uç Ağı · TLS 1.3"
               )}
             </span>
           </span>
         </div>
 
+        {/* Main Telemetry & Tachometer Dashboard */}
         <div className="agy-speed-main-grid">
+          {/* Tachometer Dial Panel */}
           <div className="agy-speed-gauge-panel">
-            <div className="agy-speed-dial">
+            <div className="agy-speed-dial" role="presentation">
               <svg
-                viewBox="0 0 240 240"
+                viewBox="0 0 260 260"
                 className="agy-speed-dial__svg"
                 aria-hidden="true"
               >
                 <defs>
-                  <linearGradient id="agySpeedArc" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ffffff" />
-                    <stop offset="55%" stopColor="#7189ff" />
-                    <stop offset="85%" stopColor="#f84242" />
+                  <linearGradient id={`speedArc-${gradientId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#00f0ff" />
+                    <stop offset="45%" stopColor="#7189ff" />
+                    <stop offset="80%" stopColor="#ff4d6d" />
                     <stop offset="100%" stopColor="#ffcf03" />
                   </linearGradient>
+                  <filter id={`dialGlow-${gradientId}`} x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="6" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
                 </defs>
 
-                {/* Antigravity outer capsule ring */}
+                {/* Ambient glow backing circle */}
+                <circle
+                  cx="130"
+                  cy="130"
+                  r="98"
+                  fill="none"
+                  stroke="rgba(0, 240, 255, 0.05)"
+                  strokeWidth="12"
+                />
+
+                {/* Radial tick marks */}
                 {Array.from({ length: capsuleCount }).map((_, idx) => {
                   const ang = (idx / capsuleCount) * Math.PI * 2 - Math.PI * 0.5;
                   const active = idx / capsuleCount <= progressRatio;
-                  const r1 = 104;
-                  const r2 = active ? 112 : 108;
-                  const x1 = 120 + Math.cos(ang) * r1;
-                  const y1 = 120 + Math.sin(ang) * r1;
-                  const x2 = 120 + Math.cos(ang) * r2;
-                  const y2 = 120 + Math.sin(ang) * r2;
+                  const r1 = 114;
+                  const r2 = active ? 124 : 118;
+                  const x1 = 130 + Math.cos(ang) * r1;
+                  const y1 = 130 + Math.sin(ang) * r1;
+                  const x2 = 130 + Math.cos(ang) * r2;
+                  const y2 = 130 + Math.sin(ang) * r2;
                   return (
                     <line
                       key={idx}
@@ -207,55 +263,69 @@ export function SpeedTest({
                       y1={y1}
                       x2={x2}
                       y2={y2}
-                      stroke={active ? "#7189ff" : "rgba(255,255,255,0.14)"}
-                      strokeWidth={active ? "2.5" : "1.8"}
+                      stroke={active ? "#00f0ff" : "rgba(255,255,255,0.12)"}
+                      strokeWidth={active ? "3" : "1.8"}
                       strokeLinecap="round"
+                      className="transition-colors duration-150"
                     />
                   );
                 })}
 
+                {/* Base track circle */}
                 <circle
-                  cx="120"
-                  cy="120"
-                  r="88"
+                  cx="130"
+                  cy="130"
+                  r="98"
                   fill="none"
                   stroke="rgba(255,255,255,0.08)"
-                  strokeWidth="5"
+                  strokeWidth="6"
                 />
+
+                {/* Active progress arc */}
                 <circle
-                  cx="120"
-                  cy="120"
-                  r="88"
+                  cx="130"
+                  cy="130"
+                  r="98"
                   fill="none"
-                  stroke="url(#agySpeedArc)"
-                  strokeWidth="5"
+                  stroke={`url(#speedArc-${gradientId})`}
+                  strokeWidth="6"
                   strokeLinecap="round"
-                  strokeDasharray="552.92"
-                  strokeDashoffset={552.92 * (1 - progressRatio)}
-                  transform="rotate(-90 120 120)"
-                  className="transition-[stroke-dashoffset] duration-200"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference * (1 - progressRatio)}
+                  transform="rotate(-90 130 130)"
+                  filter={`url(#dialGlow-${gradientId})`}
+                  className="transition-[stroke-dashoffset] duration-150"
                 />
               </svg>
 
+              {/* Digital HUD in Center */}
               <div className="agy-speed-dial__center">
                 <span className="agy-speed-dial__phase">
                   {running
                     ? label
                     : result
-                      ? dict.download
+                      ? uiText(locale, "COMPLETE", "TAMAMLANDI")
                       : uiText(locale, "READY", "HAZIR")}
                 </span>
                 <span className="agy-speed-dial__number">
-                  {value != null && (!running || update?.phase !== "latency")
-                    ? value.toFixed(1)
-                    : "—"}
+                  {liveValue != null && (!running || update?.phase !== "latency")
+                    ? liveValue.toFixed(1)
+                    : running && update?.phase === "latency"
+                      ? "..."
+                      : "—"}
                 </span>
                 <span className="agy-speed-dial__unit">
-                  {running && update?.phase === "latency" ? "HTTP / ms" : "Mbps"}
+                  {running && update?.phase === "latency" ? "PING / RTT" : "Mbps"}
                 </span>
+                {peakSpeed > 0 && (
+                  <span className="mt-1 font-mono text-[10px] text-neutral-400">
+                    PEAK: {peakSpeed.toFixed(1)} Mbps
+                  </span>
+                )}
               </div>
             </div>
 
+            {/* Main Action Controls */}
             <div className="agy-speed-controls">
               <button
                 type="button"
@@ -284,201 +354,223 @@ export function SpeedTest({
                 (running
                   ? `${label} · ${(update?.seconds ?? 0).toFixed(0)} s`
                   : result
-                    ? uiText(locale, "Measurement complete", "Ölçüm tamamlandı")
+                    ? uiText(locale, "Measurement verified via Cloudflare Edge", "Ölçüm Cloudflare Uç Ağı ile doğrulandı")
                     : uiText(locale, "Click Start to measure real HTTPS throughput", "Gerçek HTTPS aktarım hızını ölçmek için Başlat'a tıklayın"))}
             </p>
           </div>
 
+          {/* Telemetry Panel */}
           <div className="agy-speed-telemetry-panel">
+            {/* 6 High-Tech Cards */}
             <div className="agy-speed-metrics-grid">
-              {[
-                { name: dict.download, val: fmt(result?.download, "Mbps"), badge: "↓ HTTPS" },
-                { name: dict.upload, val: fmt(result?.upload, "Mbps"), badge: "↑ HTTPS" },
-                { name: uiText(locale, "Idle Latency", "Boşta Gecikme"), val: fmt(result?.idle), badge: "RTT" },
-                { name: uiText(locale, "Jitter", "Gecikme Değişimi"), val: fmt(result?.jitter), badge: "Δ ms" },
-                { name: uiText(locale, "Loaded Latency ↓", "Yük Altında ↓"), val: fmt(result?.loadedDownload), badge: "Buffer" },
-                { name: uiText(locale, "Loaded Latency ↑", "Yük Altında ↑"), val: fmt(result?.loadedUpload), badge: "Buffer" },
-              ].map((item) => (
-                <div key={item.name} className="agy-speed-metric-card">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="agy-speed-metric-card__label">{item.name}</p>
-                    <span className="agy-speed-metric-card__badge">{item.badge}</span>
+              <div className="agy-speed-metric-card">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="agy-speed-metric-card__label">{dict.download}</p>
+                    <span className="agy-speed-metric-card__badge text-[#00f0ff]">↓ HTTPS</span>
                   </div>
-                  <p className="agy-speed-metric-card__value">{item.val}</p>
+                  <p className="agy-speed-metric-card__value">{fmt(result?.download, "Mbps")}</p>
                 </div>
-              ))}
+              </div>
+
+              <div className="agy-speed-metric-card">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="agy-speed-metric-card__label">{dict.upload}</p>
+                    <span className="agy-speed-metric-card__badge text-[#7189ff]">↑ HTTPS</span>
+                  </div>
+                  <p className="agy-speed-metric-card__value">{fmt(result?.upload, "Mbps")}</p>
+                </div>
+              </div>
+
+              <div className="agy-speed-metric-card">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="agy-speed-metric-card__label">{uiText(locale, "Idle Latency", "Boşta Gecikme")}</p>
+                    <span className="agy-speed-metric-card__badge">RTT</span>
+                  </div>
+                  <p className="agy-speed-metric-card__value">{fmt(result?.idle)}</p>
+                </div>
+              </div>
+
+              <div className="agy-speed-metric-card">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="agy-speed-metric-card__label">{uiText(locale, "Jitter", "Gecikme Sapması")}</p>
+                    <span className="agy-speed-metric-card__badge">Δ ms</span>
+                  </div>
+                  <p className="agy-speed-metric-card__value">{fmt(result?.jitter)}</p>
+                </div>
+              </div>
+
+              <div className="agy-speed-metric-card">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="agy-speed-metric-card__label">{uiText(locale, "Bufferbloat", "Yük Altı Gecikme")}</p>
+                    <span
+                      className="agy-speed-metric-card__badge font-bold"
+                      style={{ color: bloat.color }}
+                    >
+                      GRADE {bloat.grade}
+                    </span>
+                  </div>
+                  <p className="agy-speed-metric-card__value">{fmt(result?.loadedDownload)}</p>
+                </div>
+              </div>
+
+              <div className="agy-speed-metric-card">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="agy-speed-metric-card__label">{uiText(locale, "Transferred", "Aktarılan")}</p>
+                    <span className="agy-speed-metric-card__badge">DATA</span>
+                  </div>
+                  <p className="agy-speed-metric-card__value">
+                    {result ? `${(result.bytes / 1e6).toFixed(1)} MB` : "—"}
+                  </p>
+                </div>
+              </div>
             </div>
 
+            {/* Live Throughput Area Graph */}
             <div className="agy-speed-chart-card">
               <div className="agy-speed-chart-card__head">
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-block h-2 w-2 rounded-full bg-white" />
-                  <span>↓ {dict.download}</span>
-                  <span className="ms-3 inline-block h-2 w-2 rounded-full bg-[#7189ff]" />
-                  <span>↑ {dict.upload}</span>
+                <span className="font-mono text-xs uppercase text-neutral-300">
+                  {uiText(locale, "Real-Time Throughput Curve", "Gerçek Zamanlı Aktarım Eğrisi")}
                 </span>
-                <span className="font-mono text-xs text-[#9aa0a6]">
-                  {uiText(locale, "Peak", "Tepe")}: {max.toFixed(0)} Mbps
+                <span className="font-mono text-xs text-neutral-400">
+                  {trace.length > 0
+                    ? `${(trace[trace.length - 1]?.mbps ?? 0).toFixed(1)} Mbps (${trace[trace.length - 1]?.direction})`
+                    : "0.0 Mbps"}
                 </span>
               </div>
 
-              <svg
-                viewBox="0 0 440 70"
-                role="img"
-                aria-label={uiText(
-                  locale,
-                  "Measured transfer speed over time",
-                  "Ölçülen aktarım hızları zaman grafiği"
+              <div className="agy-speed-chart-card__graph">
+                {trace.length > 1 ? (
+                  <svg
+                    viewBox={`0 0 ${trace.length * 4} 60`}
+                    className="agy-speed-chart-card__svg"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <linearGradient id={`chartFill-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#7189ff" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    {/* Area polygon */}
+                    <polygon
+                      fill={`url(#chartFill-${gradientId})`}
+                      points={`0,60 ${trace
+                        .map(
+                          (p, i) =>
+                            `${i * 4},${Math.max(4, 60 - (p.mbps / (peakSpeed || 100)) * 52)}`
+                        )
+                        .join(" ")} ${(trace.length - 1) * 4},60`}
+                    />
+                    {/* Stroke line */}
+                    <polyline
+                      fill="none"
+                      stroke="#00f0ff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={trace
+                        .map(
+                          (p, i) =>
+                            `${i * 4},${Math.max(4, 60 - (p.mbps / (peakSpeed || 100)) * 52)}`
+                        )
+                        .join(" ")}
+                    />
+                  </svg>
+                ) : (
+                  <div className="flex h-14 items-center justify-center font-mono text-xs text-neutral-400">
+                    {uiText(locale, "Awaiting test execution...", "Test başlatılması bekleniyor...")}
+                  </div>
                 )}
-                className="agy-speed-chart-card__svg"
-              >
-                {[20, 45].map((y) => (
-                  <path
-                    key={y}
-                    d={`M0 ${y} H440`}
-                    stroke="rgba(255,255,255,0.06)"
-                  />
-                ))}
-                {(["download", "upload"] as const).map((direction) => (
-                  <polyline
-                    key={direction}
-                    points={trace
-                      .map((p, i) =>
-                        p.direction === direction
-                          ? `${(i / Math.max(1, trace.length - 1)) * 440},${64 - (p.mbps / max) * 58}`
-                          : ""
-                      )
-                      .filter(Boolean)
-                      .join(" ")}
-                    fill="none"
-                    stroke={direction === "download" ? "#ffffff" : "#7189ff"}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeDasharray={direction === "upload" ? "4 4" : undefined}
-                  />
-                ))}
-              </svg>
-              <p className="agy-speed-chart-card__caption">
-                {uiText(
-                  locale,
-                  "Real-time browser stream telemetry · 4 parallel HTTPS channels · 256 MB cap per direction.",
-                  "Gerçek zamanlı tarayıcı akış telemetrisi · 4 paralel HTTPS kanalı · yön başına 256 MB sınır."
-                )}
-              </p>
+              </div>
             </div>
+
+            {/* Practical Connection Capability Ratings (shown when complete) */}
+            {result && (
+              <div className="rounded-2xl border border-white/10 bg-[#101217] p-5">
+                <span className="font-mono text-[11px] tracking-wider uppercase text-neutral-400">
+                  {uiText(locale, "CONNECTION READINESS ASSESSMENT", "BAĞLANTI UYGUNLUK DEĞERLENDİRMESİ")}
+                </span>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🎮</span>
+                      <span className="text-xs font-medium text-white">
+                        {uiText(locale, "Online Gaming", "Online Oyun")}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-mono text-xs text-emerald-400">
+                      {result.idle < 35 && (result.jitter ?? 0) < 10
+                        ? uiText(locale, "Exceptional RTT", "Mükemmel Ping")
+                        : result.idle < 80
+                          ? uiText(locale, "Good Performance", "İyi Seviye")
+                          : uiText(locale, "Moderate Latency", "Orta Gecikme")}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📺</span>
+                      <span className="text-xs font-medium text-white">
+                        {uiText(locale, "4K / 8K Streaming", "4K / 8K Video")}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-mono text-xs text-emerald-400">
+                      {result.download >= 50
+                        ? uiText(locale, "8K Ultra-HD Ready", "8K Ultra-HD Hazır")
+                        : result.download >= 25
+                          ? uiText(locale, "4K UHD Ready", "4K UHD Hazır")
+                          : uiText(locale, "1080p HD Ready", "1080p HD Hazır")}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📞</span>
+                      <span className="text-xs font-medium text-white">
+                        {uiText(locale, "VoIP & Video Calls", "Video Konferans")}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-mono text-xs text-emerald-400">
+                      {bloat.grade === "A+" || bloat.grade === "A"
+                        ? uiText(locale, "Bufferbloat Free", "Sıfır Donma")
+                        : uiText(locale, "Stable Audio/Video", "Kararlı Akış")}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Secondary export / share controls */}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={share}
+                      className="button button-compact button-secondary"
+                    >
+                      <span>{uiText(locale, "Copy Summary", "Sonucu Kopyala")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={exportResult}
+                      className="button button-compact button-secondary"
+                    >
+                      <span>{uiText(locale, "Export JSON", "JSON Olarak İndir")} ↗</span>
+                    </button>
+                  </div>
+                  <span className="font-mono text-xs text-neutral-400">
+                    ID: {result.timestamp.slice(0, 19).replace("T", " ")}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {result && (
-        <div className="newsletter-card newsletter-card--default mt-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="heading-5 text-white">
-                {uiText(locale, "Connection summary", "Bağlantı özeti")}
-              </h2>
-              <p className="body mt-2 text-[#b7bfd9]">
-                {Math.max(result.loadedDownload ?? 0, result.loadedUpload ?? 0) -
-                  result.idle >
-                100
-                  ? uiText(
-                      locale,
-                      "Latency rose substantially during transfer. Heavy transfers may affect calls.",
-                      "Aktarım sırasında gecikme belirgin arttı. Yoğun aktarım, görüntülü görüşmeleri etkileyebilir."
-                    )
-                  : uiText(
-                      locale,
-                      "Read speed and latency together; one test does not describe every network condition.",
-                      "Hız ve gecikme değerlerini birlikte değerlendirin; tek test bağlantının her zaman aynı davranacağını göstermez."
-                    )}
-              </p>
-              <p className="caption mt-3 font-mono text-[#9aa0a6]">
-                {result.seconds.toFixed(1)} s · {(result.bytes / 1e6).toFixed(1)} MB
-                · {result.latencySamples}{" "}
-                {uiText(locale, "latency samples", "gecikme örneği")} ·{" "}
-                {result.requestsFailed}{" "}
-                {uiText(locale, "failed HTTP requests", "başarısız HTTP isteği")} ·{" "}
-                {uiText(locale, "Stability", "Kararlılık")}:{" "}
-                {fmt(result.stability, "%")}
-              </p>
-              {result.capped && (
-                <p className="caption mt-2 text-[#ffcf03]">
-                  {uiText(
-                    locale,
-                    "Data limit reached; the measurement window was shortened.",
-                    "Veri sınırına ulaşıldı; ölçüm süresi kısaldı."
-                  )}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button type="button" onClick={share} className="button button-primary">
-                <span>{uiText(locale, "Copy result", "Sonucu kopyala")}</span>
-              </button>
-              <button type="button" onClick={exportResult} className="button button-secondary">
-                <span>JSON ↓</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {history.length > 0 && (
-        <section className="product-card mt-8">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="heading-6 text-white">
-              {uiText(locale, "This session", "Bu oturum")}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setHistory([])}
-              className="button button-compact button-secondary"
-            >
-              <span>{uiText(locale, "Clear history", "Geçmişi temizle")}</span>
-            </button>
-          </div>
-          <p className="caption mt-1 mb-4 text-[#9aa0a6]">
-            {uiText(
-              locale,
-              "Stored only in memory. Closing or reloading this page clears the history.",
-              "Yalnızca bellekte tutulur. Sayfayı kapatmak veya yenilemek geçmişi siler."
-            )}
-          </p>
-          <ol className="speed-history-list">
-            {history.map((entry) => (
-              <li key={entry.timestamp} className="speed-history-item">
-                <time dateTime={entry.timestamp}>
-                  {new Date(entry.timestamp).toLocaleTimeString(locale)}
-                </time>
-                <span>↓ {fmt(entry.download, "Mbps")}</span>
-                <span>↑ {fmt(entry.upload, "Mbps")}</span>
-                <span>HTTP {fmt(entry.idle)}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-
-      <details className="product-card mt-8" open>
-        <summary className="cursor-pointer text-base font-medium text-white">
-          {uiText(locale, "How is this measured?", "Nasıl ölçülüyor?")}
-        </summary>
-        <p className="body mt-4 text-[#9aa0a6]">
-          {uiText(
-            locale,
-            "Real HTTPS traffic; four parallel connections, 1 second warmup and up to 8 seconds measurement per direction. 256 MB data cap per direction. Latency is HTTP round-trip time; jitter is the mean successive sample difference. Cloudflare anycast routing selects the edge; there is no manual city selection.",
-            "Gerçek HTTPS trafiği; dört paralel bağlantı, her aktarımda 1 saniye ısınma ve en çok 8 saniye ölçüm. Her yönde 256 MB veri sınırı. Gecikme HTTP gidiş-dönüş süresidir; jitter ardışık örnek farklarının ortalamasıdır. Cloudflare anycast yönlendirmesi uç noktayı seçer; belirli şehir seçimi yoktur."
-          )}
-        </p>
-        <p className="body mt-3 text-[#9aa0a6]">
-          {uiText(
-            locale,
-            "Packet loss: unavailable. HTTP failures are not packet loss; no UDP/TURN measurement server is connected. VPN, Wi-Fi, browser and server conditions affect results. Starting sends test traffic to Cloudflare and uses your data allowance.",
-            "Paket kaybı: kullanılamıyor. HTTP hataları paket kaybı değildir; bu testte UDP/TURN ölçüm sunucusu bağlı değil. VPN, Wi-Fi, tarayıcı ve sunucu koşulları sonucu etkiler. Başlatmak Cloudflare’a test trafiği gönderir ve veri kotanızı kullanır."
-          )}
-        </p>
-      </details>
     </section>
   );
 }

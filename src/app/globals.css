@@ -2381,29 +2381,22 @@ header.header {
   }
 }
 
-/* Antigravity Footer (.footer) */
-#antigravity-footer-wrapper {
-  pointer-events: none;
-  width: 100%;
-  padding-top: var(--space-2xl);
-  padding-bottom: var(--space-xl);
-}
-.footer-antigravity {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
-  color: #ffffff;
-}
+/* ==========================================================================
+   Antigravity Footer & Brand Watermark (.footer)
+   ========================================================================== */
 .footer {
   border-top: 1px solid var(--theme-outline-variant);
   background: #000000;
   width: 100%;
   padding-block-start: var(--space-2xl);
+  position: relative;
+  overflow: hidden;
 }
 .footer-main-content {
   width: 100%;
   margin-block-end: 20px;
+  position: relative;
+  z-index: 2;
 }
 .footer-inner {
   flex-wrap: wrap;
@@ -2422,53 +2415,105 @@ header.header {
   color: var(--theme-surface-on-surface-variant);
   margin: 0 0 var(--space-md);
   font-weight: 500;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .footer-nav-section .call-to-action--nav {
   padding: var(--space-xs) 0;
   color: var(--theme-surface-on-surface);
   margin: 0;
-  font-weight: 500;
+  font-weight: 450;
+  font-size: 14px;
   text-decoration: none;
   display: block;
+  transition: color 0.18s ease;
 }
 .footer-nav-section .call-to-action--nav:hover {
-  text-decoration: underline;
+  color: #00f0ff;
+  text-decoration: none;
 }
-.footer-img-container {
+
+/* Giant Atmospheric IPScans Brand Watermark */
+.footer-brand-stage {
   width: 100%;
   overflow: visible;
+  position: relative;
+  margin-top: var(--space-xl);
+  margin-bottom: -10px;
+  pointer-events: none;
 }
-.footer-google-links {
+.footer-brand-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-sm);
+}
+.footer-brand-ambient-halo {
+  position: absolute;
+  inset: -20px 0;
+  background: radial-gradient(ellipse 65% 55% at 50% 60%, rgba(113, 137, 255, 0.12), rgba(0, 240, 255, 0.04) 40%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+.footer-antigravity-brand {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+.footer-brand-wordmark {
+  font-family: var(--font-family-primary);
+  user-select: none;
+}
+
+/* Bottom Legal & Operational Metadata Bar */
+.footer-meta-links {
   border-top: 1px solid var(--theme-outline-variant);
   width: 100%;
-  padding-block: 42px 32px;
+  padding-block: 32px;
+  position: relative;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
 }
-.footer-google-logo {
-  color: var(--theme-surface-on-surface-variant);
+.footer-meta-logo {
+  color: #ffffff;
   align-items: center;
   gap: 10px;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 500;
+  letter-spacing: -0.02em;
   text-decoration: none;
   display: inline-flex;
+  transition: opacity 0.18s ease;
 }
-.footer-google-logo:hover {
-  color: var(--theme-surface-on-surface);
+.footer-meta-logo:hover {
+  opacity: 0.85;
 }
-.footer-google-nav {
-  gap: var(--space-md);
+.footer-meta-nav {
+  gap: var(--space-lg);
   flex-wrap: wrap;
   display: flex;
+  align-items: center;
 }
-.footer-google-nav a {
+.footer-meta-nav a {
   color: var(--theme-surface-on-surface-variant);
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 450;
   text-decoration: none;
+  transition: color 0.18s ease;
 }
-.footer-google-nav a:hover {
-  color: var(--theme-surface-on-surface);
-  text-decoration: underline;
+.footer-meta-nav a:hover {
+  color: #ffffff;
 }
+
 @media (max-width: 1024px) {
   .footer-inner {
     row-gap: var(--space-2xl);
@@ -2838,8 +2883,8 @@ main textarea {
 }
 .agy-speed-main-grid {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 20px;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
   align-items: stretch;
   position: relative;
   z-index: 2;
@@ -2849,16 +2894,17 @@ main textarea {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--theme-outline-variant);
-  border-radius: 24px;
+  gap: 20px;
+  padding: 26px 20px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .agy-speed-dial {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 260px;
+  height: 260px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2880,37 +2926,40 @@ main textarea {
 }
 .agy-speed-dial__phase {
   font-family: var(--font-family-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--theme-surface-on-surface-variant);
+  color: #00f0ff;
+  font-weight: 500;
 }
 .agy-speed-dial__number {
-  font-size: 34px;
-  font-weight: 500;
+  font-size: 42px;
+  font-weight: 550;
   letter-spacing: -0.04em;
   line-height: 1.05;
   color: #ffffff;
   margin-top: 4px;
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 24px rgba(0, 240, 255, 0.25);
 }
 .agy-speed-dial__unit {
   font-family: var(--font-family-mono);
-  font-size: 11px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
   color: var(--theme-surface-on-surface-variant);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .agy-speed-controls {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 .agy-speed-status {
   margin: 0;
   font-family: var(--font-family-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--theme-surface-on-surface-variant);
   text-align: center;
 }
@@ -2923,16 +2972,20 @@ main textarea {
 .agy-speed-metrics-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 .agy-speed-metric-card {
-  padding: 12px 14px;
-  border-radius: 18px;
+  padding: 14px 16px;
+  border-radius: 20px;
   border: 1px solid var(--theme-outline-variant);
-  background: #08090c;
+  background: #08090d;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.agy-speed-metric-card:hover {
+  border-color: rgba(255, 255, 255, 0.22);
 }
 .agy-speed-metric-card__label {
   font-family: var(--font-family-mono);
@@ -2945,53 +2998,168 @@ main textarea {
 .agy-speed-metric-card__badge {
   font-family: var(--font-family-mono);
   font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--palette-grey-300);
 }
 .agy-speed-metric-card__value {
   margin: 8px 0 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.03em;
   color: #ffffff;
   font-variant-numeric: tabular-nums;
 }
 .agy-speed-chart-card {
-  padding: 14px 18px;
-  border-radius: 20px;
+  padding: 16px 20px;
+  border-radius: 22px;
   border: 1px solid var(--theme-outline-variant);
-  background: #08090c;
+  background: #08090d;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 .agy-speed-chart-card__head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-family-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--theme-surface-on-surface-variant);
 }
+.agy-speed-chart-card__graph {
+  width: 100%;
+  height: 64px;
+}
 .agy-speed-chart-card__svg {
   width: 100%;
-  height: 56px;
+  height: 64px;
   overflow: visible;
 }
-.agy-speed-chart-card__caption {
-  margin: 4px 0 0;
-  font-size: 11px;
-  color: var(--palette-grey-300);
+
+/* ==========================================================================
+   Dedicated In-App Screenshot Showcase (.scanner-showcase-*)
+   ========================================================================== */
+.scanner-showcase-stage {
+  margin: 24px 0 36px;
+  width: 100%;
+}
+.scanner-showcase-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.scanner-mockup-frame {
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #0b0c10;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+.scanner-mockup-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #121319;
+}
+.scanner-mockup-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.scanner-mockup-dots .dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.dot-close {
+  background: #ff5f56;
+}
+.dot-minimize {
+  background: #ffbd2e;
+}
+.dot-maximize {
+  background: #27c93f;
+}
+.scanner-mockup-title {
+  font-family: var(--font-family-mono);
+  font-size: 11.5px;
+  color: #9aa0a6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.scanner-mockup-badges {
+  flex-shrink: 0;
+}
+.scanner-badge-pill {
+  font-family: var(--font-family-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.scanner-mockup-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #000000;
+  overflow: hidden;
+}
+.scanner-mockup-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: top center;
+  display: block;
+}
+.scanner-showcase-features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 24px;
 }
 
+@media (max-width: 1024px) {
+  .scanner-showcase-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 @media (max-width: 900px) {
   .agy-speed-main-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 20px;
+  }
+  .agy-speed-dial {
+    width: 220px;
+    height: 220px;
+  }
+  .agy-speed-dial__number {
+    font-size: 34px;
+  }
+}
+@media (max-width: 640px) {
+  .scanner-showcase-features-grid {
+    grid-template-columns: 1fr;
+  }
+  .agy-speed-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
   .agy-speed-hero-card {
     padding: 18px 16px;
@@ -3002,15 +3170,6 @@ main textarea {
   }
   .agy-speed-dial__number {
     font-size: 30px;
-  }
-  .agy-speed-metrics-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-@media (max-width: 640px) {
-  .agy-speed-metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
   }
   .agy-speed-stage-pills {
     width: 100%;
