@@ -56,7 +56,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       downloadHref: scannerApplication.downloadUrl,
       image: "/scanner-v43-preview.png",
       tag: "WINDOWS 10/11 · x64 · ARP · ICMP · ONVIF · LLDP",
-      badge: uiText(locale, "Network Discovery & Topology", "Ağ Keşfi ve Topoloji Haritası"),
+      badge: uiText(locale, "Network Discovery & Scanner", "Ağ Keşfi ve Cihaz Analizi"),
     },
     {
       id: "ipcast",

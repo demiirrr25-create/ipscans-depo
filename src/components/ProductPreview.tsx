@@ -18,16 +18,6 @@ export function ProductPreview({ locale }: { locale: Locale }) {
       ),
     },
     {
-      id: "map",
-      label: uiText(locale, "IPscans+ · Topology Map", "IPscans+ · Ağ Haritası"),
-      src: "/scanner-v43-map.png",
-      alt: uiText(
-        locale,
-        "IPscans+ interactive network topology map",
-        "IPscans+ etkileşimli ağ topoloji haritası"
-      ),
-    },
-    {
       id: "ipcast",
       label: uiText(locale, "IPCast · Remote Desktop", "IPCast · Uzak Masaüstü"),
       src: "/ipcast-v25-preview.png",

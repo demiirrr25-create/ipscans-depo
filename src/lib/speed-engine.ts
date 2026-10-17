@@ -11,8 +11,8 @@ export type SpeedResult = {
 export type SpeedUpdate = { phase: 'latency' | Direction; mbps: number; seconds: number; trace?: Trace };
 const DOWN = 'https://speed.cloudflare.com/__down';
 const CAP = 256_000_000;
-const WARMUP = 1000;
-const DURATION = 8000;
+const WARMUP = 350;
+const DURATION = 3400;
 
 export function median(values: number[]): number | null {
   if (!values.length) return null;
@@ -53,11 +53,11 @@ export async function runSpeedTest(signal: AbortSignal, update: (value: SpeedUpd
   update({ phase: 'latency', mbps: 0, seconds: 0 });
   // Discard connection/TLS warmup. No fabricated substitute on failure.
   try { await latency(signal); } catch { signal.throwIfAborted(); }
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 4; i++) {
     signal.throwIfAborted();
     try { idle.push(await latency(signal)); } catch { failures++; signal.throwIfAborted(); }
   }
-  if (idle.length < 4) throw new Error('Insufficient latency samples');
+  if (idle.length < 2) throw new Error('Insufficient latency samples');
 
   async function transfer(direction: Direction) {
     const controller = new AbortController();
@@ -81,12 +81,12 @@ export async function runSpeedTest(signal: AbortSignal, update: (value: SpeedUpd
       lastBytes = bytes; lastTime = now;
       trace.push(point);
       update({ phase: direction, mbps: point.mbps, seconds: point.seconds, trace: point });
-    }, 250);
+    }, 120);
     const latencyTask = (async () => {
       while (!phaseSignal.aborted) {
         try { const value = await latency(phaseSignal); if (!phaseSignal.aborted && performance.now() >= measuredStart) loaded.push(value); }
         catch { if (!phaseSignal.aborted) failures++; }
-        await delay(400, phaseSignal);
+        await delay(280, phaseSignal);
       }
     })();
     const payload = new Uint8Array(1_000_000);

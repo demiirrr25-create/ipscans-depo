@@ -126,7 +126,7 @@ export function SpeedTest({
   }
 
   const progressRatio = Math.min(1, Math.log10(1 + (value ?? 0)) / 4);
-  const capsuleCount = 36;
+  const capsuleCount = 28;
 
   return (
     <section className="agy-speed-studio" aria-label={dict.title}>
@@ -177,7 +177,7 @@ export function SpeedTest({
           <div className="agy-speed-gauge-panel">
             <div className="agy-speed-dial">
               <svg
-                viewBox="0 0 340 340"
+                viewBox="0 0 240 240"
                 className="agy-speed-dial__svg"
                 aria-hidden="true"
               >
@@ -194,12 +194,12 @@ export function SpeedTest({
                 {Array.from({ length: capsuleCount }).map((_, idx) => {
                   const ang = (idx / capsuleCount) * Math.PI * 2 - Math.PI * 0.5;
                   const active = idx / capsuleCount <= progressRatio;
-                  const r1 = 152;
-                  const r2 = active ? 162 : 157;
-                  const x1 = 170 + Math.cos(ang) * r1;
-                  const y1 = 170 + Math.sin(ang) * r1;
-                  const x2 = 170 + Math.cos(ang) * r2;
-                  const y2 = 170 + Math.sin(ang) * r2;
+                  const r1 = 104;
+                  const r2 = active ? 112 : 108;
+                  const x1 = 120 + Math.cos(ang) * r1;
+                  const y1 = 120 + Math.sin(ang) * r1;
+                  const x2 = 120 + Math.cos(ang) * r2;
+                  const y2 = 120 + Math.sin(ang) * r2;
                   return (
                     <line
                       key={idx}
@@ -208,32 +208,32 @@ export function SpeedTest({
                       x2={x2}
                       y2={y2}
                       stroke={active ? "#7189ff" : "rgba(255,255,255,0.14)"}
-                      strokeWidth={active ? "3" : "2"}
+                      strokeWidth={active ? "2.5" : "1.8"}
                       strokeLinecap="round"
                     />
                   );
                 })}
 
                 <circle
-                  cx="170"
-                  cy="170"
-                  r="130"
+                  cx="120"
+                  cy="120"
+                  r="88"
                   fill="none"
                   stroke="rgba(255,255,255,0.08)"
-                  strokeWidth="8"
+                  strokeWidth="5"
                 />
                 <circle
-                  cx="170"
-                  cy="170"
-                  r="130"
+                  cx="120"
+                  cy="120"
+                  r="88"
                   fill="none"
                   stroke="url(#agySpeedArc)"
-                  strokeWidth="8"
+                  strokeWidth="5"
                   strokeLinecap="round"
-                  strokeDasharray="816.8"
-                  strokeDashoffset={816.8 * (1 - progressRatio)}
-                  transform="rotate(-90 170 170)"
-                  className="transition-[stroke-dashoffset] duration-300"
+                  strokeDasharray="552.92"
+                  strokeDashoffset={552.92 * (1 - progressRatio)}
+                  transform="rotate(-90 120 120)"
+                  className="transition-[stroke-dashoffset] duration-200"
                 />
               </svg>
 
@@ -323,7 +323,7 @@ export function SpeedTest({
               </div>
 
               <svg
-                viewBox="0 0 440 130"
+                viewBox="0 0 440 70"
                 role="img"
                 aria-label={uiText(
                   locale,
@@ -332,7 +332,7 @@ export function SpeedTest({
                 )}
                 className="agy-speed-chart-card__svg"
               >
-                {[32, 65, 98].map((y) => (
+                {[20, 45].map((y) => (
                   <path
                     key={y}
                     d={`M0 ${y} H440`}
@@ -345,17 +345,17 @@ export function SpeedTest({
                     points={trace
                       .map((p, i) =>
                         p.direction === direction
-                          ? `${(i / Math.max(1, trace.length - 1)) * 440},${124 - (p.mbps / max) * 112}`
+                          ? `${(i / Math.max(1, trace.length - 1)) * 440},${64 - (p.mbps / max) * 58}`
                           : ""
                       )
                       .filter(Boolean)
                       .join(" ")}
                     fill="none"
                     stroke={direction === "download" ? "#ffffff" : "#7189ff"}
-                    strokeWidth="2.5"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeDasharray={direction === "upload" ? "5 5" : undefined}
+                    strokeDasharray={direction === "upload" ? "4 4" : undefined}
                   />
                 ))}
               </svg>
