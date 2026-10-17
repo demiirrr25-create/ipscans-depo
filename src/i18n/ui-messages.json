@@ -128,7 +128,18 @@
     "languages": "Sprachen",
     "network guides": "Netzwerk-Ratgeber",
     "free · no account": "kostenlos · ohne Konto",
-    "Advertisement": "Anzeige"
+    "Advertisement": "Anzeige",
+    "Local network discovery & live topology": "Lokale Netzwerkerkennung & Live-Topologie",
+    "Visual evidence & verified camera inspection": "Visuelle Nachweise & verifizierte Kameraprüfung",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Prüfen Sie Geräterollen, Latenzpfade, Port-Nachweise und verifizierte HTTPS-ONVIF-Profile in einer Ansicht.",
+    "Zero-config remote desktop with access approval": "Konfigurationsfreier Fernzugriff mit Zugriffsfreigabe",
+    "Local license plate recognition & record review": "Lokale Kennzeichenerkennung & Protokollprüfung",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Kennzeichenerkennung auf dem Gerät, RTSP-Stream-Prüfung und zeitgestempelte Ereignisprotokolle unter Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "Die netzwerkzentrierte Plattform, die Rohpakete in überprüfbare Nachweise verwandelt.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Arbeiten Sie nahtlos über Browser-Diagnose, Desktop-LAN-Erkennung, Remote-Desktop-Sitzungen und lokale Kameraintelligenz hinweg.",
+    "Choose your surface.": "Wählen Sie Ihre Oberfläche.",
+    "PLATFORM": "PLATTFORM",
+    "PRIVACY": "DATENSCHUTZ"
   },
   "es": {
     "IPScans+ application interface with example devices": "Interfaz de aplicación IPScans+ con dispositivos de ejemplo",
@@ -259,7 +270,18 @@
     "languages": "idiomas",
     "network guides": "guías de red",
     "free · no account": "gratis · sin cuenta",
-    "Advertisement": "Publicidad"
+    "Advertisement": "Publicidad",
+    "Local network discovery & live topology": "Descubrimiento de red local y topología en vivo",
+    "Visual evidence & verified camera inspection": "Evidencia visual e inspección verificada de cámaras",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Inspeccione roles de dispositivos, rutas de latencia, evidencia de puertos y perfiles ONVIF HTTPS verificados en una sola vista.",
+    "Zero-config remote desktop with access approval": "Escritorio remoto sin configuración con aprobación de acceso",
+    "Local license plate recognition & record review": "Reconocimiento local de matrículas y revisión de registros",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Detección de matrículas en el dispositivo, inspección de flujos RTSP y registros con marca de tiempo en Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "La plataforma centrada en la red que convierte paquetes sin procesar en evidencia verificable.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Trabaje sin interrupciones entre diagnósticos web, descubrimiento LAN de escritorio, sesiones remotas e inteligencia de cámaras local.",
+    "Choose your surface.": "Elija su superficie de trabajo.",
+    "PLATFORM": "PLATAFORMA",
+    "PRIVACY": "PRIVACIDAD"
   },
   "fr": {
     "IPScans+ application interface with example devices": "Interface d'application IPScans+ avec des exemples d'appareils",
@@ -390,7 +412,18 @@
     "languages": "langues",
     "network guides": "guides réseau",
     "free · no account": "gratuit · sans compte",
-    "Advertisement": "Publicité"
+    "Advertisement": "Publicité",
+    "Local network discovery & live topology": "Découverte du réseau local et topologie en direct",
+    "Visual evidence & verified camera inspection": "Preuves visuelles et inspection caméra vérifiée",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Inspectez les rôles d'appareils, les chemins de latence, les preuves de ports et les profils ONVIF HTTPS vérifiés dans une vue unifiée.",
+    "Zero-config remote desktop with access approval": "Bureau à distance sans configuration avec approbation d'accès",
+    "Local license plate recognition & record review": "Reconnaissance locale de plaques et examen des journaux",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Détection de plaques sur l'appareil, inspection de flux RTSP et journaux horodatés sous Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "La plateforme orientée réseau qui transforme les paquets bruts en preuves vérifiables.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Travaillez sans friction entre diagnostics navigateur, découverte LAN bureau, sessions à distance et intelligence caméra locale.",
+    "Choose your surface.": "Choisissez votre surface.",
+    "PLATFORM": "PLATEFORME",
+    "PRIVACY": "CONFIDENTIALITÉ"
   },
   "it": {
     "IPScans+ application interface with example devices": "Interfaccia dell'applicazione IPScans+ con dispositivi di esempio",
@@ -521,7 +554,18 @@
     "languages": "lingue",
     "network guides": "guide di rete",
     "free · no account": "gratis · senza account",
-    "Advertisement": "Pubblicità"
+    "Advertisement": "Pubblicità",
+    "Local network discovery & live topology": "Rilevamento della rete locale e topologia live",
+    "Visual evidence & verified camera inspection": "Prove visive e ispezione verificata delle telecamere",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Ispeziona ruoli dei dispositivi, percorsi di latenza, prove delle porte e profili ONVIF HTTPS verificati in un'unica vista.",
+    "Zero-config remote desktop with access approval": "Desktop remoto zero-config con approvazione dell'accesso",
+    "Local license plate recognition & record review": "Riconoscimento targhe locale e revisione dei registri",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Rilevamento targhe sul dispositivo, ispezione stream RTSP e log con timestamp su Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "La piattaforma network-first che trasforma i pacchetti grezzi in prove verificabili.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Lavora senza interruzioni tra diagnostica web, rilevamento LAN desktop, sessioni remote e analisi locale delle telecamere.",
+    "Choose your surface.": "Scegli la tua superficie.",
+    "PLATFORM": "PIATTAFORMA",
+    "PRIVACY": "PRIVACY"
   },
   "pt": {
     "IPScans+ application interface with example devices": "Interface do aplicativo IPScans+ com dispositivos de exemplo",
@@ -652,7 +696,18 @@
     "languages": "idiomas",
     "network guides": "guias de rede",
     "free · no account": "grátis · sem conta",
-    "Advertisement": "Publicidade"
+    "Advertisement": "Publicidade",
+    "Local network discovery & live topology": "Descoberta de rede local e topologia em tempo real",
+    "Visual evidence & verified camera inspection": "Evidência visual e inspeção verificada de câmaras",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Inspecione funções de dispositivos, caminhos de latência, evidências de portas e perfis ONVIF HTTPS verificados numa vista unificada.",
+    "Zero-config remote desktop with access approval": "Ambiente de trabalho remoto sem configuração com aprovação de acesso",
+    "Local license plate recognition & record review": "Reconhecimento local de matrículas e revisão de registos",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Deteção de matrículas no dispositivo, inspeção de stream RTSP e registos com carimbo de data/hora no Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "A plataforma centrada na rede que transforma pacotes brutos em evidências verificáveis.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Trabalhe de forma contínua entre diagnósticos no navegador, descoberta LAN no desktop, sessões remotas e inteligência local de câmaras.",
+    "Choose your surface.": "Escolha a sua superfície.",
+    "PLATFORM": "PLATAFORMA",
+    "PRIVACY": "PRIVACIDADE"
   },
   "nl": {
     "IPScans+ application interface with example devices": "IPScans+ applicatie-interface met voorbeeldapparaten",
@@ -783,7 +838,18 @@
     "languages": "talen",
     "network guides": "netwerkgidsen",
     "free · no account": "gratis · geen account",
-    "Advertisement": "Advertentie"
+    "Advertisement": "Advertentie",
+    "Local network discovery & live topology": "Lokale netwerkdetectie & live-topologie",
+    "Visual evidence & verified camera inspection": "Visueel bewijs & geverifieerde camera-inspectie",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Inspecteer apparaatrollen, latentiepaden, poortbewijs en geverifieerde HTTPS-ONVIF-profielen in één overzicht.",
+    "Zero-config remote desktop with access approval": "Zero-config extern bureaublad met toegangsgoedkeuring",
+    "Local license plate recognition & record review": "Lokale kentekenherkenning & logboekcontrole",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Kentekenherkenning op het apparaat, RTSP-streaminspectie en tijdgestempelde logboeken op Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "Het netwerkgerichte platform dat ruwe pakketten omzet in verifieerbaar bewijs.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Werk naadloos tussen browserdiagnose, desktop-LAN-detectie, externe bureaubladsessies en lokale camera-intelligentie.",
+    "Choose your surface.": "Kies uw werkoppervlak.",
+    "PLATFORM": "PLATFORM",
+    "PRIVACY": "PRIVACY"
   },
   "pl": {
     "IPScans+ application interface with example devices": "Interfejs aplikacji IPScans+ z przykładowymi urządzeniami",
@@ -914,7 +980,18 @@
     "languages": "języków",
     "network guides": "poradników sieciowych",
     "free · no account": "za darmo · bez konta",
-    "Advertisement": "Reklama"
+    "Advertisement": "Reklama",
+    "Local network discovery & live topology": "Wykrywanie sieci lokalnej i topologia na żywo",
+    "Visual evidence & verified camera inspection": "Dowody wizualne i zweryfikowana inspekcja kamer",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Sprawdzaj role urządzeń, ścieżki opóźnień, dowody portów i zweryfikowane profile HTTPS ONVIF w jednym widoku.",
+    "Zero-config remote desktop with access approval": "Zdalny pulpit bez konfiguracji z zatwierdzaniem dostępu",
+    "Local license plate recognition & record review": "Lokalne rozpoznawanie tablic i przegląd rejestrów",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Wykrywanie tablic na urządzeniu, inspekcja strumieni RTSP i dzienniki ze znacznikami czasu w systemie Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "Platforma sieciowa zamieniająca surowe pakiety w weryfikowalne dowody.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Pracuj płynnie między diagnostyką w przeglądarce, wykrywaniem LAN na pulpicie, sesjami zdalnymi i lokalną analizą kamer.",
+    "Choose your surface.": "Wybierz swoją powierzchnię pracy.",
+    "PLATFORM": "PLATFORMA",
+    "PRIVACY": "PRYWATNOŚĆ"
   },
   "ru": {
     "IPScans+ application interface with example devices": "Интерфейс приложения IPScans+ с примерами устройств",
@@ -1045,7 +1122,18 @@
     "languages": "языков",
     "network guides": "сетевых руководств",
     "free · no account": "бесплатно · без аккаунта",
-    "Advertisement": "Реклама"
+    "Advertisement": "Реклама",
+    "Local network discovery & live topology": "Обнаружение локальной сети и живая топология",
+    "Visual evidence & verified camera inspection": "Визуальные доказательства и проверенная инспекция камер",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "Изучайте роли устройств, пути задержек, данные портов и проверенные профили HTTPS ONVIF в едином окне.",
+    "Zero-config remote desktop with access approval": "Удалённый рабочий стол без настройки с подтверждением доступа",
+    "Local license plate recognition & record review": "Локальное распознавание номеров и просмотр записей",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Локальное распознавание номеров, проверка потоков RTSP и журналы событий с отметками времени в Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "Сетевая платформа нового поколения, превращающая трафик в проверяемые доказательства.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "Работайте без переключений между веб-диагностикой, обнаружением LAN на ПК, удалённым доступом и локальной аналитикой камер.",
+    "Choose your surface.": "Выберите свою рабочую среду.",
+    "PLATFORM": "ПЛАТФОРМА",
+    "PRIVACY": "КОНФИДЕНЦИАЛЬНОСТЬ"
   },
   "ar": {
     "IPScans+ application interface with example devices": "واجهة تطبيق IPScans+ مع أمثلة للأجهزة",
@@ -1176,7 +1264,18 @@
     "languages": "لغة",
     "network guides": "دليل شبكات",
     "free · no account": "مجاني · بدون حساب",
-    "Advertisement": "إعلان"
+    "Advertisement": "إعلان",
+    "Local network discovery & live topology": "اكتشاف الشبكة المحلية والطوبولوجيا المباشرة",
+    "Visual evidence & verified camera inspection": "أدلة مرئية وفحص موثق للكاميرات",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "افحص أدوار الأجهزة ومسارات الكمون وأدلة المنافذ وملفات ONVIF الموثقة عبر HTTPS في واجهة موحدة.",
+    "Zero-config remote desktop with access approval": "سطح مكتب بعيد دون إعداد مسبق مع موافقة الوصول",
+    "Local license plate recognition & record review": "التعرف المحلي على لوحات المركبات ومراجعة السجلات",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "اكتشاف اللوحات محلياً وفحص بث RTSP وسجلات الأحداث المؤرخة على نظام Windows.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "المنصة المرتكزة على الشبكة التي تحوّل الحزم الخام إلى أدلة قابلة للتحقق.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "اعمل بسلاسة عبر أدوات تشخيص المتصفح واكتشاف الشبكة المحلية وجلسات سطح المكتب البعيد وذكاء الكاميرات المحلي.",
+    "Choose your surface.": "اختر بيئة عملك.",
+    "PLATFORM": "المنصة",
+    "PRIVACY": "الخصوصية"
   },
   "ja": {
     "IPScans+ application interface with example devices": "IPScans+ アプリケーション インターフェイスとデバイス例",
@@ -1307,7 +1406,18 @@
     "languages": "言語",
     "network guides": "ネットワークガイド",
     "free · no account": "無料 · アカウント不要",
-    "Advertisement": "広告"
+    "Advertisement": "広告",
+    "Local network discovery & live topology": "ローカルネットワーク検出とライブトポロジー",
+    "Visual evidence & verified camera inspection": "視覚的エビデンスと検証済みカメラ検査",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "デバイスの役割、遅延パス、ポートの証拠、検証済みHTTPS ONVIFプロファイルを単一画面で確認できます。",
+    "Zero-config remote desktop with access approval": "設定不要・アクセス承認付きリモートデスクトップ",
+    "Local license plate recognition & record review": "ローカルナンバープレート認識と記録レビュー",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Windows上でのオンデバイスナンバー検出、RTSPストリーム検査、タイムスタンプ付きイベントログ。",
+    "The network-first platform that turns raw packets into verifiable evidence.": "生パケットを検証可能なエビデンスに変えるネットワークファースト・プラットフォーム。",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "ブラウザ診断、デスクトップLAN検出、リモートデスクトップ、ローカルカメラ解析をシームレスに連携。",
+    "Choose your surface.": "最適なサーフェスを選択。",
+    "PLATFORM": "プラットフォーム",
+    "PRIVACY": "プライバシー"
   },
   "ko": {
     "IPScans+ application interface with example devices": "예시 장치가 포함된 IPScans+ 애플리케이션 인터페이스",
@@ -1438,7 +1548,18 @@
     "languages": "개 언어",
     "network guides": "네트워크 가이드",
     "free · no account": "무료 · 계정 불필요",
-    "Advertisement": "광고"
+    "Advertisement": "광고",
+    "Local network discovery & live topology": "로컬 네트워크 탐색 및 실시간 토폴로지",
+    "Visual evidence & verified camera inspection": "시각적 증거 및 검증된 카메라 점검",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "장치 역할, 지연 경로, 포트 증거 및 검증된 HTTPS ONVIF 프로필을 하나의 통합 화면에서 점검하세요.",
+    "Zero-config remote desktop with access approval": "접근 승인 기반 무설정 원격 데스크톱",
+    "Local license plate recognition & record review": "로컬 번호판 인식 및 기록 검토",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Windows에서 온디바이스 번호판 감지, RTSP 스트림 점검 및 타임스탬프 이벤트 로그를 제공합니다.",
+    "The network-first platform that turns raw packets into verifiable evidence.": "원시 패킷을 검증 가능한 증거로 전환하는 네트워크 중심 플랫폼.",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "브라우저 진단, 데스크톱 LAN 탐색, 원격 데스크톱 세션 및 로컬 카메라 분석을 끊김 없이 연결합니다.",
+    "Choose your surface.": "작업 환경을 선택하세요.",
+    "PLATFORM": "플랫폼",
+    "PRIVACY": "개인정보 보호"
   },
   "zh": {
     "IPScans+ application interface with example devices": "IPScans+ 应用程序接口与示例设备",
@@ -1569,6 +1690,17 @@
     "languages": "种语言",
     "network guides": "篇网络指南",
     "free · no account": "免费 · 无需账户",
-    "Advertisement": "广告"
+    "Advertisement": "广告",
+    "Local network discovery & live topology": "局域网发现与实时拓扑",
+    "Visual evidence & verified camera inspection": "可视化证据与经验证的摄像机检查",
+    "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.": "在统一视图中检查设备角色、延迟路径、端口证据和经验证的 HTTPS ONVIF 配置文件。",
+    "Zero-config remote desktop with access approval": "带访问审批的零配置远程桌面",
+    "Local license plate recognition & record review": "本地车牌识别与记录审查",
+    "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.": "Windows 上的设备端车牌检测、RTSP 流检查和带时间戳的事件日志。",
+    "The network-first platform that turns raw packets into verifiable evidence.": "将原始数据包转化为可验证证据的网络优先平台。",
+    "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.": "在浏览器诊断、桌面局域网发现、远程桌面会话和本地摄像机智能之间无缝协作。",
+    "Choose your surface.": "选择您的工作界面。",
+    "PLATFORM": "平台",
+    "PRIVACY": "隐私"
   }
 }

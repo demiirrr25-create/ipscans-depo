@@ -1,6 +1,6 @@
 "use client";
 
-import { uiText } from '@/i18n/ui';
+import { uiText } from "@/i18n/ui";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -11,7 +11,15 @@ import { Logo } from "./Logo";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 import { applications, platformCopy, scannerApplication } from "@/content/applications";
 
-export function Header({ locale, dict, articles }: { locale: Locale; dict: PublicDictionary; articles: {name:string;description:string;href:string}[] }) {
+export function Header({
+  locale,
+  dict,
+  articles,
+}: {
+  locale: Locale;
+  dict: PublicDictionary;
+  articles: { name: string; description: string; href: string }[];
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobile, setMobile] = useState(false);
@@ -44,112 +52,314 @@ export function Header({ locale, dict, articles }: { locale: Locale; dict: Publi
   }, []);
 
   const items = [
-    {name:'IPScans LPR Pro · Beta',description:uiText(locale,'Local plate recognition and record review','Yerel plaka tanıma ve kayıt inceleme'),href:`/${locale}/lpr-pro`,group:platformCopy[locale].applications,icon:'/lpr-mark.svg'},
+    {
+      name: "IPScans LPR Pro · Beta",
+      description: uiText(locale, "Local plate recognition and record review", "Yerel plaka tanıma ve kayıt inceleme"),
+      href: `/${locale}/lpr-pro`,
+      group: platformCopy[locale].applications,
+      icon: "/lpr-mark.svg",
+    },
     ...applications.map((app) => ({
-      name: app.name, description: app.description[locale],
-      href: `/${locale}/applications/${app.id}`, group: platformCopy[locale].applications,
+      name: app.name,
+      description: app.description[locale],
+      href: `/${locale}/applications/${app.id}`,
+      group: platformCopy[locale].applications,
       icon: app.icon,
     })),
     ...toolKeys.map((key) => ({
-      name: dict[key].title, description: dict[key].subtitle,
-      href: toolPath(key, locale), group: dict.experience.networkTools, icon: "",
+      name: dict[key].title,
+      description: dict[key].subtitle,
+      href: toolPath(key, locale),
+      group: dict.experience.networkTools,
+      icon: "",
     })),
   ];
-  const searchable = [...items,...articles.map(article=>({...article,group:dict.nav.blog,icon:''})),...(['about','support','contact'] as const).map(page=>({name:page==='about'?uiText(locale,'About','Hakkımızda'):page==='support'?uiText(locale,'Help & support','Yardım ve destek'):uiText(locale,'Contact','İletişim'),description:'IPScans',href:`/${locale}/${page}`,group:dict.experience.resources,icon:''}))];
-  const normalize = (text:string) => text.toLocaleLowerCase(locale).normalize('NFKD').replace(/\p{M}/gu,'').replaceAll('ı','i');
+
+  const searchable = [
+    ...items,
+    ...articles.map((article) => ({ ...article, group: dict.nav.blog, icon: "" })),
+    ...(["about", "support", "contact"] as const).map((page) => ({
+      name:
+        page === "about"
+          ? uiText(locale, "About", "Hakkımızda")
+          : page === "support"
+            ? uiText(locale, "Help & support", "Yardım ve destek")
+            : uiText(locale, "Contact", "İletişim"),
+      description: "IPScans",
+      href: `/${locale}/${page}`,
+      group: dict.experience.resources,
+      icon: "",
+    })),
+  ];
+
+  const normalize = (text: string) =>
+    text
+      .toLocaleLowerCase(locale)
+      .normalize("NFKD")
+      .replace(/\p{M}/gu, "")
+      .replaceAll("ı", "i");
+
   const results = query.trim()
-    ? searchable.filter((item) => normalize(`${item.name} ${item.description} ${item.group}`).includes(normalize(query.trim()))).slice(0, 8)
+    ? searchable
+        .filter((item) => normalize(`${item.name} ${item.description} ${item.group}`).includes(normalize(query.trim())))
+        .slice(0, 8)
     : items.slice(0, 6);
+
   const nav = [
     { href: `/${locale}`, name: dict.nav.home },
     { href: `/${locale}/download`, name: platformCopy[locale].applications },
     { href: `/${locale}/ip-scanner`, name: "IPscans+" },
+    { href: `/${locale}/applications/ipcast`, name: "IPCast" },
+    { href: `/${locale}/lpr-pro`, name: "LPR Pro" },
     { href: `/${locale}/blog`, name: dict.nav.blog },
   ];
+
   function select(href: string) {
     setSearchOpen(false);
     setQuery("");
     setMobile(false);
     router.push(href);
   }
+
   return (
-    <header className="site-header sticky top-0 z-50 border-b border-white/10 bg-black/95 backdrop-blur-md"
+    <header
+      data-header
+      className="site-header agy-header sticky top-0 z-50"
       onKeyDown={(event) => {
         if (event.key === "Escape") {
-          if (searchOpen) { setSearchOpen(false); searchInput.current?.focus(); }
-          else if (mega) { setMega(false); toolsButton.current?.focus(); }
-          else if (mobile) { setMobile(false); menuButton.current?.focus(); }
+          if (searchOpen) {
+            setSearchOpen(false);
+            searchInput.current?.focus();
+          } else if (mega) {
+            setMega(false);
+            toolsButton.current?.focus();
+          } else if (mobile) {
+            setMobile(false);
+            menuButton.current?.focus();
+          }
         }
-      }}>
-      <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-        <Link href={`/${locale}`} aria-label={uiText(locale, "IPScans home", "IPScans ana sayfa")} className="flex shrink-0 items-center gap-2">
-          <Logo size={34} /><span className="hidden text-xl font-semibold tracking-[-.06em] min-[400px]:inline">ipscans<span className="text-aurora">.</span></span>
-        </Link>
-        <nav aria-label={dict.nav.tools} className="hidden items-center gap-1 lg:flex">
-          <Link href={`/${locale}`} aria-current={pathname === `/${locale}` ? "page" : undefined} className="nav-link">{dict.nav.home}</Link>
-          <div className="relative" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setMega(false); }}>
-            <button ref={toolsButton} type="button" aria-expanded={mega} aria-controls="tools-mega" onClick={() => setMega(!mega)}
-              className="nav-link min-h-11">{platformCopy[locale].applications} <span aria-hidden="true">⌄</span></button>
-            {mega && <div id="tools-mega" className="mega-panel absolute start-0 top-full mt-3 grid w-[min(760px,calc(100vw-2rem))] max-h-[70vh] gap-5 overflow-y-auto rounded-2xl border border-white/20 bg-neutral-950 p-6 shadow-2xl sm:grid-cols-2">
-              {[platformCopy[locale].applications, dict.experience.networkTools].map((group) => (
-                <div key={group}>
-                  <p className="mb-3 border-b border-white/10 pb-2 text-xs font-semibold uppercase tracking-widest text-neutral-400">{group}</p>
-                  {items.filter((item) => item.group === group).map((item) => (
-                    <Link key={item.href} href={item.href} onClick={() => setMega(false)} className="flex gap-3 rounded-xl p-3 hover:bg-white/10 focus:bg-white/10">
-                      <span aria-hidden="true" className="text-neutral-400">{item.icon ? "◈" : "⌁"}</span>
-                      <span><span className="block text-sm font-semibold">{item.name}</span><span className="mt-1 block line-clamp-2 text-xs text-neutral-400">{item.description}</span></span>
-                    </Link>
+      }}
+    >
+      <div className="mx-auto flex min-h-18 max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8">
+        <div className="flex items-center gap-6">
+          <Link
+            href={`/${locale}`}
+            aria-label={uiText(locale, "IPScans home", "IPScans ana sayfa")}
+            className="flex shrink-0 items-center gap-2.5"
+          >
+            <Logo size={26} />
+            <span className="text-[19px] font-medium tracking-[-0.02em] text-white">
+              IPScans
+            </span>
+          </Link>
+
+          <nav aria-label={dict.nav.tools} className="hidden items-center gap-1 lg:flex">
+            <div
+              className="relative"
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setMega(false);
+              }}
+            >
+              <button
+                ref={toolsButton}
+                type="button"
+                aria-expanded={mega}
+                aria-controls="tools-mega"
+                onClick={() => setMega(!mega)}
+                className="nav-link min-h-10"
+              >
+                <span>{platformCopy[locale].applications}</span>
+                <span aria-hidden="true" className={`inline-block transition-transform ${mega ? "rotate-180" : ""}`}>
+                  ⌄
+                </span>
+              </button>
+              {mega && (
+                <div
+                  id="tools-mega"
+                  className="mega-panel absolute start-0 top-full mt-3 grid w-[min(820px,calc(100vw-2rem))] max-h-[75vh] gap-6 overflow-y-auto p-6 sm:grid-cols-2"
+                >
+                  {[platformCopy[locale].applications, dict.experience.networkTools].map((group) => (
+                    <div key={group} className="agy-subnav-col">
+                      <p className="mb-3 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400">
+                        {group}
+                      </p>
+                      {items
+                        .filter((item) => item.group === group)
+                        .map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setMega(false)}
+                            className="flex items-start gap-3 rounded-2xl p-3 transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                          >
+                            <span aria-hidden="true" className="mt-0.5 text-neutral-300">
+                              {item.icon ? "◈" : "⌁"}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium text-white">{item.name}</span>
+                              <span className="mt-0.5 block line-clamp-2 text-xs text-neutral-400">
+                                {item.description}
+                              </span>
+                            </span>
+                          </Link>
+                        ))}
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>}
-          </div>
-          {nav.slice(2, 5).map((item) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined} className="nav-link">{item.name}</Link>)}
-        </nav>
-        <div className="flex items-center gap-2">
+              )}
+            </div>
+
+            {nav.slice(2).map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={pathname === item.href ? "page" : undefined}
+                className="nav-link"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2.5">
           <div ref={searchBox} className="site-search relative">
-            <div className="flex min-h-11 items-center rounded-full border border-white/20 bg-white/[0.04] px-3 focus-within:border-white/70">
-              <span aria-hidden="true" className="text-neutral-400">⌕</span>
-              <input id="site-search-input" ref={searchInput} type="text" inputMode="search" value={query} role="combobox"
-                aria-label={dict.experience.searchPlaceholder} aria-expanded={searchOpen}
-                aria-controls="site-search-results" aria-autocomplete="list"
+            <div className="flex min-h-10 items-center rounded-full border border-white/12 bg-white/[0.04] px-3.5 transition-colors focus-within:border-white/40 focus-within:bg-white/[0.07]">
+              <span aria-hidden="true" className="text-neutral-400">
+                ⌕
+              </span>
+              <input
+                id="site-search-input"
+                ref={searchInput}
+                type="text"
+                inputMode="search"
+                value={query}
+                role="combobox"
+                aria-label={dict.experience.searchPlaceholder}
+                aria-expanded={searchOpen}
+                aria-controls="site-search-results"
+                aria-autocomplete="list"
                 aria-activedescendant={searchOpen && results[active] ? `site-result-${active}` : undefined}
                 onFocus={() => setSearchOpen(true)}
-                onChange={(event) => { setQuery(event.target.value); setActive(0); setSearchOpen(true); }}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setActive(0);
+                  setSearchOpen(true);
+                }}
                 onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") { event.preventDefault(); setSearchOpen(true); setActive((index) => Math.max(0, Math.min(index + 1, results.length - 1))); }
-                  if (event.key === "ArrowUp") { event.preventDefault(); setActive((index) => Math.max(0, index - 1)); }
-                  if (event.key === "Enter" && searchOpen && results[active]) { event.preventDefault(); select(results[active].href); }
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setSearchOpen(true);
+                    setActive((index) => Math.max(0, Math.min(index + 1, results.length - 1)));
+                  }
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setActive((index) => Math.max(0, index - 1));
+                  }
+                  if (event.key === "Enter" && searchOpen && results[active]) {
+                    event.preventDefault();
+                    select(results[active].href);
+                  }
                 }}
                 placeholder={dict.experience.searchPlaceholder}
-                className="w-28 bg-transparent px-2 text-sm text-white outline-none placeholder:text-neutral-400 sm:w-44 xl:w-52" />
-              <kbd className="hidden rounded border border-white/20 px-1.5 text-xs text-neutral-400 xl:inline">⌘ K</kbd>
+                className="w-24 bg-transparent px-2 text-sm text-white outline-none placeholder:text-neutral-400 sm:w-40 xl:w-48"
+              />
+              <kbd className="hidden rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-neutral-400 xl:inline">
+                ⌘K
+              </kbd>
             </div>
-            {searchOpen && <div id="site-search-results" role="listbox" aria-label={dict.experience.searchPlaceholder}
-              className="search-results absolute end-0 top-full mt-2 max-h-[min(65dvh,520px)] w-[min(430px,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-white/20 bg-neutral-950 p-2 shadow-2xl">
-              {results.length ? results.map((item, index) => (
-                <button key={item.href} id={`site-result-${index}`} role="option" aria-selected={active === index}
-                  tabIndex={-1}
-                  type="button" onMouseEnter={() => setActive(index)} onClick={() => select(item.href)}
-                  className="flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2 text-start hover:bg-white/10 aria-selected:bg-white/10">
-                  <span aria-hidden="true" className="text-lg text-neutral-400">{item.icon ? "◈" : "⌁"}</span>
-                  <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{item.name}</span><span className="block truncate text-xs text-neutral-400">{item.description}</span></span>
-                  <span className="text-[10px] text-neutral-400">{item.group}</span>
-                </button>
-              )) : <p className="p-4 text-sm text-neutral-300">{dict.experience.noResults}</p>}
-            </div>}
+            {searchOpen && (
+              <div
+                id="site-search-results"
+                role="listbox"
+                aria-label={dict.experience.searchPlaceholder}
+                className="search-results absolute end-0 top-full mt-2 max-h-[min(65dvh,520px)] w-[min(430px,calc(100vw-2rem))] overflow-y-auto p-2"
+              >
+                {results.length ? (
+                  results.map((item, index) => (
+                    <button
+                      key={item.href}
+                      id={`site-result-${index}`}
+                      role="option"
+                      aria-selected={active === index}
+                      tabIndex={-1}
+                      type="button"
+                      onMouseEnter={() => setActive(index)}
+                      onClick={() => select(item.href)}
+                      className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-start transition-colors hover:bg-white/[0.08] aria-selected:bg-white/[0.08]"
+                    >
+                      <span aria-hidden="true" className="text-lg text-neutral-300">
+                        {item.icon ? "◈" : "⌁"}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium text-white">{item.name}</span>
+                        <span className="block truncate text-xs text-neutral-400">{item.description}</span>
+                      </span>
+                      <span className="text-[10px] text-neutral-400">{item.group}</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="p-4 text-sm text-neutral-300">{dict.experience.noResults}</p>
+                )}
+              </div>
+            )}
           </div>
+
           <LanguageSwitcher locale={locale} />
-          <a href={scannerApplication.downloadUrl} className="header-cta btn-primary min-h-11 items-center gap-2 px-5 text-sm">{platformCopy[locale].downloadApp} <span aria-hidden="true">↓</span></a>
-          <button ref={menuButton} type="button" aria-label={dict.nav.tools} aria-controls="mobile-navigation" aria-expanded={mobile} onClick={() => setMobile(!mobile)}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 text-xl lg:hidden">{mobile ? "×" : "☰"}</button>
+
+          <a
+            href={scannerApplication.downloadUrl}
+            className="header-cta btn-primary min-h-10 items-center gap-2 px-5 text-sm font-medium"
+          >
+            <span>{platformCopy[locale].downloadApp}</span>
+            <span aria-hidden="true">↓</span>
+          </a>
+
+          <button
+            ref={menuButton}
+            type="button"
+            aria-label={dict.nav.tools}
+            aria-controls="mobile-navigation"
+            aria-expanded={mobile}
+            onClick={() => setMobile(!mobile)}
+            className="flex min-h-10 min-w-10 items-center justify-center rounded-full border border-white/15 text-lg lg:hidden"
+          >
+            {mobile ? "×" : "☰"}
+          </button>
         </div>
       </div>
-      {mobile && <nav id="mobile-navigation" aria-label={dict.nav.tools} className="max-h-[calc(100dvh-72px)] overflow-y-auto border-t border-white/10 bg-neutral-950 px-4 py-3 lg:hidden">
-        {nav.map((item) => <Link key={item.href} href={item.href} onClick={() => setMobile(false)} className="flex min-h-12 items-center rounded-lg px-3 text-sm text-neutral-200 hover:bg-white/10">{item.name}</Link>)}
-        <p className="mt-4 border-t border-white/10 px-3 pt-4 text-xs font-semibold uppercase tracking-widest text-neutral-400">{dict.nav.tools}</p>
-        {items.map((item) => <Link key={item.href} href={item.href} onClick={() => setMobile(false)} className="flex min-h-12 items-center rounded-lg px-3 text-sm text-neutral-200 hover:bg-white/10">{item.name}</Link>)}
-      </nav>}
+
+      {mobile && (
+        <nav
+          id="mobile-navigation"
+          aria-label={dict.nav.tools}
+          className="max-h-[calc(100dvh-72px)] overflow-y-auto border-t border-white/10 bg-black px-4 py-4 lg:hidden"
+        >
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobile(false)}
+              className="flex min-h-12 items-center rounded-full px-4 text-sm text-neutral-200 hover:bg-white/10"
+            >
+              {item.name}
+            </Link>
+          ))}
+          <p className="mt-4 border-t border-white/10 px-4 pt-4 text-xs font-medium uppercase tracking-widest text-neutral-400">
+            {dict.nav.tools}
+          </p>
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobile(false)}
+              className="flex min-h-12 items-center rounded-full px-4 text-sm text-neutral-200 hover:bg-white/10"
+            >
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }
