@@ -1,30 +1,29 @@
-import { useId } from "react";
-
-export function Logo({ size = 32 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "");
+export function Logo({ size = 36 }: { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 180 180"
+      viewBox="0 0 64 64"
       role="img"
-      aria-label="IPScans"
+      aria-label="ipscans"
       className="shrink-0"
-      fill="none"
     >
-      <path
-        d="M144.248 149.062C151.748 154.688 162.998 150.938 152.685 140.625C121.748 110.625 128.31 28.125 89.8727 28.125C51.4352 28.125 57.9977 110.625 27.0602 140.625C15.8102 151.875 27.9977 154.688 35.4977 149.062C64.5602 129.375 62.6852 94.6875 89.8727 94.6875C117.06 94.6875 115.185 129.375 144.248 149.062Z"
-        fill={`url(#${uid}-grad)`}
+      <polygon
+        points="32,4 56,18 56,46 32,60 8,46 8,18"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="3"
       />
-      <circle cx="90" cy="128" r="11" fill="#ffffff" opacity="0.95" />
-      <defs>
-        <linearGradient id={`${uid}-grad`} x1="22" y1="28" x2="158" y2="152" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#00B95C" />
-          <stop offset="32%" stopColor="#FBBC04" />
-          <stop offset="64%" stopColor="#FC413D" />
-          <stop offset="100%" stopColor="#3186FF" />
-        </linearGradient>
-      </defs>
+      <g stroke="#FFFFFF" strokeWidth="2" opacity="0.9">
+        <line x1="32" y1="4" x2="32" y2="26" />
+        <line x1="56" y1="18" x2="38" y2="29" />
+        <line x1="56" y1="46" x2="38" y2="35" />
+        <line x1="32" y1="60" x2="32" y2="38" />
+        <line x1="8" y1="46" x2="26" y2="35" />
+        <line x1="8" y1="18" x2="26" y2="29" />
+      </g>
+      <circle cx="32" cy="32" r="7" fill="#000000" stroke="#FFFFFF" strokeWidth="2" />
+      <circle cx="32" cy="32" r="2.5" fill="#FFFFFF" />
     </svg>
   );
 }

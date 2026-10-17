@@ -8,167 +8,459 @@ import { uiText } from "@/i18n/ui";
 import { applications, platformCopy, scannerApplication } from "@/content/applications";
 import { lprRelease } from "@/content/lpr-release";
 import { toolPath } from "@/lib/tool-routes";
+import { MorphingSolutionParticles } from "./AntigravityParticles";
+
+const BOUNCER_ICONS = [
+  "code_blocks",
+  "device_hub",
+  "check_circle",
+  "file_copy",
+  "spark",
+  "dashboard_customize",
+  "keyboard_tab",
+  "refresh",
+  "developer_mode_tv",
+  "keyboard_return",
+  "commit",
+  "folder",
+  "search_spark",
+  "code",
+  "data_object",
+  "merge",
+  "deployed_code",
+  "spark",
+  "plus_code",
+  "terminal",
+  "keyboard_command_key",
+  "pen_spark",
+] as const;
 
 export function SurfaceShowcase({ locale }: { locale: Locale }) {
-  const [active, setActive] = useState(0);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [hoverSolution, setHoverSolution] = useState<number | null>(null);
   const copy = platformCopy[locale];
   const ipcast = applications.find((a) => a.id === "ipcast")!;
 
-  const surfaces = [
+  const agentFirstStatement = uiText(
+    locale,
+    "IPScans is our network intelligence platform, allowing anyone to discover, verify, and diagnose every connection.",
+    "IPScans, herkesin ağındaki her bağlantıyı keşfetmesini, doğrulamasını ve tanılamasını sağlayan yeni nesil ağ platformumuzdur."
+  );
+
+  const featureItems = [
     {
       id: "scanner",
-      badge: `IPscans+ v${scannerApplication.version}`,
-      title: uiText(locale, "Local network discovery & live topology", "Yerel ağ keşfi ve canlı topoloji haritası"),
+      title: `IPscans+ v${scannerApplication.version}`,
       description: scannerApplication.description[locale],
       href: `/${locale}/applications/scanner`,
-      downloadUrl: scannerApplication.downloadUrl,
       image: "/scanner-v43-preview.png",
-      meta: "Windows 10/11 · x64 · Verified SHA-256",
-    },
-    {
-      id: "map",
-      badge: "Network Map · ONVIF",
-      title: uiText(locale, "Visual evidence & verified camera inspection", "Görsel kanıtlar ve doğrulanmış kamera incelemesi"),
-      description: uiText(
-        locale,
-        "Inspect device roles, latency paths, port evidence and verified-HTTPS ONVIF profiles in one unified view.",
-        "Cihaz rollerini, gecikme yollarını, port kanıtlarını ve doğrulanmış HTTPS ONVIF profillerini tek ekranda inceleyin."
-      ),
-      href: `/${locale}/ip-scanner`,
-      downloadUrl: scannerApplication.downloadUrl,
-      image: "/scanner-v43-map.png",
-      meta: "ARP · ICMP · mDNS · SSDP · ONVIF",
+      tag: "WINDOWS 10/11 · x64 · ARP · ICMP · ONVIF",
     },
     {
       id: "ipcast",
-      badge: `IPCast v${ipcast.version}`,
-      title: uiText(locale, "Zero-config remote desktop with access approval", "Erişim onaylı, kurulumsuz uzak masaüstü"),
+      title: `IPCast v${ipcast.version}`,
       description: ipcast.description[locale],
       href: `/${locale}/applications/ipcast`,
-      downloadUrl: ipcast.downloadUrl,
-      image: "/scanner-v43-preview.png",
-      meta: `${ipcast.platform} · Direct + Relay`,
+      image: "/scanner-v43-map.png",
+      tag: `${ipcast.platform} · REMOTE DESKTOP`,
     },
     {
       id: "lpr",
-      badge: `LPR Pro v${lprRelease.version}`,
-      title: uiText(locale, "Local license plate recognition & record review", "Yerel plaka tanıma ve kayıt inceleme"),
+      title: `LPR Pro v${lprRelease.version}`,
       description: uiText(
         locale,
-        "On-device plate detection, RTSP stream inspection and timestamped event logs on Windows.",
-        "Cihaz üzerinde plaka tespiti, RTSP yayın incelemesi ve zaman damgalı kayıt geçmişi."
+        "Local plate recognition, RTSP stream inspection, and timestamped record review on Windows.",
+        "Windows üzerinde yerel plaka tanıma, RTSP yayın incelemesi ve zaman damgalı kayıt geçmişi."
       ),
       href: `/${locale}/lpr-pro`,
-      downloadUrl: lprRelease.url,
+      image: "/scanner-v43-preview.png",
+      tag: "WINDOWS 10/11 · x64 · LOCAL AI",
+    },
+    {
+      id: "web-tools",
+      title: uiText(locale, "Browser Diagnostics", "Tarayıcı Tanı Araçları"),
+      description: uiText(
+        locale,
+        "Instant IP intelligence, ASN & WHOIS lookup, DNS records, port reference, and real-time speed telemetry directly in your browser.",
+        "Tarayıcınızdan anında IP sorgulama, ASN ve WHOIS analizi, DNS kayıtları, port referansı ve gerçek zamanlı hız testi."
+      ),
+      href: toolPath("ipLookup", locale),
       image: "/scanner-v43-map.png",
-      meta: "Windows 10/11 · x64 · Offline AI",
+      tag: "WEB · ZERO INSTALL · INSTANT",
     },
   ];
 
-  const bouncers = [
-    { label: "IP", href: toolPath("ipLookup", locale), symbol: "⌖" },
-    { label: "SPEED", href: toolPath("speedTest", locale), symbol: "⚡" },
-    { label: "DNS", href: toolPath("dns", locale), symbol: "◈" },
-    { label: "WHOIS", href: toolPath("whois", locale), symbol: "◎" },
-    { label: "PORTS", href: toolPath("ports", locale), symbol: "⌁" },
-    { label: "SCAN+", href: `/${locale}/ip-scanner`, symbol: "⊞" },
-    { label: "IPCAST", href: `/${locale}/applications/ipcast`, symbol: "↗" },
-    { label: "LPR", href: `/${locale}/lpr-pro`, symbol: "▣" },
+  const useCases = [
+    {
+      title: uiText(locale, "Network administrators", "Ağ yöneticileri"),
+      description: uiText(
+        locale,
+        "Discover every active device on your subnet, inspect ARP & port evidence, and verify ONVIF cameras with confidence.",
+        "Alt ağınızdaki tüm aktif cihazları keşfedin, ARP ve port kanıtlarını inceleyin ve ONVIF kameraları güvenle doğrulayın."
+      ),
+      href: `/${locale}/ip-scanner`,
+      image: "/scanner-v43-preview.png",
+      cta: copy.details,
+    },
+    {
+      title: uiText(locale, "IT support & remote teams", "BT destek ve uzak ekipler"),
+      description: uiText(
+        locale,
+        "Connect across local networks or over the internet with explicit session approval and zero router configuration.",
+        "Açık oturum onayı ve sıfır modem/port yönlendirme kurulumuyla yerel ağda veya internet üzerinden bağlanın."
+      ),
+      href: `/${locale}/applications/ipcast`,
+      image: "/scanner-v43-map.png",
+      cta: copy.details,
+    },
+    {
+      title: uiText(locale, "Security & operations", "Güvenlik ve operasyon"),
+      description: uiText(
+        locale,
+        "Verify public IP exposure, DNS propagation, and local camera plate logs without sending sensitive video streams to the cloud.",
+        "Hassas kamera yayınlarını buluta göndermeden genel IP görünürlüğünü, DNS yayılımını ve yerel plaka kayıtlarını doğrulayın."
+      ),
+      href: `/${locale}/lpr-pro`,
+      image: "/scanner-v43-preview.png",
+      cta: copy.details,
+    },
   ];
-
-  const current = surfaces[active] ?? surfaces[0];
 
   return (
     <>
-      {/* Antigravity .agent-first-section with .icon-list .bouncer circles */}
-      <section className="agy-agent-first-section">
-        <ul className="agy-bouncer-list" aria-label={copy.applications}>
-          {bouncers.map((item, idx) => (
-            <li key={item.label}>
-              <Link
-                href={item.href}
-                className="agy-bouncer"
-                style={{ animationDelay: `${idx * 0.18}s` }}
-                title={item.label}
+      {/* Section 4: Antigravity .agent-first-section with 22 bouncing circle icons */}
+      <section className="agent-first-section" data-agent-first-section>
+        <ul className="icon-list" data-bouncer-list aria-hidden="true">
+          {BOUNCER_ICONS.map((iconId, idx) => (
+            <li key={`${iconId}-${idx}`} className="grid-col" data-bouncer>
+              <div
+                className="bouncer"
+                translate="no"
+                style={{ animationDelay: `${idx * -0.14}s` }}
               >
-                <span aria-hidden="true" className="agy-bouncer__symbol">{item.symbol}</span>
-                <span className="agy-bouncer__label">{item.label}</span>
-              </Link>
+                <svg
+                  viewBox="0 0 960 960"
+                  width="1em"
+                  height="1em"
+                  fill="currentColor"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <use href={`/assets/image/icons/sprite-icons.svg#${iconId}`} />
+                </svg>
+              </div>
             </li>
           ))}
         </ul>
-        <div className="agy-agent-first-text">
-          <h2>
-            {uiText(
-              locale,
-              "The network-first platform that turns raw packets into verifiable evidence.",
-              "Ham ağ trafiğini doğrulanabilir kanıtlara dönüştüren yeni nesil ağ platformu."
-            )}
-          </h2>
-          <p>
-            {uiText(
-              locale,
-              "Work seamlessly across browser diagnostics, desktop LAN discovery, remote desktop sessions, and local camera intelligence.",
-              "Tarayıcı tabanlı tanı araçları, masaüstü yerel ağ keşfi, uzak masaüstü bağlantıları ve yerel kamera analizi arasında kesintisiz çalışın."
-            )}
-          </p>
+
+        <div className="grid-container text-container" data-text-container>
+          <div className="grid-row">
+            <div className="grid-col col-xs-4 col-sm-8 col-md-9">
+              <span className="typed-container heading-3 agent-first-text" data-typed-header>
+                <span className="visually-hidden">{agentFirstStatement}</span>
+                <span className="typed-content" aria-hidden="true">
+                  {agentFirstStatement}
+                </span>
+                <span className="cursor-container" data-cursor-container>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="blinking-cursor"
+                    src="/assets/image/antigravity-cursor.png"
+                    alt=""
+                    aria-hidden="true"
+                  />
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Antigravity .landing-use-case-section interactive surface switcher */}
-      <section className="agy-use-case-section" aria-labelledby="surfaces-heading">
-        <div className="agy-container">
-          <div className="agy-use-case-header">
-            <p className="agy-eyebrow">01 / {copy.applications}</p>
-            <h2 id="surfaces-heading">
-              {uiText(locale, "Choose your surface.", "Çalışma yüzeyinizi seçin.")}
-            </h2>
-            <p className="agy-use-case-sub">{copy.applicationsIntro}</p>
+      {/* Section 5: Antigravity .feature-explorer-section */}
+      <section className="feature-explorer-section" data-feature-explorer-section>
+        <div className="grid-container">
+          <div className="feature-list">
+            {featureItems.map((item, idx) => (
+              <div key={item.id} className="feature-item" data-feature-item>
+                <div className="grid-row">
+                  <div className="grid-col col-xs-4 col-md-4">
+                    <div className="feature-copy">
+                      <Link
+                        className="heading-4 feature-title feature-title-link"
+                        href={item.href}
+                      >
+                        {item.title}
+                      </Link>
+                      <p className="body feature-description">{item.description}</p>
+                    </div>
+                    {idx === featureItems.length - 1 && (
+                      <div className="feature-cta-wrap">
+                        <Link
+                          href={`/${locale}/download`}
+                          className="call-to-action button button-secondary"
+                        >
+                          <span>{copy.explore}</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid-col col-xs-4 col-md-offset-2 col-md-6">
+                    <Link href={item.href} className="feature-media group">
+                      <div className="feature-media-card">
+                        <div className="feature-media-card__bar">
+                          <span className="feature-media-card__dots" aria-hidden="true">
+                            <i />
+                            <i />
+                            <i />
+                          </span>
+                          <span className="feature-media-card__tag">{item.tag}</span>
+                        </div>
+                        <Image
+                          className="feature-image"
+                          src={item.image}
+                          alt={item.title}
+                          width={736}
+                          height={750}
+                        />
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
+      </section>
 
-          <div className="agy-use-case-grid">
-            <div className="agy-use-case-tabs" role="tablist" aria-label={copy.applications}>
-              {surfaces.map((surface, index) => {
-                const isSelected = index === active;
-                return (
-                  <button
-                    key={surface.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={isSelected}
-                    onClick={() => setActive(index)}
-                    className={`agy-use-case-tab ${isSelected ? "is-active" : ""}`}
-                  >
-                    <span className="agy-use-case-tab__badge">{surface.badge}</span>
-                    <span className="agy-use-case-tab__title">{surface.title}</span>
-                    <span className="agy-use-case-tab__desc">{surface.description}</span>
-                  </button>
-                );
-              })}
+      {/* Section 6: Antigravity .landing-use-case-section */}
+      <section className="landing-use-case-section" data-use-case-section>
+        <div className="grid-container landing-use-case-header">
+          <div className="grid-row">
+            <div className="grid-col col-sm-6 col-md-6">
+              <div className="use-case-header-main">
+                <h2 className="heading-4">
+                  <span>
+                    {uiText(locale, "Built for professionals", "Profesyoneller için üretildi")}
+                  </span>
+                  <span>
+                    {uiText(locale, "for the network-first era", "yeni nesil ağ dünyası için")}
+                  </span>
+                </h2>
+              </div>
             </div>
+            <div className="grid-col col-md-4 col-md-offset-8">
+              <p className="body">{copy.applicationsIntro}</p>
+            </div>
+          </div>
+        </div>
 
-            <div className="agy-slide-wrapper" role="tabpanel">
-              <div className="agy-slide-topbar">
-                <span className="agy-slide-badge">{current.badge}</span>
-                <span className="agy-slide-meta">{current.meta}</span>
+        <div className="landing-use-case-list">
+          <div className="grid-container">
+            <div className="grid-row">
+              <div className="grid-col col-xs-4 col-sm-8 col-md-8">
+                <div
+                  className="slider-container usecases-slider"
+                  data-slider
+                  data-active-index={activeSlide}
+                >
+                  <div
+                    className="slider-track"
+                    style={{
+                      transform: `translate3d(calc(${activeSlide} * -100% - ${activeSlide * 24}px), 0, 0)`,
+                    }}
+                  >
+                    {useCases.map((uc, index) => (
+                      <Link
+                        key={uc.title}
+                        href={uc.href}
+                        className={`slide-image ${index === activeSlide ? "is-active" : ""}`}
+                        onClick={(e) => {
+                          if (index !== activeSlide) {
+                            e.preventDefault();
+                            setActiveSlide(index);
+                          }
+                        }}
+                      >
+                        <div className="slide-image-wrapper">
+                          <Image
+                            className="list-image"
+                            src={uc.image}
+                            alt={uc.title}
+                            width={848}
+                            height={488}
+                          />
+                        </div>
+                        <div className="slide-image-overlay">
+                          <span className="typed-container heading-4">
+                            <span className="typed-content">{uc.title}</span>
+                            <span className="cursor-container">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                className="blinking-cursor"
+                                src="/assets/image/antigravity-cursor.png"
+                                alt=""
+                                aria-hidden="true"
+                              />
+                            </span>
+                          </span>
+                          <div className="video-control-button" translate="no">
+                            <svg
+                              viewBox="0 -960 960 960"
+                              width="28px"
+                              height="28px"
+                              fill="currentColor"
+                              aria-hidden="true"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="slider-copy-wrapper" data-copy-wrapper>
+                  {useCases.map((uc, index) => (
+                    <div
+                      key={uc.title}
+                      className={`slider-copy ${index === activeSlide ? "is-active" : ""}`}
+                    >
+                      <strong className="call-to-action">{uc.title}</strong>
+                      <p className="body">{uc.description}</p>
+                      <Link className="call-to-action arrow-link" href={uc.href}>
+                        {uc.cta}
+                      </Link>
+                    </div>
+                  ))}
+
+                  <div className="slider-controls-container" data-arrow-controls-wrapper>
+                    <div className="slider-controls">
+                      <button
+                        type="button"
+                        className="slider-control-button"
+                        disabled={activeSlide === 0}
+                        aria-label="Previous slide"
+                        onClick={() => setActiveSlide((prev) => Math.max(0, prev - 1))}
+                      >
+                        <svg
+                          viewBox="0 -960 960 960"
+                          width="24px"
+                          height="24px"
+                          fill="currentColor"
+                          aria-hidden="true"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M400-240 160-480l240-240 56 58-142 142h486v80H314l142 142-56 58Z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className="slider-control-button"
+                        disabled={activeSlide === useCases.length - 1}
+                        aria-label="Next slide"
+                        onClick={() =>
+                          setActiveSlide((prev) => Math.min(useCases.length - 1, prev + 1))
+                        }
+                      >
+                        <svg
+                          viewBox="0 -960 960 960"
+                          width="24px"
+                          height="24px"
+                          fill="currentColor"
+                          aria-hidden="true"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="m560-240-56-58 142-142H160v-80h486L504-662l56-58 240 240-240 240Z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="agy-slide-media">
-                <Image
-                  src={current.image}
-                  width={1440}
-                  height={900}
-                  sizes="(max-width: 1024px) 100vw, 848px"
-                  alt={current.title}
-                  className="h-auto w-full object-cover"
-                />
-              </div>
-              <div className="agy-slide-footer">
-                <Link href={current.href} className="btn-ghost">
-                  {copy.details} <span aria-hidden="true">→</span>
-                </Link>
-                <a href={current.downloadUrl} className="btn-primary">
-                  {copy.downloadApp} <span aria-hidden="true">↓</span>
-                </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 7: Antigravity .try-solutions-section */}
+      <section className="try-solutions-section" data-try-solutions-section>
+        <div className="grid-container">
+          <div className="grid-row">
+            <div className="grid-col col-md-12">
+              <div className="section-wrapper">
+                <div
+                  className="solution-section"
+                  data-solution-section
+                  data-index="0"
+                  onMouseEnter={() => setHoverSolution(0)}
+                  onMouseLeave={() => setHoverSolution(null)}
+                >
+                  <div className="try-solution-background left">
+                    <MorphingSolutionParticles
+                      shape="individual"
+                      hovered={hoverSolution === 0}
+                    />
+                  </div>
+                  <div className="try-solutions-content" data-hover-trigger>
+                    <p className="try-solution-label small">
+                      {uiText(locale, "Available at no charge", "Ücretsiz indirilebilir")}
+                    </p>
+                    <p className="heading-4 header">
+                      {uiText(locale, "For individuals", "Bireysel kullanım için")}
+                    </p>
+                    <p className="heading-4 subhead">
+                      {uiText(locale, "Achieve full visibility", "Tam görünürlük elde edin")}
+                    </p>
+                    <div className="grid-row solutions-cta">
+                      <div className="grid-col">
+                        <a
+                          href={scannerApplication.downloadUrl}
+                          className="call-to-action button button-primary"
+                        >
+                          <span>{copy.downloadApp}</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="solution-section"
+                  data-solution-section
+                  data-index="1"
+                  onMouseEnter={() => setHoverSolution(1)}
+                  onMouseLeave={() => setHoverSolution(null)}
+                >
+                  <div className="try-solution-background right">
+                    <MorphingSolutionParticles
+                      shape="cube"
+                      hovered={hoverSolution === 1}
+                    />
+                  </div>
+                  <div className="try-solutions-content" data-hover-trigger>
+                    <p className="try-solution-label small">
+                      {uiText(locale, "Now Available!", "Şimdi Kullanımda!")}
+                    </p>
+                    <p className="heading-4 header">
+                      {uiText(locale, "For teams & IT", "Ekipler ve BT için")}
+                    </p>
+                    <p className="heading-4 subhead">
+                      {uiText(locale, "Level up your network ops", "Ağ operasyonlarınızı güçlendirin")}
+                    </p>
+                    <div className="grid-row solutions-cta">
+                      <div className="grid-col">
+                        <Link
+                          href={`/${locale}/download`}
+                          className="call-to-action button button-secondary"
+                        >
+                          <span>{copy.details}</span>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
