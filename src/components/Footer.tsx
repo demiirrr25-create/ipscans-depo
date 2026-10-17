@@ -12,7 +12,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
     { href: `/${locale}/download`, label: dict.nav.appDownload },
     { href: `/${locale}/applications/ipcast`, label: "IPCast" },
     { href: `/${locale}/lpr-pro`, label: "LPR Pro" },
-    { href: `/${locale}/cortex`, label: "Cortex · Alpha" },
+    { href: `/${locale}/cortex`, label: "Cortex · V1 RC1" },
     { href: toolPath("ipLookup", locale), label: dict.nav.ipLookup },
     { href: toolPath("speedTest", locale), label: dict.nav.speedTest },
     { href: toolPath("dns", locale), label: dict.nav.dns },
