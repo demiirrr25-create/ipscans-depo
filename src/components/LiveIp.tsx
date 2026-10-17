@@ -22,11 +22,8 @@ export function LiveIp({ label }: { label: string }) {
   }, []);
 
   return (
-    <div className="inline-flex max-w-full flex-wrap items-center gap-3 border border-white/15 bg-neutral-950 px-5 py-3">
-      <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
-      </span>
+    <div className="live-ip-chip">
+      <span className="dot" aria-hidden="true" />
       <span className="text-sm text-neutral-400">{label}</span>
       <span className="min-w-0 break-all font-mono text-sm font-semibold text-white">
         {error ? "—" : ip ?? "…"}

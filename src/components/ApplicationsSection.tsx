@@ -42,16 +42,16 @@ export function ApplicationsSection({ locale, dict, primary = false }: { locale:
   );
 
   return (
-    <section id="applications" aria-labelledby="applications-title" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-24">
-      <div className="mb-10 border-b border-white/15 pb-8 sm:flex sm:items-end sm:justify-between">
+    <section id="applications" aria-labelledby="applications-title" className="aurora-section scroll-mt-24">
+      <div className="mb-10 sm:flex sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-400">02 / {uiText(locale, "IPScans ecosystem", "IPScans ekosistemi")}</p>
-          <Heading id="applications-title" className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight sm:text-6xl">
-            {copy.applications}<span className="text-neutral-500">.</span>
+          <p className="aurora-eyebrow">{uiText(locale, "IPScans ecosystem", "IPScans ekosistemi")}</p>
+          <Heading id="applications-title" className="aurora-title">
+            {copy.applications}<span className="text-aurora">.</span>
           </Heading>
           <p className="mt-3 max-w-2xl text-neutral-400">{copy.applicationsIntro}</p>
         </div>
-        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs text-neutral-400 sm:block">
+        <span aria-hidden="true" className="mt-6 hidden font-mono text-xs tracking-[.18em] text-neutral-500 sm:block">
           {uiText(locale, "EXPLORE", "KEŞFET")} / 01—{String(applications.length + tools.length + 1).padStart(2, "0")}
         </span>
       </div>

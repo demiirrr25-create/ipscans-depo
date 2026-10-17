@@ -36,7 +36,7 @@ export function InfinityScene() {
         const y=p.y*Math.cos(pitch+.24)-z*Math.sin(pitch+.24), perspective=3.5/(3.5+z);
         projected[i].x=width*.5+x*scale*perspective;projected[i].y=height*.5+y*scale*perspective;projected[i].z=z;
       }
-      ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=.65;ctx.beginPath();
+      ctx.strokeStyle='rgba(34,211,238,.16)';ctx.lineWidth=.65;ctx.beginPath();
       for(let i=0;i<points.length;i+=stride){
         const a=projected[i],b=projected[(i+12*stride)%points.length];
         ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
@@ -46,12 +46,17 @@ export function InfinityScene() {
       for(let i=0;i<points.length;i+=stride){
         const a=projected[i];
         const pulse=(Math.sin(i*.15-phase*12)+1)/2;
-        ctx.fillStyle=`rgba(255,255,255,${.22+pulse*.64})`;ctx.beginPath();ctx.arc(a.x,a.y,Math.max(.45,(1.3-a.z*.4)*pulse),0,Math.PI*2);ctx.fill();
+        // Blend cyan (34,211,238) → emerald (52,211,153) around the ring.
+        const mix=(Math.sin(i/points.length*Math.PI*2)+1)/2;
+        const g=211, r=Math.round(34+18*mix), bl=Math.round(238-85*mix);
+        ctx.fillStyle=`rgba(${r},${g},${bl},${.25+pulse*.7})`;ctx.beginPath();ctx.arc(a.x,a.y,Math.max(.45,(1.3-a.z*.4)*pulse),0,Math.PI*2);ctx.fill();
       }
+      ctx.shadowColor='rgba(165,243,252,.9)';ctx.shadowBlur=10;
       for(let j=0;j<16;j++){
         const index=Math.floor(j*83/stride)*stride,a=projected[index],b=projected[(index+12*stride)%points.length],p=(phase*1.4+j/16)%1;
-        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(a.x+(b.x-a.x)*p,a.y+(b.y-a.y)*p,1.7,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ecfeff';ctx.beginPath();ctx.arc(a.x+(b.x-a.x)*p,a.y+(b.y-a.y)*p,1.9,0,Math.PI*2);ctx.fill();
       }
+      ctx.shadowBlur=0;
       canvas.dataset.ready='true';
       if(visible&&!document.hidden&&!motion.matches)frame=requestAnimationFrame(draw);
     }
@@ -78,5 +83,5 @@ export function InfinityScene() {
     const firstFrame=requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(()=>{cleanup=initialize();});});
     return()=>{cancelAnimationFrame(firstFrame);cancelAnimationFrame(secondFrame);cleanup?.();};
   },[]);
-  return <div className="infinity-scene" aria-hidden="true"><svg viewBox="0 0 800 520" className="infinity-fallback"><g fill="none" stroke="white" strokeWidth=".6" opacity=".25">{Array.from({length:18},(_,i)=><ellipse key={i} cx="400" cy="260" rx={220+i*3} ry={75+i*3} transform={`rotate(${i*10} 400 260)`}/>)}</g></svg><canvas ref={ref}/><div className="scene-axis scene-axis-x"/><div className="scene-axis scene-axis-y"/></div>;
+  return <div className="infinity-scene" aria-hidden="true"><svg viewBox="0 0 800 520" className="infinity-fallback"><g fill="none" stroke="#22d3ee" strokeWidth=".6" opacity=".3">{Array.from({length:18},(_,i)=><ellipse key={i} cx="400" cy="260" rx={220+i*3} ry={75+i*3} transform={`rotate(${i*10} 400 260)`}/>)}</g></svg><canvas ref={ref}/><div className="scene-axis scene-axis-x"/><div className="scene-axis scene-axis-y"/></div>;
 }

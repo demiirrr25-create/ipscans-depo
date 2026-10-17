@@ -9,7 +9,7 @@ import type { PublicDictionary } from "@/i18n/dictionaries";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
-import { applications, platformCopy } from "@/content/applications";
+import { applications, platformCopy, scannerApplication } from "@/content/applications";
 
 export function Header({ locale, dict, articles }: { locale: Locale; dict: PublicDictionary; articles: {name:string;description:string;href:string}[] }) {
   const pathname = usePathname();
@@ -83,7 +83,7 @@ export function Header({ locale, dict, articles }: { locale: Locale; dict: Publi
       }}>
       <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
         <Link href={`/${locale}`} aria-label={uiText(locale, "IPScans home", "IPScans ana sayfa")} className="flex shrink-0 items-center gap-2">
-          <Logo size={34} /><span className="hidden text-xl font-semibold tracking-[-.06em] min-[400px]:inline">ipscans<span className="text-neutral-500">.</span></span>
+          <Logo size={34} /><span className="hidden text-xl font-semibold tracking-[-.06em] min-[400px]:inline">ipscans<span className="text-aurora">.</span></span>
         </Link>
         <nav aria-label={dict.nav.tools} className="hidden items-center gap-1 lg:flex">
           <Link href={`/${locale}`} aria-current={pathname === `/${locale}` ? "page" : undefined} className="nav-link">{dict.nav.home}</Link>
@@ -140,6 +140,7 @@ export function Header({ locale, dict, articles }: { locale: Locale; dict: Publi
             </div>}
           </div>
           <LanguageSwitcher locale={locale} />
+          <a href={scannerApplication.downloadUrl} className="header-cta btn-primary min-h-11 items-center gap-2 px-5 text-sm">{platformCopy[locale].downloadApp} <span aria-hidden="true">↓</span></a>
           <button ref={menuButton} type="button" aria-label={dict.nav.tools} aria-controls="mobile-navigation" aria-expanded={mobile} onClick={() => setMobile(!mobile)}
             className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 text-xl lg:hidden">{mobile ? "×" : "☰"}</button>
         </div>

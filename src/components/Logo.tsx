@@ -22,8 +22,8 @@ export function Logo({ size = 36 }: { size?: number }) {
         <line x1="8" y1="46" x2="26" y2="35" />
         <line x1="8" y1="18" x2="26" y2="29" />
       </g>
-      <circle cx="32" cy="32" r="7" fill="#000000" stroke="#FFFFFF" strokeWidth="2" />
-      <circle cx="32" cy="32" r="2.5" fill="#FFFFFF" />
+      <circle cx="32" cy="32" r="7" fill="#04060a" stroke="#22d3ee" strokeWidth="2" />
+      <circle cx="32" cy="32" r="2.8" fill="#34d399" />
     </svg>
   );
 }

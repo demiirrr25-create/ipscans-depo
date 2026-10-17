@@ -122,7 +122,13 @@
     "Can recording or audio start secretly?": "Kann die Aufnahme oder der Ton heimlich gestartet werden?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Für beides ist eine gesonderte Genehmigung erforderlich. Bei der Aufnahme wird auf beiden Geräten REC angezeigt. Der Ton beginnt und der Betrachter aktiviert ihn. Die AVI-Aufzeichnung hat kein Audio und stoppt bei einer Auflösungsänderung oder 1,8 GB.",
     "What happens when a connection drops?": "Was passiert, wenn eine Verbindung abbricht?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast versucht es bis zu dreimal erneut. Eine neue Sitzung erfordert eine erneute Genehmigung. Dateiübertragungen können mit demselben freigegebenen Ordner und unveränderter Quelldatei fortgesetzt werden."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast versucht es bis zu dreimal erneut. Eine neue Sitzung erfordert eine erneute Genehmigung. Dateiübertragungen können mit demselben freigegebenen Ordner und unveränderter Quelldatei fortgesetzt werden.",
+    "Free network tools · No sign-up": "Kostenlose Netzwerktools · Ohne Anmeldung",
+    "web tools": "Web-Tools",
+    "languages": "Sprachen",
+    "network guides": "Netzwerk-Ratgeber",
+    "free · no account": "kostenlos · ohne Konto",
+    "Advertisement": "Anzeige"
   },
   "es": {
     "IPScans+ application interface with example devices": "Interfaz de aplicación IPScans+ con dispositivos de ejemplo",
@@ -247,7 +253,13 @@
     "Can recording or audio start secretly?": "¿Se puede iniciar la grabación o el audio en secreto?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Ambos requieren permiso por separado. La grabación muestra REC en ambos dispositivos. El audio comienza y el espectador lo habilita. La grabación AVI no tiene audio y se detiene cuando cambia la resolución o 1,8 GB.",
     "What happens when a connection drops?": "¿Qué sucede cuando se cae una conexión?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast reintenta hasta tres veces. Una nueva sesión requiere una nueva aprobación. Las transferencias de archivos se pueden reanudar con la misma carpeta compartida y el archivo fuente sin cambios."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast reintenta hasta tres veces. Una nueva sesión requiere una nueva aprobación. Las transferencias de archivos se pueden reanudar con la misma carpeta compartida y el archivo fuente sin cambios.",
+    "Free network tools · No sign-up": "Herramientas de red gratuitas · Sin registro",
+    "web tools": "herramientas web",
+    "languages": "idiomas",
+    "network guides": "guías de red",
+    "free · no account": "gratis · sin cuenta",
+    "Advertisement": "Publicidad"
   },
   "fr": {
     "IPScans+ application interface with example devices": "Interface d'application IPScans+ avec des exemples d'appareils",
@@ -372,7 +384,13 @@
     "Can recording or audio start secretly?": "L'enregistrement ou l'audio peuvent-ils démarrer secrètement ?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Les deux nécessitent une autorisation distincte. L'enregistrement affiche REC sur les deux appareils. L'audio démarre et le spectateur l'active. L'enregistrement AVI n'a pas d'audio et s'arrête à un changement de résolution ou à 1,8 Go.",
     "What happens when a connection drops?": "Que se passe-t-il lorsqu'une connexion est interrompue ?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast réessaye jusqu'à trois fois. Une nouvelle session nécessite une nouvelle approbation. Les transferts de fichiers peuvent reprendre avec le même dossier partagé et le même fichier source inchangé."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast réessaye jusqu'à trois fois. Une nouvelle session nécessite une nouvelle approbation. Les transferts de fichiers peuvent reprendre avec le même dossier partagé et le même fichier source inchangé.",
+    "Free network tools · No sign-up": "Outils réseau gratuits · Sans inscription",
+    "web tools": "outils web",
+    "languages": "langues",
+    "network guides": "guides réseau",
+    "free · no account": "gratuit · sans compte",
+    "Advertisement": "Publicité"
   },
   "it": {
     "IPScans+ application interface with example devices": "Interfaccia dell'applicazione IPScans+ con dispositivi di esempio",
@@ -497,7 +515,13 @@
     "Can recording or audio start secretly?": "La registrazione o l'audio possono essere avviati segretamente?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Entrambi richiedono un'autorizzazione separata. La registrazione visualizza REC su entrambi i dispositivi. L'audio si avvia e lo spettatore lo abilita. La registrazione AVI non ha audio e si ferma al cambio di risoluzione o a 1,8 GB.",
     "What happens when a connection drops?": "Cosa succede quando si interrompe una connessione?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast riprova fino a tre volte. Una nuova sessione richiede una nuova approvazione. I trasferimenti di file possono riprendere con la stessa cartella condivisa e il file di origine invariato."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast riprova fino a tre volte. Una nuova sessione richiede una nuova approvazione. I trasferimenti di file possono riprendere con la stessa cartella condivisa e il file di origine invariato.",
+    "Free network tools · No sign-up": "Strumenti di rete gratuiti · Senza registrazione",
+    "web tools": "strumenti web",
+    "languages": "lingue",
+    "network guides": "guide di rete",
+    "free · no account": "gratis · senza account",
+    "Advertisement": "Pubblicità"
   },
   "pt": {
     "IPScans+ application interface with example devices": "Interface do aplicativo IPScans+ com dispositivos de exemplo",
@@ -622,7 +646,13 @@
     "Can recording or audio start secretly?": "A gravação ou o áudio podem começar secretamente?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Ambos requerem permissão separada. A gravação exibe REC em ambos os dispositivos. O áudio inicia e o visualizador o ativa. A gravação AVI não tem áudio e para quando a resolução muda ou 1,8 GB.",
     "What happens when a connection drops?": "O que acontece quando uma conexão cai?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast tenta até três vezes. Uma nova sessão requer nova aprovação. As transferências de arquivos podem ser retomadas com a mesma pasta compartilhada e arquivo de origem inalterado."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast tenta até três vezes. Uma nova sessão requer nova aprovação. As transferências de arquivos podem ser retomadas com a mesma pasta compartilhada e arquivo de origem inalterado.",
+    "Free network tools · No sign-up": "Ferramentas de rede gratuitas · Sem registo",
+    "web tools": "ferramentas web",
+    "languages": "idiomas",
+    "network guides": "guias de rede",
+    "free · no account": "grátis · sem conta",
+    "Advertisement": "Publicidade"
   },
   "nl": {
     "IPScans+ application interface with example devices": "IPScans+ applicatie-interface met voorbeeldapparaten",
@@ -747,7 +777,13 @@
     "Can recording or audio start secretly?": "Kan de opname of audio in het geheim starten?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Voor beide is aparte toestemming nodig. Opnemen geeft REC op beide apparaten weer. Audio begint en de kijker schakelt deze in. AVI-opname heeft geen audio en stopt bij een resolutiewijziging of 1,8 GB.",
     "What happens when a connection drops?": "Wat gebeurt er als een verbinding wegvalt?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast probeert het maximaal drie keer opnieuw. Voor een nieuwe sessie is nieuwe goedkeuring vereist. Bestandsoverdrachten kunnen worden hervat met dezelfde gedeelde map en ongewijzigd bronbestand."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast probeert het maximaal drie keer opnieuw. Voor een nieuwe sessie is nieuwe goedkeuring vereist. Bestandsoverdrachten kunnen worden hervat met dezelfde gedeelde map en ongewijzigd bronbestand.",
+    "Free network tools · No sign-up": "Gratis netwerktools · Geen registratie",
+    "web tools": "webtools",
+    "languages": "talen",
+    "network guides": "netwerkgidsen",
+    "free · no account": "gratis · geen account",
+    "Advertisement": "Advertentie"
   },
   "pl": {
     "IPScans+ application interface with example devices": "Interfejs aplikacji IPScans+ z przykładowymi urządzeniami",
@@ -872,7 +908,13 @@
     "Can recording or audio start secretly?": "Czy nagrywanie lub dźwięk mogą rozpocząć się w tajemnicy?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Obydwa wymagają osobnego pozwolenia. Nagrywanie wyświetla REC na obu urządzeniach. Rozpoczyna się dźwięk, a widz go włącza. Nagranie AVI nie zawiera dźwięku i zatrzymuje się przy zmianie rozdzielczości lub 1,8 GB.",
     "What happens when a connection drops?": "Co się stanie, gdy połączenie zostanie zerwane?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast ponawia próby maksymalnie trzy razy. Nowa sesja wymaga nowego zatwierdzenia. Przesyłanie plików można wznowić z tym samym folderem udostępnionym i niezmienionym plikiem źródłowym."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast ponawia próby maksymalnie trzy razy. Nowa sesja wymaga nowego zatwierdzenia. Przesyłanie plików można wznowić z tym samym folderem udostępnionym i niezmienionym plikiem źródłowym.",
+    "Free network tools · No sign-up": "Darmowe narzędzia sieciowe · Bez rejestracji",
+    "web tools": "narzędzi webowych",
+    "languages": "języków",
+    "network guides": "poradników sieciowych",
+    "free · no account": "za darmo · bez konta",
+    "Advertisement": "Reklama"
   },
   "ru": {
     "IPScans+ application interface with example devices": "Интерфейс приложения IPScans+ с примерами устройств",
@@ -997,7 +1039,13 @@
     "Can recording or audio start secretly?": "Может ли запись или аудио начаться тайно?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "Оба требуют отдельного разрешения. При записи отображается REC на обоих устройствах. Звук запускается, и зритель включает его. Запись AVI не сопровождается звуком и прекращается при изменении разрешения или размере 1,8 ГБ.",
     "What happens when a connection drops?": "Что происходит, когда соединение обрывается?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast повторяет попытку до трех раз. Новая сессия требует нового одобрения. Передача файлов может возобновиться с той же общей папкой и неизмененным исходным файлом."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast повторяет попытку до трех раз. Новая сессия требует нового одобрения. Передача файлов может возобновиться с той же общей папкой и неизмененным исходным файлом.",
+    "Free network tools · No sign-up": "Бесплатные сетевые инструменты · Без регистрации",
+    "web tools": "веб-инструментов",
+    "languages": "языков",
+    "network guides": "сетевых руководств",
+    "free · no account": "бесплатно · без аккаунта",
+    "Advertisement": "Реклама"
   },
   "ar": {
     "IPScans+ application interface with example devices": "واجهة تطبيق IPScans+ مع أمثلة للأجهزة",
@@ -1122,7 +1170,13 @@
     "Can recording or audio start secretly?": "هل يمكن بدء التسجيل أو الصوت سرا؟",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "كلاهما يتطلب إذنًا منفصلاً. يعرض التسجيل REC على كلا الجهازين. يبدأ الصوت ويقوم المشاهد بتمكينه. لا يحتوي تسجيل AVI على صوت ويتوقف عند تغيير الدقة أو 1.8 جيجابايت.",
     "What happens when a connection drops?": "ماذا يحدث عند انقطاع الاتصال؟",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "يقوم IPCast بإعادة المحاولة حتى ثلاث مرات. تتطلب الجلسة الجديدة موافقة جديدة. يمكن استئناف عمليات نقل الملفات بنفس المجلد المشترك والملف المصدر الذي لم يتغير."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "يقوم IPCast بإعادة المحاولة حتى ثلاث مرات. تتطلب الجلسة الجديدة موافقة جديدة. يمكن استئناف عمليات نقل الملفات بنفس المجلد المشترك والملف المصدر الذي لم يتغير.",
+    "Free network tools · No sign-up": "أدوات شبكات مجانية · بدون تسجيل",
+    "web tools": "أدوات ويب",
+    "languages": "لغة",
+    "network guides": "دليل شبكات",
+    "free · no account": "مجاني · بدون حساب",
+    "Advertisement": "إعلان"
   },
   "ja": {
     "IPScans+ application interface with example devices": "IPScans+ アプリケーション インターフェイスとデバイス例",
@@ -1247,7 +1301,13 @@
     "Can recording or audio start secretly?": "こっそり録音や音声を開始できますか?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "どちらも別途許可が必要です。録画中は両方のデバイスに「REC」と表示されます。音声が開始され、ビューアが音声を有効にします。 AVI 録画には音声がなく、解像度の変更または 1.8 GB で停止します。",
     "What happens when a connection drops?": "接続が切れたらどうなるの？",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast は最大 3 回まで再試行します。新しいセッションには新たな承認が必要です。ファイル転送は、同じ共有フォルダーと変更されていないソース ファイルを使用して再開できます。"
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast は最大 3 回まで再試行します。新しいセッションには新たな承認が必要です。ファイル転送は、同じ共有フォルダーと変更されていないソース ファイルを使用して再開できます。",
+    "Free network tools · No sign-up": "無料のネットワークツール · 登録不要",
+    "web tools": "Webツール",
+    "languages": "言語",
+    "network guides": "ネットワークガイド",
+    "free · no account": "無料 · アカウント不要",
+    "Advertisement": "広告"
   },
   "ko": {
     "IPScans+ application interface with example devices": "예시 장치가 포함된 IPScans+ 애플리케이션 인터페이스",
@@ -1372,7 +1432,13 @@
     "Can recording or audio start secretly?": "녹음이나 오디오를 비밀리에 시작할 수 있나요?",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "둘 다 별도의 권한이 필요합니다. 녹음하면 두 장치 모두에 REC가 표시됩니다. 오디오가 시작되고 뷰어가 이를 활성화합니다. AVI 녹화에는 오디오가 없으며 해상도 변경 또는 1.8GB에서 중지됩니다.",
     "What happens when a connection drops?": "연결이 끊어지면 어떻게 되나요?",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPcast는 최대 3번까지 재시도합니다. 새 세션에는 새로운 승인이 필요합니다. 동일한 공유 폴더 및 변경되지 않은 소스 파일을 사용하여 파일 전송을 재개할 수 있습니다."
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPcast는 최대 3번까지 재시도합니다. 새 세션에는 새로운 승인이 필요합니다. 동일한 공유 폴더 및 변경되지 않은 소스 파일을 사용하여 파일 전송을 재개할 수 있습니다.",
+    "Free network tools · No sign-up": "무료 네트워크 도구 · 가입 불필요",
+    "web tools": "웹 도구",
+    "languages": "개 언어",
+    "network guides": "네트워크 가이드",
+    "free · no account": "무료 · 계정 불필요",
+    "Advertisement": "광고"
   },
   "zh": {
     "IPScans+ application interface with example devices": "IPScans+ 应用程序接口与示例设备",
@@ -1497,6 +1563,12 @@
     "Can recording or audio start secretly?": "录音或音频可以秘密启动吗？",
     "Both require separate permission. Recording displays REC on both devices. Audio starts off and the viewer enables it. AVI recording has no audio and stops at a resolution change or 1.8 GB.": "两者都需要单独的许可。录音在两台设备上均显示 REC。音频开始，观众启用它。 AVI 录制没有音频，并在分辨率更改或 1.8 GB 处停止。",
     "What happens when a connection drops?": "当连接断开时会发生什么？",
-    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast重试最多3次。新的会议需要新的批准。可以使用相同的共享文件夹和未更改的源文件恢复文件传输。"
+    "IPCast retries up to three times. A new session requires fresh approval. File transfers can resume with the same shared folder and unchanged source file.": "IPCast重试最多3次。新的会议需要新的批准。可以使用相同的共享文件夹和未更改的源文件恢复文件传输。",
+    "Free network tools · No sign-up": "免费网络工具 · 无需注册",
+    "web tools": "个网页工具",
+    "languages": "种语言",
+    "network guides": "篇网络指南",
+    "free · no account": "免费 · 无需账户",
+    "Advertisement": "广告"
   }
 }

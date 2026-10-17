@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { getPost, posts, localizedPostText, readingMinutes, postCategory, postTags } from "@/content/posts";
 import { notFound } from "next/navigation";
+import { AdSlot } from "@/components/AdSlot";
 
 export function generateStaticParams() {
   return locales.flatMap((locale) =>
@@ -56,6 +57,10 @@ export default async function BlogPostPage({
     return `<h2 id="${id}">${title}</h2>`;
   });
   const related = posts.filter(p=>p.slug!==slug && p.body[locale]).sort((a,b)=>Number(b.category===post.category)-Number(a.category===post.category)).slice(0,3);
+  // One in-content ad between whole sections (before the middle <h2>); short articles get none.
+  const splitAt = headings.length >= 3 ? articleHtml.indexOf(`<h2 id="${headings[Math.floor(headings.length / 2)].id}"`) : -1;
+  const articleTop = splitAt > 0 ? articleHtml.slice(0, splitAt) : articleHtml;
+  const articleBottom = splitAt > 0 ? articleHtml.slice(splitAt) : "";
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -101,7 +106,9 @@ export default async function BlogPostPage({
         </aside>
         <article className="min-w-0">
           <p className="mb-8 border-b border-white/15 pb-6 text-sm text-neutral-400">IPScans {uiText(locale, "Editorial Team", "Editör Ekibi")}</p>
-          <div className="prose-ipscans article-body" dangerouslySetInnerHTML={{__html:articleHtml}}/>
+          <div className="prose-ipscans article-body" dangerouslySetInnerHTML={{__html:articleTop}}/>
+          {articleBottom && <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE} label={uiText(locale, "Advertisement", "Reklam")} />}
+          {articleBottom && <div className="prose-ipscans article-body" dangerouslySetInnerHTML={{__html:articleBottom}}/>}
           <Link href={`/${locale}/blog`} className="mt-12 inline-flex min-h-11 items-center text-sm underline underline-offset-4">← {dict.blog.title}</Link>
         </article>
       </div>
