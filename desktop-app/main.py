@@ -61,6 +61,30 @@ def _reset_onboarding() -> None:
     QSettings("ipscans", "NetworkScanner").clear()
 
 
+def _reset_cache() -> None:
+    """`--reset-cache` / `--clear-cache`: Clears all IPscans+ local caches,
+    scan history snapshots, custom device names, and registry settings.
+    """
+    import shutil
+    from PyQt6.QtCore import QSettings
+
+    QSettings("ipscans", "NetworkScanner").clear()
+    QSettings("ipscans", "DeviceNames").clear()
+
+    appdata_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share")) / "IPscans+"
+    if appdata_dir.exists():
+        for item in appdata_dir.iterdir():
+            try:
+                if item.is_file() or item.is_symlink():
+                    item.unlink(missing_ok=True)
+                elif item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+            except OSError:
+                pass
+
+    print("[OK] IPscans+ onbellegi, kayitli ayarlari ve tarama gecmisi basariyla sifirlandi.")
+
+
 def _pending_onboarding_steps() -> list[str]:
     steps = []
     if get_saved_language() is None:
@@ -76,6 +100,10 @@ def main() -> None:
     # `--selftest` boots the window and exits immediately (exit code 0 on
     # success) — used by CI to smoke-test a packaged .exe without a real display.
     selftest = "--selftest" in sys.argv
+
+    if "--reset-cache" in sys.argv or "--clear-cache" in sys.argv:
+        _reset_cache()
+        sys.exit(0)
 
     if "--reset-onboarding" in sys.argv:
         _reset_onboarding()
