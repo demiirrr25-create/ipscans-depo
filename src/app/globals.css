@@ -2866,8 +2866,8 @@ main textarea {
 }
 .agy-speed-dial {
   position: relative;
-  width: 260px;
-  height: 260px;
+  width: 280px;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2889,26 +2889,26 @@ main textarea {
 }
 .agy-speed-dial__phase {
   font-family: var(--font-family-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 10px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #00f0ff;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
 }
 .agy-speed-dial__number {
-  font-size: 42px;
-  font-weight: 550;
+  font-size: 48px;
+  font-weight: 600;
   letter-spacing: -0.04em;
   line-height: 1.05;
   color: #ffffff;
   margin-top: 4px;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 24px rgba(0, 240, 255, 0.25);
+  text-shadow: 0 0 22px rgba(255, 255, 255, 0.22);
 }
 .agy-speed-dial__unit {
   font-family: var(--font-family-mono);
   font-size: 12px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--theme-surface-on-surface-variant);
   margin-top: 2px;
 }

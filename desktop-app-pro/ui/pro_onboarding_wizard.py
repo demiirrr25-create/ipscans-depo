@@ -74,7 +74,7 @@ class ProOnboardingWizard(QDialog):
         wrap.setSpacing(10)
 
         self._welcome_stage = AntigravityWelcomeStage(
-            kicker_text="IPSCANS NETWORK HEALTH PRO  •  ANTIGRAVITY EDITION",
+            kicker_text="IPSCANS NETWORK HEALTH PRO · DIAGNOSTIC SUITE",
             headline_text="Sürekli ağ sağlığı ve anomali izleme platformuna hoş geldiniz.",
             subtitle_text="7/24 çakışma tespiti, topoloji takibi ve cihaz sağlık skoru motoru hazır.",
             compact=False,

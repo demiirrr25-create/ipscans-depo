@@ -65,7 +65,7 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       href: `/${locale}/applications/ipcast`,
       downloadHref: ipcast.downloadUrl,
       image: "/ipcast-v25-preview.png",
-      tag: `${ipcast.platform} · TLS 1.3 · SHA-256 PINNING`,
+      tag: `${ipcast.platform} · NATIVE WIN64 · SHA-256 VERIFIED`,
       badge: uiText(locale, "Remote Desktop & File Transfer", "Uzak Masaüstü ve Dosya Aktarımı"),
     },
     {

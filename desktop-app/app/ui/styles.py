@@ -469,6 +469,76 @@ QDialog QPushButton, QMessageBox QPushButton {
 QDialog QPushButton:hover, QMessageBox QPushButton:hover {
     background: #e6eaf0;
 }
+
+/* Windows 11 Setup & Feature Tour components */
+QPushButton#TourButton {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e8eaed;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+QPushButton#TourButton:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+QDialog#Win11SetupWindow {
+    background-color: #07080c;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 20px;
+}
+
+QFrame#Win11Card {
+    background: #0d0f14;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+}
+
+QPushButton#Win11Primary {
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 24px;
+    font-size: 13px;
+    font-weight: 600;
+}
+QPushButton#Win11Primary:hover {
+    background: #e8ebf0;
+}
+QPushButton#Win11Primary:disabled {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(0, 0, 0, 0.4);
+}
+
+QPushButton#Win11Ghost {
+    background: transparent;
+    color: #9aa0a6;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-size: 13px;
+}
+QPushButton#Win11Ghost:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+QFrame#Win11FeatureCard {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+QFrame#Win11FeatureCard:hover {
+    border-color: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.045);
+}
 """
 
 
@@ -529,14 +599,14 @@ class AntigravityWelcomeStage(QWidget):
         bg.setColorAt(1.0, QColor(13, 16, 24))
         painter.fillPath(path, QBrush(bg))
 
-        # Calibrated Antigravity drifting capsule particle field
+        # Calibrated drifting capsule particle field (monochrome silver / white)
         cols = 18 if self._compact else 22
         rows = 4 if self._compact else 6
         palette = [
-            QColor(50, 121, 249),
-            QColor(88, 146, 250),
-            QColor(183, 191, 217),
-            QColor(232, 234, 237),
+            QColor(255, 255, 255),
+            QColor(220, 225, 235),
+            QColor(180, 185, 195),
+            QColor(140, 145, 155),
         ]
         painter.save()
         painter.setClipPath(path)
@@ -550,7 +620,7 @@ class AntigravityWelcomeStage(QWidget):
                 if dx_c * dx_c + dy_c * dy_c < 0.72:
                     continue
                 wave = math.sin(nx * 5.2 + self._phase + ny * 2.1)
-                alpha = int(max(12, min(135, 32 + (wave + 1.0) * 38)))
+                alpha = int(max(10, min(120, 28 + (wave + 1.0) * 32)))
                 col = QColor(palette[(r * cols + c) % len(palette)])
                 col.setAlpha(alpha)
 
@@ -562,7 +632,7 @@ class AntigravityWelcomeStage(QWidget):
                 painter.translate(px, py)
                 painter.rotate(angle)
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush( QBrush(col))
+                painter.setBrush(QBrush(col))
                 painter.drawRoundedRect(QRectF(-4.5, -1.3, 9.0, 2.6), 1.3, 1.3)
                 painter.restore()
         painter.restore()
@@ -583,7 +653,7 @@ class AntigravityWelcomeStage(QWidget):
             self._eyebrow.upper(),
         )
 
-        # Typewriter Headline + Blinking Rainbow Cursor
+        # Typewriter Headline + Clean Platinum Cursor
         shown = self._full_headline[: max(1, self._typed_chars)]
         title_font = QFont("Segoe UI", 14 if self._compact else 18)
         title_font.setWeight(QFont.Weight.DemiBold)
@@ -603,8 +673,8 @@ class AntigravityWelcomeStage(QWidget):
         if blink_on:
             grad = QLinearGradient(cursor_x, title_y + 4.0, cursor_x, title_y + 26.0)
             grad.setColorAt(0.0, QColor(255, 255, 255, 240))
-            grad.setColorAt(0.5, QColor(215, 220, 230, 210))
-            grad.setColorAt(1.0, QColor(140, 145, 155, 180))
+            grad.setColorAt(0.5, QColor(220, 225, 235, 210))
+            grad.setColorAt(1.0, QColor(160, 165, 175, 180))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QBrush(grad))
             painter.drawRoundedRect(QRectF(cursor_x, title_y + 5.0, 3.0, 21.0), 1.5, 1.5)
@@ -620,3 +690,92 @@ class AntigravityWelcomeStage(QWidget):
             )
 
         painter.end()
+
+
+class Win11SilkCanvas(QWidget):
+    """Windows 11 Setup Silk Ribbon animated backdrop with harmonic Bézier waves."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._phase = 0.0
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
+        self._timer = QTimer(self)
+        self._timer.setInterval(33)  # ~30 fps
+        self._timer.timeout.connect(self._on_tick)
+        self._timer.start()
+
+    def _on_tick(self) -> None:
+        self._phase += 0.028
+        self.update()
+
+    def paintEvent(self, _event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        w = float(self.width())
+        h = float(self.height())
+        if w < 10 or h < 10:
+            return
+
+        # Deep ambient vignette background
+        bg = QLinearGradient(0, 0, w, h)
+        bg.setColorAt(0.0, QColor(9, 10, 15))
+        bg.setColorAt(0.5, QColor(6, 7, 10))
+        bg.setColorAt(1.0, QColor(11, 13, 18))
+        painter.fillRect(self.rect(), QBrush(bg))
+
+        # Render 3 layered silky harmonic waves
+        for layer in range(3):
+            phase_offset = self._phase + layer * 1.35
+            y_base = h * (0.35 + layer * 0.18)
+
+            path = QPainterPath()
+            path.moveTo(0, h)
+            path.lineTo(0, y_base + math.sin(phase_offset) * 22)
+
+            # Cubic Bézier segments
+            cp1_x = w * 0.3
+            cp1_y = y_base + math.sin(phase_offset + 1.2) * 36 - 25
+            cp2_x = w * 0.7
+            cp2_y = y_base + math.cos(phase_offset + 2.1) * 32 + 25
+            end_x = w
+            end_y = y_base + math.sin(phase_offset + 3.1) * 24
+
+            path.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
+            path.lineTo(w, h)
+            path.closeSubpath()
+
+            grad = QLinearGradient(0, y_base - 30, w, h)
+            if layer == 0:
+                grad.setColorAt(0.0, QColor(255, 255, 255, 30))
+                grad.setColorAt(0.5, QColor(200, 210, 225, 18))
+                grad.setColorAt(1.0, QColor(10, 12, 16, 0))
+            elif layer == 1:
+                grad.setColorAt(0.0, QColor(255, 255, 255, 22))
+                grad.setColorAt(0.6, QColor(180, 190, 210, 14))
+                grad.setColorAt(1.0, QColor(10, 12, 16, 0))
+            else:
+                grad.setColorAt(0.0, QColor(255, 255, 255, 16))
+                grad.setColorAt(0.7, QColor(160, 175, 195, 10))
+                grad.setColorAt(1.0, QColor(10, 12, 16, 0))
+
+            painter.fillPath(path, QBrush(grad))
+
+            # Crisp crest line
+            crest = QPainterPath()
+            crest.moveTo(0, y_base + math.sin(phase_offset) * 22)
+            crest.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
+            painter.setPen(QPen(QColor(255, 255, 255, int(45 - layer * 10)), 1.2))
+            painter.drawPath(crest)
+
+        # Micro glowing particles along the wave flow
+        painter.setPen(Qt.PenStyle.NoPen)
+        for i in range(12):
+            p_phase = self._phase * 0.8 + i * 0.75
+            px = ((math.sin(p_phase * 0.6 + i) * 0.5 + 0.5) * w)
+            py = h * 0.25 + ((math.cos(p_phase * 0.4 + i * 1.2) * 0.5 + 0.5) * (h * 0.55))
+            alpha = int(40 + (math.sin(p_phase + i) + 1.0) * 35)
+            painter.setBrush(QBrush(QColor(255, 255, 255, alpha)))
+            painter.drawEllipse(QRectF(px - 1.5, py - 1.5, 3.0, 3.0))
+
+        painter.end()
+

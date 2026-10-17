@@ -34,14 +34,14 @@
     <Border Classes="card" Padding="24,18">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
             <StackPanel Spacing="6">
-                <TextBlock Text="IPSCANS.COM · ANTIGRAVITY DESIGN SYSTEM · IPCAST 2.5" Classes="eyebrow" />
+                <TextBlock Text="IPCAST 2.5 · ENCRYPTED REMOTE DESKTOP" Classes="eyebrow" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="Experience liftoff with peer-to-peer remote desktop &amp; encrypted session control." FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="Peer-to-peer high-performance remote desktop &amp; encrypted session control." FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <Border Width="3" Height="18" CornerRadius="2" Background="#FFFFFF" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
             <Border Grid.Column="1" CornerRadius="16" Padding="12,6" Background="{DynamicResource SubtleFillBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
-                <TextBlock Text="ANTIGRAVITY EDITION" Classes="eyebrow" />
+                <TextBlock Text="PRO EDITION" Classes="eyebrow" />
             </Border>
         </Grid>
     </Border>

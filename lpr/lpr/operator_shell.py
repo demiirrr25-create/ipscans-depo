@@ -344,7 +344,7 @@ def install_shell(window):
     header.addWidget(brand);header.addStretch();header.addWidget(window.account)
     lock=QPushButton('Oturumu kilitle');lock.clicked.connect(window.lock_session);header.addWidget(lock);layout.addLayout(header)
     window.welcome_banner=AntigravityWelcomeBanner(
-        'IPSCANS.COM · ANTIGRAVITY DESIGN SYSTEM · LPR PRO '+__version__,
+        'IPSCANS LPR PRO · STATION WORKSPACE · v'+__version__,
         'Yerel plaka tanıma, bağımsız kalibrasyon çizgileri ve canlı operatör çalışma alanı.',
         compact=True,
         parent=root,

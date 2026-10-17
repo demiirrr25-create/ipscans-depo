@@ -178,8 +178,8 @@ export default async function LprProPage({ params }: Props) {
           <ol className="body mt-5 list-decimal space-y-3 ps-6 text-[#b7bfd9]">
             <li>
               {tr
-                ? "Kurulum EXE dosyasını çalıştırın. İlk açılışta Antigravity karşılama ekranı üzerinden en az 12 karakterli yönetici parolanızı oluşturun."
-                : "Run the installer EXE. On first launch, create an administrator password of at least 12 characters through the Antigravity welcome screen."}
+                ? "Kurulum EXE dosyasını çalıştırın. İlk açılışta karşılama ve kurulum sihirbazı üzerinden en az 12 karakterli yönetici parolanızı oluşturun."
+                : "Run the installer EXE. On first launch, create an administrator password of at least 12 characters through the welcome setup wizard."}
             </li>
             <li>
               {tr

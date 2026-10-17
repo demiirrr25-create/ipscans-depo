@@ -56,7 +56,7 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.3.0 / Antigravity Network Intelligence")
+        self.setWindowTitle("IPscans+ 4.3.0 · High Performance Network Scanner")
         self.resize(1380, 880)
         self.setMinimumSize(1000, 680)
         self.setStyleSheet(DARK_QSS)
@@ -95,8 +95,15 @@ class MainWindow(QWidget):
         heading.addWidget(logo)
         heading.addSpacing(6)
         heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
-        heading.addWidget(QLabel("4.3.0 / ANTIGRAVITY EDITION", objectName="VersionBadge"))
         heading.addStretch()
+        self.tour_btn = QPushButton(
+            self._v4("  Feature Tour & Setup", "  Tanıtım & Özellikler"),
+            objectName="TourButton",
+        )
+        self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.tour_btn.clicked.connect(self._open_feature_tour)
+        heading.addWidget(self.tour_btn)
+        heading.addSpacing(8)
         self.navigation = QTabBar()
         self.navigation.setDrawBase(False)
         self.navigation.setAccessibleName(t(self.lang, "navigation"))
@@ -105,10 +112,10 @@ class MainWindow(QWidget):
         heading.addWidget(self.navigation)
         body.addLayout(heading)
         self.welcome_stage = AntigravityWelcomeStage(
-            "IPSCANS.COM · ANTIGRAVITY DESIGN SYSTEM",
+            "IPSCANS+ · ADVANCED NETWORK DISCOVERY",
             self._v4(
-                "Experience liftoff with local-first network discovery and topology mapping.",
-                "Yerel ağ keşfi ve canlı topoloji haritalaması ile yeni nesil ağ deneyimini yaşayın.",
+                "High-performance local-first network discovery and topology mapping.",
+                "Yüksek performanslı yerel ağ keşfi ve canlı topoloji haritalaması.",
             ),
             compact=True,
             parent=self,
@@ -330,6 +337,12 @@ class MainWindow(QWidget):
         self._map_dirty = True
         if self.views.currentIndex() == 1:
             self.network_map.set_filter_text(text)
+
+    def _open_feature_tour(self) -> None:
+        from app.ui.onboarding_wizard import OnboardingWizard
+        tour_steps = ["welcome", "engine", "topology", "hardware", "privacy"]
+        wizard = OnboardingWizard(tour_steps, self.lang, self.windowIcon(), parent=self, is_tour=True)
+        wizard.exec()
 
     def _start_scan(self) -> None:
         if self._worker and self._worker.isRunning() or self._node_worker and self._node_worker.isRunning():

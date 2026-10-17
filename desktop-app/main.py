@@ -170,7 +170,7 @@ def main() -> None:
             if not pdf.read_bytes().startswith(b'%PDF-') or pdf.stat().st_size < 1000:
                 raise RuntimeError('Packaged PDF export failed')
         from app.ui.splash_screen import IPScansSplash
-        splash = IPScansSplash("IPscans+", "ANTIGRAVITY NETWORK INTELLIGENCE · v4.3.0")
+        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0")
         splash.set_progress(0.4, "Probing network interfaces...")
         splash.grab()
         splash.close()
@@ -198,7 +198,7 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
     language = get_saved_language() or DEFAULT_LANGUAGE
 
     from app.ui.splash_screen import IPScansSplash
-    splash = IPScansSplash("IPscans+", "ANTIGRAVITY NETWORK INTELLIGENCE · v4.3.0")
+    splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0")
     splash.show()
     app.processEvents()
 
@@ -212,7 +212,7 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
             app.quit()
             return
         language = get_saved_language() or DEFAULT_LANGUAGE
-        splash = IPScansSplash("IPscans+", "ANTIGRAVITY NETWORK INTELLIGENCE · v4.3.0")
+        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0")
         splash.show()
         app.processEvents()
 

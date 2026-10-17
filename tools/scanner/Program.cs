@@ -131,7 +131,7 @@ namespace IpscansScanner
             }
             using (var font = new Font("Segoe UI", 8.5f, FontStyle.Bold))
             {
-                TextRenderer.DrawText(g, "ANTIGRAVITY NETWORK SCANNER · STANDALONE", font,
+                TextRenderer.DrawText(g, "IPSCANS NETWORK SCANNER · STANDALONE", font,
                     new Rectangle(0, 210, Width, 20), Color.FromArgb(140, 140, 140), TextFormatFlags.HorizontalCenter);
             }
 

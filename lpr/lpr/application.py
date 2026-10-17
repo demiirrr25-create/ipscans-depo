@@ -35,7 +35,7 @@ class Login(QDialog):
         self.created_admin=setup
         from .operator_shell import AntigravityWelcomeBanner
         self.welcome_banner=AntigravityWelcomeBanner(
-            "IPSCANS LPR PRO · ANTIGRAVITY EDITION",
+            "IPSCANS LPR PRO · LICENSE PLATE RECOGNITION",
             "İlk yönetici hesabını oluşturun ve istasyonu başlatın." if setup else "Yerel operatör çalışma alanına oturum açın.",
             compact=True,
             parent=self,

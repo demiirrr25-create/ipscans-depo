@@ -44,7 +44,7 @@ class IPScansSplash(QWidget):
     def __init__(
         self,
         app_name: str = "IPscans+",
-        edition_label: str = "ANTIGRAVITY NETWORK INTELLIGENCE · v4.3.0",
+        edition_label: str = "HIGH PERFORMANCE NETWORK SCANNER · v4.3.0",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)

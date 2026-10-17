@@ -46,7 +46,7 @@ class SetupWizard(QDialog):
         super().__init__(window)
         self.window=window;self.ops=window.ops;self.session=window.session
         self.current_status=None;self.exiting=False;self.busy=False
-        self.setWindowTitle("IPScans LPR Pro · Antigravity İlk Kurulum")
+        self.setWindowTitle("IPScans LPR Pro · İstasyon Kurulumu")
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setStyleSheet(STYLE)
         self.resize(760,600);self.setMinimumSize(640,480)

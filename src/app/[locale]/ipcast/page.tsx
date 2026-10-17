@@ -50,7 +50,7 @@ export default async function IpCastPage({
               IPCast v{ipcastRelease.version}
             </span>
             <span className="feature-media-card__tag">
-              {ipcastRelease.platform} · TLS 1.3 · SHA-256 PINNING
+              {ipcastRelease.platform} · NATIVE WIN64 · SHA-256 VERIFIED
             </span>
           </div>
           <div className="feature-media-card__viewport">
