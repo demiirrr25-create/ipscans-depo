@@ -2,7 +2,6 @@ import { uiText } from "@/i18n/ui";
 import Link from "next/link";
 import { AntigravityParticles } from "./AntigravityParticles";
 import { AntigravityTypewriter } from "./AntigravityTypewriter";
-import { ProductPreview } from "./ProductPreview";
 import { SurfaceShowcase } from "./SurfaceShowcase";
 import { LiveIp } from "./LiveIp";
 import { Logo } from "./Logo";
@@ -74,20 +73,6 @@ export function PlatformHero({ locale, ipLabel }: { locale: Locale; ipLabel: str
 
           <div className="welcome-ip-row">
             <LiveIp label={ipLabel} />
-          </div>
-        </div>
-      </section>
-
-      <section
-        className="landing-video-section"
-        id="youtube-video-section"
-        data-youtube-video-section
-      >
-        <div className="grid-container">
-          <div className="grid-row">
-            <div className="grid-col col-md-12">
-              <ProductPreview locale={locale} />
-            </div>
           </div>
         </div>
       </section>

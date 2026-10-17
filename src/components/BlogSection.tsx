@@ -9,7 +9,7 @@ import { posts, localizedPostText, readingMinutes, postCategory } from "@/conten
 const featuredSlugs = [
   "windows-kurulum-code-5",
   "hiz-testi-dogru-olcum",
-  "ag-haritasi-kanitlari",
+  "ip-adresi-nedir",
 ];
 
 export function BlogSection({ locale }: { locale: Locale }) {
