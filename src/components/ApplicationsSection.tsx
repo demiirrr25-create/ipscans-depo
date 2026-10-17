@@ -42,9 +42,9 @@ export function ApplicationsSection({
       category: "desktop",
       icon: "/cortex-mark.svg",
       preview: "/cortex-preview.png",
-      version: "0.1.0 Alpha",
+      version: "0.1.1 Alpha",
       platform: "Windows 10/11 · x64",
-      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v0.1.0/IPScans-Cortex-0.1.0.exe",
+      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v0.1.1/IPScans-Cortex-0.1.1.exe",
     },
     {
       id: "lpr-pro",
