@@ -84,6 +84,21 @@ export default async function ToolPage({
     ],
   };
 
+  if (key === "speedTest") {
+    return (
+      <div className="min-h-screen bg-[#000000] text-white pt-6 pb-20">
+        <script
+          type="application/ld+json"
+          // Static, code-authored structured data — safe to inject directly.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <div className="mx-auto max-w-[1200px] px-4">
+          <ToolRenderer toolKey={key} locale={locale} dict={dict} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <PageShell title={title} subtitle={subtitle}>
       <script

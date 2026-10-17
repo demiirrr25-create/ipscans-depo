@@ -47,9 +47,9 @@ QGraphicsView {
 }
 
 #RootCard, #SplashCard, QFrame#ScanCard, QFrame#WelcomeHeroCard {
-    background-color: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 20px;
+    background-color: #0A0A0A;
+    border: 1px solid #1F1F1F;
+    border-radius: 16px;
 }
 
 #TitleBar {
@@ -328,11 +328,11 @@ QLabel#ResultsHeading {
 }
 
 QTableView {
-    background: #0d0e12;
-    alternate-background-color: #111318;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 20px;
-    gridline-color: rgba(255, 255, 255, 0.05);
+    background: #000000;
+    alternate-background-color: #0A0A0A;
+    border: 1px solid #1F1F1F;
+    border-radius: 16px;
+    gridline-color: #141414;
     font-size: 13px;
 }
 QTableView QAbstractScrollArea, QTreeWidget QAbstractScrollArea {

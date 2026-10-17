@@ -20,7 +20,7 @@ export function ToolRenderer({
 }) {
   const navBar = (
     <nav
-      className="agy-tool-switcher"
+      className="mx-auto mb-8 flex max-w-fit flex-wrap items-center justify-center gap-1 rounded-full border border-[#1F1F1F] bg-[#0A0A0A] p-1.5 text-xs shadow-lg"
       aria-label={uiText(locale, "Browser diagnostic tools", "Tarayıcı tanı araçları")}
     >
       {toolKeys.map((key) => {
@@ -30,7 +30,11 @@ export function ToolRenderer({
             key={key}
             href={toolPath(key, locale)}
             aria-current={isCurrent ? "page" : undefined}
-            className={`newsletter-topic-pill ${isCurrent ? "selected" : ""}`}
+            className={`rounded-full px-4 py-1.5 font-medium transition-all duration-200 ${
+              isCurrent
+                ? "bg-white text-black shadow-sm"
+                : "text-[#A1A1A1] hover:bg-[#1A1A1A] hover:text-white"
+            }`}
           >
             <span>{dict[key].title}</span>
           </Link>
@@ -41,7 +45,7 @@ export function ToolRenderer({
 
   if (toolKey === "speedTest") {
     return (
-      <div className="agy-tool-stage">
+      <div className="w-full">
         {navBar}
         <SpeedTest dict={dict.speedTest} locale={locale} />
       </div>

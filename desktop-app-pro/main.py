@@ -112,32 +112,30 @@ def main() -> None:
         window.show()
         sys.exit(app.exec())
 
-    from app.ui.splash_screen import IPScansSplash
-    splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS")
-    splash.show()
-    app.processEvents()
-
-    splash.set_progress(0.35, "Analyzing local network subnets...")
-    app.processEvents()
-
+    # If first run with pending setup steps, complete OOBE configuration first
     if steps:
-        splash.close()
         wizard = ProOnboardingWizard(steps, language, app_icon)
         if wizard.exec() != ProOnboardingWizard.DialogCode.Accepted:
             sys.exit(0)
         language = get_saved_language() or DEFAULT_LANGUAGE
-        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS")
-        splash.show()
-        app.processEvents()
 
-    splash.set_progress(0.70, "Initializing continuous health monitor & database...")
+    # Cinematic Windows 11 Full-Screen Welcome Experience
+    from app.ui.splash_screen import IPScansSplash
+    splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS")
+    splash.showFullScreen()
+    app.processEvents()
+
+    splash.set_progress(0.35, "Analyzing local network subnets & adapters...")
     app.processEvents()
 
     window = ProMainWindow(language)
     window.setWindowIcon(app_icon)
     app.window_ref = window
 
-    splash.set_progress(0.95, "Ready")
+    splash.set_progress(0.70, "Initializing continuous health monitor & database...")
+    app.processEvents()
+
+    splash.set_progress(0.95, "Workspace ready")
     app.processEvents()
 
     splash.finish_and_show(window)

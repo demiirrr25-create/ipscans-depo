@@ -38,91 +38,61 @@ QCheckBox::indicator:checked {background:#ffffff;border:1px solid #ffffff;}
 
 
 class IPScansWelcomeBanner(QWidget):
-    """Animated IPScans capsule particle stage + typewriter headline for LPR Pro."""
+    """Executive minimalist IPScans header bar for LPR Pro."""
 
     def __init__(self, eyebrow: str, headline: str, compact: bool = True, parent=None):
         super().__init__(parent)
         self._eyebrow = eyebrow
         self._headline = headline
         self._compact = compact
-        self._phase = 0.0
-        self._typed = 0
-        self.setFixedHeight(74 if compact else 112)
-        self._timer = QTimer(self)
-        self._timer.setInterval(45)
-        self._timer.timeout.connect(self._step)
-        self._timer.start()
-
-    def _step(self):
-        self._phase += 0.055
-        if self._typed < len(self._headline):
-            self._typed += 1
-        self.update()
+        self.setFixedHeight(68 if compact else 84)
 
     def paintEvent(self, _event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         rect = QRectF(0.5, 0.5, max(1.0, self.width() - 1.0), max(1.0, self.height() - 1.0))
         path = QPainterPath()
-        path.addRoundedRect(rect, 20.0, 20.0)
+        path.addRoundedRect(rect, 14.0, 14.0)
 
+        # 1. Pure deep surface with subtle linear gradient
         bg = QLinearGradient(0.0, 0.0, float(self.width()), float(self.height()))
-        bg.setColorAt(0.0, QColor(11, 13, 19))
-        bg.setColorAt(0.55, QColor(7, 8, 12))
-        bg.setColorAt(1.0, QColor(13, 16, 24))
+        bg.setColorAt(0.0, QColor(10, 10, 10))
+        bg.setColorAt(1.0, QColor(5, 5, 5))
         painter.fillPath(path, QBrush(bg))
 
-        cols = 18 if self._compact else 22
-        rows = 4 if self._compact else 5
-        palette = [QColor(50, 121, 249), QColor(88, 146, 250), QColor(183, 191, 217), QColor(232, 234, 237)]
-        painter.save()
-        painter.setClipPath(path)
-        for r in range(rows):
-            for c in range(cols):
-                nx = (c + 0.5) / cols
-                ny = (r + 0.5) / rows
-                if ((nx - 0.34) / 0.36) ** 2 + ((ny - 0.5) / 0.45) ** 2 < 0.75:
-                    continue
-                wave = math.sin(nx * 5.2 + self._phase + ny * 2.1)
-                col = QColor(palette[(r * cols + c) % len(palette)])
-                col.setAlpha(int(max(12, min(130, 30 + (wave + 1.0) * 36))))
-                px = nx * self.width() + math.cos(self._phase + r * 0.7) * 5.0
-                py = ny * self.height() + wave * 4.0
-                painter.save()
-                painter.translate(px, py)
-                painter.rotate(math.degrees(math.atan2(wave * 0.4, 1.0)))
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(QBrush(col))
-                painter.drawRoundedRect(QRectF(-4.5, -1.3, 9.0, 2.6), 1.3, 1.3)
-                painter.restore()
-        painter.restore()
+        # 2. Subtle ambient corner illumination
+        halo = QRadialGradient(30.0, 20.0, 220.0)
+        halo.setColorAt(0.0, QColor(255, 255, 255, 12))
+        halo.setColorAt(1.0, QColor(0, 0, 0, 0))
+        painter.fillPath(path, QBrush(halo))
 
-        painter.setPen(QPen(QColor(255, 255, 255, 28), 1.0))
+        # 3. Outer hairline border
+        painter.setPen(QPen(QColor(255, 255, 255, 22), 1.0))
         painter.drawPath(path)
 
-        mono = QFont("Consolas", 8)
+        # 4. Eyebrow badge
+        mono = QFont("Segoe UI", 8)
         mono.setBold(True)
+        mono.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.4)
         painter.setFont(mono)
-        painter.setPen(QColor(154, 160, 166))
-        painter.drawText(QRectF(22.0, 13.0, float(self.width()) - 44.0, 16.0), int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), self._eyebrow.upper())
+        painter.setPen(QColor(140, 145, 155))
+        painter.drawText(
+            QRectF(20.0, 14.0, float(self.width()) - 40.0, 16.0),
+            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+            self._eyebrow.upper(),
+        )
 
-        shown = self._headline[: max(1, self._typed)]
-        title_font = QFont("Segoe UI", 13 if self._compact else 16)
+        # 5. Crisp executive headline
+        title_font = QFont("Segoe UI", 13 if self._compact else 15)
         title_font.setWeight(QFont.Weight.DemiBold)
+        title_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, -0.2)
         painter.setFont(title_font)
         painter.setPen(QColor(255, 255, 255))
-        painter.drawText(QRectF(22.0, 33.0, float(self.width()) - 44.0, 30.0), int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), shown)
-
-        fm = painter.fontMetrics()
-        cx = min(float(self.width()) - 28.0, 22.0 + fm.horizontalAdvance(shown) + 5.0)
-        if (self._typed < len(self._headline)) or (int(self._phase * 2.2) % 2 == 0):
-            grad = QLinearGradient(cx, 37.0, cx, 57.0)
-            grad.setColorAt(0.0, QColor(255, 255, 255, 240))
-            grad.setColorAt(0.5, QColor(215, 220, 230, 210))
-            grad.setColorAt(1.0, QColor(140, 145, 155, 180))
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(grad))
-            painter.drawRoundedRect(QRectF(cx, 38.0, 3.0, 19.0), 1.5, 1.5)
+        painter.drawText(
+            QRectF(20.0, 32.0 if self._compact else 36.0, float(self.width()) - 40.0, 24.0),
+            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+            self._headline,
+        )
         painter.end()
 
 

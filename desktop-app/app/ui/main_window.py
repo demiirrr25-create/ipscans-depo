@@ -111,47 +111,49 @@ class MainWindow(QWidget):
         self.navigation.addTab(t(self.lang, "network_map"))
         heading.addWidget(self.navigation)
         body.addLayout(heading)
-        self.welcome_stage = AntigravityWelcomeStage(
-            "IPSCANS+ · ADVANCED NETWORK DISCOVERY",
-            self._v4(
-                "High-performance local-first network discovery and topology mapping.",
-                "Yüksek performanslı yerel ağ keşfi ve canlı topoloji haritalaması.",
-            ),
-            compact=True,
-            parent=self,
-        )
-        body.addWidget(self.welcome_stage)
+        self.welcome_stage = QWidget(self)
+        self.welcome_stage.setVisible(False)
+
         self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
-        scan.setContentsMargins(20, 18, 20, 18)
-        scan.setSpacing(12)
-        heading = QHBoxLayout()
+        scan.setContentsMargins(18, 14, 18, 14)
+        scan.setSpacing(10)
+
+        cmd_row = QHBoxLayout()
+        cmd_row.setSpacing(8)
+
         self.adapter_select = QComboBox()
         self.adapter_select.setAccessibleName(t(self.lang, "current_adapter"))
         self.adapter_select.currentIndexChanged.connect(self._adapter_changed)
-        heading.addWidget(self.adapter_select, stretch=1)
-        refresh = QPushButton(t(self.lang, "refresh_adapters"))
+        self.adapter_select.setMinimumWidth(240)
+        cmd_row.addWidget(self.adapter_select)
+
+        refresh = QPushButton("↻")
+        refresh.setToolTip(t(self.lang, "refresh_adapters"))
+        refresh.setFixedWidth(36)
         refresh.clicked.connect(self._refresh_adapters)
-        heading.addWidget(refresh)
-        scan.addLayout(heading)
-        self.adapter_details = QLabel(t(self.lang, "detecting_adapter"))
-        self.adapter_details.setWordWrap(True)
-        scan.addWidget(self.adapter_details)
-        row = QHBoxLayout()
+        cmd_row.addWidget(refresh)
+
         self.target_input = TargetInput(self.lang)
-        row.addWidget(self.target_input, stretch=1)
+        cmd_row.addWidget(self.target_input, stretch=1)
+
         self.scan_btn = QPushButton(t(self.lang, "start_scan"), objectName="PrimaryButton")
         self.stop_btn = QPushButton(t(self.lang, "stop_scan"))
         self.scan_btn.clicked.connect(self._start_scan)
         self.stop_btn.clicked.connect(self._stop_scan)
         self.stop_btn.setEnabled(False)
-        row.addWidget(self.scan_btn)
-        row.addWidget(self.stop_btn)
-        scan.addLayout(row)
-        self.range_estimate = QLabel(t(self.lang, "range_hint"))
-        scan.addWidget(self.range_estimate)
-        scan.addWidget(QLabel(self._v4('Automatic discovery · Scan only networks you own or are authorized to assess.',
-            'Otomatik keşif · Yalnızca sahibi olduğunuz veya tarama yetkiniz olan ağları tarayın.')))
+        cmd_row.addWidget(self.scan_btn)
+        cmd_row.addWidget(self.stop_btn)
+        scan.addLayout(cmd_row)
+
+        sub_row = QHBoxLayout()
+        self.adapter_details = QLabel(t(self.lang, "detecting_adapter"), objectName="SubtitleText")
+        self.range_estimate = QLabel(t(self.lang, "range_hint"), objectName="SubtitleText")
+        sub_row.addWidget(self.adapter_details)
+        sub_row.addStretch()
+        sub_row.addWidget(self.range_estimate)
+        scan.addLayout(sub_row)
+
         body.addWidget(self.scan_controls)
         self.pages = QStackedWidget()
         body.addWidget(self.pages, stretch=1)

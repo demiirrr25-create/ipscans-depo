@@ -240,33 +240,31 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
         _log("Main window shown OK (--no-splash)")
         return
 
-    from app.ui.splash_screen import IPScansSplash
-    splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
-    splash.show()
-    app.processEvents()
-
-    splash.set_progress(0.30, "Checking network environment & adapters...")
-    app.processEvents()
-
+    # If first run with pending setup steps, complete OOBE configuration first
     if steps:
-        splash.close()
         wizard = OnboardingWizard(steps, language, app_icon)
         if wizard.exec() != OnboardingWizard.DialogCode.Accepted:
             app.quit()
             return
         language = get_saved_language() or DEFAULT_LANGUAGE
-        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
-        splash.show()
-        app.processEvents()
 
-    splash.set_progress(0.65, "Initializing device registry & topology graph...")
+    # Cinematic Windows 11 Full-Screen Welcome Experience
+    from app.ui.splash_screen import IPScansSplash
+    splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
+    splash.showFullScreen()
+    app.processEvents()
+
+    splash.set_progress(0.25, "Probing network interfaces & IP routes...")
     app.processEvents()
 
     window = MainWindow(language)
     window.setWindowIcon(app_icon)
     app.window_ref = window
 
-    splash.set_progress(0.95, "Ready")
+    splash.set_progress(0.65, "Initializing device registry & topology graph...")
+    app.processEvents()
+
+    splash.set_progress(0.95, "Workspace ready")
     app.processEvents()
 
     splash.finish_and_show(window)

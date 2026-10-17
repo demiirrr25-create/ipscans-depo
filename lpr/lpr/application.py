@@ -687,8 +687,8 @@ def main():
     resources=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))
     app.setWindowIcon(QIcon(str(resources/"assets"/"icons"/"lpr-pro.ico")))
     from .splash_screen import LPRProSplash
-    splash=LPRProSplash("IPScans LPR Pro", "AI LICENSE PLATE RECOGNITION & PTS ENGINE · v0.3.1")
-    splash.show()
+    splash=LPRProSplash("IPScans LPR Pro", "AI LICENSE PLATE RECOGNITION & TELEMETRY")
+    splash.showFullScreen()
     app.processEvents()
 
     splash.set_progress(0.30, "İstasyon font ve grafik motoru başlatılıyor…")
@@ -703,6 +703,8 @@ def main():
     splash.set_progress(0.95, "İstasyon oturumu hazırlanıyor…")
     app.processEvents()
 
+    splash.set_progress(1.0, "İstasyon hazır / Ready")
+    app.processEvents()
     splash.close()
     login=Login(ops)
     if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0
