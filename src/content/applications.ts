@@ -22,10 +22,10 @@ export const desktopRelease = {
     releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.4.0",
     installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.4.0/IPscans-Plus-Setup.exe",
     portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.4.0/IPscans-Plus.exe",
-    installerBytes: 49689286,
-    installerSha256: "08f1380cb9d015b79c64bbb22ee721800bfde900be2aebf9980679c524000a73",
-    portableBytes: 47600455,
-    portableSha256: "97dc2da3d3d73883bf22851970faaab8a1a61908362a01a6d82db06799e235b0",
+    installerBytes: 49706812,
+    installerSha256: "ec484280270478ebf66a6f3762b18b86445d8ea5a443f9bc70e2d63c8f8c86b7",
+    portableBytes: 47618265,
+    portableSha256: "3c1ec42fa3e33ec6758bb9237a94b41fe57c38975cd4b273e7fb5a4dbd84c2cc",
   },
 } as const;
 
