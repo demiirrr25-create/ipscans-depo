@@ -8,7 +8,7 @@ import time
 import tempfile
 import uuid
 
-from PySide6.QtCore import Qt,QTimer
+from PySide6.QtCore import Qt,QTimer,QEventLoop
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
     QPushButton,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QTabWidget,QDialog,
     QDialogButtonBox,QFormLayout,QComboBox,QCheckBox,QSpinBox,QMessageBox,QFileDialog,QInputDialog)
@@ -686,8 +686,10 @@ def main():
     from PySide6.QtGui import QIcon
     resources=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))
     app.setWindowIcon(QIcon(str(resources/"assets"/"icons"/"lpr-pro.ico")))
+    ops=Operations(str(data_directory()/"operations.sqlite3"))
+    needs_oobe = ops.needs_setup()
     from .splash_screen import LPRProSplash
-    splash=LPRProSplash("IPScans LPR Pro", "AI LICENSE PLATE RECOGNITION & TELEMETRY")
+    splash=LPRProSplash("IPScans LPR Pro", "AI LICENSE PLATE RECOGNITION & TELEMETRY", mode="oobe" if needs_oobe else "splash")
     splash.showFullScreen()
     app.processEvents()
 
@@ -698,14 +700,24 @@ def main():
 
     splash.set_progress(0.65, "İşlem veritabanı ve yerel şifreleme doğrulanıyor…")
     app.processEvents()
-    ops=Operations(str(data_directory()/"operations.sqlite3"))
 
     splash.set_progress(0.95, "İstasyon oturumu hazırlanıyor…")
     app.processEvents()
 
-    splash.set_progress(1.0, "İstasyon hazır / Ready")
-    app.processEvents()
-    splash.close()
+    if needs_oobe:
+        loop = QEventLoop()
+        splash.set_on_finish(loop.quit)
+        splash.destroyed.connect(loop.quit)
+        loop.exec()
+        splash.close()
+    else:
+        splash.set_progress(1.0, "İstasyon hazır / Ready")
+        app.processEvents()
+        loop = QEventLoop()
+        QTimer.singleShot(650, loop.quit)
+        loop.exec()
+        splash.close()
+
     login=Login(ops)
     if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0
     window=ProductWindow(ops,login.session);window.show()

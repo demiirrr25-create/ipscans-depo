@@ -90,17 +90,35 @@ class MainWindow(QWidget):
         body.setSpacing(14)
         heading = QHBoxLayout()
         logo = QLabel()
-        logo.setPixmap(load_logo_pixmap(52))
-        logo.setFixedSize(52, 52)
+        logo.setPixmap(load_logo_pixmap(36))
+        logo.setFixedSize(36, 36)
         heading.addWidget(logo)
-        heading.addSpacing(6)
-        heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
+        heading.addSpacing(8)
+        title_label = QLabel("IPscans+", objectName="TitleText")
+        title_label.setStyleSheet("font-size: 20px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.3px;")
+        heading.addWidget(title_label)
         heading.addStretch()
         self.tour_btn = QPushButton(
-            self._v4("  Feature Tour & Setup", "  Tanıtım & Özellikler"),
+            self._v4("  Setup & Features", "  Kurulum & Özellikler"),
             objectName="TourButton",
         )
         self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.tour_btn.setStyleSheet(
+            "QPushButton#TourButton {"
+            "  background-color: rgba(255, 255, 255, 0.05);"
+            "  color: #A1A1A1;"
+            "  border: 1px solid rgba(255, 255, 255, 0.12);"
+            "  border-radius: 16px;"
+            "  padding: 6px 14px;"
+            "  font-size: 12px;"
+            "  font-weight: 500;"
+            "}"
+            "QPushButton#TourButton:hover {"
+            "  background-color: rgba(255, 255, 255, 0.10);"
+            "  color: #FFFFFF;"
+            "  border-color: rgba(255, 255, 255, 0.28);"
+            "}"
+        )
         self.tour_btn.clicked.connect(self._open_feature_tour)
         heading.addWidget(self.tour_btn)
         heading.addSpacing(8)
@@ -341,10 +359,15 @@ class MainWindow(QWidget):
             self.network_map.set_filter_text(text)
 
     def _open_feature_tour(self) -> None:
-        from app.ui.onboarding_wizard import OnboardingWizard
-        tour_steps = ["welcome", "engine", "topology", "hardware", "privacy"]
-        wizard = OnboardingWizard(tour_steps, self.lang, self.windowIcon(), parent=self, is_tour=True)
-        wizard.exec()
+        from app.ui.win11_oobe import Win11OOBEWindow
+        oobe = Win11OOBEWindow(
+            app_name="IPscans+",
+            edition_label="HIGH PERFORMANCE NETWORK INTELLIGENCE",
+            mode="oobe",
+            language=self.lang,
+            parent=self,
+        )
+        oobe.showFullScreen()
 
     def _start_scan(self) -> None:
         if self._worker and self._worker.isRunning() or self._node_worker and self._node_worker.isRunning():

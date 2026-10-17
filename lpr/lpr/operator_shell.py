@@ -4,7 +4,7 @@ import math
 from pathlib import Path
 import time
 from PySide6.QtCore import QRectF, Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import QBrush, QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QListWidget,
     QSplitter,QScrollArea,QFrame,QDialog,QDialogButtonBox,QFormLayout,QLineEdit,QTabWidget)
 from .event_service import EventService,DurablePassageQueue

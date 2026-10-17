@@ -1,18 +1,18 @@
-"""IPScans Cinematic Windows 11 Full-Screen Welcome Experience for LPR Pro.
-Designed to meet Windows 11 Pro first-party setup standards:
+"""IPScans Windows 11 Pro OOBE & Cinematic Welcome Experience for LPR Pro.
+Directly inspired by Windows 11 Pro setup and ipscans.com design system:
 - Full-screen pure obsidian black (#000000) canvas
-- Dynamic ambient silk ribbon wave backdrop
-- Center vector insignia with luminous breathing pulse
-- Segoe UI Variable typography with high-contrast hierarchy
-- 60fps smooth easing hairline progress indicator
-- Real initialization stage callbacks (zero artificial delay)
-- Safe Escape key dismissal and smooth cross-fade reveal
+- ipscans.com native Spatial Particles field background (60 FPS fluid simulation)
+- Stage 0: Minimalist, elegant "Hello" / "Merhaba" soft breathing fade-in
+- Stage 1: LPR Pro AI Feature Showcase with glassmorphic cards and crisp iconography
+- Stage 2: EULA & Local Privacy Policy acceptance with custom scrollable terms & checkbox
+- Stage 3: Ultra-premium luminous sweep hairline loading bar
+- Smooth cross-fade transition to workspace
 """
 from __future__ import annotations
 
 import math
-import os
 from pathlib import Path
+import time
 from typing import Callable
 
 from PySide6.QtCore import (
@@ -35,10 +35,30 @@ from PySide6.QtGui import (
     QPixmap,
     QRadialGradient,
 )
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QFrame,
+    QGraphicsOpacityEffect,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QStackedLayout,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 
-def _load_lpr_logo(size: int = 96) -> QPixmap:
+def _smoothstep(e0: float, e1: float, x: float) -> float:
+    if e1 == e0:
+        return 0.0
+    t_val = max(0.0, min(1.0, (x - e0) / (e1 - e0)))
+    return t_val * t_val * (3.0 - 2.0 * t_val)
+
+
+def _load_lpr_logo(size: int = 72) -> QPixmap:
     base = Path(__file__).resolve().parent.parent / "assets" / "logos" / "lpr-pro.png"
     if not base.exists():
         base = Path(__file__).resolve().parent.parent / "assets" / "icons" / "lpr-pro.png"
@@ -53,8 +73,224 @@ def _load_lpr_logo(size: int = 96) -> QPixmap:
     return QPixmap()
 
 
+# =========================================================================
+# 1. Native Spatial Particles Canvas (PySide6)
+# =========================================================================
+class SpatialParticlesCanvas(QWidget):
+    """60 FPS fluid spatial particles canvas matching ipscans.com homepage."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.cols = 28
+        self.rows = 16
+        self.particles: list[list[float]] = []
+
+        for r in range(self.rows):
+            for c in range(self.cols):
+                jx = ((math.sin(r * 127.1 + c * 311.7) * 43758.5453) % 1.0)
+                jy = ((math.sin(r * 269.5 + c * 183.3) * 43758.5453) % 1.0)
+                uv_x = (((c + 0.5 + (jx - 0.5) * 0.72) / self.cols) * 2.0 - 1.0) * 1.02
+                uv_y = (((r + 0.5 + (jy - 0.5) * 0.72) / self.rows) * 2.0 - 1.0) * 1.02
+                self.particles.append([uv_x, uv_y, uv_x, uv_y, 0.18, abs(jx), abs(jy)])
+
+        self._start_time = time.monotonic()
+        self._time = 0.0
+
+        self._timer = QTimer(self)
+        self._timer.setInterval(16)
+        self._timer.timeout.connect(self._on_tick)
+        self._timer.start()
+
+    def _on_tick(self) -> None:
+        self._time = time.monotonic() - self._start_time
+        self.update()
+
+    def paintEvent(self, _event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.fillRect(self.rect(), QColor(0, 0, 0))
+
+        w = float(self.width())
+        h = float(self.height())
+        if w <= 10 or h <= 10:
+            painter.end()
+            return
+
+        half_w = w * 0.5
+        half_h = h * 0.5
+        aspect = w / max(1.0, h)
+        ring_radius = 0.56 + math.sin(self._time * 0.7) * 0.05
+        drift_x = math.sin(self._time * 0.42 + 1.1) * 0.28 + math.cos(self._time * 0.23) * 0.12
+        drift_y = math.cos(self._time * 0.48 + 0.6) * 0.2 + math.sin(self._time * 0.31) * 0.08
+        time_scaled = self._time * 0.45
+        aspect_scale_x = 0.92 if aspect > 1.0 else aspect
+        aspect_scale_y = (1.0 / min(aspect, 1.45)) if aspect > 1.0 else 1.0
+
+        painter.setPen(Qt.PenStyle.NoPen)
+
+        for p in self.particles:
+            uv_x, uv_y, cur_x, cur_y, scale, s1, s2 = p
+
+            c_dist = math.sqrt(uv_x * uv_x * 0.85 + uv_y * uv_y * 1.25)
+            c_mask = _smoothstep(0.16, 0.46, c_dist)
+
+            w_x = math.sin(uv_x * 4.4 + time_scaled * 2.1 + s1 * 3.8) * 0.018
+            w_y = math.cos(uv_y * 4.4 + time_scaled * 1.9 + s2 * 3.8) * 0.018
+
+            dx = (uv_x + w_x - drift_x) * aspect_scale_x
+            dy = (uv_y + w_y - drift_y) * aspect_scale_y
+            dist = math.sqrt(dx * dx + dy * dy)
+
+            t1 = max(0.0, _smoothstep(ring_radius - 0.42, ring_radius, dist) - _smoothstep(ring_radius, ring_radius + 0.32, dist))
+            t_scale = (0.16 + t1 * 0.38) * (0.35 + 0.65 * c_mask)
+            p[4] += (t_scale - scale) * 0.14
+            cur_scale = p[4]
+
+            push = t1 * 0.14
+            ang = math.atan2(dy, dx)
+            p[2] += (uv_x + w_x + math.cos(ang) * push * 0.28 - cur_x) * 0.18
+            p[3] += (uv_y + w_y + math.sin(ang) * push * 0.28 - cur_y) * 0.18
+
+            color_wave = (math.sin(uv_x * 2.0 + uv_y * 1.8 + self._time * 0.42 + s1 * 2.4) + 1.0) * 0.5
+            if color_wave < 0.56:
+                k = color_wave / 0.56
+                r_col = int(44 + k * (113 - 44))
+                g_col = int(100 + k * (137 - 100))
+                b_col = int(237 + k * (255 - 237))
+            else:
+                k = (color_wave - 0.56) / 0.44
+                r_col = int(113 + k * (183 - 113))
+                g_col = int(137 + k * (191 - 137))
+                b_col = int(255 + k * (217 - 255))
+
+            alpha = int(max(10, min(140, cur_scale * 180 * (0.28 + 0.72 * c_mask))))
+            if alpha < 12:
+                continue
+
+            rot = ang + math.sin(uv_x * 3.8 + time_scaled * 1.2) * 0.48
+            pill_l = max(3.0, cur_scale * 8.0)
+            pill_t = max(1.5, cur_scale * 2.6)
+
+            painter.save()
+            painter.translate(half_w + p[2] * half_w, half_h + p[3] * half_h)
+            painter.rotate(math.degrees(rot))
+            painter.setBrush(QBrush(QColor(r_col, g_col, b_col, alpha)))
+            painter.drawRoundedRect(QRectF(-pill_l * 0.5, -pill_t * 0.5, pill_l, pill_t), pill_t * 0.5, pill_t * 0.5)
+            painter.restore()
+
+        painter.end()
+
+
+# =========================================================================
+# 2. Ultra-Premium Luminous Hairline Loading Bar
+# =========================================================================
+class Win11LoadingBar(QWidget):
+    """Precision hairline progress bar with moving luminous gradient sweep."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setFixedHeight(12)
+        self.setFixedWidth(360)
+        self._progress = 0.0
+        self._target_progress = 0.0
+        self._phase = 0.0
+
+        self._timer = QTimer(self)
+        self._timer.setInterval(16)
+        self._timer.timeout.connect(self._on_tick)
+        self._timer.start()
+
+    def set_progress(self, target: float) -> None:
+        self._target_progress = max(0.0, min(1.0, target))
+        self.update()
+
+    def _on_tick(self) -> None:
+        self._phase += 0.04
+        diff = self._target_progress - self._progress
+        if abs(diff) > 0.001:
+            self._progress += diff * 0.18
+        else:
+            self._progress = self._target_progress
+        self.update()
+
+    def paintEvent(self, _event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        w = float(self.width())
+        track_h = 3.5
+        y = (float(self.height()) - track_h) * 0.5
+
+        # Background track
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(QColor(255, 255, 255, 22)))
+        painter.drawRoundedRect(QRectF(0, y, w, track_h), 1.75, 1.75)
+
+        # Luminous progress fill
+        fill_w = max(4.0, w * self._progress)
+        sweep_offset = (math.sin(self._phase * 1.5) * 0.5 + 0.5)
+
+        grad = QLinearGradient(0, y, fill_w, y)
+        grad.setColorAt(0.0, QColor(88, 146, 250, 160))
+        mid = max(0.1, min(0.9, sweep_offset))
+        grad.setColorAt(mid, QColor(255, 255, 255, 255))
+        grad.setColorAt(1.0, QColor(50, 121, 249, 230))
+
+        painter.setBrush(QBrush(grad))
+        painter.drawRoundedRect(QRectF(0, y, fill_w, track_h), 1.75, 1.75)
+
+        # Glowing tip point
+        tip_x = fill_w
+        tip_halo = QRadialGradient(tip_x, y + 1.75, 12.0)
+        tip_halo.setColorAt(0.0, QColor(255, 255, 255, 120))
+        tip_halo.setColorAt(1.0, QColor(255, 255, 255, 0))
+        painter.setBrush(QBrush(tip_halo))
+        painter.drawEllipse(QPointF(tip_x, y + 1.75), 12.0, 12.0)
+
+        painter.end()
+
+
+# =========================================================================
+# 3. Glassmorphic Surface Container (ipscans.com Theme)
+# =========================================================================
+class Win11GlassCard(QFrame):
+    """Frosted obsidian glass card with hairline border and subtle gradient."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("Win11GlassCard")
+        self.setStyleSheet(
+            """
+            QFrame#Win11GlassCard {
+                background-color: rgba(9, 10, 14, 0.92);
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                border-radius: 24px;
+            }
+            """
+        )
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        rect = QRectF(0.5, 0.5, float(self.width()) - 1.0, float(self.height()) - 1.0)
+        path = QPainterPath()
+        path.addRoundedRect(rect, 24.0, 24.0)
+
+        top_glow = QRadialGradient(float(self.width()) * 0.5, 0.0, 320.0)
+        top_glow.setColorAt(0.0, QColor(255, 255, 255, 16))
+        top_glow.setColorAt(0.5, QColor(88, 146, 250, 6))
+        top_glow.setColorAt(1.0, QColor(0, 0, 0, 0))
+        painter.fillPath(path, QBrush(top_glow))
+        painter.end()
+
+
+# =========================================================================
+# 4. Windows 11 Pro OOBE & Splash for LPR Pro
+# =========================================================================
 class LPRProSplash(QWidget):
-    """Full-screen Windows 11 Pro cinematic splash and startup experience for LPR Pro."""
+    """Windows 11 Pro Full-Screen OOBE & Welcome Experience for LPR Pro."""
 
     step_completed = Signal(int, str)
 
@@ -62,18 +298,20 @@ class LPRProSplash(QWidget):
         self,
         app_name: str = "IPScans LPR Pro",
         edition_label: str = "AI LICENSE PLATE RECOGNITION & TELEMETRY",
+        mode: str = "splash",  # "oobe" | "splash"
+        target_window: QWidget | None = None,
+        on_finish: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._app_name = app_name
         self._edition_label = edition_label
-        self._progress = 0.0
-        self._target_progress = 0.0
-        self._status_text = "İstasyon bileşenleri başlatılıyor / Initializing runtime..."
-        self._phase = 0.0
-        self._logo_pixmap: QPixmap = _load_lpr_logo(96)
+        self._mode = mode
+        self._target_window = target_window
+        self._on_finish_callback = on_finish
+        self._status_text = "İstasyon bileşenleri başlatılıyor..."
+        self._logo_pixmap = _load_lpr_logo(72)
 
-        # Full-screen frameless presentation
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
@@ -81,42 +319,463 @@ class LPRProSplash(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
-        # Cover entire primary screen
         screen = QApplication.primaryScreen()
         if screen:
-            geom = screen.geometry()
-            self.setGeometry(geom)
+            self.setGeometry(screen.geometry())
         else:
             self.resize(1920, 1080)
 
-        # 60fps high-precision animation timer
-        self._anim_timer = QTimer(self)
-        self._anim_timer.setInterval(16)
-        self._anim_timer.timeout.connect(self._on_tick)
-        self._anim_timer.start()
+        self._canvas = SpatialParticlesCanvas(self)
+
+        self._stack = QStackedLayout()
+        self._stack.setStackingMode(QStackedLayout.StackingMode.StackOne)
+
+        self._build_hello_stage()
+        self._build_showcase_stage()
+        self._build_agreement_stage()
+        self._build_loading_stage()
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.addLayout(self._stack)
+
+        if self._mode == "splash":
+            self._stack.setCurrentIndex(3)
+        else:
+            self._stack.setCurrentIndex(0)
+            QTimer.singleShot(2400, self._auto_advance_hello)
+
+    def set_target_window(self, target_window: QWidget) -> None:
+        self._target_window = target_window
+
+    def set_on_finish(self, on_finish: Callable[[], None]) -> None:
+        self._on_finish_callback = on_finish
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._canvas.setGeometry(self.rect())
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802
+        if event.key() == Qt.Key.Key_Escape:
+            if hasattr(self, "_on_finish_callback") and self._on_finish_callback:
+                self.close()
+                self._on_finish_callback()
+            elif hasattr(self, "_target_window") and self._target_window:
+                self.finish_and_show(self._target_window)
+            else:
+                self.close()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    # ----------------------------------------------------------- Stage 0: Hello
+    def _build_hello_stage(self) -> None:
+        stage = QWidget()
+        layout = QVBoxLayout(stage)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setSpacing(12)
+
+        logo_lbl = QLabel()
+        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        logo_lbl.setPixmap(self._logo_pixmap)
+        layout.addWidget(logo_lbl)
+        layout.addSpacing(16)
+
+        self._hello_title = QLabel("Merhaba")
+        self._hello_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._hello_title.setStyleSheet(
+            "font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; "
+            "font-size: 56px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.6px;"
+        )
+        layout.addWidget(self._hello_title)
+
+        self._hello_subtitle = QLabel("IPScans LPR Pro İstasyonuna Hoş Geldiniz")
+        self._hello_subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._hello_subtitle.setStyleSheet(
+            "font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
+            "font-size: 15px; font-weight: 500; color: #A1A1A1; letter-spacing: 0.4px;"
+        )
+        layout.addWidget(self._hello_subtitle)
+        layout.addSpacing(28)
+
+        start_btn = QPushButton("Başlamak için tıklayın  →")
+        start_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        start_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: rgba(255, 255, 255, 0.08);
+                color: #FFFFFF;
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                border-radius: 20px;
+                padding: 10px 24px;
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #FFFFFF;
+                color: #000000;
+                border-color: #FFFFFF;
+            }
+            """
+        )
+        start_btn.clicked.connect(lambda: self._go_stage(1))
+        btn_box = QHBoxLayout()
+        btn_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        btn_box.addWidget(start_btn)
+        layout.addLayout(btn_box)
+
+        self._stack.addWidget(stage)
+
+    def _auto_advance_hello(self) -> None:
+        if self._stack.currentIndex() == 0:
+            self._go_stage(1)
+
+    # ------------------------------------------------- Stage 1: Feature Showcase
+    def _build_showcase_stage(self) -> None:
+        stage = QWidget()
+        stage_layout = QVBoxLayout(stage)
+        stage_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        card = Win11GlassCard()
+        card.setFixedSize(840, 560)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(36, 32, 36, 32)
+        card_layout.setSpacing(16)
+
+        top_row = QHBoxLayout()
+        brand_icon = QLabel()
+        brand_icon.setPixmap(_load_lpr_logo(32))
+        top_row.addWidget(brand_icon)
+
+        brand_lbl = QLabel(self._app_name)
+        brand_lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+        top_row.addWidget(brand_lbl)
+        top_row.addStretch()
+
+        pills = QLabel("●  01 Tanıtım      ○  02 Sözleşme      ○  03 Başlat")
+        pills.setStyleSheet("font-size: 11px; font-weight: 600; color: #8A8F98; letter-spacing: 0.8px;")
+        top_row.addWidget(pills)
+        card_layout.addLayout(top_row)
+
+        title = QLabel("Yapay Zekâ Destekli Plaka Tanıma Sistemi")
+        title.setStyleSheet("font-size: 24px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.4px;")
+        card_layout.addWidget(title)
+
+        sub = QLabel("RTSP IP kameralar üzerinden gerçek zamanlı plaka okuma, bariyer kontrolü ve araç kaydı.")
+        sub.setStyleSheet("font-size: 13px; color: #A1A1A1; margin-bottom: 4px;")
+        card_layout.addWidget(sub)
+
+        grid = QGridLayout()
+        grid.setSpacing(14)
+
+        features = [
+            ("🚘", "Yüksek Doğrulukta OCR & PTS", "ONNX sinir ağları ile yüksek hızda araç plakası algılama ve karakter okuma."),
+            ("📹", "Canlı Kamera Duvarı & RTSP", "Çoklu kamera akışını düşük gecikmeyle çözme ve tetik çizgisi kalibrasyonu."),
+            ("🛡️", "Bariyer & Röle Otomasyonu", "Kayıtlı sakin ve izinli araçlarda otomatik kapı açma tetikleyicisi."),
+            ("📋", "Şifreli Yerel Veritabanı", "Tüm geçiş logları ve delil fotoğrafları yerel diskte güvenle saklanır."),
+        ]
+
+        for i, (icon_text, feat_title, feat_desc) in enumerate(features):
+            tile = QFrame()
+            tile.setStyleSheet(
+                """
+                QFrame {
+                    background-color: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 14px;
+                    padding: 12px;
+                }
+                QFrame:hover {
+                    background-color: rgba(255, 255, 255, 0.06);
+                    border-color: rgba(255, 255, 255, 0.18);
+                }
+                """
+            )
+            t_box = QVBoxLayout(tile)
+            t_box.setContentsMargins(10, 8, 10, 8)
+            t_box.setSpacing(4)
+
+            h_box = QHBoxLayout()
+            ico = QLabel(icon_text)
+            ico.setStyleSheet("font-size: 18px;")
+            h_box.addWidget(ico)
+            t_lbl = QLabel(feat_title)
+            t_lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #FFFFFF;")
+            h_box.addWidget(t_lbl)
+            h_box.addStretch()
+            t_box.addLayout(h_box)
+
+            d_lbl = QLabel(feat_desc)
+            d_lbl.setWordWrap(True)
+            d_lbl.setStyleSheet("font-size: 11.5px; color: #8A8F98; line-height: 1.4;")
+            t_box.addWidget(d_lbl)
+
+            grid.addWidget(tile, i // 2, i % 2)
+
+        card_layout.addLayout(grid)
+        card_layout.addStretch()
+
+        bottom = QHBoxLayout()
+        esc_hint = QLabel("Atlamak için ESC")
+        esc_hint.setStyleSheet("font-size: 11px; color: #6E6E6E;")
+        bottom.addWidget(esc_hint)
+        bottom.addStretch()
+
+        next_btn = QPushButton("Devam Et  →")
+        next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        next_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #FFFFFF;
+                color: #000000;
+                border: none;
+                border-radius: 18px;
+                padding: 11px 32px;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            QPushButton:hover {
+                background-color: #E0E0E0;
+            }
+            """
+        )
+        next_btn.clicked.connect(lambda: self._go_stage(2))
+        bottom.addWidget(next_btn)
+        card_layout.addLayout(bottom)
+
+        stage_layout.addWidget(card)
+        self._stack.addWidget(stage)
+
+    # ---------------------------------------------------- Stage 2: EULA Agreement
+    def _build_agreement_stage(self) -> None:
+        stage = QWidget()
+        stage_layout = QVBoxLayout(stage)
+        stage_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        card = Win11GlassCard()
+        card.setFixedSize(840, 560)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(36, 32, 36, 32)
+        card_layout.setSpacing(14)
+
+        top_row = QHBoxLayout()
+        brand_icon = QLabel()
+        brand_icon.setPixmap(_load_lpr_logo(32))
+        top_row.addWidget(brand_icon)
+
+        brand_lbl = QLabel(self._app_name)
+        brand_lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+        top_row.addWidget(brand_lbl)
+        top_row.addStretch()
+
+        pills = QLabel("✓  01 Tanıtım      ●  02 Sözleşme      ○  03 Başlat")
+        pills.setStyleSheet("font-size: 11px; font-weight: 600; color: #8A8F98; letter-spacing: 0.8px;")
+        top_row.addWidget(pills)
+        card_layout.addLayout(top_row)
+
+        title = QLabel("Kullanıcı Sözleşmesi ve Gizlilik Politikası")
+        title.setStyleSheet("font-size: 22px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.3px;")
+        card_layout.addWidget(title)
+
+        sub = QLabel("IPScans LPR Pro yazılımını kullanmadan önce istasyon veri koşullarını onaylayın.")
+        sub.setStyleSheet("font-size: 12.5px; color: #A1A1A1;")
+        card_layout.addWidget(sub)
+
+        terms_view = QTextEdit()
+        terms_view.setReadOnly(True)
+        combined_text = (
+            "IPSCANS LPR PRO KULLANICI SÖZLEŞMESİ (EULA)\n\n"
+            "1. Yalnızca yetkili olduğunuz özel mülk, otopark veya işletme alanlarında plaka tanıma yapınız.\n"
+            "2. Kamera görüntüsü ve araç kayıtları tamamen yerel veritabanında (SQLite) şifreli tutulur.\n"
+            "3. Sistem üçüncü taraf bulut sunucularına canlı video veya kişisel veri aktarmaz.\n"
+            "4. Plaka logları ve saklama süreleri yerel operatör politikasına göre belirlenir.\n\n"
+            + "—" * 40
+            + "\n\nYEREL GİZLİLİK POLİTİKASI (LOCAL PRIVACY POLICY)\n\n"
+            "Tüm optik karakter tanıma (OCR) modelleri bilgisayarınızın donanımında yerel olarak çalıştırılır. "
+            "IPScans sunucularına herhangi bir plaka metni veya görseli iletilmez."
+        )
+        terms_view.setPlainText(combined_text)
+        terms_view.setStyleSheet(
+            """
+            QTextEdit {
+                background-color: #060709;
+                color: #C0C5CE;
+                border: 1px solid rgba(255, 255, 255, 0.10);
+                border-radius: 12px;
+                padding: 12px;
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            """
+        )
+        card_layout.addWidget(terms_view, stretch=1)
+
+        self._agreement_checkbox = QCheckBox("Kullanıcı Sözleşmesi ve Gizlilik Politikası'nı okudum, kabul ediyorum.")
+        self._agreement_checkbox.setStyleSheet(
+            """
+            QCheckBox {
+                color: #FFFFFF;
+                font-size: 13px;
+                font-weight: 500;
+                spacing: 10px;
+                margin-top: 6px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 1.5px solid rgba(255, 255, 255, 0.4);
+                border-radius: 4px;
+                background-color: #060709;
+            }
+            QCheckBox::indicator:hover {
+                border-color: #FFFFFF;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #FFFFFF;
+                border-color: #FFFFFF;
+            }
+            """
+        )
+        self._agreement_checkbox.stateChanged.connect(self._on_agreement_toggled)
+        card_layout.addWidget(self._agreement_checkbox)
+
+        bottom = QHBoxLayout()
+        back_btn = QPushButton("←  Geri")
+        back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        back_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: transparent;
+                color: #A1A1A1;
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                border-radius: 18px;
+                padding: 10px 24px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                color: #FFFFFF;
+                border-color: rgba(255, 255, 255, 0.35);
+            }
+            """
+        )
+        back_btn.clicked.connect(lambda: self._go_stage(1))
+        bottom.addWidget(back_btn)
+        bottom.addStretch()
+
+        self._accept_btn = QPushButton("Kabul Et ve Başlat  →")
+        self._accept_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._accept_btn.setEnabled(False)
+        self._accept_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: rgba(255, 255, 255, 0.2);
+                color: rgba(0, 0, 0, 0.5);
+                border: none;
+                border-radius: 18px;
+                padding: 11px 32px;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            QPushButton:enabled {
+                background-color: #FFFFFF;
+                color: #000000;
+            }
+            QPushButton:enabled:hover {
+                background-color: #E0E0E0;
+            }
+            """
+        )
+        self._accept_btn.clicked.connect(self._on_accept_and_launch)
+        bottom.addWidget(self._accept_btn)
+        card_layout.addLayout(bottom)
+
+        stage_layout.addWidget(card)
+        self._stack.addWidget(stage)
+
+    def _on_agreement_toggled(self, state: int) -> None:
+        is_checked = state == Qt.CheckState.Checked.value or state == 2
+        self._accept_btn.setEnabled(is_checked)
+
+    def _on_accept_and_launch(self) -> None:
+        self._go_stage(3)
+        QTimer.singleShot(350, lambda: self.set_progress(0.45, "Kamera ve grafik hızlandırma başlatılıyor..."))
+        QTimer.singleShot(750, lambda: self.set_progress(0.80, "Plaka tanıma sinir ağları doğrulanıyor..."))
+        QTimer.singleShot(1150, lambda: self.set_progress(1.0, "İstasyon hazır"))
+        if hasattr(self, "_on_finish_callback") and self._on_finish_callback:
+            QTimer.singleShot(1350, self._on_finish_callback)
+        elif hasattr(self, "_target_window") and self._target_window:
+            QTimer.singleShot(1350, lambda: self.finish_and_show(self._target_window))
+
+    # ---------------------------------------------------- Stage 3: Loading
+    def _build_loading_stage(self) -> None:
+        stage = QWidget()
+        layout = QVBoxLayout(stage)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setSpacing(14)
+
+        logo_lbl = QLabel()
+        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        logo_lbl.setPixmap(self._logo_pixmap)
+        layout.addWidget(logo_lbl)
+        layout.addSpacing(10)
+
+        title_lbl = QLabel(self._app_name)
+        title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_lbl.setStyleSheet(
+            "font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; "
+            "font-size: 32px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.5px;"
+        )
+        layout.addWidget(title_lbl)
+
+        edition_lbl = QLabel(self._edition_label.upper())
+        edition_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        edition_lbl.setStyleSheet(
+            "font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
+            "font-size: 9px; font-weight: 600; color: #8A8F98; letter-spacing: 2.0px;"
+        )
+        layout.addWidget(edition_lbl)
+        layout.addSpacing(18)
+
+        self._loading_bar = Win11LoadingBar()
+        bar_box = QHBoxLayout()
+        bar_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        bar_box.addWidget(self._loading_bar)
+        layout.addLayout(bar_box)
+
+        self._status_lbl = QLabel(self._status_text)
+        self._status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._status_lbl.setStyleSheet(
+            "font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
+            "font-size: 11px; color: #8A8F98;"
+        )
+        layout.addWidget(self._status_lbl)
+
+        layout.addSpacing(20)
+        esc_hint = QLabel("Atlamak için ESC")
+        esc_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        esc_hint.setStyleSheet("font-size: 10px; color: #505050;")
+        layout.addWidget(esc_hint)
+
+        self._stack.addWidget(stage)
+
+    # ------------------------------------------------------------- Navigation
+    def _go_stage(self, index: int) -> None:
+        self._stack.setCurrentIndex(index)
 
     def set_progress(self, progress: float, status: str = "") -> None:
-        """Sets target progress [0.0 - 1.0] and stage description."""
-        self._target_progress = max(0.0, min(1.0, progress))
-        if status:
+        if hasattr(self, "_loading_bar"):
+            self._loading_bar.set_progress(progress)
+        if status and hasattr(self, "_status_lbl"):
             self._status_text = status
-        self.update()
-
-    def _on_tick(self) -> None:
-        self._phase += 0.035
-        # Smooth interpolation towards target progress
-        diff = self._target_progress - self._progress
-        if abs(diff) > 0.002:
-            self._progress += diff * 0.22
-        else:
-            self._progress = self._target_progress
+            self._status_lbl.setText(status)
         self.update()
 
     def finish_and_show(self, target_window: QWidget, on_finish: Callable[[], None] | None = None) -> None:
-        """Completes progress to 100% and smoothly fades out while revealing target window."""
-        self._target_progress = 1.0
-        self._status_text = "İstasyon hazır / Ready"
-        self.update()
+        self._on_finish_callback = on_finish
+        self.set_progress(1.0, "İstasyon hazır")
 
         fade_anim = QPropertyAnimation(self, b"windowOpacity")
         fade_anim.setDuration(260)
@@ -125,7 +784,7 @@ class LPRProSplash(QWidget):
         fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         def _cleanup():
-            self._anim_timer.stop()
+            self._canvas._timer.stop()
             self.close()
             target_window.show()
             target_window.raise_()
@@ -136,177 +795,3 @@ class LPRProSplash(QWidget):
         fade_anim.finished.connect(_cleanup)
         fade_anim.start()
         self._fade_anim = fade_anim
-
-    def keyPressEvent(self, event) -> None:  # noqa: N802
-        if event.key() == Qt.Key.Key_Escape:
-            self._anim_timer.stop()
-            self.close()
-            event.accept()
-            return
-        super().keyPressEvent(event)
-
-    def paintEvent(self, _event) -> None:  # noqa: N802
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-
-        w = float(self.width())
-        h = float(self.height())
-        cx = w / 2.0
-        cy = h / 2.0 - 30.0
-
-        # 1. Pure obsidian black backdrop
-        painter.fillRect(self.rect(), QBrush(QColor(0, 0, 0)))
-
-        # 2. Ambient harmonic silk ribbon waves (Windows 11 Setup Silk effect)
-        for layer in range(3):
-            phase_offset = self._phase + layer * 1.4
-            y_base = h * (0.42 + layer * 0.16)
-
-            wave_path = QPainterPath()
-            wave_path.moveTo(0, h)
-            wave_path.lineTo(0, y_base + math.sin(phase_offset) * 26)
-
-            cp1_x = w * 0.32
-            cp1_y = y_base + math.sin(phase_offset + 1.2) * 38 - 30
-            cp2_x = w * 0.68
-            cp2_y = y_base + math.cos(phase_offset + 2.0) * 34 + 30
-            end_x = w
-            end_y = y_base + math.sin(phase_offset + 3.0) * 26
-
-            wave_path.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
-            wave_path.lineTo(w, h)
-            wave_path.closeSubpath()
-
-            wave_grad = QLinearGradient(0, y_base - 40, w, h)
-            if layer == 0:
-                wave_grad.setColorAt(0.0, QColor(255, 255, 255, 14))
-                wave_grad.setColorAt(0.5, QColor(180, 190, 210, 8))
-                wave_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-            elif layer == 1:
-                wave_grad.setColorAt(0.0, QColor(255, 255, 255, 10))
-                wave_grad.setColorAt(0.6, QColor(160, 175, 195, 5))
-                wave_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-            else:
-                wave_grad.setColorAt(0.0, QColor(255, 255, 255, 7))
-                wave_grad.setColorAt(0.7, QColor(140, 150, 170, 3))
-                wave_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-
-            painter.fillPath(wave_path, QBrush(wave_grad))
-
-            # Crest line
-            crest = QPainterPath()
-            crest.moveTo(0, y_base + math.sin(phase_offset) * 26)
-            crest.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
-            painter.setPen(QPen(QColor(255, 255, 255, int(28 - layer * 7)), 1.2))
-            painter.drawPath(crest)
-
-        # 3. Dynamic ambient breathing halo behind central insignia
-        pulse = math.sin(self._phase * 1.8) * 0.5 + 0.5
-        halo_radius = 180.0 + pulse * 24.0
-        halo = QRadialGradient(cx, cy - 20.0, halo_radius)
-        halo.setColorAt(0.0, QColor(255, 255, 255, int(22 + pulse * 14)))
-        halo.setColorAt(0.35, QColor(200, 210, 230, int(8 + pulse * 6)))
-        halo.setColorAt(1.0, QColor(0, 0, 0, 0))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(halo))
-        painter.drawEllipse(QPointF(cx, cy - 20.0), halo_radius, halo_radius)
-
-        # 4. Central Vector Mark with Shimmer Orbit
-        ring_radius = 58.0
-        ring_rect = QRectF(cx - ring_radius, cy - 20.0 - ring_radius, ring_radius * 2.0, ring_radius * 2.0)
-        angle_deg = (self._phase * 50.0) % 360.0
-
-        # Fine orbital track
-        painter.setPen(QPen(QColor(255, 255, 255, 20), 1.0))
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawEllipse(ring_rect)
-
-        # Luminous orbital highlight arc
-        painter.setPen(QPen(QColor(255, 255, 255, 180), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-        painter.drawArc(ring_rect, int(angle_deg * 16), int(75 * 16))
-
-        # Central Pixmap
-        if not self._logo_pixmap.isNull():
-            logo_x = cx - float(self._logo_pixmap.width()) / 2.0
-            logo_y = cy - 20.0 - float(self._logo_pixmap.height()) / 2.0
-            painter.drawPixmap(int(logo_x), int(logo_y), self._logo_pixmap)
-        else:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(QColor(255, 255, 255, 230)))
-            painter.drawEllipse(QPointF(cx, cy - 20.0), 22.0, 22.0)
-
-        # 5. Application Title (Segoe UI Variable Display)
-        title_font = QFont("Segoe UI Variable Display", 32)
-        if not title_font.exactMatch():
-            title_font = QFont("Segoe UI", 32)
-        title_font.setWeight(QFont.Weight.Bold)
-        title_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, -0.6)
-        painter.setFont(title_font)
-        painter.setPen(QColor(255, 255, 255))
-        title_rect = QRectF(cx - 300.0, cy + 60.0, 600.0, 48.0)
-        painter.drawText(title_rect, int(Qt.AlignmentFlag.AlignCenter), self._app_name)
-
-        # 6. Edition & Subtitle Badge
-        edition_font = QFont("Segoe UI Variable Text", 9)
-        if not edition_font.exactMatch():
-            edition_font = QFont("Segoe UI", 9)
-        edition_font.setWeight(QFont.Weight.DemiBold)
-        edition_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 2.0)
-        painter.setFont(edition_font)
-        painter.setPen(QColor(161, 161, 161))
-        edition_rect = QRectF(cx - 300.0, cy + 112.0, 600.0, 20.0)
-        painter.drawText(edition_rect, int(Qt.AlignmentFlag.AlignCenter), self._edition_label.upper())
-
-        # 7. Precision Hairline Progress Indicator
-        track_w = 340.0
-        track_h = 2.5
-        track_x = cx - track_w / 2.0
-        track_y = cy + 155.0
-
-        # Base track
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(QColor(255, 255, 255, 22)))
-        painter.drawRoundedRect(QRectF(track_x, track_y, track_w, track_h), 1.25, 1.25)
-
-        # Animated luminous progress
-        active_w = max(4.0, track_w * self._progress)
-        prog_grad = QLinearGradient(track_x, track_y, track_x + active_w, track_y)
-        prog_grad.setColorAt(0.0, QColor(255, 255, 255, 140))
-        prog_grad.setColorAt(1.0, QColor(255, 255, 255, 255))
-        painter.setBrush(QBrush(prog_grad))
-        painter.drawRoundedRect(QRectF(track_x, track_y, active_w, track_h), 1.25, 1.25)
-
-        # 8. Real-time Status Description
-        status_font = QFont("Segoe UI Variable Text", 10)
-        if not status_font.exactMatch():
-            status_font = QFont("Segoe UI", 10)
-        painter.setFont(status_font)
-        painter.setPen(QColor(140, 145, 155))
-        status_rect = QRectF(cx - 300.0, cy + 172.0, 600.0, 24.0)
-        painter.drawText(status_rect, int(Qt.AlignmentFlag.AlignCenter), self._status_text)
-
-        # 9. Top-Right "Esc" Pill to Skip
-        esc_font = QFont("Segoe UI", 8)
-        esc_font.setWeight(QFont.Weight.Medium)
-        painter.setFont(esc_font)
-        painter.setPen(QColor(110, 110, 110))
-        painter.drawText(
-            QRectF(w - 140.0, 24.0, 110.0, 24.0),
-            int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter),
-            "Press ESC to skip",
-        )
-
-        # 10. Bottom Brand Watermark
-        brand_font = QFont("Segoe UI", 9)
-        brand_font.setWeight(QFont.Weight.Medium)
-        brand_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.2)
-        painter.setFont(brand_font)
-        painter.setPen(QColor(70, 70, 70))
-        painter.drawText(
-            QRectF(0, h - 44.0, w, 24.0),
-            int(Qt.AlignmentFlag.AlignCenter),
-            "IPSCANS · SYSTEM INFRASTRUCTURE",
-        )
-
-        painter.end()

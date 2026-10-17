@@ -8,6 +8,7 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from app.i18n import DEFAULT_LANGUAGE, get_saved_language
@@ -227,12 +228,6 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
     no_splash = "--no-splash" in sys.argv
 
     if no_splash:
-        if steps:
-            wizard = OnboardingWizard(steps, language, app_icon)
-            if wizard.exec() != OnboardingWizard.DialogCode.Accepted:
-                app.quit()
-                return
-            language = get_saved_language() or DEFAULT_LANGUAGE
         window = MainWindow(language)
         window.setWindowIcon(app_icon)
         app.window_ref = window
@@ -240,35 +235,47 @@ def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
         _log("Main window shown OK (--no-splash)")
         return
 
-    # If first run with pending setup steps, complete OOBE configuration first
+    from app.ui.win11_oobe import Win11OOBEWindow
+
+    # First Run: Full-screen Windows 11 Pro OOBE (Hello -> Showcase -> EULA -> Loading -> Window)
     if steps:
-        wizard = OnboardingWizard(steps, language, app_icon)
-        if wizard.exec() != OnboardingWizard.DialogCode.Accepted:
-            app.quit()
-            return
-        language = get_saved_language() or DEFAULT_LANGUAGE
+        window = MainWindow(language)
+        window.setWindowIcon(app_icon)
+        app.window_ref = window
 
-    # Cinematic Windows 11 Full-Screen Welcome Experience
-    from app.ui.splash_screen import IPScansSplash
-    splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
-    splash.showFullScreen()
-    app.processEvents()
+        oobe = Win11OOBEWindow(
+            app_name="IPscans+",
+            edition_label="HIGH PERFORMANCE NETWORK INTELLIGENCE",
+            mode="oobe",
+            language=language,
+            target_window=window,
+        )
+        oobe.showFullScreen()
+        return
 
-    splash.set_progress(0.25, "Probing network interfaces & IP routes...")
-    app.processEvents()
-
+    # Subsequent Runs: Full-screen cinematic splash with SpatialParticles
     window = MainWindow(language)
     window.setWindowIcon(app_icon)
     app.window_ref = window
 
-    splash.set_progress(0.65, "Initializing device registry & topology graph...")
+    splash = Win11OOBEWindow(
+        app_name="IPscans+",
+        edition_label="HIGH PERFORMANCE NETWORK INTELLIGENCE",
+        mode="splash",
+        language=language,
+        target_window=window,
+    )
+    splash.showFullScreen()
     app.processEvents()
 
-    splash.set_progress(0.95, "Workspace ready")
+    splash.set_progress(0.40, "Ağ bağdaştırıcıları ve IP rotaları taranıyor...")
     app.processEvents()
+    splash.set_progress(0.80, "Cihaz kütüğü ve topoloji motoru yükleniyor...")
+    app.processEvents()
+    splash.set_progress(1.0, "Çalışma alanı hazır")
 
-    splash.finish_and_show(window)
-    _log("Main window shown OK")
+    QTimer.singleShot(750, lambda: splash.finish_and_show(window))
+    _log("Main window scheduled to show OK")
 
 
 if __name__ == "__main__":
