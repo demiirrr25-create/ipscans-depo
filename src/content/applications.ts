@@ -18,14 +18,14 @@ export const ipcastRelease = {
 
 export const desktopRelease = {
   scanner: {
-    version: "4.3.0",
-    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.3.0",
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.3.0/IPscans-Plus-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.3.0/IPscans-Plus.exe",
-    installerBytes: 49670902,
-    installerSha256: "bbbb22cd586ca8bd2e23c96952ccd8e430ee6823654e1094f35496ab56d278e0",
-    portableBytes: 47583137,
-    portableSha256: "9ce9853c56dbb8be06284640ddaf50f326b2897cb0498761ad710132059c6e9f",
+    version: "4.4.0",
+    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.4.0",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.4.0/IPscans-Plus-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.4.0/IPscans-Plus.exe",
+    installerBytes: 49689286,
+    installerSha256: "08f1380cb9d015b79c64bbb22ee721800bfde900be2aebf9980679c524000a73",
+    portableBytes: 47600455,
+    portableSha256: "97dc2da3d3d73883bf22851970faaab8a1a61908362a01a6d82db06799e235b0",
   },
 } as const;
 
