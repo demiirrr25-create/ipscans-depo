@@ -18,6 +18,8 @@ const flex = Google_Sans_Flex({
   subsets: ["latin", "latin-ext"],
   axes: ["opsz"],
   display: "swap",
+  adjustFontFallback: false,
+  fallback: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Arial", "sans-serif"],
 });
 
 const code = Google_Sans_Code({
@@ -25,6 +27,8 @@ const code = Google_Sans_Code({
   subsets: ["latin"],
   display: "swap",
   preload: false,
+  adjustFontFallback: false,
+  fallback: ["ui-monospace", "SFMono-Regular", "Cascadia Mono", "Menlo", "monospace"],
 });
 
 export const viewport: Viewport = {

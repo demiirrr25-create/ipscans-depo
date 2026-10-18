@@ -1,205 +1,381 @@
 import Link from "next/link";
-import { PageShell } from "./PageShell";
+import { locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { applications } from "@/content/applications";
+import { applications, platformCopy } from "@/content/applications";
+import { toolKeys, toolPath, type ToolKey } from "@/lib/tool-routes";
+import { PageShell } from "./PageShell";
+import { Icon, type IconName } from "./ds/Icon";
+import { contentCopy } from "./content/copy";
+import { infoCopy } from "./content/info-copy";
 
-export const informationTitles = {
-  tr: {
-    about: "Ağı anlamakla başlar.",
-    support: "Bir sonraki adım, net.",
-    contact: "İletişimde kalalım.",
-  },
-  en: {
-    about: "It starts with understanding.",
-    support: "A clear next step.",
-    contact: "Stay connected.",
-  },
+export const informationTitles = Object.fromEntries(
+  locales.map((l) => [l, infoCopy[l].titles])
+) as Record<Locale, { about: string; support: string; contact: string }>;
+
+const toolIcons: Record<ToolKey, IconName> = {
+  ipLookup: "globe",
+  dns: "dns",
+  whois: "search",
+  ports: "plug",
+  speedTest: "gauge",
 };
 
 export function InformationPage({
   locale,
   page,
 }: {
-  locale: "tr" | "en";
+  locale: Locale;
   page: "about" | "support" | "contact";
 }) {
-  const tr = locale === "tr";
   const dict = getDictionary(locale);
+  const copy = contentCopy[locale];
+  const t = infoCopy[locale];
+  const pCopy = platformCopy[locale];
+
   return (
     <PageShell
-      title={informationTitles[locale][page]}
-      subtitle={
-        tr
-          ? "IPScans / Ağ araçları, ürün bilgileri ve yardım"
-          : "IPScans / Network tools, product information and help"
-      }
+      eyebrow={t.eyebrow[page]}
+      title={t.titles[page]}
+      subtitle={t.subtitle}
     >
-      <nav className="article-breadcrumb">
-        <Link href={`/${locale}`}>IPScans</Link>
-        <span>/</span>
-        <span>{page}</span>
-      </nav>
+      {/* Breadcrumb */}
+      <div className="mb-12 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
+        <nav
+          aria-label={copy.breadcrumb}
+          className="flex flex-wrap items-center gap-2 text-sm text-ink-3"
+        >
+          <Link href={`/${locale}`} className="ds-link hover:text-ink">
+            {copy.home}
+          </Link>
+          <Icon name="chevronRight" size={14} className="rtl-flip text-ink-4" />
+          <span aria-current="page" className="font-medium text-ink">
+            {t.eyebrow[page]}
+          </span>
+        </nav>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {(["about", "support", "contact"] as const).map((p) => (
+            <Link
+              key={p}
+              href={`/${locale}/${p}`}
+              aria-current={page === p ? "page" : undefined}
+              className={`btn btn-sm ${page === p ? "btn-primary" : "btn-secondary"}`}
+            >
+              {t.eyebrow[p]}
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {page === "about" && (
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="agy-surface-card prose-ipscans p-7 sm:p-10">
-            <h2>
-              {tr
-                ? "Görünürlük. Bağlam. Kontrol."
-                : "Visibility. Context. Control."}
-            </h2>
-            <p>
-              {tr
-                ? "IPScans; IP sorgulama, DNS, WHOIS, port kontrolü ve bağlantı ölçümünü masaüstü ağ araçlarıyla bir araya getirir. Bir sorgunun sonucunu görmek kadar, o sonucun nasıl elde edildiğini anlamak da önemlidir."
-                : "IPScans brings IP lookup, DNS, WHOIS, port checks and connection measurements together with desktop network tools. Understanding how a result was obtained matters as much as seeing the result."}
-            </p>
-            <p>
-              {tr
-                ? "IPscans+ yerel ağ keşfi için Windows üzerinde çalışır. IPCast cihaz kimliği ve erişim onayıyla uzak masaüstü bağlantısı sunar. LPR Pro, yerel plaka tanıma ve kayıt inceleme için bir değerlendirme sürümüdür. Her ürünün yetenekleri ve sınırlamaları kendi sayfasında açıklanır."
-                : "IPscans+ runs on Windows for local network discovery. IPCast provides remote desktop connections with device identity and access approval. LPR Pro is an evaluation release for local plate recognition and record review. Each product documents its capabilities and limitations on its own page."}
-            </p>
-          </div>
-          <div className="agy-surface-card p-7 sm:p-10">
-            <p className="agy-eyebrow">DESKTOP / WEB</p>
-            <h2 className="heading-4 mt-5">
-              {tr
-                ? "Sonuçların sınırlarını bilin."
-                : "Know the limits of a result."}
-            </h2>
-            <p className="body mt-5 text-neutral-300">
-              {tr
-                ? "Tarayıcı yerel ağı doğrudan tarayamaz. IP konumu kesin bir fiziksel adres değildir. Hız testi o anda tarayıcı ile test uç noktası arasındaki aktarımı ölçer. Ürün kararlarını bu bağlamla verin."
-                : "A browser cannot directly scan your LAN. IP geolocation is not a precise street address. A speed test measures the current transfer between your browser and the test endpoint. Make decisions with that context."}
-            </p>
-            <div className="mt-8">
-              <Link
-                className="button button-primary"
-                href={`/${locale}/download`}
-              >
-                <span>
-                  {tr ? "Ürünleri keşfet" : "Explore products"} ↗
-                </span>
-              </Link>
+        <div className="space-y-16">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="ds-card p-7 sm:p-10">
+              <span className="mb-6 grid size-11 place-items-center rounded-[13px] bg-signal-soft text-signal">
+                <Icon name="sparkle" size={20} />
+              </span>
+              <h2 className="ds-h3 text-ink">{t.about.storyTitle}</h2>
+              <div className="ds-prose mt-5">
+                <p>{t.about.storyP1}</p>
+                <p>{t.about.storyP2}</p>
+              </div>
+            </div>
+
+            <div className="ds-card-muted flex flex-col justify-between p-7 sm:p-10">
+              <div>
+                <p className="ds-eyebrow">{t.about.limitsEyebrow}</p>
+                <h2 className="ds-h3 mt-5 text-ink">{t.about.limitsTitle}</h2>
+                <p className="ds-body mt-5 text-[1.02rem] leading-relaxed">
+                  {t.about.limitsBody}
+                </p>
+              </div>
+              <div className="mt-8 pt-4">
+                <Link href={`/${locale}/download`} className="btn btn-primary">
+                  <span>{t.about.exploreCta}</span>
+                  <Icon
+                    name="arrowRight"
+                    size={16}
+                    className="btn-arrow rtl-flip"
+                  />
+                </Link>
+              </div>
             </div>
           </div>
+
+          {/* Desktop applications & Web tools overview */}
+          <section aria-labelledby="about-ecosystem-heading">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="ds-eyebrow mb-3">{pCopy.eyebrow}</p>
+                <h2 id="about-ecosystem-heading" className="ds-h3 text-ink">
+                  {pCopy.applications} & {dict.experience.networkTools}
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              {applications.map((app) => (
+                <Link
+                  key={app.id}
+                  href={`/${locale}/applications/${app.id}`}
+                  className="ds-card ds-card-interactive group flex flex-col justify-between p-7 sm:p-8"
+                >
+                  <div>
+                    <div className="flex items-center gap-3.5">
+                      <span className="grid size-12 shrink-0 place-items-center rounded-[14px] border border-line bg-surface shadow-soft transition-transform duration-500 ease-out-expo group-hover:scale-105">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={app.icon}
+                          alt=""
+                          width={26}
+                          height={26}
+                          className="size-[26px]"
+                        />
+                      </span>
+                      <div>
+                        <span className="ds-caption block">
+                          {pCopy.applications}
+                        </span>
+                        <h3 className="ds-h4 text-ink transition-colors group-hover:text-signal">
+                          {app.name}
+                        </h3>
+                      </div>
+                    </div>
+                    <p className="ds-body mt-4 text-[0.95rem]">
+                      {app.description[locale]}
+                    </p>
+                  </div>
+                  <div className="mt-7 flex items-center gap-1.5 text-sm font-medium text-ink transition-colors group-hover:text-signal">
+                    <span>{pCopy.details}</span>
+                    <Icon
+                      name="arrowRight"
+                      size={15}
+                      className="rtl-flip transition-transform duration-300 ease-out-expo group-hover:translate-x-1"
+                    />
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {toolKeys.map((key) => (
+                <Link
+                  key={key}
+                  href={toolPath(key, locale)}
+                  className="ds-card ds-card-interactive group flex flex-col justify-between p-6"
+                >
+                  <div>
+                    <span className="mb-4 grid size-10 place-items-center rounded-[12px] bg-signal-soft text-signal">
+                      <Icon name={toolIcons[key]} size={18} />
+                    </span>
+                    <h3 className="font-medium text-ink transition-colors group-hover:text-signal">
+                      {dict[key].title}
+                    </h3>
+                    <p className="ds-caption mt-1.5 line-clamp-2">
+                      {dict[key].subtitle}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
         </div>
       )}
 
       {page === "support" && (
-        <>
-          <div className="grid gap-6 md:grid-cols-3">
+        <div className="space-y-12">
+          {/* Product & Field Notes cards (no version numbers on cards) */}
+          <div className="grid gap-5 md:grid-cols-3">
             {applications.map((app) => (
               <Link
                 key={app.id}
                 href={`/${locale}/applications/${app.id}`}
-                className="agy-surface-card p-7 transition-colors hover:border-white/25 hover:bg-[#17191f]"
+                className="ds-card ds-card-interactive group flex flex-col justify-between p-7 sm:p-8"
               >
-                <p className="agy-eyebrow">WINDOWS / {app.version}</p>
-                <h2 className="heading-5 mt-5">{app.name} ↗</h2>
-                <p className="mt-3 text-sm text-neutral-400">
-                  {app.description[locale]}
-                </p>
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[13px] border border-line bg-surface shadow-soft transition-transform duration-500 ease-out-expo group-hover:scale-105">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={app.icon}
+                        alt=""
+                        width={24}
+                        height={24}
+                        className="size-6"
+                      />
+                    </span>
+                    <span className="ds-chip">{pCopy.applications}</span>
+                  </div>
+                  <h2 className="ds-h4 mt-6 text-ink transition-colors group-hover:text-signal">
+                    {app.name}
+                  </h2>
+                  <p className="ds-body mt-3 text-[0.95rem]">
+                    {app.description[locale]}
+                  </p>
+                </div>
+                <div className="mt-8 flex items-center gap-1.5 border-t border-line pt-5 text-sm font-medium text-ink transition-colors group-hover:text-signal">
+                  <span>{pCopy.details}</span>
+                  <Icon
+                    name="arrowRight"
+                    size={15}
+                    className="rtl-flip transition-transform duration-300 ease-out-expo group-hover:translate-x-1"
+                  />
+                </div>
               </Link>
             ))}
+
             <Link
               href={`/${locale}/blog`}
-              className="agy-surface-card p-7 transition-colors hover:border-white/25 hover:bg-[#17191f]"
+              className="ds-card ds-card-interactive group flex flex-col justify-between p-7 sm:p-8"
             >
-              <p className="agy-eyebrow">FIELD NOTES</p>
-              <h2 className="heading-5 mt-5">{dict.blog.title} ↗</h2>
-              <p className="mt-3 text-sm text-neutral-400">
-                {dict.blog.subtitle}
-              </p>
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-signal-soft text-signal transition-transform duration-500 ease-out-expo group-hover:scale-105">
+                    <Icon name="book" size={20} />
+                  </span>
+                  <span className="ds-chip">{copy.blogEyebrow}</span>
+                </div>
+                <h2 className="ds-h4 mt-6 text-ink transition-colors group-hover:text-signal">
+                  {dict.blog.title}
+                </h2>
+                <p className="ds-body mt-3 text-[0.95rem]">
+                  {dict.blog.subtitle}
+                </p>
+              </div>
+              <div className="mt-8 flex items-center gap-1.5 border-t border-line pt-5 text-sm font-medium text-ink transition-colors group-hover:text-signal">
+                <span>{copy.allArticles}</span>
+                <Icon
+                  name="arrowRight"
+                  size={15}
+                  className="rtl-flip transition-transform duration-300 ease-out-expo group-hover:translate-x-1"
+                />
+              </div>
             </Link>
           </div>
-          <div className="agy-surface-card mt-10 p-7 sm:p-10">
-            {dict.experience.faq.map((entry) => (
-              <details
-                key={entry.question}
-                className="border-b border-white/10 py-5 last:border-0"
-              >
-                <summary className="min-h-11 cursor-pointer text-lg font-medium text-white">
-                  {entry.question}
-                </summary>
-                <p className="mt-3 leading-8 text-neutral-300">
-                  {entry.answer}
-                </p>
-              </details>
-            ))}
-          </div>
-          <div className="agy-surface-card prose-ipscans mt-10 p-7 sm:p-10">
-            <h2>
-              {tr ? "Kurulum ve indirme" : "Installation and downloads"}
-            </h2>
-            <ol>
-              <li>
-                {tr
-                  ? "Ürün sayfasından işletim sisteminize uygun dosyayı seçin."
-                  : "Select the appropriate file for your operating system on the product page."}
-              </li>
-              <li>
-                {tr
-                  ? "Dosyanın kaydedileceği yeri tarayıcınız yönetir; indirmeler listesinden dosyayı bulun."
-                  : "Your browser controls the save location; find the file in its downloads list."}
-              </li>
-              <li>
-                {tr
-                  ? "Varsa SHA-256 değerini ürün sayfasındaki değerle karşılaştırın; ardından kurulum yönergelerini izleyin."
-                  : "Compare the SHA-256 checksum with the product page when available, then follow the installation instructions."}
-              </li>
+
+          {/* Installation & verification steps */}
+          <section className="ds-card-muted p-7 sm:p-10">
+            <h2 className="ds-h3 text-ink">{t.support.installTitle}</h2>
+            <ol className="mt-8 grid gap-5 md:grid-cols-3">
+              {t.support.installSteps.map((step, i) => (
+                <li
+                  key={i}
+                  className="rounded-md border border-line bg-surface p-6"
+                >
+                  <span className="ds-mono ds-tabular inline-flex size-8 items-center justify-center rounded-full bg-signal-soft text-xs font-semibold text-signal">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <p className="ds-body mt-4 text-[0.95rem] text-ink">{step}</p>
+                </li>
+              ))}
             </ol>
-          </div>
-        </>
+          </section>
+
+          {/* Frequently asked questions */}
+          <section className="ds-card p-7 sm:p-10">
+            <h2 className="ds-h3 mb-6 text-ink">{t.support.faqTitle}</h2>
+            <div className="divide-y divide-line">
+              {dict.experience.faq.map((entry) => (
+                <details key={entry.question} className="group py-5 first:pt-2 last:pb-0">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[1.06rem] font-medium text-ink">
+                    <span>{entry.question}</span>
+                    <Icon
+                      name="chevronDown"
+                      size={18}
+                      className="shrink-0 text-ink-3 transition-transform duration-300 group-open:rotate-180"
+                    />
+                  </summary>
+                  <p className="ds-body mt-3 max-w-[68ch] text-[0.96rem]">
+                    {entry.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+        </div>
       )}
 
       {page === "contact" && (
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="agy-surface-card prose-ipscans p-7 sm:p-10">
-            <h2>
-              {tr
-                ? "Teknik sorun veya ürün geri bildirimi"
-                : "Technical issue or product feedback"}
-            </h2>
-            <p>
-              {tr
-                ? "Mevcut GitHub deposundaki Issues alanını kullanabilirsiniz. Ürün adı, sürüm, işletim sistemi, sorunun tekrar adımları ve beklenen davranışı ekleyin."
-                : "Use the Issues area of the existing GitHub repository. Include the product name, version, operating system, steps to reproduce and expected behavior."}
-            </p>
-            <p>
-              {tr
-                ? "Herkese açık kayıtlara parola, erişim anahtarı, özel IP envanteri veya müşteri görüntüsü eklemeyin. Hassas bilgileri ekran görüntülerinden kaldırın."
-                : "Do not include passwords, access keys, private inventories or customer footage in public reports. Remove sensitive information from screenshots."}
-            </p>
-            <div className="mt-6">
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Technical issues & product feedback */}
+          <div className="ds-card flex flex-col justify-between p-7 sm:p-10">
+            <div>
+              <span className="mb-6 grid size-11 place-items-center rounded-[13px] bg-signal-soft text-signal">
+                <Icon name="external" size={20} />
+              </span>
+              <h2 className="ds-h3 text-ink">{t.contact.issueTitle}</h2>
+              <div className="ds-prose mt-5">
+                <p>{t.contact.issueP1}</p>
+                <p>{t.contact.issueP2}</p>
+              </div>
+            </div>
+            <div className="mt-8 pt-4">
               <a
-                className="button button-primary no-underline"
                 href="https://github.com/demiirrr25-create/ipscans-depo/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
               >
-                <span>
-                  {tr ? "GitHub Issues alanını aç" : "Open GitHub Issues"} ↗
-                </span>
+                <span>{t.contact.issueCta}</span>
+                <Icon name="arrowUpRight" size={16} />
               </a>
             </div>
           </div>
-          <div className="agy-surface-card prose-ipscans p-7 sm:p-10">
-            <h2>{tr ? "Gizlilik soruları" : "Privacy questions"}</h2>
-            <p>
-              {tr
-                ? "Mevcut gizlilik politikasında belirtilen iletişim adresi:"
-                : "Contact address listed in the existing privacy policy:"}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+
+          {/* Privacy & legal inquiries */}
+          <div className="ds-card-muted flex flex-col justify-between p-7 sm:p-10">
+            <div>
+              <span className="mb-6 grid size-11 place-items-center rounded-[13px] bg-signal-soft text-signal">
+                <Icon name="mail" size={20} />
+              </span>
+              <h2 className="ds-h3 text-ink">{t.contact.privacyTitle}</h2>
+              <p className="ds-body mt-4">{t.contact.privacyBody}</p>
+
+              <dl className="mt-6 rounded-md border border-line bg-surface px-5 py-2">
+                <div className="ds-kv">
+                  <dt>{dict.footer.privacy}</dt>
+                  <dd>
+                    <a
+                      href="mailto:privacy@ipscans.com"
+                      className="ds-link ds-mono text-signal"
+                    >
+                      privacy@ipscans.com
+                    </a>
+                  </dd>
+                </div>
+                <div className="ds-kv">
+                  <dt>{dict.footer.terms}</dt>
+                  <dd>
+                    <a
+                      href="mailto:legal@ipscans.com"
+                      className="ds-link ds-mono text-signal"
+                    >
+                      legal@ipscans.com
+                    </a>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3 pt-4">
               <a
-                className="button button-secondary no-underline"
                 href="mailto:privacy@ipscans.com"
+                className="btn btn-primary"
               >
-                <span>privacy@ipscans.com ↗</span>
+                <Icon name="mail" size={16} />
+                <span>privacy@ipscans.com</span>
               </a>
               <Link
-                className="button button-secondary no-underline"
                 href={`/${locale}/privacy`}
+                className="btn btn-secondary"
               >
                 <span>{dict.footer.privacy}</span>
+              </Link>
+              <Link
+                href={`/${locale}/terms`}
+                className="btn btn-secondary"
+              >
+                <span>{dict.footer.terms}</span>
               </Link>
             </div>
           </div>

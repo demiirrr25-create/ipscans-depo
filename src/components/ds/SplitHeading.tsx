@@ -1,4 +1,4 @@
-import { createElement, type CSSProperties } from "react";
+import { createElement, Fragment, type CSSProperties } from "react";
 
 /**
  * Headline whose words rise into place one after another on first paint.
@@ -21,10 +21,12 @@ export function SplitHeading({
     as,
     { className, style: { "--split-delay": `${delay}ms` } as CSSProperties },
     words.map((word, i) => (
-      <span key={`${word}-${i}`} className="ds-split-word">
-        <span style={{ "--i": i } as CSSProperties}>{word}</span>
+      <Fragment key={`${word}-${i}`}>
+        <span className="ds-split-word">
+          <span style={{ "--i": i } as CSSProperties}>{word}</span>
+        </span>
         {i < words.length - 1 ? " " : null}
-      </span>
+      </Fragment>
     ))
   );
 }

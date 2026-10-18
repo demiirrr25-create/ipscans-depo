@@ -33,8 +33,13 @@ export function AdSlot({ slot, label, format = "fluid" }: { slot?: string; label
   if (!client || !slot) return null;
 
   return (
-    <aside className="ad-slot" aria-label={label}>
-      <span className="ad-slot__label">{label}</span>
+    <aside
+      className="my-10 rounded-lg border border-line bg-surface-dim px-4 py-3"
+      aria-label={label}
+    >
+      <span className="ds-mono mb-2 block text-center text-[0.7rem] uppercase tracking-widest text-ink-3">
+        {label}
+      </span>
       <ins
         className="adsbygoogle"
         style={{ display: "block", textAlign: "center" }}

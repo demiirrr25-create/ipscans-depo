@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { PageShell } from "@/components/PageShell";
+import { LegalDocument } from "@/components/content/LegalDocument";
 import { privacyPolicy, localizedLegalText } from "@/content/legal";
 import { notFound } from "next/navigation";
 
@@ -21,7 +21,10 @@ export async function generateMetadata({
     title: dict.footer.privacy,
     alternates: {
       canonical: `/${locale}/privacy`,
-      languages: {...Object.fromEntries(locales.map(l=>[l,`/${l}/privacy`])), "x-default":"/en/privacy"},
+      languages: {
+        ...Object.fromEntries(locales.map((l) => [l, `/${l}/privacy`])),
+        "x-default": "/en/privacy",
+      },
     },
     robots: privacyPolicy[locale] ? undefined : { index: false, follow: true },
   };
@@ -34,15 +37,13 @@ export default async function PrivacyPage({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const dict = getDictionary(locale);
 
   return (
-    <PageShell title={dict.footer.privacy}>
-      <article
-        className="prose-ipscans mx-auto max-w-2xl"
-        // Static content authored in src/content/legal.ts, not user input.
-        dangerouslySetInnerHTML={{ __html: localizedLegalText(privacyPolicy, locale) }}
-      />
-    </PageShell>
+    <LegalDocument
+      locale={locale}
+      kind="privacy"
+      rawHtml={localizedLegalText(privacyPolicy, locale)}
+    />
   );
 }
+

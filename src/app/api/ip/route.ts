@@ -61,6 +61,9 @@ export async function GET(request: NextRequest) {
       timezone: data.timezone?.id ?? null,
       isp: data.connection?.isp ?? null,
       org: data.connection?.org ?? null,
+      asn: data.connection?.asn
+        ? `AS${String(data.connection.asn).replace(/^AS/i, "")}`
+        : null,
     });
   } catch {
     return NextResponse.json({ error: "Lookup failed" }, { status: 502 });

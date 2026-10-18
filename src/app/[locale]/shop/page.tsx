@@ -1,16 +1,23 @@
-import { isLocale } from "@/i18n/config";
-import { getDictionary } from "@/i18n/dictionaries";
-import { PageShell } from "@/components/PageShell";
-import { ComingSoon } from "@/components/shop/ComingSoon";
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { PageShell } from "@/components/PageShell";
+import { downloadHubCopy } from "@/components/catalog/copy";
+import { ComingSoon } from "@/components/shop/ComingSoon";
+import { isLocale } from "@/i18n/config";
+import { getDictionary, getPublicDictionary } from "@/i18n/dictionaries";
 import { localizedAlternates } from "@/lib/seo";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
+  const dict = getDictionary(locale);
   return {
-    title: getDictionary(locale).shop.title,
+    title: dict.shop.title,
+    description: dict.shop.comingSoonBody,
     alternates: localizedAlternates(locale, "/shop"),
     robots: { index: false, follow: true },
   };
@@ -24,10 +31,16 @@ export default async function ShopPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
+  const toolsDict = getPublicDictionary(locale);
+  const copy = downloadHubCopy[locale];
 
   return (
-    <PageShell title={dict.shop.title}>
-      <ComingSoon dict={dict.shop} />
+    <PageShell
+      eyebrow={copy.shop.eyebrow}
+      title={dict.shop.title}
+      subtitle={dict.shop.comingSoonBody}
+    >
+      <ComingSoon dict={dict.shop} locale={locale} toolsDict={toolsDict} />
     </PageShell>
   );
 }

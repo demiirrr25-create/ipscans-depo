@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ElementType, type ReactNode } from "react";
 
 type RevealProps = {
   children: ReactNode;
@@ -38,6 +38,7 @@ function getObserver() {
 
 export function Reveal({ children, as = "div", className = "", delay = 0, variant = "up", id, style }: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
+  const Tag = as as ElementType;
 
   useEffect(() => {
     const el = ref.current;
@@ -51,14 +52,14 @@ export function Reveal({ children, as = "div", className = "", delay = 0, varian
     return () => observer.unobserve(el);
   }, []);
 
-  return createElement(
-    as,
-    {
-      ref,
-      id,
-      className: `${variant === "scale" ? "ds-reveal-scale" : "ds-reveal"} ${className}`.trim(),
-      style: { ...style, "--reveal-delay": `${delay}ms` } as CSSProperties,
-    },
-    children
+  return (
+    <Tag
+      ref={ref}
+      id={id}
+      className={`${variant === "scale" ? "ds-reveal-scale" : "ds-reveal"} ${className}`.trim()}
+      style={{ ...style, "--reveal-delay": `${delay}ms` } as CSSProperties}
+    >
+      {children}
+    </Tag>
   );
 }

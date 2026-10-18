@@ -24,6 +24,11 @@ const names: Record<Locale, string> = {
   zh: "中文",
 };
 
+function persistLocaleCookie(target: Locale) {
+  if (typeof document === "undefined") return;
+  document.cookie = `ipscans-locale=${target}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
+}
+
 export function LanguageSwitcher({
   locale,
   placement = "down",
@@ -63,7 +68,7 @@ export function LanguageSwitcher({
   function choose(target: Locale) {
     setOpen(false);
     if (target === locale) return;
-    document.cookie = `ipscans-locale=${target}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
+    persistLocaleCookie(target);
     router.push(pathForLocale(target));
   }
 

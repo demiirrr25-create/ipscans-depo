@@ -1,12 +1,15 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { PlatformHero } from "@/components/PlatformHero";
-import { BlogSection } from "@/components/BlogSection";
-import { SpatialParticles } from "@/components/SpatialParticles";
-import { TypewriterHeader } from "@/components/TypewriterHeader";
-import { notFound } from "next/navigation";
 import { platformCopy, scannerApplication } from "@/content/applications";
+import { Icon } from "@/components/ds/Icon";
+import { DownloadStage } from "@/components/ds/product";
+import { HeroSection } from "@/components/home/HeroSection";
+import { ProductShowcase } from "@/components/home/ProductShowcase";
+import { NetworkToolsSection } from "@/components/home/NetworkToolsSection";
+import { LatestArticlesSection } from "@/components/home/LatestArticlesSection";
+import { homeCopy } from "@/components/home/copy";
 
 export default async function HomePage({
   params,
@@ -17,53 +20,45 @@ export default async function HomePage({
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
   const platform = platformCopy[locale];
+  const copy = homeCopy[locale];
 
   return (
-    <div className="main">
-      <PlatformHero locale={locale} ipLabel={dict.hero.yourIp} />
+    <div className="relative">
+      <HeroSection locale={locale} dict={dict} />
 
-      <BlogSection locale={locale} />
+      <ProductShowcase locale={locale} />
 
-      {/* Download Action Section */}
-      <section
-        className="download-section-container download-section-container--mobile-desktop-only"
-        id="download-section"
-        data-download-section
-      >
-        <div className="grid-container">
-          <div className="grid-row">
-            <div className="grid-col col-md-12">
-              <div className="download-section" data-section-element>
-                <div className="download-section-backdrop">
-                  <SpatialParticles variant="download" />
-                </div>
-                <div className="download-section-content">
-                  <div className="header heading-3" data-typed-header>
-                    <TypewriterHeader
-                      text={dict.cta.title}
-                      trigger="visible"
-                      speedMs={20}
-                      startDelayMs={80}
-                    />
-                  </div>
-                  <div className="download-section-cta" data-cta-container>
-                    <a
-                      href={scannerApplication.downloadUrl}
-                      className="call-to-action button button-primary-inverse"
-                    >
-                      <span>{platform.downloadApp} Windows (x64)</span>
-                    </a>
-                    <Link
-                      href={`/${locale}/download`}
-                      className="call-to-action button button-secondary-inverse"
-                    >
-                      <span>{dict.cta.button}</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <NetworkToolsSection locale={locale} dict={dict} />
+
+      <LatestArticlesSection locale={locale} dict={dict} />
+
+      <section className="ds-section">
+        <div className="ds-container">
+          <DownloadStage
+            title={dict.cta.title}
+            lead={dict.cta.subtitle}
+            note={copy.closingNote}
+          >
+            <a
+              href={scannerApplication.downloadUrl}
+              className="btn btn-inverse btn-lg"
+            >
+              <Icon name="windows" size={18} />
+              <span>{copy.downloadScannerCta}</span>
+              <Icon name="download" size={18} />
+            </a>
+            <Link
+              href={`/${locale}/download`}
+              className="btn btn-inverse-secondary btn-lg"
+            >
+              <span>{platform.explore}</span>
+              <Icon
+                name="arrowRight"
+                size={18}
+                className="btn-arrow rtl-flip"
+              />
+            </Link>
+          </DownloadStage>
         </div>
       </section>
     </div>

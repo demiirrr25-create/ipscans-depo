@@ -3,9 +3,9 @@ import { isLocale, locales, localeTags, defaultLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { PageShell } from "@/components/PageShell";
 import { ToolRenderer, toolMeta } from "@/components/tools/ToolRenderer";
+import { toolCopy } from "@/components/tools/copy";
 import { notFound, redirect } from "next/navigation";
 import { findToolBySlug, toolKeys, toolPath, toolSlugs } from "@/lib/tool-routes";
-import { SpatialParticles } from "@/components/SpatialParticles";
 
 const BASE_URL = "https://ipscans.com";
 
@@ -55,6 +55,7 @@ export default async function ToolPage({
   if (tool !== canonicalSlug) redirect(toolPath(key, locale));
 
   const dict = getDictionary(locale);
+  const copy = toolCopy[locale];
   const { title, subtitle } = toolMeta(key, dict);
 
   // SoftwareApplication + BreadcrumbList structured data — helps both classic
@@ -87,22 +88,19 @@ export default async function ToolPage({
 
   if (key === "speedTest") {
     return (
-      <div className="relative min-h-screen bg-[#000000] text-white pt-6 pb-20 overflow-hidden">
-        <SpatialParticles variant="hero" />
+      <>
         <script
           type="application/ld+json"
           // Static, code-authored structured data — safe to inject directly.
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <div className="relative z-10 mx-auto max-w-[1200px] px-4">
-          <ToolRenderer toolKey={key} locale={locale} dict={dict} />
-        </div>
-      </div>
+        <ToolRenderer toolKey={key} locale={locale} dict={dict} />
+      </>
     );
   }
 
   return (
-    <PageShell title={title} subtitle={subtitle}>
+    <PageShell eyebrow={copy.eyebrow} title={title} subtitle={subtitle}>
       <script
         type="application/ld+json"
         // Static, code-authored structured data — safe to inject directly.
