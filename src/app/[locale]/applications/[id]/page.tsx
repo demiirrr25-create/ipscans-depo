@@ -210,11 +210,9 @@ export default async function ApplicationDetail({ params }: Params) {
 
       {/* High-Tech Action Center & Hero Deck */}
       <div className="agy-surface-card relative overflow-hidden p-7 sm:p-10">
-        <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 bg-[radial-gradient(ellipse_at_top_right,rgba(0,240,255,0.12),transparent_70%)]" />
-
         <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
-            <span className="agy-eyebrow text-[#00f0ff]">
+            <span className="agy-eyebrow text-neutral-400">
               {isScanner
                 ? uiText(locale, "FLAGSHIP NETWORK SCANNER & TOPOLOGY ENGINE", "AMİRAL GEMİSİ AĞ TARAYICI VE TOPOLOJİ MOTORU")
                 : uiText(locale, "SECURE HIGH-PERFORMANCE REMOTE DESKTOP", "GÜVENLİ YÜKSEK PERFORMANSLI UZAK MASAÜSTÜ")}
@@ -317,33 +315,6 @@ export default async function ApplicationDetail({ params }: Params) {
         />
       </div>
 
-      {/* SAAS TRUST & SECURITY VERIFICATION ROW */}
-      <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-          <span className="text-xl">🛡️</span>
-          <div>
-            <div className="text-xs font-semibold text-white">VirusTotal Verified</div>
-            <div className="text-[11px] text-neutral-400">0/72 Clean · 100% Malware Free</div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-          <span className="text-xl">🔒</span>
-          <div>
-            <div className="text-xs font-semibold text-white">SHA-256 Integrity Match</div>
-            <div className="text-[11px] text-neutral-400">Cryptographically Signed & Tested</div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-          <span className="text-xl">⚡</span>
-          <div>
-            <div className="text-xs font-semibold text-white">Local Standalone Runtime</div>
-            <div className="text-[11px] text-neutral-400">No Bundled Ads · Zero Telemetry</div>
-          </div>
-        </div>
-      </div>
-
       {/* Comprehensive Architectural & Capabilities Breakdown */}
       <div className="product-detail-body mb-12">
         <section className="agy-surface-card p-7 sm:p-10">
@@ -360,7 +331,7 @@ export default async function ApplicationDetail({ params }: Params) {
                 key={feature}
                 className="grid grid-cols-[36px_1fr] gap-5 py-5"
               >
-                <span className="font-mono text-xs text-[#00f0ff]">
+                <span className="font-mono text-xs text-neutral-400">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <p className="leading-relaxed text-neutral-200">{feature}</p>
@@ -368,7 +339,7 @@ export default async function ApplicationDetail({ params }: Params) {
             ))}
           </ol>
 
-          <p className="mt-8 border-s-2 border-[#00f0ff]/50 ps-5 text-sm leading-relaxed text-neutral-400">
+          <p className="mt-8 border-s-2 border-white/20 ps-5 text-sm leading-relaxed text-neutral-400">
             {isScanner ? scanner.limitations : dict.ipcast.note}
           </p>
         </section>
@@ -394,7 +365,7 @@ export default async function ApplicationDetail({ params }: Params) {
           </dl>
 
           <details className="mt-7 border-y border-white/15 py-4" open>
-            <summary className="cursor-pointer min-h-11 text-sm font-medium text-white hover:text-[#00f0ff]">
+            <summary className="cursor-pointer min-h-11 text-sm font-medium text-white hover:text-neutral-300">
               {copy.checksum} (SHA-256)
             </summary>
             <div className="mt-4 space-y-4">
@@ -440,7 +411,7 @@ export default async function ApplicationDetail({ params }: Params) {
               <p className="font-mono text-neutral-300 mb-1">
                 {uiText(locale, "Verify in PowerShell:", "PowerShell ile doğrulama:")}
               </p>
-              <code className="block select-all overflow-x-auto text-[#00f0ff]">
+              <code className="block select-all overflow-x-auto text-neutral-200 font-mono">
                 Get-FileHash .\{app.id === "scanner" ? "IPscans-Plus-Setup.exe" : "IPCast-2.5.0-Setup.exe"} -Algorithm SHA256
               </code>
             </div>
@@ -493,8 +464,7 @@ export default async function ApplicationDetail({ params }: Params) {
                   )}
                 </p>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 font-mono text-xs font-semibold text-neutral-300">
-                <span>🛡️</span>
+              <span className="inline-flex shrink-0 items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 font-mono text-xs font-medium text-neutral-300">
                 ZERO TELEMETRY
               </span>
             </div>

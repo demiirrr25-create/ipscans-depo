@@ -107,7 +107,7 @@ export default async function CortexPage({
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-purple-400/30 bg-purple-400/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-purple-400">
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-xs font-medium text-neutral-300">
                     V1 RC2 · STANDALONE
                   </span>
                   <span className="font-mono text-xs text-neutral-400">Windows 10/11 · x64</span>
@@ -183,38 +183,11 @@ export default async function CortexPage({
           />
         </div>
 
-        {/* Trust & Security Verification Row */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0C1016] p-4">
-            <span className="text-xl">🛡️</span>
-            <div>
-              <div className="text-xs font-semibold text-white">VirusTotal 0/72 Clean</div>
-              <div className="text-[11px] text-neutral-400">100% Malware & Adware Free</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0C1016] p-4">
-            <span className="text-xl">🔒</span>
-            <div>
-              <div className="text-xs font-semibold text-white">Zero Cloud Ingest</div>
-              <div className="text-[11px] text-neutral-400">100% Local Video & Rule Analysis</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0C1016] p-4">
-            <span className="text-xl">⚡</span>
-            <div>
-              <div className="text-xs font-semibold text-white">Multi-Stream RTSP Core</div>
-              <div className="text-[11px] text-neutral-400">Up to 32 Cameras Concurrency</div>
-            </div>
-          </div>
-        </div>
-
         {/* Feature Cards Grid */}
         <div className="grid gap-6 md:grid-cols-3">
           {features.map(([n, title, body]) => (
             <article key={n} className="rounded-2xl border border-white/[0.08] bg-[#07090E] p-7">
-              <span className="font-mono text-xs text-[#00F0FF]">{n}</span>
+              <span className="font-mono text-xs text-neutral-400">{n}</span>
               <h3 className="my-3 text-xl font-bold text-white">{title}</h3>
               <p className="text-sm leading-relaxed text-neutral-400">{body}</p>
             </article>
@@ -245,7 +218,7 @@ export default async function CortexPage({
               </li>
             </ol>
             <a
-              className="mt-6 inline-block font-mono text-xs text-[#00F0FF] hover:underline"
+              className="mt-6 inline-block font-mono text-xs text-neutral-300 hover:text-white underline underline-offset-4"
               href="https://ollama.com/download"
               target="_blank"
               rel="noopener noreferrer"

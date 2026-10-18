@@ -10,7 +10,7 @@ import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 import { ipcastRelease } from "@/content/applications";
 import { ipcastProductCopy } from "@/content/ipcast-product";
 import { IPCastProductSections } from "@/components/IPCastProductSections";
-import { AppLiveDemo } from "@/components/AppLiveDemo";
+import { AppStoreCarousel } from "@/components/AppStoreCarousel";
 
 export async function generateMetadata({
   params,
@@ -46,39 +46,35 @@ export default async function IpCastPage({
     <PageShell title={t.title} subtitle={t.subtitle}>
       <div className="mx-auto max-w-5xl">
         <div className="my-8">
-          <AppLiveDemo
+          <AppStoreCarousel
             appId="ipcast"
             appName="IPCast"
-            version={ipcastRelease.version}
             locale={locale}
+            intervalMs={5000}
+            screenshots={[
+              {
+                id: "ipcast-console",
+                label: locale === "tr" ? "9 Haneli Konsol" : "9-Digit Console",
+                title: locale === "tr" ? "Doğrudan STUN/UDP P2P Bağlantı Konsolu" : "Direct STUN/UDP P2P Connection Console",
+                tag: "P2P CONSOLE",
+                image: "/ipcast-v25-preview.png",
+              },
+              {
+                id: "ipcast-stream",
+                label: locale === "tr" ? "60 FPS Canlı Akış" : "60 FPS Stream",
+                title: locale === "tr" ? "D3D11 Donanım Hızlandırmalı Uzak Masaüstü" : "D3D11 GPU Accelerated Remote Desktop",
+                tag: "GPU STREAM",
+                renderType: "ipcast-stream",
+              },
+              {
+                id: "ipcast-files",
+                label: locale === "tr" ? "Dosya Aktarımı" : "File Relay",
+                title: locale === "tr" ? "AES-256-GCM Şifreli P2P Dosya Aktarım Tüneli" : "AES-256-GCM Encrypted P2P File Pipeline",
+                tag: "SECURE RELAY",
+                renderType: "ipcast-files",
+              },
+            ]}
           />
-        </div>
-
-        {/* SAAS TRUST & SECURITY VERIFICATION ROW */}
-        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-            <span className="text-xl">🛡️</span>
-            <div>
-              <div className="text-xs font-semibold text-white">VirusTotal Clean</div>
-              <div className="text-[11px] text-neutral-400">0/72 Detections · Malware Free</div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-            <span className="text-xl">🔐</span>
-            <div>
-              <div className="text-xs font-semibold text-white">Direct Peer-to-Peer</div>
-              <div className="text-[11px] text-neutral-400">End-to-End TLS 1.3 / ChaCha20</div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-            <span className="text-xl">⚡</span>
-            <div>
-              <div className="text-xs font-semibold text-white">Zero-Latency D3D11</div>
-              <div className="text-[11px] text-neutral-400">60 FPS Hardware Acceleration</div>
-            </div>
-          </div>
         </div>
 
         <div className="agy-surface-card p-6 sm:p-10">

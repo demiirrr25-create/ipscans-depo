@@ -26,13 +26,13 @@ function getBufferbloatGrade(delta: number | null | undefined): {
   if (delta <= 5) {
     return {
       grade: "A+",
-      badgeClass: "text-[#00FF9D] border-[#00FF9D]/40 bg-[#00FF9D]/10 shadow-[0_0_15px_rgba(0,255,157,0.25)]",
+      badgeClass: "text-white border-white/20 bg-white/10 font-bold",
     };
   }
   if (delta <= 15) {
     return {
       grade: "A",
-      badgeClass: "text-[#00F0FF] border-[#00F0FF]/40 bg-[#00F0FF]/10 shadow-[0_0_15px_rgba(0,240,255,0.25)]",
+      badgeClass: "text-neutral-200 border-white/15 bg-white/5",
     };
   }
   if (delta <= 30) {
@@ -411,27 +411,11 @@ export function SpeedTest({
     return uiText(locale, "MEASURING", "ÖLÇÜLÜYOR");
   }, [running, result, update, locale]);
 
-  // Ambient aura color
-  const auraColorClass = useMemo(() => {
-    if (!running && !result) return "from-cyan-500/10 via-transparent to-transparent";
-    if (update?.phase === "download" || update?.phase === "download_complete") {
-      return "from-[#00F0FF]/25 via-[#00F0FF]/5 to-transparent";
-    }
-    if (update?.phase === "upload" || update?.phase === "upload_complete") {
-      return "from-[#00FF9D]/25 via-[#00FF9D]/5 to-transparent";
-    }
-    if (update?.phase === "latency") {
-      return "from-purple-500/20 via-purple-500/5 to-transparent";
-    }
-    return "from-[#00F0FF]/15 via-[#00FF9D]/10 to-transparent";
-  }, [running, result, update]);
-
   return (
     <div className="relative mx-auto w-full max-w-5xl py-4 select-none" aria-label={dict.title}>
-      
-      {/* 1. Dynamic Reactive Ambient Glow in background */}
+      {/* 1. Subtle Monochromatic Surface Glow */}
       <div
-        className={`pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 h-[520px] w-[780px] -z-10 rounded-full bg-gradient-radial ${auraColorClass} blur-3xl transition-all duration-700`}
+        className="pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 h-[420px] w-[680px] -z-10 rounded-full bg-white/[0.015] blur-3xl transition-opacity duration-700"
         aria-hidden="true"
       />
 
@@ -441,12 +425,12 @@ export function SpeedTest({
           <span className="relative flex h-2 w-2">
             <span
               className={`absolute inline-flex h-full w-full rounded-full ${
-                running ? "bg-[#00F0FF] animate-ping" : "bg-[#00FF9D] opacity-75"
+                running ? "bg-white animate-ping opacity-60" : "bg-neutral-600 opacity-30"
               }`}
             />
             <span
               className={`relative inline-flex rounded-full h-2 w-2 ${
-                running ? "bg-[#00F0FF]" : "bg-[#00FF9D]"
+                running ? "bg-white" : "bg-neutral-500"
               }`}
             />
           </span>
@@ -484,8 +468,8 @@ export function SpeedTest({
       <div className="relative my-6 flex flex-col items-center justify-center">
         
         {/* Phase Pill */}
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-1 text-xs font-mono tracking-widest text-[#00F0FF]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#00F0FF] animate-pulse" />
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-1 text-xs font-mono tracking-widest text-neutral-300">
+          <span className={`h-1.5 w-1.5 rounded-full ${running ? "bg-white animate-pulse" : "bg-neutral-500"}`} />
           <span>{phaseLabel}</span>
         </div>
 
@@ -494,13 +478,13 @@ export function SpeedTest({
           <svg viewBox="0 0 320 300" className="h-full w-full overflow-visible" aria-hidden="true">
             <defs>
               <linearGradient id={`speedArc-${gradientId}`} x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00F0FF" />
-                <stop offset="50%" stopColor="#FFFFFF" />
-                <stop offset="100%" stopColor="#00FF9D" />
+                <stop offset="0%" stopColor="#737373" />
+                <stop offset="60%" stopColor="#D4D4D4" />
+                <stop offset="100%" stopColor="#FFFFFF" />
               </linearGradient>
 
               <filter id={`arcGlow-${gradientId}`} x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="8" result="blur" />
+                <feGaussianBlur stdDeviation="6" result="blur" />
                 <feMerge>
                   <feMergeNode in="blur" />
                   <feMergeNode in="SourceGraphic" />
@@ -566,10 +550,10 @@ export function SpeedTest({
               <circle
                 cx={tipPos.x}
                 cy={tipPos.y}
-                r="6.5"
+                r="6"
                 fill="#FFFFFF"
-                stroke="#00FF9D"
-                strokeWidth="2.5"
+                stroke="#171717"
+                strokeWidth="2"
                 filter={`url(#arcGlow-${gradientId})`}
                 className="transition-[cx,cy] duration-200 ease-out"
               />
@@ -586,7 +570,7 @@ export function SpeedTest({
               {liveGaugeValue != null ? liveGaugeValue.toFixed(1) : "0.0"}
             </div>
 
-            <span className="font-mono text-xs tracking-widest text-[#00F0FF] uppercase">
+            <span className="font-mono text-xs tracking-widest text-neutral-400 uppercase">
               {update?.phase === "latency" ? "MS" : "MBPS"}
             </span>
           </div>
@@ -595,13 +579,13 @@ export function SpeedTest({
         {/* 4. Optimized Stage Progress Bar (Dolum Barı 0 - 100%) */}
         <div className="w-full max-w-md mx-auto my-3 px-4">
           <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1.5">
-            <span className={update?.phase === "latency" ? "text-[#00F0FF] font-bold" : ""}>
+            <span className={update?.phase === "latency" ? "text-white font-semibold" : ""}>
               {isTr ? "1. Gecikme" : "1. Ping"}
             </span>
-            <span className={update?.phase === "download" || update?.phase === "download_complete" ? "text-[#00F0FF] font-bold" : ""}>
+            <span className={update?.phase === "download" || update?.phase === "download_complete" ? "text-white font-semibold" : ""}>
               {isTr ? "2. İndirme" : "2. Download"}
             </span>
-            <span className={update?.phase === "upload" || update?.phase === "upload_complete" ? "text-[#00FF9D] font-bold" : ""}>
+            <span className={update?.phase === "upload" || update?.phase === "upload_complete" ? "text-white font-semibold" : ""}>
               {isTr ? "3. Yükleme" : "3. Upload"}
             </span>
             <span className={result ? "text-white font-bold" : ""}>
@@ -611,7 +595,7 @@ export function SpeedTest({
 
           <div className="relative h-2 w-full rounded-full bg-white/[0.06] overflow-hidden p-0.5 border border-white/[0.08]">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#00F0FF] via-white to-[#00FF9D] transition-all duration-300 shadow-[0_0_12px_rgba(0,240,255,0.4)]"
+              className="h-full rounded-full bg-gradient-to-r from-neutral-500 via-neutral-200 to-white transition-all duration-300 shadow-[0_0_10px_rgba(255,255,255,0.2)]"
               style={{ width: `${stageProgress}%` }}
             />
           </div>
@@ -631,7 +615,7 @@ export function SpeedTest({
             <button
               type="button"
               onClick={start}
-              className="group relative cursor-pointer overflow-hidden rounded-full bg-white px-10 py-3.5 font-mono text-sm font-bold text-black shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:bg-neutral-100 hover:shadow-[0_0_45px_rgba(0,240,255,0.35)] active:scale-95"
+              className="group relative cursor-pointer overflow-hidden rounded-full bg-white px-10 py-3.5 font-mono text-sm font-bold text-black shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:bg-neutral-100 hover:shadow-[0_0_35px_rgba(255,255,255,0.3)] active:scale-95"
             >
               <span className="relative z-10 flex items-center gap-2">
                 <span>
@@ -652,8 +636,8 @@ export function SpeedTest({
           <svg viewBox="0 0 500 70" preserveAspectRatio="none" className="h-full w-full overflow-visible">
             <defs>
               <linearGradient id={`traceGrad-${gradientId}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#00F0FF" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#00F0FF" stopOpacity="0.0" />
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
               </linearGradient>
             </defs>
 
@@ -670,7 +654,7 @@ export function SpeedTest({
               return (
                 <>
                   <path d={d} fill={`url(#traceGrad-${gradientId})`} />
-                  <path d={strokeD} fill="none" stroke="#00F0FF" strokeWidth="2" strokeLinecap="round" />
+                  <path d={strokeD} fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
                 </>
               );
             })()}
@@ -689,21 +673,21 @@ export function SpeedTest({
         <div
           className={`rounded-2xl border p-5 transition-all ${
             update?.phase === "download"
-              ? "border-[#00F0FF]/60 bg-[#00F0FF]/5 shadow-[0_0_25px_rgba(0,240,255,0.15)]"
+              ? "border-white/30 bg-white/[0.04] shadow-[0_0_20px_rgba(255,255,255,0.06)]"
               : lockedDownload != null
-              ? "border-[#00F0FF]/25 bg-white/[0.02]"
+              ? "border-white/15 bg-white/[0.02]"
               : "border-white/[0.07] bg-white/[0.02]"
           }`}
         >
           <div className="flex items-center justify-between font-mono text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
-              <span className="text-[#00F0FF]">↓</span>
+              <span className="text-white">↓</span>
               <span>{isTr ? "İNDİRME" : "DOWNLOAD"}</span>
             </span>
             {update?.phase === "download" ? (
-              <span className="h-1.5 w-1.5 rounded-full bg-[#00F0FF] animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
             ) : lockedDownload != null ? (
-              <span className="text-[10px] text-[#00F0FF] font-semibold">{isTr ? "✓ TAMAM" : "✓ DONE"}</span>
+              <span className="text-[10px] text-neutral-300 font-semibold">{isTr ? "✓ TAMAM" : "✓ DONE"}</span>
             ) : null}
           </div>
           <div className="mt-3 font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
@@ -722,21 +706,21 @@ export function SpeedTest({
         <div
           className={`rounded-2xl border p-5 transition-all ${
             update?.phase === "upload"
-              ? "border-[#00FF9D]/60 bg-[#00FF9D]/5 shadow-[0_0_25px_rgba(0,255,157,0.15)]"
+              ? "border-white/30 bg-white/[0.04] shadow-[0_0_20px_rgba(255,255,255,0.06)]"
               : lockedUpload != null
-              ? "border-[#00FF9D]/25 bg-white/[0.02]"
+              ? "border-white/15 bg-white/[0.02]"
               : "border-white/[0.07] bg-white/[0.02]"
           }`}
         >
           <div className="flex items-center justify-between font-mono text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
-              <span className="text-[#00FF9D]">↑</span>
+              <span className="text-white">↑</span>
               <span>{isTr ? "YÜKLEME" : "UPLOAD"}</span>
             </span>
             {update?.phase === "upload" ? (
-              <span className="h-1.5 w-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
             ) : lockedUpload != null ? (
-              <span className="text-[10px] text-[#00FF9D] font-semibold">{isTr ? "✓ TAMAM" : "✓ DONE"}</span>
+              <span className="text-[10px] text-neutral-300 font-semibold">{isTr ? "✓ TAMAM" : "✓ DONE"}</span>
             ) : null}
           </div>
           <div className="mt-3 font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
@@ -755,7 +739,7 @@ export function SpeedTest({
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
           <div className="flex items-center justify-between font-mono text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
-              <span className="text-amber-400">⏱</span>
+              <span className="text-neutral-400">RTT</span>
               <span>PING</span>
             </span>
             {(result?.jitter != null || liveJitter != null) && (
@@ -778,7 +762,7 @@ export function SpeedTest({
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
           <div className="flex items-center justify-between font-mono text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
-              <span className="text-purple-400">⚡</span>
+              <span className="text-neutral-400">BUF</span>
               <span>BUFFERBLOAT</span>
             </span>
             <span className={`rounded px-1.5 py-0.5 text-[10px] font-mono font-bold border ${bloat.badgeClass}`}>
@@ -787,7 +771,7 @@ export function SpeedTest({
           </div>
           <div className="mt-3 font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
             {bufferbloatDelta != null ? `+${bufferbloatDelta.toFixed(0)}` : "—"}
-            <span className="ml-1.5 text-xs font-normal text-neutral-500">ms yük</span>
+            <span className="ml-1.5 text-xs font-normal text-neutral-500">{isTr ? "ms yük" : "ms load"}</span>
           </div>
         </div>
 
@@ -865,8 +849,8 @@ export function SpeedTest({
                       <td className="p-3 text-neutral-500">
                         {new Date(item.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </td>
-                      <td className="p-3 text-[#00F0FF] font-semibold">{item.download.toFixed(1)} Mbps</td>
-                      <td className="p-3 text-[#00FF9D] font-semibold">{item.upload.toFixed(1)} Mbps</td>
+                      <td className="p-3 text-white font-medium">{item.download.toFixed(1)} Mbps</td>
+                      <td className="p-3 text-neutral-300 font-medium">{item.upload.toFixed(1)} Mbps</td>
                       <td className="p-3">{item.ping.toFixed(1)} ms</td>
                       <td className="p-3 text-neutral-500">{item.jitter != null ? `${item.jitter.toFixed(1)} ms` : "—"}</td>
                     </tr>

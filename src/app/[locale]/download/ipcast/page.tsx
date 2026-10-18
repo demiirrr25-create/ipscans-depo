@@ -7,6 +7,7 @@ import { platformCopy, ipcastRelease } from "@/content/applications";
 import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 import { PageShell } from "@/components/PageShell";
 import { localizedAlternates } from "@/lib/seo";
+import { AppStoreCarousel } from "@/components/AppStoreCarousel";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -35,26 +36,35 @@ export default async function IPCastDownloadPage({ params }: Props) {
   return (
     <PageShell title={product.title} subtitle={product.subtitle}>
       <div className="mx-auto max-w-4xl space-y-10">
-        <div className="feature-media-card">
-          <div className="feature-media-card__bar">
-            <span className="feature-media-card__title">
-              IPCast v{ipcastRelease.version}
-            </span>
-            <span className="feature-media-card__tag">
-              {ipcastRelease.platform} · NATIVE WIN64 · SHA-256 VERIFIED
-            </span>
-          </div>
-          <div className="feature-media-card__viewport">
-            <Image
-              src="/ipcast-v25-preview.png"
-              alt={`IPCast ${ipcastRelease.version}`}
-              width={1440}
-              height={900}
-              className="feature-image"
-              priority
-            />
-          </div>
-        </div>
+        <AppStoreCarousel
+          appId="ipcast"
+          appName="IPCast"
+          locale={locale}
+          intervalMs={5000}
+          screenshots={[
+            {
+              id: "ipcast-console",
+              label: locale === "tr" ? "9 Haneli Konsol" : "9-Digit Console",
+              title: locale === "tr" ? "Doğrudan STUN/UDP P2P Bağlantı Konsolu" : "Direct STUN/UDP P2P Connection Console",
+              tag: "P2P CONSOLE",
+              image: "/ipcast-v25-preview.png",
+            },
+            {
+              id: "ipcast-stream",
+              label: locale === "tr" ? "60 FPS Canlı Akış" : "60 FPS Stream",
+              title: locale === "tr" ? "D3D11 Donanım Hızlandırmalı Uzak Masaüstü" : "D3D11 GPU Accelerated Remote Desktop",
+              tag: "GPU STREAM",
+              renderType: "ipcast-stream",
+            },
+            {
+              id: "ipcast-files",
+              label: locale === "tr" ? "Dosya Aktarımı" : "File Relay",
+              title: locale === "tr" ? "AES-256-GCM Şifreli P2P Dosya Aktarım Tüneli" : "AES-256-GCM Encrypted P2P File Pipeline",
+              tag: "SECURE RELAY",
+              renderType: "ipcast-files",
+            },
+          ]}
+        />
 
         <div className="agy-surface-card p-6 sm:p-10">
           <div className="flex items-center gap-4">

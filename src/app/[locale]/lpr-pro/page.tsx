@@ -178,33 +178,6 @@ export default async function LprProPage({ params }: Props) {
           />
         </section>
 
-        {/* SAAS TRUST & SECURITY VERIFICATION ROW */}
-        <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-            <span className="text-xl">🛡️</span>
-            <div>
-              <div className="text-xs font-semibold text-white">VirusTotal Verified</div>
-              <div className="text-[11px] text-neutral-400">0/72 Clean · 100% Malware Free</div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-            <span className="text-xl">🔒</span>
-            <div>
-              <div className="text-xs font-semibold text-white">SHA-256 Checksum Match</div>
-              <div className="text-[11px] text-neutral-400">Cryptographically Verified Binary</div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
-            <span className="text-xl">⚡</span>
-            <div>
-              <div className="text-xs font-semibold text-white">Hardware D3D11 Engine</div>
-              <div className="text-[11px] text-neutral-400">Standalone Runtime · No Python Needed</div>
-            </div>
-          </div>
-        </div>
-
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(([title, body], idx) => (
             <section key={title} className="product-card">

@@ -166,8 +166,8 @@ export function ScannerScreenshotShowcase({ locale }: { locale: Locale }) {
         {current.features.map((feat) => (
           <div key={feat.title} className="agy-surface-card p-6 transition-all hover:border-white/20">
             <div className="flex items-center justify-between gap-2">
-              <span className="agy-eyebrow text-[#00f0ff]">{feat.badge}</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-[#00f0ff]" aria-hidden="true" />
+              <span className="agy-eyebrow text-neutral-400">{feat.badge}</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" aria-hidden="true" />
             </div>
             <h3 className="heading-6 mt-3 text-white">{feat.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-neutral-300">{feat.desc}</p>

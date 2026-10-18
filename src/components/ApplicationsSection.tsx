@@ -67,7 +67,7 @@ export function ApplicationsSection({
       preview: "/scanner-v43-preview.png",
       icon: "/scanner-icon-v42.png",
       badge: isTr ? "AMİRAL GEMİSİ · KARARLI" : "FLAGSHIP · STABLE",
-      badgeColor: "text-[#00F0FF] border-[#00F0FF]/30 bg-[#00F0FF]/10",
+      badgeColor: "text-neutral-300 border-white/10 bg-white/[0.04]",
       capabilities: [
         "SUB-2S 254 HOST SWEEP",
         "RAW ARP / ICMP SOCKETS",
@@ -117,7 +117,7 @@ export function ApplicationsSection({
       preview: "/ipcast-v25-preview.png",
       icon: "/ipcast-mark.svg",
       badge: isTr ? "P2P DOĞRUDAN · 60 FPS" : "P2P DIRECT · 60 FPS",
-      badgeColor: "text-[#00FF9D] border-[#00FF9D]/30 bg-[#00FF9D]/10",
+      badgeColor: "text-neutral-300 border-white/10 bg-white/[0.04]",
       capabilities: [
         "9-DIGIT PEER ADDRESS",
         "DIRECT UDP HOLE-PUNCHING",
@@ -167,7 +167,7 @@ export function ApplicationsSection({
       preview: "/lpr-pro-preview.png",
       icon: "/lpr-mark.svg",
       badge: isTr ? "YEREL ONNX · 4K RTSP" : "LOCAL ONNX · 4K RTSP",
-      badgeColor: "text-amber-400 border-amber-400/30 bg-amber-400/10",
+      badgeColor: "text-neutral-300 border-white/10 bg-white/[0.04]",
       capabilities: [
         "5-PAGE OPERATOR CONSOLE",
         "ONNX RUNTIME OCR (%98.6)",
@@ -217,7 +217,7 @@ export function ApplicationsSection({
       preview: "/cortex-preview.png",
       icon: "/cortex-mark.svg",
       badge: isTr ? "YEREL AI · GEMMA VISION" : "LOCAL AI · GEMMA VISION",
-      badgeColor: "text-purple-400 border-purple-400/30 bg-purple-400/10",
+      badgeColor: "text-neutral-300 border-white/10 bg-white/[0.04]",
       capabilities: [
         "12 MODEL-FREE RULES",
         "GEMMA VISION AI",
@@ -269,64 +269,10 @@ export function ApplicationsSection({
   return (
     <div className="w-full space-y-16 py-4">
 
-      {/* 1. Suite Security & Architecture Guarantees Strip */}
-      <section
-        aria-label="Security and Architecture Assurances"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#00FF9D]/30 bg-[#00FF9D]/10 text-lg text-[#00FF9D]">
-            🛡️
-          </span>
-          <div>
-            <div className="font-mono text-xs font-semibold text-white">VirusTotal 0/72 Clean</div>
-            <div className="text-[11px] text-neutral-400">
-              {isTr ? "Sıfır kötü amaçlı yazılım · Temiz" : "Zero malware · Clean build"}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#00F0FF]/30 bg-[#00F0FF]/10 text-lg text-[#00F0FF]">
-            🔐
-          </span>
-          <div>
-            <div className="font-mono text-xs font-semibold text-white">SHA-256 Verified</div>
-            <div className="text-[11px] text-neutral-400">
-              {isTr ? "Kriptografik bütünlük kontrolü" : "Cryptographic integrity match"}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/10 text-lg text-amber-400">
-            ⚡
-          </span>
-          <div>
-            <div className="font-mono text-xs font-semibold text-white">100% Offline by Design</div>
-            <div className="text-[11px] text-neutral-400">
-              {isTr ? "Sıfır telemetri · Tamamen yerel" : "Zero telemetry · Pure local execution"}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-purple-400/30 bg-purple-400/10 text-lg text-purple-400">
-            ⚙️
-          </span>
-          <div>
-            <div className="font-mono text-xs font-semibold text-white">Native Standalone EXEs</div>
-            <div className="text-[11px] text-neutral-400">
-              {isTr ? "Ek çalışma zamanı gerektirmez" : "Zero external runtime dependencies"}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Top Header & Navigation Switcher */}
+      {/* 1. Top Header & Navigation Switcher */}
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between border-b border-white/[0.08] pb-6">
         <div>
-          <span className="font-mono text-xs tracking-widest text-[#00F0FF] uppercase">
+          <span className="font-mono text-xs tracking-widest text-neutral-400 uppercase">
             01 / {isTr ? "WINDOWS MASAÜSTÜ MÜHENDİSLİK PAKETİ" : "WINDOWS DESKTOP ENGINEERING SUITE"}
           </span>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -377,22 +323,14 @@ export function ApplicationsSection({
         </div>
       </div>
 
-      {/* 3. The 4 Flagship EXE Bento Showcases (Active when filter is 'all' or 'desktop') */}
+      {/* 2. The 4 Flagship EXE Bento Showcases (Active when filter is 'all' or 'desktop') */}
       {(activeFilter === "all" || activeFilter === "desktop") && (
         <section aria-label="Desktop Executable Applications" className="space-y-12">
-          {filteredApps.map((app, index) => (
+          {filteredApps.map((app) => (
             <article
               key={app.id}
               className="group relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#07090E] p-6 sm:p-10 transition-all duration-300 hover:border-white/20 hover:shadow-[0_0_50px_rgba(0,0,0,0.8)]"
             >
-              {/* Subtle Ambient Corner Aura */}
-              <div
-                className={`pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full blur-3xl opacity-20 ${
-                  index % 2 === 0 ? "bg-[#00F0FF]" : "bg-[#00FF9D]"
-                }`}
-                aria-hidden="true"
-              />
-
               <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 
                 {/* Left Column: Architectural Specs & Download Center */}
@@ -419,7 +357,7 @@ export function ApplicationsSection({
                     <h3 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
                       {app.name}
                     </h3>
-                    <p className="mt-1 text-sm font-medium text-[#00F0FF]">
+                    <p className="mt-1 text-sm font-medium text-neutral-300">
                       {app.tagline}
                     </p>
                     <p className="mt-3 text-sm text-neutral-300 leading-relaxed">
@@ -507,7 +445,7 @@ export function ApplicationsSection({
       {(activeFilter === "all" || activeFilter === "web") && (
         <section aria-label="Browser Diagnostic Tools" className="pt-6">
           <div className="border-b border-white/[0.08] pb-6 mb-8">
-            <span className="font-mono text-xs tracking-widest text-[#00FF9D] uppercase">
+            <span className="font-mono text-xs tracking-widest text-neutral-400 uppercase">
               02 / {isTr ? "TARAYICI TANI ARAÇLARI" : "BROWSER DIAGNOSTIC TOOLS"}
             </span>
             <h3 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
@@ -532,11 +470,11 @@ export function ApplicationsSection({
                     <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-neutral-400">
                       {tool.badge}
                     </span>
-                    <span className="text-[#00F0FF] group-hover:translate-x-1 transition-transform">
+                    <span className="text-neutral-500 group-hover:text-white group-hover:translate-x-1 transition-transform">
                       →
                     </span>
                   </div>
-                  <h4 className="mt-4 text-xl font-bold text-white group-hover:text-[#00F0FF] transition-colors">
+                  <h4 className="mt-4 text-xl font-bold text-white group-hover:text-neutral-200 transition-colors">
                     {tool.name}
                   </h4>
                   <p className="mt-2 text-xs text-neutral-400 leading-relaxed">
