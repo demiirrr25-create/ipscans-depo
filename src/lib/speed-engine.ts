@@ -42,7 +42,7 @@ export type SpeedResult = {
 };
 
 export type SpeedUpdate = {
-  phase: 'init' | 'latency' | Direction | 'complete';
+  phase: 'init' | 'latency' | Direction | 'download_complete' | 'upload_complete' | 'complete';
   mbps: number;
   seconds: number;
   ping?: number;
@@ -51,6 +51,8 @@ export type SpeedUpdate = {
   trace?: Trace;
   server?: ServerInfo;
   client?: ClientInfo;
+  downloadFinal?: number;
+  uploadFinal?: number;
 };
 
 // Endpoints: Prefer local API endpoints, fallback to high-capacity CDN edge if needed
@@ -228,7 +230,7 @@ export async function runSpeedTest(
   const idleJitter = jitter(idle);
 
   // 3. Transfer phases: Download then Upload
-  async function transfer(direction: Direction) {
+  async function transfer(direction: Direction, priorDownload?: number) {
     const controller = new AbortController();
     const phaseSignal = AbortSignal.any([signal, controller.signal]);
     const phaseStart = performance.now();
@@ -246,8 +248,10 @@ export async function runSpeedTest(
       phase: direction,
       mbps: 0,
       seconds: (phaseStart - start) / 1000,
+      progress: 0,
       server: info.server,
       client: info.client,
+      downloadFinal: priorDownload,
     });
 
     const count = (delta: number) => {
@@ -259,7 +263,21 @@ export async function runSpeedTest(
 
     const ticker = setInterval(() => {
       const now = performance.now();
-      if (now <= measuredStart) return;
+      const elapsedPhase = Math.max(0, now - phaseStart);
+      const phaseProgress = Math.min(1, Math.max(0, elapsedPhase / (WARMUP + DURATION)));
+
+      if (now <= measuredStart) {
+        update({
+          phase: direction,
+          mbps: 0,
+          seconds: (now - start) / 1000,
+          progress: phaseProgress * 0.15,
+          server: info.server,
+          client: info.client,
+          downloadFinal: priorDownload,
+        });
+        return;
+      }
       const point = {
         seconds: (now - start) / 1000,
         mbps: ((bytes - lastBytes) * 8) / ((now - lastTime) * 1000),
@@ -272,9 +290,11 @@ export async function runSpeedTest(
         phase: direction,
         mbps: point.mbps,
         seconds: point.seconds,
+        progress: phaseProgress,
         trace: point,
         server: info.server,
         client: info.client,
+        downloadFinal: priorDownload,
       });
     }, 80);
 
@@ -383,7 +403,27 @@ export async function runSpeedTest(
   }
 
   const down = await transfer('download');
-  const up = await transfer('upload');
+  update({
+    phase: 'download_complete',
+    mbps: down.mbps,
+    downloadFinal: down.mbps,
+    progress: 1.0,
+    seconds: (performance.now() - start) / 1000,
+    server: info.server,
+    client: info.client,
+  });
+
+  const up = await transfer('upload', down.mbps);
+  update({
+    phase: 'upload_complete',
+    mbps: up.mbps,
+    downloadFinal: down.mbps,
+    uploadFinal: up.mbps,
+    progress: 1.0,
+    seconds: (performance.now() - start) / 1000,
+    server: info.server,
+    client: info.client,
+  });
 
   const packetLoss = totalLatencyProbes > 0 
     ? Math.min(100, Math.round((failures / totalLatencyProbes) * 100 * 10) / 10) 

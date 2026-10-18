@@ -5,6 +5,7 @@ import { PageShell } from "@/components/PageShell";
 import { isLocale } from "@/i18n/config";
 import { localizedAlternates } from "@/lib/seo";
 import { CopyHashButton } from "@/components/CopyHashButton";
+import { AppStoreCarousel } from "@/components/AppStoreCarousel";
 import type { Metadata } from "next";
 
 const release = "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2";
@@ -149,22 +150,37 @@ export default async function CortexPage({
           </div>
         </section>
 
-        {/* Media Preview Card */}
-        <div className="feature-media-card">
-          <div className="feature-media-card__bar">
-            <span className="feature-media-card__title">IPScans Cortex Control Center</span>
-            <span className="feature-media-card__tag">12 LOCAL + 12 VISION RULES · GEMMA</span>
-          </div>
-          <div className="feature-media-card__viewport">
-            <Image
-              src="/cortex-preview.png"
-              alt="Cortex Interface"
-              width={1265}
-              height={744}
-              className="feature-image"
-              priority
-            />
-          </div>
+        {/* 5-Second 3-Screenshot App Store Carousel */}
+        <div className="my-8">
+          <AppStoreCarousel
+            appId="cortex"
+            appName="IPScans Cortex"
+            locale={locale}
+            intervalMs={5000}
+            screenshots={[
+              {
+                id: "cortex-console",
+                label: tr ? "Cortex Konsolu" : "Cortex Console",
+                title: tr ? "Çok Kanallı RTSP Akış Denetleyicisi" : "Multi-Stream RTSP Video Controller",
+                tag: "RTSP WALL",
+                image: "/cortex-preview.png",
+              },
+              {
+                id: "cortex-rules",
+                label: tr ? "12 Yerel Kural" : "12 Local Rules",
+                title: tr ? "Gemma Vision AI & Model-Bağımsız Kural Matrisi" : "Gemma Vision AI & Model-Free Rule Matrix",
+                tag: "RULE MATRIX",
+                renderType: "cortex-rules",
+              },
+              {
+                id: "cortex-events",
+                label: tr ? "Kanıt & Webhook" : "Proof Archive",
+                title: tr ? "12s Video Kanıt Arşivi & HTTPS Webhook" : "12s Video Evidence Archive & HTTPS Webhooks",
+                tag: "EVIDENCE ARCHIVE",
+                renderType: "cortex-events",
+              },
+            ]}
+          />
         </div>
 
         {/* Trust & Security Verification Row */}

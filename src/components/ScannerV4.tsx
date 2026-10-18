@@ -1,7 +1,7 @@
 import { uiText } from "@/i18n/ui";
 import type { Locale } from "@/i18n/config";
 import { scannerApplication } from "@/content/applications";
-import { AppLiveDemo } from "./AppLiveDemo";
+import { AppStoreCarousel } from "./AppStoreCarousel";
 
 export function ScannerV4({
   locale,
@@ -104,11 +104,34 @@ export function ScannerV4({
       </div>
 
       <div className="mb-12">
-        <AppLiveDemo
+        <AppStoreCarousel
           appId="scanner"
           appName="IPscans+"
-          version="4.5.0"
           locale={locale}
+          intervalMs={5000}
+          screenshots={[
+            {
+              id: "scanner-subnet",
+              label: locale === "tr" ? "Alt Ağ Taraması" : "Subnet Sweep",
+              title: locale === "tr" ? "254 Host Gerçek Zamanlı Soket Taraması & Portlar" : "Sub-2s 254-Host Raw Socket Sweep",
+              tag: "ARP/ICMP",
+              image: "/scanner-v43-preview.png",
+            },
+            {
+              id: "scanner-topology",
+              label: locale === "tr" ? "Ağ Topolojisi" : "Topology Tree",
+              title: locale === "tr" ? "Hiyerarşik LLDP & CDP Anahtar Ağacı Haritası" : "Hierarchical LLDP/CDP Switch Tree",
+              tag: "TOPOLOGY",
+              image: "/scanner-v43-map.png",
+            },
+            {
+              id: "scanner-inspector",
+              label: locale === "tr" ? "Cihaz & ONVIF" : "Device Audit",
+              title: locale === "tr" ? "ONVIF IP Kamera ve Ağ Hizmetleri Denetimi" : "ONVIF Discovery & Deep Port Audit",
+              tag: "INSPECTOR",
+              image: "/scanner-v42-preview.png",
+            },
+          ]}
         />
       </div>
 

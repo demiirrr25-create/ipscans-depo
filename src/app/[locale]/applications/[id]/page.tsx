@@ -9,7 +9,7 @@ import { applications, platformCopy } from "@/content/applications";
 import { scannerCopy } from "@/content/scanner";
 import { PageShell } from "@/components/PageShell";
 import { localizedAlternates } from "@/lib/seo";
-import { AppLiveDemo } from "@/components/AppLiveDemo";
+import { AppStoreCarousel, type AppScreenshot } from "@/components/AppStoreCarousel";
 import { CopyHashButton } from "@/components/CopyHashButton";
 
 type Params = { params: Promise<{ locale: string; id: string }> };
@@ -258,13 +258,62 @@ export default async function ApplicationDetail({ params }: Params) {
         </div>
       </div>
 
-      {/* LIVE IN-APP VIDEO & INTERACTIVE SIMULATION DEMO */}
+      {/* 5-SECOND 3-SCREENSHOT APP STORE CAROUSEL */}
       <div className="my-10">
-        <AppLiveDemo
-          appId={isScanner ? "scanner" : "ipcast"}
+        <AppStoreCarousel
+          appId={app.id}
           appName={app.name}
-          version={app.version}
           locale={locale}
+          intervalMs={5000}
+          screenshots={
+            isScanner
+              ? [
+                  {
+                    id: "scanner-subnet",
+                    label: locale === "tr" ? "Alt Ağ Taraması" : "Subnet Sweep",
+                    title: locale === "tr" ? "254 Host Gerçek Zamanlı Soket Taraması & Portlar" : "Sub-2s 254-Host Raw Socket Sweep",
+                    tag: "ARP/ICMP",
+                    image: "/scanner-v43-preview.png",
+                  },
+                  {
+                    id: "scanner-topology",
+                    label: locale === "tr" ? "Ağ Topolojisi" : "Topology Tree",
+                    title: locale === "tr" ? "Hiyerarşik LLDP & CDP Anahtar Ağacı Haritası" : "Hierarchical LLDP/CDP Switch Tree",
+                    tag: "TOPOLOGY",
+                    image: "/scanner-v43-map.png",
+                  },
+                  {
+                    id: "scanner-inspector",
+                    label: locale === "tr" ? "Cihaz & ONVIF" : "Device Audit",
+                    title: locale === "tr" ? "ONVIF IP Kamera ve Ağ Hizmetleri Denetimi" : "ONVIF Discovery & Deep Port Audit",
+                    tag: "INSPECTOR",
+                    image: "/scanner-v42-preview.png",
+                  },
+                ]
+              : [
+                  {
+                    id: "ipcast-console",
+                    label: locale === "tr" ? "9 Haneli Konsol" : "9-Digit Console",
+                    title: locale === "tr" ? "Doğrudan STUN/UDP P2P Bağlantı Konsolu" : "Direct STUN/UDP P2P Connection Console",
+                    tag: "P2P CONSOLE",
+                    image: "/ipcast-v25-preview.png",
+                  },
+                  {
+                    id: "ipcast-stream",
+                    label: locale === "tr" ? "60 FPS Canlı Akış" : "60 FPS Stream",
+                    title: locale === "tr" ? "D3D11 Donanım Hızlandırmalı Uzak Masaüstü" : "D3D11 GPU Accelerated Remote Desktop",
+                    tag: "GPU STREAM",
+                    renderType: "ipcast-stream",
+                  },
+                  {
+                    id: "ipcast-files",
+                    label: locale === "tr" ? "Dosya Aktarımı" : "File Relay",
+                    title: locale === "tr" ? "AES-256-GCM Şifreli P2P Dosya Aktarım Tüneli" : "AES-256-GCM Encrypted P2P File Pipeline",
+                    tag: "SECURE RELAY",
+                    renderType: "ipcast-files",
+                  },
+                ]
+          }
         />
       </div>
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppLiveDemo } from "@/components/AppLiveDemo";
+import { AppStoreCarousel } from "@/components/AppStoreCarousel";
 import { PageShell } from "@/components/PageShell";
 import { lprRelease } from "@/content/lpr-release";
 import { isLocale } from "@/i18n/config";
@@ -147,11 +147,34 @@ export default async function LprProPage({ params }: Props) {
         </section>
 
         <section className="my-10">
-          <AppLiveDemo
+          <AppStoreCarousel
             appId="lpr-pro"
             appName="IPScans LPR Pro"
-            version={lprRelease.version}
             locale={locale}
+            intervalMs={5000}
+            screenshots={[
+              {
+                id: "lpr-console",
+                label: tr ? "Operatör Konsolu" : "Operator Wall",
+                title: tr ? "4K RTSP Canlı Kamera Duvarı & ONNX OCR" : "4K RTSP Live Camera Wall & ONNX OCR",
+                tag: "4K CAMERA WALL",
+                image: "/lpr-pro-preview.png",
+              },
+              {
+                id: "lpr-calib",
+                label: tr ? "Tetik Kalibrasyonu" : "Calibration",
+                title: tr ? "Tetik Çizgisi ve Plaka Bounding Box Kalibrasyonu" : "Trigger Tripwire & Bounding Box Calibration",
+                tag: "CALIBRATION",
+                renderType: "lpr-calib",
+              },
+              {
+                id: "lpr-registry",
+                label: tr ? "Sakin Kütüğü" : "Resident Log",
+                title: tr ? "SQLite Sakin Araç Kütüğü ve Bariyer Olay Günlüğü" : "SQLite Vehicle Registry & Barrier Audit",
+                tag: "BARRIER AUDIT",
+                renderType: "lpr-registry",
+              },
+            ]}
           />
         </section>
 

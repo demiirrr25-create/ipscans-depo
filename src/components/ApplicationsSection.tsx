@@ -10,7 +10,7 @@ import { applications, platformCopy, desktopRelease, scannerApplication, ipcastR
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 import { lprRelease } from "@/content/lpr-release";
 import { CopyHashButton } from "./CopyHashButton";
-import { AppLiveDemo } from "./AppLiveDemo";
+import { AppStoreCarousel, type AppScreenshot } from "./AppStoreCarousel";
 
 interface ApplicationsSectionProps {
   locale: Locale;
@@ -25,13 +25,31 @@ export function ApplicationsSection({
 }: ApplicationsSectionProps) {
   const isTr = locale === "tr";
   const copy = platformCopy[locale];
-  const [activeInteractiveTour, setActiveInteractiveTour] = useState<"scanner" | "ipcast" | "lpr-pro">("scanner");
   const [activeFilter, setActiveFilter] = useState<"all" | "desktop" | "web">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const cortexReleaseUrl = "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2/IPScans-Cortex-1.0.0-rc.2.exe";
 
-  const flagshipApps = [
+  const flagshipApps: Array<{
+    id: string;
+    name: string;
+    tagline: string;
+    description: string;
+    version: string;
+    platform: string;
+    sizeMb: string;
+    installerUrl: string;
+    portableUrl: string | null;
+    sha256: string;
+    detailUrl: string;
+    preview: string;
+    icon: string;
+    badge: string;
+    badgeColor: string;
+    capabilities: string[];
+    powershellCheck: string;
+    screenshots: AppScreenshot[];
+  }> = [
     {
       id: "scanner",
       name: "IPscans+",
@@ -58,6 +76,29 @@ export function ApplicationsSection({
         "ONE-CLICK WEB UI & PDF",
       ],
       powershellCheck: `Get-FileHash .\\IPscans-Plus-Setup.exe -Algorithm SHA256`,
+      screenshots: [
+        {
+          id: "scanner-subnet",
+          label: isTr ? "Alt Ağ Taraması" : "Subnet Sweep",
+          title: isTr ? "254 Host Gerçek Zamanlı Soket Taraması & Portlar" : "Sub-2s 254-Host Raw Socket Sweep",
+          tag: "ARP/ICMP",
+          image: "/scanner-v43-preview.png",
+        },
+        {
+          id: "scanner-topology",
+          label: isTr ? "Ağ Topolojisi" : "Topology Tree",
+          title: isTr ? "Hiyerarşik LLDP & CDP Anahtar Ağacı Haritası" : "Hierarchical LLDP/CDP Switch Tree",
+          tag: "TOPOLOGY",
+          image: "/scanner-v43-map.png",
+        },
+        {
+          id: "scanner-inspector",
+          label: isTr ? "Cihaz & ONVIF" : "Device Audit",
+          title: isTr ? "ONVIF IP Kamera ve Ağ Hizmetleri Denetimi" : "ONVIF Discovery & Deep Port Audit",
+          tag: "INSPECTOR",
+          image: "/scanner-v42-preview.png",
+        },
+      ],
     },
     {
       id: "ipcast",
@@ -85,6 +126,29 @@ export function ApplicationsSection({
         "DRAG & DROP FILE RELAY",
       ],
       powershellCheck: `Get-FileHash .\\IPCast-2.6.0-Setup.exe -Algorithm SHA256`,
+      screenshots: [
+        {
+          id: "ipcast-console",
+          label: isTr ? "9 Haneli Konsol" : "9-Digit Console",
+          title: isTr ? "Doğrudan STUN/UDP P2P Bağlantı Konsolu" : "Direct STUN/UDP P2P Connection Console",
+          tag: "P2P CONSOLE",
+          image: "/ipcast-v25-preview.png",
+        },
+        {
+          id: "ipcast-stream",
+          label: isTr ? "60 FPS Canlı Akış" : "60 FPS Stream",
+          title: isTr ? "D3D11 Donanım Hızlandırmalı Uzak Masaüstü" : "D3D11 GPU Accelerated Remote Desktop",
+          tag: "GPU STREAM",
+          renderType: "ipcast-stream",
+        },
+        {
+          id: "ipcast-files",
+          label: isTr ? "Dosya Aktarımı" : "File Relay",
+          title: isTr ? "AES-256-GCM Şifreli P2P Dosya Aktarım Tüneli" : "AES-256-GCM Encrypted P2P File Pipeline",
+          tag: "SECURE RELAY",
+          renderType: "ipcast-files",
+        },
+      ],
     },
     {
       id: "lpr-pro",
@@ -112,6 +176,29 @@ export function ApplicationsSection({
         "RESIDENT FLEET REGISTRY",
       ],
       powershellCheck: `Get-FileHash .\\${lprRelease.fileName} -Algorithm SHA256`,
+      screenshots: [
+        {
+          id: "lpr-console",
+          label: isTr ? "Operatör Konsolu" : "Operator Wall",
+          title: isTr ? "4K RTSP Canlı Kamera Duvarı & ONNX OCR" : "4K RTSP Live Camera Wall & ONNX OCR",
+          tag: "4K CAMERA WALL",
+          image: "/lpr-pro-preview.png",
+        },
+        {
+          id: "lpr-calib",
+          label: isTr ? "Tetik Kalibrasyonu" : "Calibration",
+          title: isTr ? "Tetik Çizgisi ve Plaka Bounding Box Kalibrasyonu" : "Trigger Tripwire & Bounding Box Calibration",
+          tag: "CALIBRATION",
+          renderType: "lpr-calib",
+        },
+        {
+          id: "lpr-registry",
+          label: isTr ? "Sakin Kütüğü" : "Resident Log",
+          title: isTr ? "SQLite Sakin Araç Kütüğü ve Bariyer Olay Günlüğü" : "SQLite Vehicle Registry & Barrier Audit",
+          tag: "BARRIER AUDIT",
+          renderType: "lpr-registry",
+        },
+      ],
     },
     {
       id: "cortex",
@@ -139,6 +226,29 @@ export function ApplicationsSection({
         "INSTANT HTTPS WEBHOOKS",
       ],
       powershellCheck: `Get-FileHash .\\IPScans-Cortex-1.0.0-rc.2.exe -Algorithm SHA256`,
+      screenshots: [
+        {
+          id: "cortex-console",
+          label: isTr ? "Cortex Konsolu" : "Cortex Console",
+          title: isTr ? "Çok Kanallı RTSP Akış Denetleyicisi" : "Multi-Stream RTSP Video Controller",
+          tag: "RTSP WALL",
+          image: "/cortex-preview.png",
+        },
+        {
+          id: "cortex-rules",
+          label: isTr ? "12 Yerel Kural" : "12 Local Rules",
+          title: isTr ? "Gemma Vision AI & Model-Bağımsız Kural Matrisi" : "Gemma Vision AI & Model-Free Rule Matrix",
+          tag: "RULE MATRIX",
+          renderType: "cortex-rules",
+        },
+        {
+          id: "cortex-events",
+          label: isTr ? "Kanıt & Webhook" : "Proof Archive",
+          title: isTr ? "12s Video Kanıt Arşivi & HTTPS Webhook" : "12s Video Evidence Archive & HTTPS Webhooks",
+          tag: "EVIDENCE ARCHIVE",
+          renderType: "cortex-events",
+        },
+      ],
     },
   ];
 
@@ -376,38 +486,15 @@ export function ApplicationsSection({
 
                 </div>
 
-                {/* Right Column: Realistic Window Mockup Frame */}
+                {/* Right Column: 5-Second 3-Screenshot App Store Carousel */}
                 <div className="lg:col-span-6">
-                  <Link href={app.detailUrl} className="block group/media">
-                    <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl transition-transform duration-500 group-hover/media:scale-[1.01]">
-                      
-                      {/* Window Header Bar */}
-                      <div className="flex items-center justify-between border-b border-white/10 bg-[#0B0D13] px-4 py-2.5 text-xs select-none">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F56]" />
-                          <span className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E]" />
-                          <span className="h-2.5 w-2.5 rounded-full bg-[#27C93F]" />
-                          <span className="ml-2 font-mono text-[11px] text-neutral-400 font-medium">
-                            {app.name} · v{app.version}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider">
-                          LIVE RUNTIME
-                        </span>
-                      </div>
-
-                      {/* Viewport Image */}
-                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#050608]">
-                        <Image
-                          src={app.preview}
-                          alt={app.name}
-                          width={1440}
-                          height={900}
-                          className="h-full w-full object-cover object-top transition-transform duration-700 group-hover/media:scale-105"
-                        />
-                      </div>
-                    </div>
-                  </Link>
+                  <AppStoreCarousel
+                    appId={app.id}
+                    appName={app.name}
+                    screenshots={app.screenshots}
+                    locale={locale}
+                    intervalMs={5000}
+                  />
                 </div>
 
               </div>
@@ -416,93 +503,12 @@ export function ApplicationsSection({
         </section>
       )}
 
-      {/* 4. Interactive Application Tour Preview Section */}
-      <section
-        aria-label="Interactive Product Tour"
-        className="rounded-3xl border border-white/[0.08] bg-[#07090E] p-6 sm:p-10"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/[0.08] pb-6">
-          <div>
-            <span className="font-mono text-xs tracking-widest text-[#00F0FF] uppercase">
-              02 / {isTr ? "İNTERAKTİF UYGULAMA SİMÜLASYONU" : "INTERACTIVE APPLICATION SIMULATION"}
-            </span>
-            <h3 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              {isTr ? "İndirmeden Önce Arayüzü Canlı Deneyimleyin" : "Test-Drive The Native Interfaces Live"}
-            </h3>
-            <p className="mt-1 text-sm text-neutral-400">
-              {isTr
-                ? "Masaüstü uygulamalarımızın gerçek ekran akışlarını ve telemetri motorunu tarayıcınızda adım adım inceleyin."
-                : "Step through authentic workflow views and telemetry data before launching on your PC."}
-            </p>
-          </div>
-
-          {/* App Switcher Tabs */}
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 p-1">
-            <button
-              type="button"
-              onClick={() => setActiveInteractiveTour("scanner")}
-              className={`cursor-pointer rounded-lg px-4 py-2 font-mono text-xs transition-colors ${
-                activeInteractiveTour === "scanner"
-                  ? "bg-white text-black font-bold"
-                  : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              IPscans+
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveInteractiveTour("ipcast")}
-              className={`cursor-pointer rounded-lg px-4 py-2 font-mono text-xs transition-colors ${
-                activeInteractiveTour === "ipcast"
-                  ? "bg-white text-black font-bold"
-                  : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              IPCast
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveInteractiveTour("lpr-pro")}
-              className={`cursor-pointer rounded-lg px-4 py-2 font-mono text-xs transition-colors ${
-                activeInteractiveTour === "lpr-pro"
-                  ? "bg-white text-black font-bold"
-                  : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              LPR Pro
-            </button>
-          </div>
-        </div>
-
-        {/* The Live Interactive Demo Component */}
-        <div className="mt-8">
-          <AppLiveDemo
-            appId={activeInteractiveTour}
-            appName={
-              activeInteractiveTour === "scanner"
-                ? "IPscans+"
-                : activeInteractiveTour === "ipcast"
-                ? "IPCast"
-                : "IPScans LPR Pro"
-            }
-            version={
-              activeInteractiveTour === "scanner"
-                ? desktopRelease.scanner.version
-                : activeInteractiveTour === "ipcast"
-                ? ipcastRelease.version
-                : lprRelease.version
-            }
-            locale={locale}
-          />
-        </div>
-      </section>
-
-      {/* 5. Separate Zero-Install Web Diagnostics Section */}
+      {/* 4. Separate Zero-Install Web Diagnostics Section */}
       {(activeFilter === "all" || activeFilter === "web") && (
         <section aria-label="Browser Diagnostic Tools" className="pt-6">
           <div className="border-b border-white/[0.08] pb-6 mb-8">
             <span className="font-mono text-xs tracking-widest text-[#00FF9D] uppercase">
-              03 / {isTr ? "TARAYICI TANI ARAÇLARI" : "BROWSER DIAGNOSTIC TOOLS"}
+              02 / {isTr ? "TARAYICI TANI ARAÇLARI" : "BROWSER DIAGNOSTIC TOOLS"}
             </span>
             <h3 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
               {isTr ? "Kurulum Gerektirmeyen Çevrimiçi Tanı Araçları" : "Zero-Install Web Diagnostics"}

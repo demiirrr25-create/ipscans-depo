@@ -79,13 +79,20 @@ export function SpeedTest({
   locale: Locale;
 }) {
   const gradientId = useId();
+  const isTr = locale === "tr";
   const [update, setUpdate] = useState<SpeedUpdate | null>(null);
   const [result, setResult] = useState<SpeedResult | null>(null);
   const [tracePoints, setTracePoints] = useState<Trace[]>([]);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState("");
   const [showHistory, setShowHistory] = useState(false);
-  const [peakMbps, setPeakMbps] = useState(0);
+
+  // Persistent phase results so download NEVER disappears when upload starts
+  const [lockedDownload, setLockedDownload] = useState<number | null>(null);
+  const [lockedUpload, setLockedUpload] = useState<number | null>(null);
+  const [livePing, setLivePing] = useState<number | null>(null);
+  const [liveJitter, setLiveJitter] = useState<number | null>(null);
+  const [stageProgress, setStageProgress] = useState(0);
 
   const [history, setHistory] = useState<TestHistoryItem[]>(() => {
     if (typeof window === "undefined") return [];
@@ -112,6 +119,11 @@ export function SpeedTest({
       const j = parseFloat(params.get("jit") || "");
       if (!isNaN(d) && !isNaN(u) && !isNaN(p)) {
         queueMicrotask(() => {
+          setLockedDownload(d);
+          setLockedUpload(u);
+          setLivePing(p);
+          setLiveJitter(isNaN(j) ? null : j);
+          setStageProgress(100);
           setResult({
             download: d,
             upload: u,
@@ -147,7 +159,11 @@ export function SpeedTest({
     setUpdate(null);
     setResult(null);
     setTracePoints([]);
-    setPeakMbps(0);
+    setLockedDownload(null);
+    setLockedUpload(null);
+    setLivePing(null);
+    setLiveJitter(null);
+    setStageProgress(0);
     setRunning(true);
 
     const session = new AbortController();
@@ -157,17 +173,53 @@ export function SpeedTest({
       const measured = await runSpeedTest(session.signal, (val) => {
         if (session.signal.aborted) return;
         setUpdate(val);
-        if (val.mbps > 0) {
-          setPeakMbps((prev) => Math.max(prev, val.mbps));
-        }
+
         if (val.server) setServerInfo(val.server);
         if (val.client) setClientInfo(val.client);
+
+        if (val.ping != null) setLivePing(val.ping);
+        if (val.jitter != null) setLiveJitter(val.jitter);
+
+        // Track and lock intermediate download speed immediately upon completion
+        if (val.downloadFinal != null && val.downloadFinal > 0) {
+          setLockedDownload(val.downloadFinal);
+        }
+
+        // Track and lock intermediate upload speed immediately upon completion
+        if (val.uploadFinal != null && val.uploadFinal > 0) {
+          setLockedUpload(val.uploadFinal);
+        }
+
+        // Calibrated smooth progression (0% -> 100%)
+        if (val.phase === "init") {
+          setStageProgress(3);
+        } else if (val.phase === "latency") {
+          const pingProg = val.progress ?? 0.5;
+          setStageProgress(Math.min(20, Math.max(3, 3 + pingProg * 17)));
+        } else if (val.phase === "download") {
+          const downProg = val.progress ?? 0;
+          setStageProgress(Math.min(60, Math.max(20, 20 + downProg * 40)));
+        } else if (val.phase === "download_complete") {
+          setStageProgress(60);
+        } else if (val.phase === "upload") {
+          const upProg = val.progress ?? 0;
+          setStageProgress(Math.min(98, Math.max(60, 60 + upProg * 38)));
+        } else if (val.phase === "upload_complete" || val.phase === "complete") {
+          setStageProgress(100);
+        }
+
         if (val.trace) {
           setTracePoints((prev) => [...prev.slice(-80), val.trace!]);
         }
       });
 
+      setLockedDownload(measured.download);
+      setLockedUpload(measured.upload);
+      setLivePing(measured.idle);
+      setLiveJitter(measured.jitter);
+      setStageProgress(100);
       setResult(measured);
+
       if (measured.server) setServerInfo(measured.server);
       if (measured.client) setClientInfo(measured.client);
 
@@ -211,7 +263,17 @@ export function SpeedTest({
     }
   }
 
-  const liveMbps = update ? update.mbps : result ? result.download : null;
+  // Active speedometer readout
+  const liveGaugeValue = useMemo(() => {
+    if (result) return result.download;
+    if (!update) return null;
+    if (update.phase === "latency") return update.ping ?? livePing ?? 0;
+    if (update.phase === "download") return update.mbps;
+    if (update.phase === "download_complete") return lockedDownload ?? update.mbps;
+    if (update.phase === "upload") return update.mbps;
+    if (update.phase === "upload_complete") return lockedUpload ?? update.mbps;
+    return update.mbps;
+  }, [result, update, livePing, lockedDownload, lockedUpload]);
 
   const bufferbloatDelta = useMemo(() => {
     if (!result) return null;
@@ -305,12 +367,16 @@ export function SpeedTest({
   const startAngle = 150; // starts bottom-left
   const totalArcLen = (2 * Math.PI * radius * sweepAngle) / 360;
 
-  // Logarithmic ratio 0 - 1000 Mbps
+  // Calibrated Logarithmic Ratio (0 to 1000 Mbps)
   const currentRatio = useMemo(() => {
-    if (!liveMbps || liveMbps <= 0) return 0;
-    const ratio = Math.log10(1 + liveMbps) / Math.log10(1 + 1000);
+    if (!liveGaugeValue || liveGaugeValue <= 0) return 0;
+    if (update?.phase === "latency") {
+      // Ping gauge ratio: 0 to 120ms range
+      return Math.min(0.25, (liveGaugeValue / 120) * 0.25);
+    }
+    const ratio = Math.log10(1 + liveGaugeValue) / Math.log10(1 + 1000);
     return Math.min(1, Math.max(0, ratio));
-  }, [liveMbps]);
+  }, [liveGaugeValue, update]);
 
   const strokeDashoffset = totalArcLen * (1 - currentRatio);
 
@@ -326,11 +392,11 @@ export function SpeedTest({
   const p2 = polarToCartesian(cx, cy, radius, startAngle + sweepAngle);
   const baseArcPath = `M ${p1.x} ${p1.y} A ${radius} ${radius} 0 1 1 ${p2.x} ${p2.y}`;
 
-  // Calculate tip indicator coordinate
+  // Tip indicator coordinate
   const currentAngle = startAngle + sweepAngle * currentRatio;
   const tipPos = polarToCartesian(cx, cy, radius, currentAngle);
 
-  // Speed scale ticks (0, 10, 50, 100, 250, 500, 1000)
+  // Speed scale ticks
   const ticks = [0, 10, 50, 100, 250, 500, 1000];
 
   // Dynamic Phase Label
@@ -339,29 +405,37 @@ export function SpeedTest({
     if (!running && result) return uiText(locale, "COMPLETE", "TAMAMLANDI");
     if (update?.phase === "latency") return uiText(locale, "LATENCY", "GECİKME");
     if (update?.phase === "download") return uiText(locale, "DOWNLOAD", "İNDİRME");
+    if (update?.phase === "download_complete") return uiText(locale, "DOWNLOAD OK", "İNDİRME TAMAM");
     if (update?.phase === "upload") return uiText(locale, "UPLOAD", "YÜKLEME");
+    if (update?.phase === "upload_complete") return uiText(locale, "UPLOAD OK", "YÜKLEME TAMAM");
     return uiText(locale, "MEASURING", "ÖLÇÜLÜYOR");
   }, [running, result, update, locale]);
 
-  // Ambient aura color based on phase
+  // Ambient aura color
   const auraColorClass = useMemo(() => {
     if (!running && !result) return "from-cyan-500/10 via-transparent to-transparent";
-    if (update?.phase === "download") return "from-[#00F0FF]/20 via-[#00F0FF]/5 to-transparent";
-    if (update?.phase === "upload") return "from-[#00FF9D]/20 via-[#00FF9D]/5 to-transparent";
-    if (update?.phase === "latency") return "from-purple-500/20 via-purple-500/5 to-transparent";
+    if (update?.phase === "download" || update?.phase === "download_complete") {
+      return "from-[#00F0FF]/25 via-[#00F0FF]/5 to-transparent";
+    }
+    if (update?.phase === "upload" || update?.phase === "upload_complete") {
+      return "from-[#00FF9D]/25 via-[#00FF9D]/5 to-transparent";
+    }
+    if (update?.phase === "latency") {
+      return "from-purple-500/20 via-purple-500/5 to-transparent";
+    }
     return "from-[#00F0FF]/15 via-[#00FF9D]/10 to-transparent";
   }, [running, result, update]);
 
   return (
-    <div className="relative mx-auto w-full max-w-5xl py-4" aria-label={dict.title}>
+    <div className="relative mx-auto w-full max-w-5xl py-4 select-none" aria-label={dict.title}>
       
-      {/* 1. Dynamic Reactive Ambient Glow radiating into the background */}
+      {/* 1. Dynamic Reactive Ambient Glow in background */}
       <div
         className={`pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 h-[520px] w-[780px] -z-10 rounded-full bg-gradient-radial ${auraColorClass} blur-3xl transition-all duration-700`}
         aria-hidden="true"
       />
 
-      {/* 2. Top Edge Telemetry HUD Bar (Single crisp monospace line) */}
+      {/* 2. Top Edge Telemetry HUD Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-5 font-mono text-xs text-neutral-400">
         <div className="flex items-center gap-3">
           <span className="relative flex h-2 w-2">
@@ -399,18 +473,18 @@ export function SpeedTest({
           <button
             type="button"
             onClick={() => setShowHistory(!showHistory)}
-            className="cursor-pointer rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-neutral-300 transition-colors hover:border-white/30 hover:text-white"
+            className="cursor-pointer rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1 text-neutral-300 transition-colors hover:border-white/30 hover:text-white"
           >
             {showHistory ? uiText(locale, "Kapat", "Kapat") : uiText(locale, "Geçmiş", "Geçmiş")} ({history.length})
           </button>
         </div>
       </div>
 
-      {/* 3. Central Telemetry Instrument (Speedometer) */}
-      <div className="relative my-8 flex flex-col items-center justify-center">
+      {/* 3. Central Telemetry Instrument & Speedometer */}
+      <div className="relative my-6 flex flex-col items-center justify-center">
         
         {/* Phase Pill */}
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-xs font-mono tracking-widest text-[#00F0FF]">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-1 text-xs font-mono tracking-widest text-[#00F0FF]">
           <span className="h-1.5 w-1.5 rounded-full bg-[#00F0FF] animate-pulse" />
           <span>{phaseLabel}</span>
         </div>
@@ -474,7 +548,7 @@ export function SpeedTest({
               strokeLinecap="round"
             />
 
-            {/* Active Luminous Sweep Arc */}
+            {/* Active Luminous Sweep Arc (Dolum Barı) */}
             <path
               d={baseArcPath}
               fill="none"
@@ -484,7 +558,7 @@ export function SpeedTest({
               strokeDasharray={totalArcLen}
               strokeDashoffset={strokeDashoffset}
               filter={`url(#arcGlow-${gradientId})`}
-              className="transition-[stroke-dashoffset] duration-150 ease-out"
+              className="transition-[stroke-dashoffset] duration-200 ease-out"
             />
 
             {/* Dynamic Traveling Head Bead */}
@@ -492,12 +566,12 @@ export function SpeedTest({
               <circle
                 cx={tipPos.x}
                 cy={tipPos.y}
-                r="6"
+                r="6.5"
                 fill="#FFFFFF"
                 stroke="#00FF9D"
                 strokeWidth="2.5"
                 filter={`url(#arcGlow-${gradientId})`}
-                className="transition-[cx,cy] duration-150 ease-out"
+                className="transition-[cx,cy] duration-200 ease-out"
               />
             )}
           </svg>
@@ -509,23 +583,42 @@ export function SpeedTest({
             </span>
 
             <div className="my-1 font-mono text-6xl sm:text-7xl font-bold tracking-tight text-white tabular-nums">
-              {liveMbps != null ? liveMbps.toFixed(1) : "0.0"}
+              {liveGaugeValue != null ? liveGaugeValue.toFixed(1) : "0.0"}
             </div>
 
             <span className="font-mono text-xs tracking-widest text-[#00F0FF] uppercase">
               {update?.phase === "latency" ? "MS" : "MBPS"}
             </span>
+          </div>
+        </div>
 
-            {peakMbps > 0 && (
-              <span className="mt-1 font-mono text-[10px] text-neutral-500">
-                Peak: {peakMbps.toFixed(1)} Mbps
-              </span>
-            )}
+        {/* 4. Optimized Stage Progress Bar (Dolum Barı 0 - 100%) */}
+        <div className="w-full max-w-md mx-auto my-3 px-4">
+          <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1.5">
+            <span className={update?.phase === "latency" ? "text-[#00F0FF] font-bold" : ""}>
+              {isTr ? "1. Gecikme" : "1. Ping"}
+            </span>
+            <span className={update?.phase === "download" || update?.phase === "download_complete" ? "text-[#00F0FF] font-bold" : ""}>
+              {isTr ? "2. İndirme" : "2. Download"}
+            </span>
+            <span className={update?.phase === "upload" || update?.phase === "upload_complete" ? "text-[#00FF9D] font-bold" : ""}>
+              {isTr ? "3. Yükleme" : "3. Upload"}
+            </span>
+            <span className={result ? "text-white font-bold" : ""}>
+              {running ? `${Math.round(stageProgress)}%` : result ? "100%" : isTr ? "Hazır" : "Ready"}
+            </span>
+          </div>
+
+          <div className="relative h-2 w-full rounded-full bg-white/[0.06] overflow-hidden p-0.5 border border-white/[0.08]">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#00F0FF] via-white to-[#00FF9D] transition-all duration-300 shadow-[0_0_12px_rgba(0,240,255,0.4)]"
+              style={{ width: `${stageProgress}%` }}
+            />
           </div>
         </div>
 
         {/* Primary Interactive Action Trigger */}
-        <div className="mt-2 flex items-center justify-center">
+        <div className="mt-3 flex items-center justify-center">
           {running ? (
             <button
               type="button"
@@ -553,7 +646,7 @@ export function SpeedTest({
         </div>
       </div>
 
-      {/* 4. Live Real-Time Throughput Oscilloscope Waveform */}
+      {/* 5. Live Real-Time Throughput Oscilloscope Waveform */}
       <div className="relative my-6 h-20 w-full overflow-hidden rounded-2xl bg-white/[0.015] border border-white/[0.06] p-2">
         {tracePoints.length > 1 ? (
           <svg viewBox="0 0 500 70" preserveAspectRatio="none" className="h-full w-full overflow-visible">
@@ -584,34 +677,40 @@ export function SpeedTest({
           </svg>
         ) : (
           <div className="flex h-full w-full items-center justify-center font-mono text-[11px] text-neutral-600">
-            {running ? "Aktif telemetri akışı çiziliyor..." : "Canlı hız dalga formu"}
+            {running ? (isTr ? "Aktif telemetri dalga formu..." : "Live telemetry waveform...") : (isTr ? "Canlı hız dalga formu" : "Live throughput waveform")}
           </div>
         )}
       </div>
 
-      {/* 5. Precision 4-Telemetry HUD Cards (Clean, borderless, zero fluff) */}
+      {/* 6. Precision 4-Telemetry HUD Cards (Persistent locked values upon phase completion) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
         
-        {/* Metric 1: Download */}
+        {/* Metric 1: Download (Locks in as soon as download ends!) */}
         <div
           className={`rounded-2xl border p-5 transition-all ${
             update?.phase === "download"
               ? "border-[#00F0FF]/60 bg-[#00F0FF]/5 shadow-[0_0_25px_rgba(0,240,255,0.15)]"
+              : lockedDownload != null
+              ? "border-[#00F0FF]/25 bg-white/[0.02]"
               : "border-white/[0.07] bg-white/[0.02]"
           }`}
         >
           <div className="flex items-center justify-between font-mono text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
               <span className="text-[#00F0FF]">↓</span>
-              <span>İNDİRME</span>
+              <span>{isTr ? "İNDİRME" : "DOWNLOAD"}</span>
             </span>
-            {update?.phase === "download" && (
+            {update?.phase === "download" ? (
               <span className="h-1.5 w-1.5 rounded-full bg-[#00F0FF] animate-pulse" />
-            )}
+            ) : lockedDownload != null ? (
+              <span className="text-[10px] text-[#00F0FF] font-semibold">{isTr ? "✓ TAMAM" : "✓ DONE"}</span>
+            ) : null}
           </div>
           <div className="mt-3 font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
             {result
               ? result.download.toFixed(1)
+              : lockedDownload != null
+              ? lockedDownload.toFixed(1)
               : update?.phase === "download"
               ? update.mbps.toFixed(1)
               : "—"}
@@ -619,26 +718,32 @@ export function SpeedTest({
           </div>
         </div>
 
-        {/* Metric 2: Upload */}
+        {/* Metric 2: Upload (Locks in as soon as upload ends!) */}
         <div
           className={`rounded-2xl border p-5 transition-all ${
             update?.phase === "upload"
               ? "border-[#00FF9D]/60 bg-[#00FF9D]/5 shadow-[0_0_25px_rgba(0,255,157,0.15)]"
+              : lockedUpload != null
+              ? "border-[#00FF9D]/25 bg-white/[0.02]"
               : "border-white/[0.07] bg-white/[0.02]"
           }`}
         >
           <div className="flex items-center justify-between font-mono text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
               <span className="text-[#00FF9D]">↑</span>
-              <span>YÜKLEME</span>
+              <span>{isTr ? "YÜKLEME" : "UPLOAD"}</span>
             </span>
-            {update?.phase === "upload" && (
+            {update?.phase === "upload" ? (
               <span className="h-1.5 w-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
-            )}
+            ) : lockedUpload != null ? (
+              <span className="text-[10px] text-[#00FF9D] font-semibold">{isTr ? "✓ TAMAM" : "✓ DONE"}</span>
+            ) : null}
           </div>
           <div className="mt-3 font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
             {result
               ? result.upload.toFixed(1)
+              : lockedUpload != null
+              ? lockedUpload.toFixed(1)
               : update?.phase === "upload"
               ? update.mbps.toFixed(1)
               : "—"}
@@ -653,15 +758,17 @@ export function SpeedTest({
               <span className="text-amber-400">⏱</span>
               <span>PING</span>
             </span>
-            {result?.jitter != null && (
-              <span className="text-[10px] text-neutral-500">±{result.jitter.toFixed(1)} ms</span>
+            {(result?.jitter != null || liveJitter != null) && (
+              <span className="text-[10px] text-neutral-500">
+                ±{(result?.jitter ?? liveJitter ?? 0).toFixed(1)} ms
+              </span>
             )}
           </div>
           <div className="mt-3 font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
             {result
               ? result.idle.toFixed(1)
-              : update?.ping != null
-              ? update.ping.toFixed(1)
+              : livePing != null
+              ? livePing.toFixed(1)
               : "—"}
             <span className="ml-1.5 text-xs font-normal text-neutral-500">ms</span>
           </div>
@@ -686,7 +793,7 @@ export function SpeedTest({
 
       </div>
 
-      {/* 6. Post-Test Controls & Export Bar */}
+      {/* 7. Post-Test Controls & Export Bar */}
       {result && (
         <div className="my-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/[0.08] pt-6">
           <div className="flex items-center gap-3">
@@ -713,14 +820,14 @@ export function SpeedTest({
         </div>
       )}
 
-      {/* 7. Toast / Notice */}
+      {/* 8. Toast / Notice */}
       {notice && (
         <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-center font-mono text-xs text-neutral-300">
           {notice}
         </div>
       )}
 
-      {/* 8. Slide-down History Drawer */}
+      {/* 9. Slide-down History Drawer */}
       {showHistory && (
         <div className="mt-8 border-t border-white/[0.08] pt-6">
           <div className="flex items-center justify-between mb-4 font-mono text-xs">
