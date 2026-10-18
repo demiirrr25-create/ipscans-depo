@@ -60,12 +60,6 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
                 "Mühendisler ve BT ekipleri için geliştirilmiş profesyonel ağ analizi, cihaz topoloji keşfi ve yüksek performanslı tanı araçları."
               )}
             </p>
-            <div className="mt-6 flex items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#1F1F1F] bg-[#0A0A0A] px-3 py-1 font-mono text-[11px] text-[#A1A1A1]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#46D39A] animate-pulse" />
-                {uiText(locale, "All Systems Operational", "Tüm Servisler Aktif")}
-              </span>
-            </div>
           </div>
 
           {/* Applications Column */}

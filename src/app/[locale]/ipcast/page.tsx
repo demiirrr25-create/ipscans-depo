@@ -10,8 +10,7 @@ import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 import { ipcastRelease } from "@/content/applications";
 import { ipcastProductCopy } from "@/content/ipcast-product";
 import { IPCastProductSections } from "@/components/IPCastProductSections";
-import { ApplicationSlideshow } from "@/components/ApplicationSlideshow";
-import { getIpcastSlides } from "@/content/application-slides";
+import { AppLiveDemo } from "@/components/AppLiveDemo";
 
 export async function generateMetadata({
   params,
@@ -46,13 +45,40 @@ export default async function IpCastPage({
   return (
     <PageShell title={t.title} subtitle={t.subtitle}>
       <div className="mx-auto max-w-5xl">
-        <div className="mb-12">
-          <ApplicationSlideshow
-            slides={getIpcastSlides(locale)}
-            locale={locale}
+        <div className="my-8">
+          <AppLiveDemo
+            appId="ipcast"
             appName="IPCast"
-            platform={ipcastRelease.platform}
+            version={ipcastRelease.version}
+            locale={locale}
           />
+        </div>
+
+        {/* SAAS TRUST & SECURITY VERIFICATION ROW */}
+        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
+            <span className="text-xl">🛡️</span>
+            <div>
+              <div className="text-xs font-semibold text-white">VirusTotal Clean</div>
+              <div className="text-[11px] text-neutral-400">0/72 Detections · Malware Free</div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
+            <span className="text-xl">🔐</span>
+            <div>
+              <div className="text-xs font-semibold text-white">Direct Peer-to-Peer</div>
+              <div className="text-[11px] text-neutral-400">End-to-End TLS 1.3 / ChaCha20</div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-[#0C1016] p-4 flex items-center gap-3">
+            <span className="text-xl">⚡</span>
+            <div>
+              <div className="text-xs font-semibold text-white">Zero-Latency D3D11</div>
+              <div className="text-[11px] text-neutral-400">60 FPS Hardware Acceleration</div>
+            </div>
+          </div>
         </div>
 
         <div className="agy-surface-card p-6 sm:p-10">

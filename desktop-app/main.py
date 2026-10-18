@@ -198,11 +198,10 @@ def main() -> None:
             write_pdf([Device('192.0.2.1', custom_name='Kapı kamerası', open_ports=[443])], pdf, lang='tr')
             if not pdf.read_bytes().startswith(b'%PDF-') or pdf.stat().st_size < 1000:
                 raise RuntimeError('Packaged PDF export failed')
-        from app.ui.splash_screen import IPScansSplash
-        splash = IPScansSplash("IPscans+", "HIGH PERFORMANCE NETWORK INTELLIGENCE")
-        splash.set_progress(0.4, "Probing network interfaces...")
-        splash.grab()
-        splash.close()
+        from app.ui.modern_welcome import ModernWelcomeDialog
+        welcome = ModernWelcomeDialog(DEFAULT_LANGUAGE)
+        welcome.grab()
+        welcome.close()
         wizard = OnboardingWizard(["language", "terms", "privacy"], DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()  # paints every step, not just the first one shown
@@ -214,7 +213,7 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        _run_onboarding_then_show_main_window(app, app_icon)
+        _run_welcome_then_show_main_window(app, app_icon)
     except Exception:
         sys.excepthook(*sys.exc_info())
         app.quit()
@@ -222,44 +221,30 @@ def main() -> None:
     sys.exit(app.exec())
 
 
-def _is_oobe_needed() -> bool:
-    from PyQt6.QtCore import QSettings
-    settings = QSettings("ipscans", "NetworkScanner")
-    if not settings.value("oobe_v5_completed", False, type=bool):
-        return True
-    return bool(_pending_onboarding_steps())
+def _run_welcome_then_show_main_window(app: QApplication, app_icon) -> None:
+    from app.ui.modern_welcome import ModernWelcomeDialog, is_first_run
 
-
-def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
+    force_welcome = (
+        "--welcome" in sys.argv
+        or "--first-run" in sys.argv
+        or "--reset-welcome" in sys.argv
+        or "--oobe" in sys.argv
+        or "--wizard" in sys.argv
+    )
+    needs_welcome = force_welcome or is_first_run()
     language = get_saved_language() or DEFAULT_LANGUAGE
-    no_splash = "--no-splash" in sys.argv
+
+    if needs_welcome:
+        dialog = ModernWelcomeDialog(language)
+        dialog.setWindowIcon(app_icon)
+        dialog.exec()
+        language = get_saved_language() or DEFAULT_LANGUAGE
 
     window = MainWindow(language)
     window.setWindowIcon(app_icon)
+    window.show()
     app.window_ref = window
-
-    if no_splash:
-        window.show()
-        _log("Main window shown OK (--no-splash)")
-        return
-
-    from app.ui.win11_oobe import Win11OOBEWindow
-
-    force_oobe = "--oobe" in sys.argv or "--wizard" in sys.argv
-    needs_oobe = force_oobe or _is_oobe_needed()
-    mode = "oobe" if needs_oobe else "splash"
-
-    oobe = Win11OOBEWindow(
-        app_name="IPscans+",
-        edition_label="HIGH PERFORMANCE NETWORK INTELLIGENCE",
-        mode=mode,
-        language=language,
-        target_window=window,
-    )
-    oobe.showFullScreen()
-
-    # Win11OOBEWindow autonomously presents Hello -> Showcase/Terms -> 6.5s Launch sequence
-    _log("Main window scheduled to show OK")
+    _log("Main window shown OK")
 
 
 if __name__ == "__main__":

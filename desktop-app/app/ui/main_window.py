@@ -120,19 +120,19 @@ class MainWindow(QWidget):
         self.export_button.clicked.connect(self._export)
         heading.addWidget(self.export_button)
 
-        self.tour_btn = QPushButton(self._v4("Overview", "Tanıtım"), objectName="TourButton")
+        self.tour_btn = QPushButton(self._v4("Info & Guide", "Rehber & Bilgi"), objectName="TourButton")
+        self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.tour_btn.clicked.connect(self._open_feature_tour)
-        self.tour_btn.setVisible(False)
+        self.tour_btn.setVisible(True)
+        heading.addWidget(self.tour_btn)
 
         body.addLayout(heading)
-        self.welcome_stage = QWidget(self)
-        self.welcome_stage.setVisible(False)
 
         # 2. Consolidated Ultra-Clean Obsidian Command Deck
         self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
-        scan.setContentsMargins(14, 10, 14, 10)
-        scan.setSpacing(0)
+        scan.setContentsMargins(16, 12, 16, 12)
+        scan.setSpacing(8)
 
         cmd_row = QHBoxLayout()
         cmd_row.setSpacing(8)
@@ -160,15 +160,19 @@ class MainWindow(QWidget):
         cmd_row.addWidget(self.filter_edit, stretch=1)
 
         self.columns_button = QPushButton(t(self.lang, "columns"))
+        self.columns_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.columns_button.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
-        self.columns_button.setVisible(False)
+        cmd_row.addWidget(self.columns_button)
 
         self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
+        self.conflicts_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.conflicts_button.clicked.connect(self._show_conflicts)
-        self.conflicts_button.setVisible(False)
+        cmd_row.addWidget(self.conflicts_button)
 
         self.scan_btn = QPushButton(t(self.lang, "start_scan"), objectName="PrimaryButton")
         self.stop_btn = QPushButton(t(self.lang, "stop_scan"))
+        self.scan_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.stop_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.scan_btn.clicked.connect(self._start_scan)
         self.stop_btn.clicked.connect(self._stop_scan)
         self.stop_btn.setEnabled(False)
@@ -177,15 +181,15 @@ class MainWindow(QWidget):
         scan.addLayout(cmd_row)
 
         sub_row = QHBoxLayout()
+        sub_row.setContentsMargins(2, 4, 2, 2)
         self.adapter_details = QLabel(t(self.lang, "detecting_adapter"), objectName="SubtitleText")
         self.range_estimate = QLabel(t(self.lang, "range_hint"), objectName="SubtitleText")
         self.summary_label = QLabel(objectName="ResultsHeading")
         self.summary_label.setWordWrap(True)
-        self.adapter_details.setVisible(False)
-        self.range_estimate.setVisible(False)
-        self.summary_label.setVisible(False)
         sub_row.addWidget(self.adapter_details)
+        sub_row.addSpacing(16)
         sub_row.addWidget(self.summary_label)
+        sub_row.addStretch(1)
         sub_row.addWidget(self.range_estimate)
         scan.addLayout(sub_row)
 
@@ -363,15 +367,9 @@ class MainWindow(QWidget):
             self.network_map.set_filter_text(text)
 
     def _open_feature_tour(self) -> None:
-        from app.ui.win11_oobe import Win11OOBEWindow
-        oobe = Win11OOBEWindow(
-            app_name="IPscans+",
-            edition_label="HIGH PERFORMANCE NETWORK INTELLIGENCE",
-            mode="oobe",
-            language=self.lang,
-            parent=self,
-        )
-        oobe.showFullScreen()
+        from app.ui.modern_welcome import ModernWelcomeDialog
+        dialog = ModernWelcomeDialog(self.lang, parent=self)
+        dialog.exec()
 
     def _start_scan(self) -> None:
         if self._worker and self._worker.isRunning() or self._node_worker and self._node_worker.isRunning():
