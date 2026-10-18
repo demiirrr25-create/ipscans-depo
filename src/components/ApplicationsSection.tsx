@@ -37,14 +37,14 @@ export function ApplicationsSection({
     {
       id: "cortex",
       name: "IPScans Cortex",
-      description: locale === "tr" ? "RTSP kameralar, doğal dille olay kuralları ve yerel AI analizi. 12 yerel kural ve tek tuşla Gemma. V1 sürüm adayı." : "RTSP cameras, natural-language event rules and local vision AI. 12 local rules and one-click Gemma. V1 release candidate.",
+      description: locale === "tr" ? "RTSP kameralar, doğal dille olay kuralları ve yerel AI analizi. 12 yerel + 12 görsel şablon, sürekli RTSP ve bağlı model durumu. V1 sürüm adayı." : "RTSP cameras, natural-language event rules and local vision AI. 12 local rules and one-click Gemma. V1 release candidate.",
       href: `/${locale}/cortex`,
       category: "desktop",
       icon: "/cortex-mark.svg",
       preview: "/cortex-preview.png",
-      version: "1.0.0-rc.1 RC",
+      version: "1.0.0-rc.2 RC",
       platform: "Windows 10/11 · x64",
-      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.1/IPScans-Cortex-1.0.0-rc.1.exe",
+      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2/IPScans-Cortex-1.0.0-rc.2.exe",
     },
     {
       id: "lpr-pro",

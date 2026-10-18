@@ -5,8 +5,8 @@ import math
 from PIL import Image, ImageChops, ImageFilter, ImageStat
 
 CATALOG = [
-    ('lights_off', 'Aydınlatma', 'Işık kapandı', 'Önce aydınlık referans öğrenir; belirgin kararmayı doğrular.', 45, 9),
-    ('lights_on', 'Aydınlatma', 'Işık açıldı', 'Önce karanlık referans öğrenir; aydınlanmayı doğrular.', 100, 9),
+    ('lights_off', 'Aydınlatma', 'Işık kapandı', 'Önce aydınlık referans öğrenir; belirgin kararmayı doğrular.', 45, 2),
+    ('lights_on', 'Aydınlatma', 'Işık açıldı', 'Önce karanlık referans öğrenir; aydınlanmayı doğrular.', 100, 2),
     ('darkness', 'Aydınlatma', 'Uzun süre karanlık', 'Başlangıçtan itibaren düşük parlaklığı izler.', 40, 60),
     ('overexposure', 'Aydınlatma', 'Aşırı aydınlık', 'Parlama veya yüksek pozlama olasılığını bildirir.', 225, 15),
     ('motion', 'Hareket ve bölge', 'Bölgede hareket', 'Ardışık karelerde değişen piksel oranını izler; insan/nesne ayırmaz.', 8, 6),
@@ -21,13 +21,20 @@ CATALOG = [
 TEMPLATES = [{'kind': k, 'category': c, 'name': n, 'description': d, 'sensitivity': s, 'duration': t} for k,c,n,d,s,t in CATALOG]
 KINDS = {t['kind'] for t in TEMPLATES}
 
+def repair_light_rule(rule):
+    """Repair only exact shipped light templates, never arbitrary user prose."""
+    known={'Önce aydınlık referans öğrenir; belirgin kararmayı doğrular.', 'Aydınlık ortam belirgin şekilde karardığında ve karanlık art arda doğrulandığında bildir.'}
+    if rule.get('kind','vision')=='vision' and rule.get('prompt','').strip() in known and rule.get('name','').strip() in ('Işık kapandı','Ortamdaki ışık kapandı'):
+        return {**rule,'kind':'lights_off','duration':2,'sensitivity':45,'dark':45,'drop':.45,'hold':3,'repairedLightTemplate':True}
+    return rule
+
 def validate(d):
     kind = d.get('kind', 'vision')
     if kind not in KINDS | {'vision'}: raise ValueError('Kural türü geçersiz.')
     template = next((t for t in TEMPLATES if t['kind'] == kind), {})
     duration = float(d.get('duration', template.get('duration', 9)))
     sensitivity = float(d.get('sensitivity', template.get('sensitivity', 8)))
-    if not math.isfinite(duration) or not 3 <= duration <= 86400: raise ValueError('Doğrulama süresi 3–86400 saniye olmalı.')
+    if not math.isfinite(duration) or not 0.5 <= duration <= 86400: raise ValueError('Doğrulama süresi 0.5–86400 saniye olmalı.')
     limit = 255 if kind in ('lights_off','lights_on','darkness','overexposure') else 100
     if not math.isfinite(sensitivity) or not 0 <= sensitivity <= limit: raise ValueError(f'Eşik 0–{limit} aralığında olmalı.')
     roi = [float(d.get(key, value)) for key,value in zip(('x','y','width','height'),(0,0,100,100))]

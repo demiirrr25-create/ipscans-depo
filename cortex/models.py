@@ -3,11 +3,53 @@ import base64
 import io
 import json
 import threading
+import time
 import urllib.request
 from PIL import Image
 
 MODEL='gemma3:4b'
 BASE='http://127.0.0.1:11434'
+
+VISION_TEMPLATES = [
+    {'id':'cat','name':'Kedi görüldü','category':'Hayvanlar','prompt':'Son karede açıkça görülen canlı bir kedi varsa bildir. Oyuncak, resim ve belirsiz şekilleri kedi sayma.'},
+    {'id':'dog','name':'Köpek görüldü','category':'Hayvanlar','prompt':'Son karede açıkça görülen canlı bir köpek varsa bildir. Oyuncak ve belirsiz şekillerde eşleşme verme.'},
+    {'id':'bird','name':'Kuş görüldü','category':'Hayvanlar','prompt':'Son karede açıkça görülen bir kuş varsa bildir.'},
+    {'id':'leaves','name':'Yaprak hareketi','category':'Doğa ve hava','prompt':'Kareler arasında bitki veya ağaç yapraklarının hareketi açıkça görülüyor ve son karelerde sürüyorsa bildir. Tüm görüntünün kaymasını yaprak hareketi sayma.'},
+    {'id':'rain','name':'Görünür yağmur','category':'Doğa ve hava','prompt':'Son karelerde düşen yağmur damlaları veya yağışın doğrudan görsel kanıtı açıkça varsa bildir. Sadece ıslak zemin, bulut veya karanlık yağmur kanıtı değildir.'},
+    {'id':'snow','name':'Görünür kar yağışı','category':'Doğa ve hava','prompt':'Son karelerde havada düşen kar taneleri açıkça görülüyorsa bildir. Yerdeki kar tek başına devam eden yağış kanıtı değildir.'},
+    {'id':'lens_water','name':'Lens üzerinde damla','category':'Kamera müdahalesi','prompt':'Son karede kamera lensi/camı üzerindeki su damlaları görüntüyü belirgin bozuyorsa bildir. Uzaktaki nesneleri damla sayma.'},
+    {'id':'tamper','name':'Kameraya fiziksel müdahale','category':'Kamera müdahalesi','prompt':'Son karelerde bir el veya nesne doğrudan kameraya yaklaşıp lensi kapatıyor ya da görüşü fiziksel olarak engelliyorsa bildir. Normal geçişi müdahale sayma; niyet çıkarımı yapma.'},
+    {'id':'person','name':'Bölgede insan','category':'Alan ve nesne','prompt':'Seçili görüntü bölgesinin son karesinde açıkça bir insan varsa bildir. Fotoğraf, ekran görüntüsü veya belirsiz gölgeyi insan sayma.'},
+    {'id':'vehicle','name':'Bölgede araç','category':'Alan ve nesne','prompt':'Seçili bölgenin son karesinde açıkça bir motorlu araç varsa bildir.'},
+    {'id':'blocked_exit','name':'Geçiş alanında engel','category':'Alan ve nesne','prompt':'Seçili geçiş/kapı bölgesinin son karesinde yolu belirgin şekilde kapatan fiziksel bir nesne varsa bildir. Bölge seçiminin gerçekten geçiş yolunu kapsaması gerekir.'},
+    {'id':'litter','name':'Asansörde çöp bırakılması','category':'Alan ve nesne','prompt':'Karelerde bir kişinin asansör zeminine çöp veya poşet bırakıp ayrıldığı ve son karede nesnenin yerde kaldığı açıkça görülüyorsa bildir. Sadece önceden duran nesne yeterli değildir.'},
+]
+
+class Health:
+    """Probe asynchronously so unavailable Ollama never blocks panel/local rules."""
+    def __init__(self):
+        self.lock=threading.Lock();self.thread=None;self.checked=0
+        self.state={'phase':'checking','model':'','message':'Ollama kontrol ediliyor…'}
+    def status(self,model,force=False):
+        with self.lock:
+            if (force or model!=self.state['model'] or time.monotonic()-self.checked>10) and not (self.thread and self.thread.is_alive()):
+                if model!=self.state['model']:
+                    self.state={'phase':'checking','model':model,'message':'Ollama kontrol ediliyor…'}
+                self.thread=threading.Thread(target=self.probe,args=(model,),daemon=True);self.thread.start()
+            return dict(self.state)
+    def probe(self,model):
+        phase='offline';message='Ollama bağlantısı yok. Ollama’yı açın.'
+        try:
+            with request('tags',timeout=3) as response: installed=json.load(response).get('models',[])
+            names={m.get('name',m.get('model','')) for m in installed}
+            if model not in names and model+':latest' not in names:
+                phase='missing';message='Ollama bağlı; seçili model kurulu değil.'
+            else:
+                with request('show',{'model':model},timeout=3) as response: info=json.load(response)
+                if 'vision' in info.get('capabilities',[]):phase='connected';message='Ollama bağlı · '+model+' · Görsel model kullanılabilir'
+                else:phase='unsupported';message='Ollama bağlı; seçili model görüntü desteklemiyor.'
+        except Exception:pass
+        with self.lock:self.state={'phase':phase,'model':model,'message':message};self.checked=time.monotonic()
 
 def request(endpoint, body=None, timeout=10):
     return urllib.request.urlopen(urllib.request.Request(BASE+'/api/'+endpoint, None if body is None else json.dumps(body).encode(), {'Content-Type':'application/json'}),timeout=timeout)

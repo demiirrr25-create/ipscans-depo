@@ -118,6 +118,10 @@ class Tests(unittest.TestCase):
   with patch.object(s.INSTALLER,'cancel') as cancel:
    self.request('/api/model-cancel',{});cancel.assert_called_once()
   state=json.loads(self.request('/api/state')[1]);self.assertEqual(len(state['templates']),12);self.assertIn('phase',state['installer'])
+ def test_known_light_template_cannot_be_saved_as_vision(self):
+  self.request('/api/cameras',{'name':'Test','url':'rtsp://192.0.2.1/stream'})
+  self.request('/api/rules',{'camera':s.STATE['cameras'][0]['id'],'name':'Işık kapandı','prompt':'Önce aydınlık referans öğrenir; belirgin kararmayı doğrular.','kind':'vision','threshold':.8,'cooldown':120})
+  self.assertEqual(s.STATE['rules'][0]['kind'],'lights_off');self.assertEqual(s.STATE['rules'][0]['duration'],2)
  def test_invalid_rule(self):
   with self.assertRaises(urllib.error.HTTPError):self.request('/api/rules',{'camera':'missing','name':'x','prompt':'x','threshold':.8,'cooldown':120})
  def test_invalid_webhook(self):
