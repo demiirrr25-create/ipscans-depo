@@ -20,7 +20,7 @@ export function ToolRenderer({
 }) {
   const navBar = (
     <nav
-      className="mx-auto mb-8 flex max-w-fit flex-wrap items-center justify-center gap-1 rounded-full border border-[#1F1F1F] bg-[#0A0A0A] p-1.5 text-xs shadow-lg"
+      className="mx-auto mb-8 flex max-w-fit flex-wrap items-center justify-center gap-1 rounded-full border border-white/[0.08] bg-black/60 backdrop-blur-md p-1.5 text-xs shadow-2xl"
       aria-label={uiText(locale, "Browser diagnostic tools", "Tarayıcı tanı araçları")}
     >
       {toolKeys.map((key) => {

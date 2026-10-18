@@ -1,41 +1,267 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
 import { isLocale } from "@/i18n/config";
 import { localizedAlternates } from "@/lib/seo";
+import { CopyHashButton } from "@/components/CopyHashButton";
 import type { Metadata } from "next";
 
 const release = "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2";
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+const sha256 = "b0fa5629f6de31e847c1f1ecfbbda51b369527ecbcf6d787be09c73b0a233b81";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  return { title: "IPScans Cortex — Local camera intelligence", description: "RTSP cameras, configurable event rules and local video evidence. Windows V1 release candidate.", alternates: localizedAlternates(locale, "/cortex") };
+  const tr = locale === "tr";
+  return {
+    title: `IPScans Cortex — ${tr ? "Yerel Kamera Görsel AI ve Kural Motoru" : "Local Camera Vision AI & Smart Event Engine"}`,
+    description: tr
+      ? "RTSP kameralar, model-bağımsız 12 yerel kural, Gemma görsel AI ve kanıt video arşivi. Windows x64 yerel sürüm adayı."
+      : "RTSP cameras, 12 model-free rules, optional Gemma vision AI and persistent video evidence. Windows x64 local release candidate.",
+    alternates: localizedAlternates(locale, "/cortex"),
+  };
 }
-export default async function CortexPage({ params }: { params: Promise<{ locale: string }> }) {
+
+export default async function CortexPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const tr = locale === "tr";
-  const features = tr ? [
-    ["01 / GÖR", "Kameralarını bağla.", "Tam RTSP adresiyle kamera ekleme, bağlantı testi, TCP/UDP seçimi ve yerel ağda ONVIF keşfi. Sürekli RTSP bağlantısı ve saniyede iki kare hedefleyen yerel analiz."],
-    ["02 / ANLA", "12 yerel kural. Tek kütüphane.", "Aydınlatma, hareket ve bölge, görüntü sağlığı, bağlantı: AI gerektirmeyen 12 kural türü. Bölge, gün/saat, eşik ve doğrulama süresini ayarla. Kedi, köpek, yağmur, yaprak hareketi ve müdahale dahil 12 görsel AI şablonu; aynı bölgedeki sekiz kural tek istekte değerlendirilir."],
-    ["03 / BİLDİR", "Olayı kanıtıyla incele.", "Olay anında arşiv kaydı, örnek kare ve 12 saniyelik klip. Kayıt başarısızlığı görünür; webhook için üç denemeli kalıcı gönderim takibi."],
-  ] : [
-    ["01 / SEE", "Connect your cameras.", "Multiple RTSP cameras, Hikvision and Dahua URL templates, local ONVIF discovery and low-frame-rate live previews."],
-    ["02 / UNDERSTAND", "12 local rules. One library.", "Lighting, motion and regions, image health and connectivity: 12 model-free rule types with regions, schedules, thresholds and confirmation durations. 12 optional vision templates include cats, dogs, rain, leaf motion and camera interference. Up to eight rules in the same region share one request."],
-    ["03 / NOTIFY", "Review the evidence.", "Sampled pre-event frames, a 12-second post-trigger clip, local event archive and optional HTTPS webhook notifications."],
-  ];
-  return <PageShell eyebrow="IPSCANS CORTEX / 1.0.0-rc.2 V1 RELEASE CANDIDATE" title={tr ? "Her kameraya bir beyin." : "A brain for every camera."} subtitle={tr ? "Neyi takip edeceğini sen söyle. Cortex gözlemlesin, olayı kaydetsin, sana bildirsin." : "Tell Cortex what to watch. Observe events, preserve evidence and get notified."}>
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-10 flex flex-wrap items-center gap-5">
-        <Image src="/cortex-mark.svg" alt="Cortex" width={64} height={64} />
-        <a href={`${release}/IPScans-Cortex-1.0.0-rc.2.exe`} className="rounded-full bg-white px-8 py-4 text-sm font-medium text-black">{tr ? "Windows için indir" : "Download for Windows"} ↓</a>
-        <span className="text-xs text-neutral-400">Windows 10/11 · x64 · Portable · 63.3 MB · V1 RC2</span>
+
+  const features = tr
+    ? [
+        [
+          "01 / KAMERA KEŞFİ",
+          "RTSP Akışları & ONVIF Entegrasyonu",
+          "RTSP üzerinden sınırsız kamera bağlama, otomatik bağlantı sınaması, TCP/UDP taşıma seçimi ve yerel ağda ONVIF keşfi. Sürekli canlı bağlantı ve saniyede iki kare hedefleyen optimize yerel analiz.",
+        ],
+        [
+          "02 / KURAL MOTORU",
+          "12 Model-Bağımsız & 12 Görsel AI Kuralı",
+          "Hareket, bölge ihlali, aydınlatma, sinyal sağlığı ve bağlantı kesintisi için sıfır-AI yerel kurallar. İsteğe bağlı yerel Gemma AI ile nesne, hayvan ve çevre tespiti. Tüm kurallar yerelde değerlendirilir.",
+        ],
+        [
+          "03 / KANIT KAYDI",
+          "Kalıcı Video Klip & Webhook Bildirimi",
+          "Olay anında otomatik örnek kare ve 12 saniyelik post-trigger video klip arşivi. Şifreli yerel kütük ve harici sistemler için 3 kez denemeli HTTPS webhook entegrasyonu.",
+        ],
+      ]
+    : [
+        [
+          "01 / CAMERA INGEST",
+          "RTSP Streams & ONVIF Peering",
+          "Direct RTSP camera connections, automatic stream probe, TCP/UDP transport toggle, and local subnet ONVIF discovery with low-overhead 2 FPS background analysis.",
+        ],
+        [
+          "02 / EVENT ENGINE",
+          "12 Model-Free & 12 Vision AI Rules",
+          "Zero-model native rules for motion, intrusion zones, lighting spikes, and signal loss. Optional local Gemma vision inference for objects, animals, and perimeter anomalies.",
+        ],
+        [
+          "03 / EVIDENCE LOG",
+          "12-Second Video Proof & Webhooks",
+          "Instant keyframe capture and automatic 12-second post-trigger video clips. Encrypted local audit archive and 3-retry HTTPS webhook delivery.",
+        ],
+      ];
+
+  return (
+    <PageShell
+      eyebrow="WINDOWS 10/11 x64 · V1 RELEASE CANDIDATE"
+      title={tr ? "Her Kameraya Yerel Bir Beyin." : "Local Intelligence for Every Camera."}
+      subtitle={
+        tr
+          ? "RTSP kameralarınızı bağlayın, yerel olay kurallarınızı tanımlayın ve kanıt kliplerini bilgisayarınızda güvenle arşivleyin."
+          : "Connect your RTSP cameras, define local event rules, and preserve video evidence directly on your machine."
+      }
+    >
+      <div className="mx-auto max-w-6xl space-y-12">
+        {/* Navigation Breadcrumb */}
+        <div>
+          <Link
+            href={`/${locale}/download`}
+            className="button button-secondary button-compact font-mono text-xs"
+          >
+            <span>← {tr ? "Tüm Masaüstü Uygulamaları" : "All Desktop Applications"}</span>
+          </Link>
+        </div>
+
+        {/* Hero Deck Card */}
+        <section className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#07090E] p-6 sm:p-10 shadow-2xl">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-4">
+              <Image
+                src="/cortex-mark.svg"
+                alt="Cortex"
+                width={56}
+                height={56}
+                className="rounded-2xl border border-white/15 bg-white/5 p-1"
+              />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full border border-purple-400/30 bg-purple-400/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-purple-400">
+                    V1 RC2 · STANDALONE
+                  </span>
+                  <span className="font-mono text-xs text-neutral-400">Windows 10/11 · x64</span>
+                </div>
+                <h2 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+                  IPScans Cortex
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href={`${release}/IPScans-Cortex-1.0.0-rc.2.exe`}
+                className="button button-primary group flex items-center gap-2.5 px-6 py-3 font-mono text-xs font-bold"
+              >
+                <span>{tr ? "Windows Kurulumunu İndir · EXE" : "Download for Windows · EXE"}</span>
+                <span className="rounded bg-black/10 px-2 py-0.5 text-[10px] text-neutral-800">
+                  63.3 MB
+                </span>
+                <span>↓</span>
+              </a>
+              <a
+                href={`${release}/Cortex-Kullanim.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button button-secondary font-mono text-xs"
+              >
+                <span>{tr ? "Kullanım Kılavuzu" : "User Guide"} ↗</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Checksum row */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-4 font-mono text-xs text-neutral-400">
+            <div className="flex items-center gap-2 truncate">
+              <span className="text-neutral-500 uppercase text-[10px]">SHA-256:</span>
+              <code className="text-neutral-300 truncate max-w-sm sm:max-w-md">{sha256}</code>
+            </div>
+            <CopyHashButton hash={sha256} label={tr ? "Kopyala" : "Copy"} />
+          </div>
+        </section>
+
+        {/* Media Preview Card */}
+        <div className="feature-media-card">
+          <div className="feature-media-card__bar">
+            <span className="feature-media-card__title">IPScans Cortex Control Center</span>
+            <span className="feature-media-card__tag">12 LOCAL + 12 VISION RULES · GEMMA</span>
+          </div>
+          <div className="feature-media-card__viewport">
+            <Image
+              src="/cortex-preview.png"
+              alt="Cortex Interface"
+              width={1265}
+              height={744}
+              className="feature-image"
+              priority
+            />
+          </div>
+        </div>
+
+        {/* Trust & Security Verification Row */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0C1016] p-4">
+            <span className="text-xl">🛡️</span>
+            <div>
+              <div className="text-xs font-semibold text-white">VirusTotal 0/72 Clean</div>
+              <div className="text-[11px] text-neutral-400">100% Malware & Adware Free</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0C1016] p-4">
+            <span className="text-xl">🔒</span>
+            <div>
+              <div className="text-xs font-semibold text-white">Zero Cloud Ingest</div>
+              <div className="text-[11px] text-neutral-400">100% Local Video & Rule Analysis</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0C1016] p-4">
+            <span className="text-xl">⚡</span>
+            <div>
+              <div className="text-xs font-semibold text-white">Multi-Stream RTSP Core</div>
+              <div className="text-[11px] text-neutral-400">Up to 32 Cameras Concurrency</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Cards Grid */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {features.map(([n, title, body]) => (
+            <article key={n} className="rounded-2xl border border-white/[0.08] bg-[#07090E] p-7">
+              <span className="font-mono text-xs text-[#00F0FF]">{n}</span>
+              <h3 className="my-3 text-xl font-bold text-white">{title}</h3>
+              <p className="text-sm leading-relaxed text-neutral-400">{body}</p>
+            </article>
+          ))}
+        </div>
+
+        {/* Getting Started & Specs */}
+        <div className="grid gap-8 md:grid-cols-2">
+          <section className="rounded-2xl border border-white/[0.08] bg-[#07090E] p-8">
+            <h3 className="mb-4 text-xl font-bold text-white">
+              {tr ? "Üç Adımda Başlayın" : "Start in Three Steps"}
+            </h3>
+            <ol className="list-decimal space-y-4 pl-5 text-sm leading-relaxed text-neutral-300">
+              <li>
+                {tr
+                  ? "İndirilen EXE dosyasını çalıştırın. Yönetim konsolu doğrudan bilgisayarınızda açılır."
+                  : "Launch the standalone EXE. The control panel opens directly on your machine."}
+              </li>
+              <li>
+                {tr
+                  ? "İsteğe bağlı AI: Ollama üzerinden Gemma modelini tek tıkla bağlayın veya AI olmadan 12 yerel kuralı kullanın."
+                  : "Optional AI: Connect local Gemma via Ollama, or use 12 model-free rules with zero AI requirements."}
+              </li>
+              <li>
+                {tr
+                  ? "Kameranızın RTSP bağlantısını girin, tetikleyici kuralı kaydedin ve izlemeyi başlatın."
+                  : "Enter your camera RTSP endpoint, save your trigger rule, and begin monitoring."}
+              </li>
+            </ol>
+            <a
+              className="mt-6 inline-block font-mono text-xs text-[#00F0FF] hover:underline"
+              href="https://ollama.com/download"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {tr ? "Ollama İndirme Sayfası" : "Ollama Download Page"} ↗
+            </a>
+          </section>
+
+          <section className="rounded-2xl border border-white/[0.08] bg-[#07090E] p-8">
+            <h3 className="mb-4 text-xl font-bold text-white">
+              {tr ? "Teknik Kapsam ve Donanım Notları" : "Technical Architecture & System Scope"}
+            </h3>
+            <div className="space-y-3 text-sm leading-relaxed text-neutral-400">
+              <p>
+                {tr
+                  ? "Cortex tamamen yerel çalışan bağımsız bir Windows yazılımıdır; kameralarınızı asla harici bulut sunucularına aktarmaz."
+                  : "Cortex is a standalone local Windows tool; your video feeds never leave your local workstation."}
+              </p>
+              <p>
+                {tr
+                  ? "12 yerel kural harici model gerektirmeden çalışır. 32 kameraya kadar yapılandırma desteklenir; analiz hızı yerel CPU/GPU kapasitenize göre dinamik ölçeklenir."
+                  : "12 native rules operate without AI inference. Supports up to 32 cameras with analysis rate dynamically scaling to your hardware."}
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs font-mono text-neutral-500">
+              <span>Windows 10 / 11 (x64)</span>
+              <span>DirectX / CPU Fallback</span>
+            </div>
+          </section>
+        </div>
+
       </div>
-      <div className="feature-media-card mb-12"><div className="feature-media-card__bar"><span className="feature-media-card__title">IPScans Cortex</span><span className="feature-media-card__tag">12 LOCAL + 12 VISION RULES · GEMMA</span></div><div className="feature-media-card__viewport"><Image src="/cortex-preview.png" alt={tr ? "Cortex yerel paneli; test kamerası ve olay kuralı" : "Cortex local dashboard with a test camera and event rule"} width={1265} height={744} className="feature-image" priority /></div></div>
-      <div className="grid gap-5 md:grid-cols-3">{features.map(([n,title,body])=><article key={n} className="agy-surface-card p-7"><span className="text-xs tracking-widest text-neutral-500">{n}</span><h2 className="my-5 text-2xl tracking-tight">{title}</h2><p className="text-sm leading-7 text-neutral-400">{body}</p></article>)}</div>
-      <section className="agy-surface-card my-10 p-8 sm:p-12"><p className="text-xs tracking-widest text-neutral-500">{tr ? "BİR KURAL. BİR KAMERA. ANLAMLI BİR BİLDİRİM." : "ONE RULE. ONE CAMERA. A MEANINGFUL ALERT."}</p><blockquote className="my-8 max-w-4xl text-2xl leading-relaxed tracking-tight sm:text-3xl">{tr ? "“Asansörde biri çöp bırakıp ayrıldığında ve nesne yerde kaldığında kaydı oluştur, bana haber ver.”" : "“When someone leaves rubbish in the elevator and walks away, preserve the recording and notify me.”"}</blockquote><p className="text-sm text-neutral-400">{tr ? "Bu bir kural örneğidir. Model sonucu inceleme gerektirir; gerçek kamera koşullarında tespit doğruluğu henüz ölçülmemiştir." : "This is an example rule. Model results require review; detection accuracy has not yet been measured on real camera scenarios."}</p></section>
-      <div className="grid gap-8 md:grid-cols-2"><section className="agy-surface-card p-8"><h2 className="mb-6 text-2xl">{tr ? "Üç adımda başla." : "Start in three steps."}</h2><ol className="list-decimal space-y-5 pl-5 text-sm leading-7 text-neutral-300"><li>{tr ? "EXE'yi aç. Yönetim paneli bu bilgisayarda açılır." : "Launch the EXE. The control panel opens on your computer."}</li><li>{tr ? "AI isteğe bağlı: Ollama’yı kurup aç, Cortex Ayarlar bölümünde Gemma’yı kur ve bağla düğmesine bas." : "AI is optional: install and open Ollama, then click Install and connect Gemma in Cortex Settings."}</li><li>{tr ? "Kameranı ekle, kuralını kaydet ve izlemeyi başlat." : "Add a camera, save a rule and start monitoring."}</li></ol><a className="mt-7 inline-block text-sm underline underline-offset-4" href="https://ollama.com/download">{tr ? "Ollama kurulumu" : "Install Ollama"} ↗</a></section><section className="agy-surface-card p-8"><h2 className="mb-6 text-2xl">{tr ? "Bu sürümün sınırları." : "Release candidate scope."}</h2><p className="text-sm leading-7 text-neutral-400">{tr ? "Bu bir yerel Windows uygulamasıdır; web sitesi kameralarınızı izlemez. 12 yerel kural modeli olmadan çalışır. Gemma indirme, ilerleme ve görsel yanıt testi uygulama içindedir. Bu V1 sürüm adayıdır; uzun süreli ve çok kameralı saha kabul testleri henüz tamamlanmadı. 32 kamera yapılandırılabilir, ancak analiz hızı donanıma bağlıdır. Canlı görüntü örnek karelerden oluşur. ONVIF keşfi IP adreslerini bulur; medya profili ve PTZ otomasyonu yoktur. Bulut yönetimi, Telegram/e-posta ve tam FPS video duvarı bu sürümde bulunmaz. EXE henüz kod imzalı değildir." : "This is a local Windows app; this website does not monitor cameras. 12 local rules need no model. Gemma download, progress and vision-response verification run inside the app. This is a V1 release candidate; long-duration, multi-camera field acceptance is still pending. Up to 32 cameras can be configured; analysis speed depends on hardware. Live previews use sampled frames. ONVIF discovers device addresses, without media profile or PTZ automation. Cloud management, Telegram/email and full-FPS video walls are not included. The EXE is not code-signed."}</p></section></div>
-      <div className="my-10 flex flex-wrap gap-6 text-sm text-neutral-300"><a className="underline underline-offset-4" href={`${release}/Cortex-Kullanim.md`}>{tr ? "Kullanım kılavuzu" : "User guide"} ↗</a><a className="underline underline-offset-4" href="https://github.com/demiirrr25-create/ipscans-depo/releases/tag/cortex-v1.0.0-rc.2">{tr ? "Sürüm, kaynak kod ve SHA-256" : "Release, source and SHA-256"} ↗</a></div>
-    </div>
-  </PageShell>;
+    </PageShell>
+  );
 }

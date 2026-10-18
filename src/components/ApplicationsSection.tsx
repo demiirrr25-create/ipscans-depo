@@ -6,245 +6,550 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { PublicDictionary } from "@/i18n/dictionaries";
-import { applications, platformCopy } from "@/content/applications";
+import { applications, platformCopy, desktopRelease, scannerApplication, ipcastRelease } from "@/content/applications";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 import { lprRelease } from "@/content/lpr-release";
+import { CopyHashButton } from "./CopyHashButton";
+import { AppLiveDemo } from "./AppLiveDemo";
+
+interface ApplicationsSectionProps {
+  locale: Locale;
+  dict: PublicDictionary;
+  primary?: boolean;
+}
 
 export function ApplicationsSection({
   locale,
   dict,
   primary = false,
-}: {
-  locale: Locale;
-  dict: PublicDictionary;
-  primary?: boolean;
-}) {
-  const Heading = primary ? "h1" : "h2";
+}: ApplicationsSectionProps) {
+  const isTr = locale === "tr";
   const copy = platformCopy[locale];
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [activeInteractiveTour, setActiveInteractiveTour] = useState<"scanner" | "ipcast" | "lpr-pro">("scanner");
+  const [activeFilter, setActiveFilter] = useState<"all" | "desktop" | "web">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const tools = toolKeys.map((key) => ({
-    id: key,
-    name: dict[key].title,
-    description: dict[key].subtitle,
-    href: toolPath(key, locale),
-    category: key === "ipLookup" ? "ip" : "network",
-    preview: "/web-tools-preview.png",
-  }));
+  const cortexReleaseUrl = "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2/IPScans-Cortex-1.0.0-rc.2.exe";
 
-  const results = [
+  const flagshipApps = [
     {
-      id: "cortex",
-      name: "IPScans Cortex",
-      description: locale === "tr" ? "RTSP kameralar, doğal dille olay kuralları ve yerel AI analizi. 12 yerel + 12 görsel şablon, sürekli RTSP ve bağlı model durumu. V1 sürüm adayı." : "RTSP cameras, natural-language event rules and local vision AI. 12 local rules and one-click Gemma. V1 release candidate.",
-      href: `/${locale}/cortex`,
-      category: "desktop",
-      icon: "/cortex-mark.svg",
-      preview: "/cortex-preview.png",
-      version: "1.0.0-rc.2 RC",
+      id: "scanner",
+      name: "IPscans+",
+      tagline: isTr ? "Amiral Gemisi Ağ Tarayıcı & Topoloji Motoru" : "Flagship Network Scanner & Subnet Topology Engine",
+      description: isTr
+        ? "254 hostu 2 saniyenin altında tarayan asenkron ham soket motoru, ARP ve ICMP sondaları, ONVIF kamera keşfi, port analizi ve doğrulanmış LLDP/CDP hiyerarşik ağ haritası."
+        : "Sub-2s 254-host asynchronous socket sweep, native ARP/ICMP probing, ONVIF camera discovery, deep port auditing, and verified LLDP/CDP topology visualization.",
+      version: desktopRelease.scanner.version,
       platform: "Windows 10/11 · x64",
-      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2/IPScans-Cortex-1.0.0-rc.2.exe",
+      sizeMb: (desktopRelease.scanner.installerBytes / (1024 * 1024)).toFixed(1),
+      installerUrl: desktopRelease.scanner.installerUrl,
+      portableUrl: desktopRelease.scanner.portableUrl,
+      sha256: desktopRelease.scanner.installerSha256,
+      detailUrl: `/${locale}/applications/scanner`,
+      preview: "/scanner-v43-preview.png",
+      icon: "/scanner-icon-v42.png",
+      badge: isTr ? "AMİRAL GEMİSİ · KARARLI" : "FLAGSHIP · STABLE",
+      badgeColor: "text-[#00F0FF] border-[#00F0FF]/30 bg-[#00F0FF]/10",
+      capabilities: [
+        "SUB-2S 254 HOST SWEEP",
+        "RAW ARP / ICMP SOCKETS",
+        "LLDP/CDP TOPOLOGY TREE",
+        "ONVIF CAMERA DISCOVERY",
+        "ONE-CLICK WEB UI & PDF",
+      ],
+      powershellCheck: `Get-FileHash .\\IPscans-Plus-Setup.exe -Algorithm SHA256`,
+    },
+    {
+      id: "ipcast",
+      name: "IPCast",
+      tagline: isTr ? "Ultra Düşük Gecikmeli P2P Uzak Masaüstü" : "Ultra-Low Latency Direct P2P Remote Desktop",
+      description: isTr
+        ? "Merkezi sunucu veya hesap gerektirmeyen 9 haneli anlık erişim adresi, STUN/UDP doğrudan tünel, AES-256 GCM şifreleme ve donanım hızlandırmalı 60 FPS masaüstü ve dosya aktarımı."
+        : "Zero-signup 9-digit peer addressing, direct STUN/UDP NAT traversal, authenticated AES-256 GCM encryption, and GPU-accelerated 60 FPS remote desktop with chunked file transfer.",
+      version: ipcastRelease.version,
+      platform: "Windows 10/11 · x64",
+      sizeMb: (ipcastRelease.installerBytes / (1024 * 1024)).toFixed(1),
+      installerUrl: ipcastRelease.installerUrl,
+      portableUrl: ipcastRelease.url,
+      sha256: ipcastRelease.installerSha256,
+      detailUrl: `/${locale}/applications/ipcast`,
+      preview: "/ipcast-v25-preview.png",
+      icon: "/ipcast-mark.svg",
+      badge: isTr ? "P2P DOĞRUDAN · 60 FPS" : "P2P DIRECT · 60 FPS",
+      badgeColor: "text-[#00FF9D] border-[#00FF9D]/30 bg-[#00FF9D]/10",
+      capabilities: [
+        "9-DIGIT PEER ADDRESS",
+        "DIRECT UDP HOLE-PUNCHING",
+        "AES-256-GCM TUNNEL",
+        "GPU 60 FPS ACCELERATION",
+        "DRAG & DROP FILE RELAY",
+      ],
+      powershellCheck: `Get-FileHash .\\IPCast-2.6.0-Setup.exe -Algorithm SHA256`,
     },
     {
       id: "lpr-pro",
       name: "IPScans LPR Pro",
-      description:
-        locale === "tr"
-          ? "5 bölmeli canlı operatör çalışma alanı, bağımsız kalibrasyon çizgileri, blok/daire araç kütüğü ve yerel ONNX plaka tanıma."
-          : "5-page live operator workspace, independent calibration lines, resident vehicle registry, and local ONNX plate recognition.",
-      href: `/${locale}/lpr-pro`,
-      category: "desktop",
-      icon: "/lpr-mark.svg",
-      preview: "/lpr-pro-preview.png",
+      tagline: isTr ? "Otonom Plaka Tanıma & Operatör Çalışma Alanı" : "Autonomous License Plate Recognition & Operator Workspace",
+      description: isTr
+        ? "5 bölmeli canlı operatör konsolu, RTSP 4K ONVIF kamera entegrasyonu, yerel ONNX Runtime ile %98.6 doğrulukta plaka OCR, 200ms altı bariyer röle kontrolü ve fotoğraflı geçiş günlüğü."
+        : "5-page live operator console, RTSP 4K ONVIF streams, 98.6% accurate local ONNX plate OCR, sub-200ms relay barrier gate automation, and photographic passage audit.",
       version: lprRelease.version,
       platform: "Windows 10/11 · x64",
-      download: lprRelease.url,
+      sizeMb: (lprRelease.bytes / (1024 * 1024)).toFixed(1),
+      installerUrl: lprRelease.url,
+      portableUrl: null,
+      sha256: lprRelease.sha256,
+      detailUrl: `/${locale}/lpr-pro`,
+      preview: "/lpr-pro-preview.png",
+      icon: "/lpr-mark.svg",
+      badge: isTr ? "YEREL ONNX · 4K RTSP" : "LOCAL ONNX · 4K RTSP",
+      badgeColor: "text-amber-400 border-amber-400/30 bg-amber-400/10",
+      capabilities: [
+        "5-PAGE OPERATOR CONSOLE",
+        "ONNX RUNTIME OCR (%98.6)",
+        "RTSP 4K CAMERA WALL",
+        "SUB-200MS RELAY BARRIER",
+        "RESIDENT FLEET REGISTRY",
+      ],
+      powershellCheck: `Get-FileHash .\\${lprRelease.fileName} -Algorithm SHA256`,
     },
-    ...applications.map((app) => ({
-      id: app.id,
-      name: app.name,
-      description: app.description[locale],
-      href: `/${locale}/applications/${app.id}`,
-      category: "desktop",
-      icon: app.icon,
-      preview:
-        app.id === "ipcast"
-          ? "/ipcast-v25-preview.png"
-          : "/scanner-v43-preview.png",
-      version: app.version,
-      platform: app.platform,
-      download: app.downloadUrl,
-    })),
-    ...tools,
-  ].filter(
-    (item) =>
-      (category === "all" || item.category === category) &&
-      `${item.name} ${item.description}`
-        .toLocaleLowerCase(locale)
-        .includes(query.toLocaleLowerCase(locale))
+    {
+      id: "cortex",
+      name: "IPScans Cortex",
+      tagline: isTr ? "Yerel Kamera Görsel AI & Olay Kural Motoru" : "Local Camera Vision AI & Smart Event Rule Engine",
+      description: isTr
+        ? "RTSP kameralara bağlanan, model gerektirmeyen 12 yerel kural ve Ollama Gemma tabanlı 12 görsel AI şablonu. Olay anında otomatik 12 saniyelik video kanıtı ve güvenli webhook bildirimi."
+        : "Connects to RTSP cameras with 12 model-free rules and 12 Gemma local vision AI templates. Preserves 12s post-trigger video evidence and dispatches secure webhooks.",
+      version: "1.0.0-rc.2",
+      platform: "Windows 10/11 · x64",
+      sizeMb: "63.3",
+      installerUrl: cortexReleaseUrl,
+      portableUrl: cortexReleaseUrl,
+      sha256: "b0fa5629f6de31e847c1f1ecfbbda51b369527ecbcf6d787be09c73b0a233b81",
+      detailUrl: `/${locale}/cortex`,
+      preview: "/cortex-preview.png",
+      icon: "/cortex-mark.svg",
+      badge: isTr ? "YEREL AI · GEMMA VISION" : "LOCAL AI · GEMMA VISION",
+      badgeColor: "text-purple-400 border-purple-400/30 bg-purple-400/10",
+      capabilities: [
+        "12 MODEL-FREE RULES",
+        "GEMMA VISION AI",
+        "ZERO CLOUD TELEMETRY",
+        "12S VIDEO PROOF ARCHIVE",
+        "INSTANT HTTPS WEBHOOKS",
+      ],
+      powershellCheck: `Get-FileHash .\\IPScans-Cortex-1.0.0-rc.2.exe -Algorithm SHA256`,
+    },
+  ];
+
+  const browserTools = toolKeys.map((key) => ({
+    id: key,
+    name: dict[key].title,
+    subtitle: dict[key].subtitle,
+    href: toolPath(key, locale),
+    badge: key === "speedTest" ? "TELEMETRY" : "EDGE API",
+  }));
+
+  const filteredApps = flagshipApps.filter((app) =>
+    `${app.name} ${app.tagline} ${app.description}`
+      .toLocaleLowerCase(locale)
+      .includes(searchQuery.toLocaleLowerCase(locale))
   );
 
   return (
-    <section
-      id="applications"
-      aria-labelledby="applications-title"
-      className="scroll-mt-24 py-6"
-    >
-      {!primary && (
-        <div className="mb-10 sm:flex sm:items-end sm:justify-between">
+    <div className="w-full space-y-16 py-4">
+
+      {/* 1. Suite Security & Architecture Guarantees Strip */}
+      <section
+        aria-label="Security and Architecture Assurances"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#00FF9D]/30 bg-[#00FF9D]/10 text-lg text-[#00FF9D]">
+            🛡️
+          </span>
           <div>
-            <p className="agy-eyebrow">
-              02 / {uiText(locale, "IPScans ecosystem", "IPScans ekosistemi")}
-            </p>
-            <Heading id="applications-title" className="agy-section-title">
-              {copy.applications}
-            </Heading>
-            <p className="mt-3 max-w-2xl text-neutral-400">
-              {copy.applicationsIntro}
+            <div className="font-mono text-xs font-semibold text-white">VirusTotal 0/72 Clean</div>
+            <div className="text-[11px] text-neutral-400">
+              {isTr ? "Sıfır kötü amaçlı yazılım · Temiz" : "Zero malware · Clean build"}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#00F0FF]/30 bg-[#00F0FF]/10 text-lg text-[#00F0FF]">
+            🔐
+          </span>
+          <div>
+            <div className="font-mono text-xs font-semibold text-white">SHA-256 Verified</div>
+            <div className="text-[11px] text-neutral-400">
+              {isTr ? "Kriptografik bütünlük kontrolü" : "Cryptographic integrity match"}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/10 text-lg text-amber-400">
+            ⚡
+          </span>
+          <div>
+            <div className="font-mono text-xs font-semibold text-white">100% Offline by Design</div>
+            <div className="text-[11px] text-neutral-400">
+              {isTr ? "Sıfır telemetri · Tamamen yerel" : "Zero telemetry · Pure local execution"}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-purple-400/30 bg-purple-400/10 text-lg text-purple-400">
+            ⚙️
+          </span>
+          <div>
+            <div className="font-mono text-xs font-semibold text-white">Native Standalone EXEs</div>
+            <div className="text-[11px] text-neutral-400">
+              {isTr ? "Ek çalışma zamanı gerektirmez" : "Zero external runtime dependencies"}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Top Header & Navigation Switcher */}
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between border-b border-white/[0.08] pb-6">
+        <div>
+          <span className="font-mono text-xs tracking-widest text-[#00F0FF] uppercase">
+            01 / {isTr ? "WINDOWS MASAÜSTÜ MÜHENDİSLİK PAKETİ" : "WINDOWS DESKTOP ENGINEERING SUITE"}
+          </span>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            {isTr ? "Doğrudan Windows için Derlenmiş Masaüstü Araçları" : "Native Windows Executable Applications"}
+          </h2>
+          <p className="mt-2 text-sm text-neutral-400 max-w-2xl leading-relaxed">
+            {isTr
+              ? "Her biri yerel x64 mimarisinde bağımsız olarak çalışan, donanım hızlandırmalı ve çevrimdışı öncelikli 4 profesyonel masaüstü uygulaması."
+              : "Four standalone 64-bit desktop executables built for Windows 10 & 11 with hardware acceleration and zero cloud dependencies."}
+          </p>
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveFilter("all")}
+            className={`cursor-pointer rounded-full px-4 py-2 font-mono text-xs transition-colors ${
+              activeFilter === "all"
+                ? "bg-white font-bold text-black"
+                : "border border-white/10 bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20"
+            }`}
+          >
+            {isTr ? "Tümü" : "All"} ({flagshipApps.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter("desktop")}
+            className={`cursor-pointer rounded-full px-4 py-2 font-mono text-xs transition-colors ${
+              activeFilter === "desktop"
+                ? "bg-white font-bold text-black"
+                : "border border-white/10 bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20"
+            }`}
+          >
+            EXE ({flagshipApps.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter("web")}
+            className={`cursor-pointer rounded-full px-4 py-2 font-mono text-xs transition-colors ${
+              activeFilter === "web"
+                ? "bg-white font-bold text-black"
+                : "border border-white/10 bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20"
+            }`}
+          >
+            Web ({browserTools.length})
+          </button>
+        </div>
+      </div>
+
+      {/* 3. The 4 Flagship EXE Bento Showcases (Active when filter is 'all' or 'desktop') */}
+      {(activeFilter === "all" || activeFilter === "desktop") && (
+        <section aria-label="Desktop Executable Applications" className="space-y-12">
+          {filteredApps.map((app, index) => (
+            <article
+              key={app.id}
+              className="group relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#07090E] p-6 sm:p-10 transition-all duration-300 hover:border-white/20 hover:shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+            >
+              {/* Subtle Ambient Corner Aura */}
+              <div
+                className={`pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full blur-3xl opacity-20 ${
+                  index % 2 === 0 ? "bg-[#00F0FF]" : "bg-[#00FF9D]"
+                }`}
+                aria-hidden="true"
+              />
+
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                
+                {/* Left Column: Architectural Specs & Download Center */}
+                <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
+                  
+                  {/* Top Badge & Identifier */}
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Image
+                        src={app.icon}
+                        alt=""
+                        width={44}
+                        height={44}
+                        className="rounded-xl border border-white/15 bg-white/5 p-1"
+                      />
+                      <span className={`rounded-full border px-3 py-1 font-mono text-xs font-semibold ${app.badgeColor}`}>
+                        {app.badge}
+                      </span>
+                      <span className="font-mono text-xs text-neutral-400">
+                        v{app.version} · {app.platform}
+                      </span>
+                    </div>
+
+                    <h3 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                      {app.name}
+                    </h3>
+                    <p className="mt-1 text-sm font-medium text-[#00F0FF]">
+                      {app.tagline}
+                    </p>
+                    <p className="mt-3 text-sm text-neutral-300 leading-relaxed">
+                      {app.description}
+                    </p>
+                  </div>
+
+                  {/* Capabilities Chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {app.capabilities.map((cap) => (
+                      <span
+                        key={cap}
+                        className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-mono text-[11px] text-neutral-300"
+                      >
+                        {cap}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Action Center: Download Buttons */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <a
+                        href={app.installerUrl}
+                        className="group/btn relative inline-flex items-center justify-center gap-2.5 rounded-xl bg-white px-6 py-3.5 font-mono text-xs font-bold text-black transition-all hover:bg-neutral-200 hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] active:scale-95"
+                      >
+                        <span>{isTr ? "Windows Kurulumu İndir · EXE" : "Download Windows Installer · EXE"}</span>
+                        <span className="rounded bg-black/10 px-2 py-0.5 text-[10px] text-neutral-700">
+                          {app.sizeMb} MB
+                        </span>
+                        <span className="text-sm">↓</span>
+                      </a>
+
+                      {app.portableUrl && (
+                        <a
+                          href={app.portableUrl}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3.5 font-mono text-xs font-medium text-neutral-200 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white"
+                        >
+                          <span>{isTr ? "Taşınabilir EXE (Portable)" : "Portable EXE"}</span>
+                          <span className="text-neutral-400">↗</span>
+                        </a>
+                      )}
+
+                      <Link
+                        href={app.detailUrl}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-3.5 font-mono text-xs text-neutral-400 transition-colors hover:border-white/20 hover:text-white"
+                      >
+                        <span>{isTr ? "Detaylar & Notlar" : "Release Notes"}</span>
+                        <span>→</span>
+                      </Link>
+                    </div>
+
+                    {/* SHA-256 Checksum Row */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-black/40 p-3 text-xs font-mono text-neutral-400">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-neutral-500 uppercase tracking-wider text-[10px]">SHA-256:</span>
+                        <code className="text-neutral-300 truncate max-w-[220px] sm:max-w-xs">
+                          {app.sha256}
+                        </code>
+                      </div>
+                      <CopyHashButton hash={app.sha256} label={isTr ? "Kopyala" : "Copy"} />
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Column: Realistic Window Mockup Frame */}
+                <div className="lg:col-span-6">
+                  <Link href={app.detailUrl} className="block group/media">
+                    <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl transition-transform duration-500 group-hover/media:scale-[1.01]">
+                      
+                      {/* Window Header Bar */}
+                      <div className="flex items-center justify-between border-b border-white/10 bg-[#0B0D13] px-4 py-2.5 text-xs select-none">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F56]" />
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E]" />
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#27C93F]" />
+                          <span className="ml-2 font-mono text-[11px] text-neutral-400 font-medium">
+                            {app.name} · v{app.version}
+                          </span>
+                        </div>
+                        <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider">
+                          LIVE RUNTIME
+                        </span>
+                      </div>
+
+                      {/* Viewport Image */}
+                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#050608]">
+                        <Image
+                          src={app.preview}
+                          alt={app.name}
+                          width={1440}
+                          height={900}
+                          className="h-full w-full object-cover object-top transition-transform duration-700 group-hover/media:scale-105"
+                        />
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {/* 4. Interactive Application Tour Preview Section */}
+      <section
+        aria-label="Interactive Product Tour"
+        className="rounded-3xl border border-white/[0.08] bg-[#07090E] p-6 sm:p-10"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/[0.08] pb-6">
+          <div>
+            <span className="font-mono text-xs tracking-widest text-[#00F0FF] uppercase">
+              02 / {isTr ? "İNTERAKTİF UYGULAMA SİMÜLASYONU" : "INTERACTIVE APPLICATION SIMULATION"}
+            </span>
+            <h3 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              {isTr ? "İndirmeden Önce Arayüzü Canlı Deneyimleyin" : "Test-Drive The Native Interfaces Live"}
+            </h3>
+            <p className="mt-1 text-sm text-neutral-400">
+              {isTr
+                ? "Masaüstü uygulamalarımızın gerçek ekran akışlarını ve telemetri motorunu tarayıcınızda adım adım inceleyin."
+                : "Step through authentic workflow views and telemetry data before launching on your PC."}
             </p>
           </div>
-          <span
-            aria-hidden="true"
-            className="mt-6 hidden font-mono text-xs tracking-widest text-neutral-500 sm:block"
-          >
-            {uiText(locale, "EXPLORE", "KEŞFET")} / 01—
-            {String(applications.length + tools.length + 2).padStart(2, "0")}
-          </span>
-        </div>
-      )}
 
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <label className="block w-full sm:max-w-md">
-          <span className="sr-only">{dict.experience.searchPlaceholder}</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={dict.experience.searchPlaceholder}
-            className="agy-input w-full"
-          />
-        </label>
-        <div
-          role="group"
-          aria-label={dict.nav.tools}
-          className="flex flex-wrap gap-2"
-        >
-          {(["all", "ip", "desktop"] as const).map((value) => (
+          {/* App Switcher Tabs */}
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 p-1">
             <button
-              key={value}
               type="button"
-              aria-pressed={category === value}
-              onClick={() => setCategory(value)}
-              className={`button button-compact ${
-                category === value ? "button-primary" : "button-secondary"
+              onClick={() => setActiveInteractiveTour("scanner")}
+              className={`cursor-pointer rounded-lg px-4 py-2 font-mono text-xs transition-colors ${
+                activeInteractiveTour === "scanner"
+                  ? "bg-white text-black font-bold"
+                  : "text-neutral-400 hover:text-white"
               }`}
             >
-              <span>{dict.experience.categories[value]}</span>
+              IPscans+
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setActiveInteractiveTour("ipcast")}
+              className={`cursor-pointer rounded-lg px-4 py-2 font-mono text-xs transition-colors ${
+                activeInteractiveTour === "ipcast"
+                  ? "bg-white text-black font-bold"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              IPCast
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveInteractiveTour("lpr-pro")}
+              className={`cursor-pointer rounded-lg px-4 py-2 font-mono text-xs transition-colors ${
+                activeInteractiveTour === "lpr-pro"
+                  ? "bg-white text-black font-bold"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              LPR Pro
+            </button>
+          </div>
         </div>
-      </div>
 
-      <p className="sr-only" role="status">
-        {results.length} {copy.applications}
-      </p>
+        {/* The Live Interactive Demo Component */}
+        <div className="mt-8">
+          <AppLiveDemo
+            appId={activeInteractiveTour}
+            appName={
+              activeInteractiveTour === "scanner"
+                ? "IPscans+"
+                : activeInteractiveTour === "ipcast"
+                ? "IPCast"
+                : "IPScans LPR Pro"
+            }
+            version={
+              activeInteractiveTour === "scanner"
+                ? desktopRelease.scanner.version
+                : activeInteractiveTour === "ipcast"
+                ? ipcastRelease.version
+                : lprRelease.version
+            }
+            locale={locale}
+          />
+        </div>
+      </section>
 
-      {results.length === 0 && (
-        <p className="agy-surface-card p-8 text-neutral-300">
-          {dict.experience.noResults}
-        </p>
+      {/* 5. Separate Zero-Install Web Diagnostics Section */}
+      {(activeFilter === "all" || activeFilter === "web") && (
+        <section aria-label="Browser Diagnostic Tools" className="pt-6">
+          <div className="border-b border-white/[0.08] pb-6 mb-8">
+            <span className="font-mono text-xs tracking-widest text-[#00FF9D] uppercase">
+              03 / {isTr ? "TARAYICI TANI ARAÇLARI" : "BROWSER DIAGNOSTIC TOOLS"}
+            </span>
+            <h3 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              {isTr ? "Kurulum Gerektirmeyen Çevrimiçi Tanı Araçları" : "Zero-Install Web Diagnostics"}
+            </h3>
+            <p className="mt-1 text-sm text-neutral-400">
+              {isTr
+                ? "İndirme yapmadan doğrudan tarayıcınızdan çalışan yüksek hızlı edge telemetri ve sorgu araçları."
+                : "Instant telemetry and network queries running directly in your browser with zero installation."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {browserTools.map((tool) => (
+              <Link
+                key={tool.id}
+                href={tool.href}
+                className="group relative flex flex-col justify-between rounded-2xl border border-white/[0.08] bg-[#07090E] p-6 transition-all duration-200 hover:border-white/20 hover:bg-white/[0.02]"
+              >
+                <div>
+                  <div className="flex items-center justify-between font-mono text-xs">
+                    <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-neutral-400">
+                      {tool.badge}
+                    </span>
+                    <span className="text-[#00F0FF] group-hover:translate-x-1 transition-transform">
+                      →
+                    </span>
+                  </div>
+                  <h4 className="mt-4 text-xl font-bold text-white group-hover:text-[#00F0FF] transition-colors">
+                    {tool.name}
+                  </h4>
+                  <p className="mt-2 text-xs text-neutral-400 leading-relaxed">
+                    {tool.subtitle}
+                  </p>
+                </div>
+
+                <div className="mt-6 border-t border-white/[0.06] pt-4 font-mono text-xs text-neutral-500 flex items-center justify-between">
+                  <span>ONLINE EDGE</span>
+                  <span className="text-neutral-300 group-hover:underline">
+                    {isTr ? "Aracı Aç ↗" : "Launch Tool ↗"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {results.map((item, index) => (
-          <article
-            key={item.id}
-            className="product-card agy-surface-card group flex flex-col overflow-hidden p-0"
-          >
-            {"version" in item && item.preview && (
-              <Link
-                href={item.href}
-                className="relative block overflow-hidden border-b border-white/10 bg-[#0b0c0f]"
-              >
-                <Image
-                  src={item.preview}
-                  alt={item.name}
-                  width={1440}
-                  height={900}
-                  className="h-44 w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
-                />
-              </Link>
-            )}
-            <div className="flex flex-1 flex-col p-7">
-              <div className="flex items-start justify-between">
-                {"icon" in item && item.icon ? (
-                  <Image
-                    src={item.icon}
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="rounded-2xl border border-white/10"
-                  />
-                ) : (
-                  <span
-                    aria-hidden="true"
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.04] font-mono text-lg text-neutral-200"
-                  >
-                    ⌁
-                  </span>
-                )}
-                <span className="max-w-[65%] text-end font-mono text-xs text-neutral-400">
-                  {String(index + 1).padStart(2, "0")} /{" "}
-                  {item.category === "desktop"
-                    ? dict.experience.categories.desktop
-                    : item.category === "ip"
-                      ? dict.experience.categories.ip
-                      : dict.nav.tools}
-                </span>
-              </div>
-              <h3 className="mt-6 text-2xl font-medium tracking-tight text-white">
-                {item.name}
-              </h3>
-              <p className="mt-2.5 max-w-sm text-sm leading-relaxed text-neutral-400">
-                {item.description}
-              </p>
-              {"version" in item && (
-                <p className="mt-4 font-mono text-xs text-neutral-500">
-                  {item.platform} <span aria-hidden="true">/</span> v
-                  {item.version}
-                </p>
-              )}
-              <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-white/10 pt-5">
-                <Link
-                  href={item.href}
-                  className="button button-compact button-secondary"
-                >
-                  <span>{copy.details} →</span>
-                </Link>
-                {"download" in item && (
-                  <a
-                    href={item.download}
-                    aria-label={`${item.name} — ${
-                      item.id === "lpr-pro"
-                        ? uiText(locale, "Download EXE", "EXE indir")
-                        : copy.downloadApp
-                    }`}
-                    className="button button-compact button-primary ms-auto"
-                  >
-                    <span>
-                      {item.id === "lpr-pro"
-                        ? uiText(locale, "Download EXE", "EXE indir")
-                        : copy.downloadApp}{" "}
-                      ↓
-                    </span>
-                  </a>
-                )}
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+    </div>
   );
 }

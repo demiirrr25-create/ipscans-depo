@@ -60,6 +60,20 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
       badge: uiText(locale, "License Plate Recognition Suite", "Plaka Tanıma ve Operatör Paketi"),
     },
     {
+      id: "cortex",
+      title: "IPScans Cortex",
+      description: uiText(
+        locale,
+        "Local RTSP camera intelligence with 12 model-free rules, local vision AI, and persistent evidence clipping on Windows.",
+        "Windows üzerinde 12 yerel kural, yerel görsel AI ve kalıcı video kanıt kaydı ile yerel RTSP kamera analizi."
+      ),
+      href: `/${locale}/cortex`,
+      downloadHref: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2/IPScans-Cortex-1.0.0-rc.2.exe",
+      image: "/cortex-preview.png",
+      tag: "WINDOWS · x64 · 12 LOCAL RULES · GEMMA",
+      badge: uiText(locale, "Camera Vision AI & Rule Engine", "Kamera Görsel AI & Kural Motoru"),
+    },
+    {
       id: "web-tools",
       title: uiText(locale, "Browser Diagnostics", "Tarayıcı Tanı Araçları"),
       description: uiText(

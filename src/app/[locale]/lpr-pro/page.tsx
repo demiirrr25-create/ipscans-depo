@@ -6,6 +6,7 @@ import { PageShell } from "@/components/PageShell";
 import { lprRelease } from "@/content/lpr-release";
 import { isLocale } from "@/i18n/config";
 import { localizedAlternates } from "@/lib/seo";
+import { CopyHashButton } from "@/components/CopyHashButton";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -138,6 +139,9 @@ export default async function LprProPage({ params }: Props) {
               <p className="caption mt-3 break-all font-mono text-xs text-[#9aa0a6]">
                 SHA-256: {lprRelease.sha256}
               </p>
+              <div className="mt-3">
+                <CopyHashButton hash={lprRelease.sha256} label={tr ? "SHA-256 Kopyala" : "Copy SHA-256"} />
+              </div>
             </div>
           </div>
         </section>
