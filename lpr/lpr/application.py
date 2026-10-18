@@ -12,8 +12,9 @@ from PySide6.QtCore import Qt,QTimer,QEventLoop
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
     QPushButton,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QTabWidget,QDialog,
     QDialogButtonBox,QFormLayout,QComboBox,QCheckBox,QSpinBox,QMessageBox,QFileDialog,QInputDialog)
-from .desktop import RecognitionWindow,STYLE
+from .desktop import RecognitionWindow
 from .operations import Operations
+from .theme import STYLE, apply_theme, create_theme_toggle_button
 from . import __version__
 
 
@@ -29,8 +30,14 @@ class Login(QDialog):
         super().__init__()
         self.ops=ops;self.session=None
         self.setWindowTitle("IPScans LPR Pro · Oturum / Sign in")
-        self.setStyleSheet(STYLE);self.setMinimumWidth(520)
+        apply_theme(self);self.setMinimumWidth(520)
         layout=QVBoxLayout(self)
+        top=QHBoxLayout()
+        brand=QLabel("IPSCANS / LPR PRO");brand.setObjectName("brand")
+        top.addWidget(brand);top.addStretch()
+        self.theme_toggle_btn=create_theme_toggle_button(self)
+        top.addWidget(self.theme_toggle_btn)
+        layout.addLayout(top)
         setup=ops.needs_setup()
         self.created_admin=setup
         from .operator_shell import IPScansWelcomeBanner
@@ -42,6 +49,7 @@ class Login(QDialog):
         )
         layout.addWidget(self.welcome_banner)
         title=QLabel("İlk yönetici hesabı / Create administrator" if setup else "Oturum aç / Sign in")
+        title.setObjectName("pageTitle")
         layout.addWidget(title)
         layout.addWidget(QLabel("Parola: en az 12 karakter / Password: at least 12 characters"))
         form=QFormLayout();self.username=QLineEdit();self.password=QLineEdit()
@@ -64,7 +72,7 @@ class ProductWindow(QMainWindow):
         super().__init__()
         self.ops=ops;self.session=session;self.lang="tr"
         self.setWindowTitle(f"IPScans LPR Pro · {__version__}")
-        self.resize(1440,950);self.setMinimumSize(1000,720);self.setStyleSheet(STYLE)
+        self.resize(1440,950);self.setMinimumSize(1000,720);apply_theme(self)
         self.lab=RecognitionWindow()
         self.lab.footer.hide()
         original_consume=self.lab.consume
@@ -101,6 +109,8 @@ class ProductWindow(QMainWindow):
         header=QHBoxLayout();brand=QLabel("IPSCANS  /  LPR PRO")
         brand.setObjectName("brand");header.addWidget(brand);header.addStretch()
         self.account=QLabel(f"{session.username} / {session.role}");header.addWidget(self.account)
+        self.theme_toggle_btn=create_theme_toggle_button(self)
+        header.addWidget(self.theme_toggle_btn)
         lock=QPushButton("Kilitle / Lock");lock.clicked.connect(self.lock_session);header.addWidget(lock)
         layout.addLayout(header)
         self.banner=QLabel("")
@@ -208,7 +218,7 @@ class ProductWindow(QMainWindow):
 
     def open_maintenance(self):
         self.ops.check(self.session,'manage')
-        dialog=QDialog(self);dialog.setWindowTitle('Yetkili bakım');dialog.resize(1100,780)
+        dialog=QDialog(self);dialog.setWindowTitle('Yetkili bakım');dialog.resize(1100,780);apply_theme(dialog)
         layout=QVBoxLayout(dialog);tabs=QTabWidget();layout.addWidget(tabs)
         tabs.addTab(self.lab,'Görüntü / model incelemesi');tabs.addTab(self.widgets['access'][0],'Kontrol cihazı tanılama')
         dialog.exec()
@@ -235,7 +245,7 @@ class ProductWindow(QMainWindow):
     def open_updates(self):
         from .updates_ui import UpdatesPanel
         self.ops.check(self.session,'manage')
-        dialog=QDialog(self);dialog.setWindowTitle('Güvenli güncelleme');dialog.resize(760,550)
+        dialog=QDialog(self);dialog.setWindowTitle('Güvenli güncelleme');dialog.resize(760,550);apply_theme(dialog)
         layout=QVBoxLayout(dialog)
         panel=UpdatesPanel(self.ops,self.session,self.ops.path.parent,__version__,parent=dialog)
         layout.addWidget(panel)
@@ -360,7 +370,7 @@ class ProductWindow(QMainWindow):
         except PermissionError:self.notice("Oturum süresi doldu / Session expired")
 
     def fields(self,title,fields):
-        dialog=QDialog(self);dialog.setWindowTitle(title);layout=QFormLayout(dialog);edits={}
+        dialog=QDialog(self);dialog.setWindowTitle(title);apply_theme(dialog);layout=QFormLayout(dialog);edits={}
         for name,initial,secret in fields:
             edit=QLineEdit(str(initial));edits[name]=edit
             if secret:edit.setEchoMode(QLineEdit.EchoMode.Password)
@@ -681,8 +691,13 @@ class ProductWindow(QMainWindow):
         self.retention_timer.stop();self.lab.close();self.ops.logout(self.session);super().closeEvent(event)
 
 
+LoginDialog = Login
+OperatorMainWindow = ProductWindow
+
+
 def main():
     app=QApplication(sys.argv[:1])
+    apply_theme()
     from PySide6.QtGui import QIcon
     resources=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))
     app.setWindowIcon(QIcon(str(resources/"assets"/"icons"/"lpr-pro.ico")))
@@ -707,3 +722,4 @@ def main():
     window=ProductWindow(ops,login.session);window.show()
     if login.created_admin:QTimer.singleShot(0,window.open_setup)
     code=app.exec();ops.close();return code
+

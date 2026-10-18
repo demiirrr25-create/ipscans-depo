@@ -5,12 +5,13 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, Q
     QPushButton, QLineEdit, QComboBox, QCheckBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QAbstractItemView, QDialog, QDialogButtonBox, QMessageBox)
 from .camera_metadata import CameraMetadata
+from .theme import apply_theme
 
 
 class CameraEditDialog(QDialog):
     def __init__(self, camera, parent=None):
         super().__init__(parent)
-        self.setWindowTitle('Kamerayı düzenle'); self.setMinimumWidth(440)
+        self.setWindowTitle('Kamerayı düzenle'); self.setMinimumWidth(440); apply_theme(self)
         layout = QVBoxLayout(self)
         form = QFormLayout(); layout.addLayout(form)
         identity = QLabel(camera['id']); identity.setTextFormat(Qt.TextFormat.PlainText)
@@ -35,9 +36,9 @@ class CameraEditDialog(QDialog):
                              ('Çalışma modu', self.mode), ('Video çözücü tercihi', self.decoder_mode), ('Durum', self.enabled)]:
             form.addRow(label, field)
         hint = QLabel('Ad değişikliği kamera kimliğini, bağlantı parolasını ve kayıt geçmişini korur.')
-        hint.setWordWrap(True); layout.addWidget(hint)
+        hint.setObjectName('muted'); hint.setWordWrap(True); layout.addWidget(hint)
         decoder_hint = QLabel('Otomatik seçim donanım kullanıldığını garanti etmez. Uygun çözücü bulunamazsa yazılıma dönülür. Çözücü tercihi değişince akış yeniden bağlanır.')
-        decoder_hint.setWordWrap(True); layout.addWidget(decoder_hint)
+        decoder_hint.setObjectName('muted'); decoder_hint.setWordWrap(True); layout.addWidget(decoder_hint)
         self.error = QLabel(); self.error.setWordWrap(True); layout.addWidget(self.error)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
         buttons.button(QDialogButtonBox.StandardButton.Save).setText('Kaydet')
@@ -59,15 +60,16 @@ class CameraManagementPanel(QWidget):
     def __init__(self, ops, session, *, on_add, on_discover, on_calibrate, on_changed,
                  on_connection=None, parent=None):
         super().__init__(parent)
+        apply_theme(self)
         self.ops, self.session, self.store = ops, session, CameraMetadata(ops)
         self.on_changed, self.on_calibrate, self.on_connection = on_changed, on_calibrate, on_connection
         self.rows = []
         root = QVBoxLayout(self); root.setContentsMargins(20, 20, 20, 20); root.setSpacing(14)
         heading = QLabel('Kamera yönetimi'); heading.setObjectName('pageTitle'); root.addWidget(heading)
         summary = QLabel('Kameraları adlandırın, konumlarını düzenleyin ve her görüntüyü ayrı kalibre edin.')
-        summary.setWordWrap(True); root.addWidget(summary)
+        summary.setObjectName('muted'); summary.setWordWrap(True); root.addWidget(summary)
         tools = QHBoxLayout(); root.addLayout(tools)
-        self.add = QPushButton('Kamera ekle'); self.add.clicked.connect(lambda: self.invoke(on_add)); tools.addWidget(self.add)
+        self.add = QPushButton('Kamera ekle'); self.add.setObjectName('primaryBtn'); self.add.clicked.connect(lambda: self.invoke(on_add)); tools.addWidget(self.add)
         self.discover = QPushButton('Ağda kamera bul'); self.discover.clicked.connect(lambda: self.invoke(on_discover)); tools.addWidget(self.discover)
         tools.addStretch()
         self.archived = QCheckBox('Arşivlenenler'); self.archived.toggled.connect(self.refresh); tools.addWidget(self.archived)

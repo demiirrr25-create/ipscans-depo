@@ -8,25 +8,47 @@ import time
 from PyQt6.QtCore import Qt, QTimer, QUrl
 from PyQt6.QtGui import QAction, QDesktopServices, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
-    QComboBox, QFileDialog, QFrame, QHBoxLayout, QHeaderView, QLabel,
-    QInputDialog, QLineEdit, QTabBar, QMenu, QMessageBox, QPushButton,
-    QStackedWidget, QTableView, QVBoxLayout, QWidget,
+    QComboBox,
+    QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QHeaderView,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QStackedWidget,
+    QTabBar,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
 )
 
 from app.core import history, network_utils
-from app.core.models import Device
 from app.core.device_names import DeviceNames
+from app.core.models import Device
 from app.core.pdf_report import write_pdf
 from app.core.registry import DeviceRegistry
-from app.core.scanner import ScanOptions
 from app.core.report import render_report
+from app.core.scanner import ScanOptions
 from app.core.targets import plan_targets
 from app.core.topology import build_topology
 from app.i18n import DEFAULT_LANGUAGE, t
-from app.ui.scan_progress import ScanProgress
-from app.ui.resources import load_logo_pixmap
 from app.ui.network_map import NetworkMap
-from app.ui.styles import IPScansWelcomeStage, AntigravityWelcomeStage, DARK_QSS
+from app.ui.resources import load_logo_pixmap
+from app.ui.scan_progress import ScanProgress
+from app.ui.styles import (
+    AntigravityWelcomeStage,
+    DARK_QSS,
+    IPScansWelcomeStage,
+    ThemeManager,
+    ThemeToggleButton,
+    build_qss,
+    get_current_theme,
+    get_tokens,
+)
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput
 from app.workers.scan_worker import ScanWorker
 from app.workers.task_worker import TaskWorker
@@ -59,8 +81,10 @@ class MainWindow(QWidget):
         self.setWindowTitle("IPscans+ · High Performance Network Scanner")
         self.resize(1380, 880)
         self.setMinimumSize(1000, 680)
-        self.setStyleSheet(DARK_QSS)
         self._build_ui()
+        self.apply_theme(get_current_theme())
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
         self._batch_timer = QTimer(self)
         self._batch_timer.setInterval(100)
         self._batch_timer.timeout.connect(self._flush_results)
@@ -98,9 +122,8 @@ class MainWindow(QWidget):
         logo.setFixedSize(32, 32)
         heading.addWidget(logo)
 
-        title_label = QLabel("IPscans+", objectName="TitleText")
-        title_label.setStyleSheet("font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 19px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.4px;")
-        heading.addWidget(title_label)
+        self.title_label = QLabel("IPscans+", objectName="TitleText")
+        heading.addWidget(self.title_label)
 
         heading.addStretch()
 
@@ -116,7 +139,9 @@ class MainWindow(QWidget):
         # Export button in Header
         self.export_button = QPushButton(self._v4("Export Report", "Raporu Dışa Aktar"))
         self.export_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.export_button.setToolTip(self._v4("Save a PDF with your device names", "Cihaz isimlerinizi içeren PDF raporu kaydedin"))
+        self.export_button.setToolTip(
+            self._v4("Save a PDF with your device names", "Cihaz isimlerinizi içeren PDF raporu kaydedin")
+        )
         self.export_button.clicked.connect(self._export)
         heading.addWidget(self.export_button)
 
@@ -126,9 +151,12 @@ class MainWindow(QWidget):
         self.tour_btn.setVisible(True)
         heading.addWidget(self.tour_btn)
 
+        self.theme_toggle_btn = ThemeToggleButton(self, self.lang)
+        heading.addWidget(self.theme_toggle_btn)
+
         body.addLayout(heading)
 
-        # 2. Consolidated Ultra-Clean Obsidian Command Deck
+        # 2. Consolidated Command Deck
         self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
         scan.setContentsMargins(16, 12, 16, 12)
@@ -145,7 +173,7 @@ class MainWindow(QWidget):
 
         refresh = QPushButton("↻")
         refresh.setToolTip(t(self.lang, "refresh_adapters"))
-        refresh.setFixedWidth(32)
+        refresh.setFixedWidth(36)
         refresh.clicked.connect(self._refresh_adapters)
         cmd_row.addWidget(refresh)
 
@@ -154,14 +182,18 @@ class MainWindow(QWidget):
 
         self.filter_edit = QLineEdit()
         self.filter_edit.setAccessibleName(t(self.lang, "search_placeholder"))
-        self.filter_edit.setPlaceholderText(self._v4("Search devices (IP, MAC, name, port)...", "Cihaz ara (IP, MAC, isim, port)..."))
+        self.filter_edit.setPlaceholderText(
+            self._v4("Search devices (IP, MAC, name, port)...", "Cihaz ara (IP, MAC, isim, port)...")
+        )
         self.filter_edit.setToolTip('ip:192.168.1.0/24  port:443  vendor:Axis  type:"IP Camera"')
         self.filter_edit.textChanged.connect(self._filter)
         cmd_row.addWidget(self.filter_edit, stretch=1)
 
         self.columns_button = QPushButton(t(self.lang, "columns"))
         self.columns_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.columns_button.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
+        self.columns_button.clicked.connect(
+            lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft())
+        )
         cmd_row.addWidget(self.columns_button)
 
         self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
@@ -236,8 +268,26 @@ class MainWindow(QWidget):
         self.navigation.setCurrentIndex(0)
         self._update_summary()
 
+    def apply_theme(self, theme: str | None = None) -> None:
+        active = (theme or get_current_theme()).lower()
+        tokens = get_tokens(active)
+        self.setStyleSheet(build_qss(active))
+        self.title_label.setStyleSheet(
+            f"font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; "
+            f"font-size: 19px; font-weight: 700; color: {tokens['text']}; letter-spacing: -0.4px;"
+        )
+        self.theme_toggle_btn.sync_theme(active)
+        self.network_map.apply_theme(active)
+        self.progress_bar.apply_theme(active)
+        if self.model.rowCount() > 0:
+            self.model.dataChanged.emit(
+                self.model.index(0, 0),
+                self.model.index(self.model.rowCount() - 1, self.model.columnCount() - 1),
+            )
+        self.table.viewport().update()
+
     def _v4(self, en: str, tr: str) -> str:
-        return tr if self.lang == 'tr' else en
+        return tr if self.lang == "tr" else en
 
     def _on_metrics(self, metrics: dict) -> None:
         self._metrics = dict(metrics)
@@ -270,9 +320,12 @@ class MainWindow(QWidget):
         table.doubleClicked.connect(self._on_row_double_clicked)
         table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         table.customContextMenuRequested.connect(self._device_menu)
-        QShortcut(QKeySequence('F2'), table, activated=self._rename_selected)
-        enter = QShortcut(QKeySequence("Return"), table,
-                          activated=lambda: self._on_row_double_clicked(table.currentIndex()))
+        QShortcut(QKeySequence("F2"), table, activated=self._rename_selected)
+        enter = QShortcut(
+            QKeySequence("Return"),
+            table,
+            activated=lambda: self._on_row_double_clicked(table.currentIndex()),
+        )
         enter.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         return table
 
@@ -304,17 +357,25 @@ class MainWindow(QWidget):
         if getattr(self, "_adapter_loading", False):
             return
         self._adapter_loading = True
+
         def done(adapters):
             self._adapter_loading = False
             self._adapters_loaded(adapters)
+
         def failed(message):
             self._adapter_loading = False
             self._warning(message)
+
         self._background(network_utils.detect_adapters, done, failed)
 
     def _adapters_loaded(self, adapters: list[network_utils.NetworkAdapter]) -> None:
         old = self.adapter_select.currentData()
-        if self._worker and self._worker.isRunning() and self._scan_adapter and self._scan_adapter not in adapters:
+        if (
+            self._worker
+            and self._worker.isRunning()
+            and self._scan_adapter
+            and self._scan_adapter not in adapters
+        ):
             self._stop_scan()
             self._warning(t(self.lang, "network_changed"))
         if adapters == self._adapters:
@@ -336,7 +397,8 @@ class MainWindow(QWidget):
         adapter = self._adapters[index]
         self.adapter_details.setText(
             f"{adapter.name} / IP {adapter.ip} / {t(self.lang, 'subnet_mask')} {adapter.netmask} / "
-            f"{t(self.lang, 'gateway')} {adapter.gateway or 'Unknown'} / {adapter.network}")
+            f"{t(self.lang, 'gateway')} {adapter.gateway or 'Unknown'} / {adapter.network}"
+        )
         if not self.target_input.spec() or self.target_input.spec() == self._last_suggested:
             self.target_input.set_value(adapter.network)
             self._last_suggested = self.target_input.spec()
@@ -368,25 +430,41 @@ class MainWindow(QWidget):
 
     def _open_feature_tour(self) -> None:
         from app.ui.modern_welcome import ModernWelcomeDialog
+
         dialog = ModernWelcomeDialog(self.lang, parent=self)
         dialog.exec()
 
     def _start_scan(self) -> None:
-        if self._worker and self._worker.isRunning() or self._node_worker and self._node_worker.isRunning():
+        if (
+            self._worker
+            and self._worker.isRunning()
+            or self._node_worker
+            and self._node_worker.isRunning()
+        ):
             return
         try:
             targets = self._planned_targets()
-            options = ScanOptions(adaptive=True, fingerprint=True,
-                                  interface_ip=self.adapter_select.currentData().ip
-                                  if self.adapter_select.currentData() else None)
+            options = ScanOptions(
+                adaptive=True,
+                fingerprint=True,
+                interface_ip=self.adapter_select.currentData().ip
+                if self.adapter_select.currentData()
+                else None,
+            )
         except (network_utils.InvalidTargetError, ValueError) as exc:
             QMessageBox.warning(self, t(self.lang, "invalid_target_title"), str(exc))
             return
-        if len(targets) > 4096 and QMessageBox.question(
-            self, t(self.lang, "large_range"), t(self.lang, "large_range_notice", count=len(targets)),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        ) != QMessageBox.StandardButton.Yes:
+        if (
+            len(targets) > 4096
+            and QMessageBox.question(
+                self,
+                t(self.lang, "large_range"),
+                t(self.lang, "large_range_notice", count=len(targets)),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
             return
         self._cancelled = False
         self._scan_complete = False
@@ -443,18 +521,20 @@ class MainWindow(QWidget):
         self._on_conflicts(self._observations.conflicts)
 
     def _flush_results(self, all_results: bool = False) -> None:
-        keys = list(self._pending)[:len(self._pending) if all_results else 256]
+        keys = list(self._pending)[: len(self._pending) if all_results else 256]
         if keys:
             self.model.add_devices([self._pending.pop(ip) for ip in keys])
             self._map_dirty = True
-        if keys:
             self._update_summary()
 
     def _update_summary(self) -> None:
         devices = self.model._devices
-        self.summary_label.setText(self._v4(
-            f"{len(devices)} devices  ·  Double-click to open the web interface ↗",
-            f"{len(devices)} cihaz  ·  Web arayüzünü açmak için çift tıklayın ↗"))
+        self.summary_label.setText(
+            self._v4(
+                f"{len(devices)} devices  ·  Double-click to open the web interface ↗",
+                f"{len(devices)} cihaz  ·  Web arayüzünü açmak için çift tıklayın ↗",
+            )
+        )
         self.conflicts_button.setText(f"{t(self.lang, 'conflicts')} ({len(self._conflicts)})")
 
     def _on_conflicts(self, conflicts) -> None:
@@ -467,15 +547,15 @@ class MainWindow(QWidget):
             "building network topology": self._v4("Preparing the network map", "Ağ haritası hazırlanıyor"),
         }
         if phase != "discovering network":
-            # Discovery totals do not measure enrichment: show activity, not a false 100%.
             self.progress_bar.setRange(0, 0)
         self.status_label.setText(labels.get(phase, phase))
 
     def _on_progress(self, done: int, total: int) -> None:
         self.progress_bar.setRange(0, max(total, 1))
         self.progress_bar.setValue(done)
-        self.status_label.setText(t(self.lang, "status_scanning", done=done, total=total,
-                                   found=self.model.rowCount()))
+        self.status_label.setText(
+            t(self.lang, "status_scanning", done=done, total=total, found=self.model.rowCount())
+        )
 
     def _on_scan_finished(self) -> None:
         self._flush_results(all_results=True)
@@ -514,19 +594,33 @@ class MainWindow(QWidget):
             device.parent_ip = link.parent if link else None
             device.connection_evidence = (
                 f"{'Confirmed adjacency (direction unknown)' if link.confirmed else 'Inferred logical route'}: {link.evidence}"
-                if link else None)
+                if link
+                else None
+            )
         if self.model.rowCount():
-            self.model.dataChanged.emit(self.model.index(0, 9), self.model.index(self.model.rowCount() - 1, 9))
+            self.model.dataChanged.emit(
+                self.model.index(0, 9),
+                self.model.index(self.model.rowCount() - 1, 9),
+            )
         self.network_map.needle = self.filter_edit.text().strip().lower()
         self.network_map.refresh(self.model._devices, gateway, network)
 
     def _refresh_node(self, ip: str) -> None:
-        if self._worker and self._worker.isRunning() or self._node_worker and self._node_worker.isRunning():
+        if (
+            self._worker
+            and self._worker.isRunning()
+            or self._node_worker
+            and self._node_worker.isRunning()
+        ):
             self._warning(t(self.lang, "scan_busy"))
             return
         adapter = self._scan_adapter or self.adapter_select.currentData()
         self._node_observed.clear()
-        self._node_worker = ScanWorker([ip], ScanOptions(adaptive=True, fingerprint=True, interface_ip=adapter.ip if adapter else None), self)
+        self._node_worker = ScanWorker(
+            [ip],
+            ScanOptions(adaptive=True, fingerprint=True, interface_ip=adapter.ip if adapter else None),
+            self,
+        )
         self._node_worker.device_found.connect(self._on_node_found)
         self._node_worker.failed.connect(self._warning)
         self._node_worker.warning.connect(self._warning)
@@ -563,7 +657,7 @@ class MainWindow(QWidget):
 
     def _name_scope(self) -> str:
         adapter = self._scan_adapter or self.adapter_select.currentData()
-        return f'{adapter.name}|{adapter.network}|{adapter.gateway}' if adapter else self._scan_target or 'manual'
+        return f"{adapter.name}|{adapter.network}|{adapter.gateway}" if adapter else self._scan_target or "manual"
 
     def _rename_selected(self) -> None:
         index = self.table.currentIndex()
@@ -578,8 +672,8 @@ class MainWindow(QWidget):
             return
         device = self.model.device_at(self.proxy.mapToSource(index).row())
         menu = QMenu(self)
-        rename = menu.addAction(t(self.lang, 'rename_device'))
-        open_device = menu.addAction(t(self.lang, 'open_device'))
+        rename = menu.addAction(t(self.lang, "rename_device"))
+        open_device = menu.addAction(t(self.lang, "open_device"))
         chosen = menu.exec(self.table.viewport().mapToGlobal(position))
         if chosen == rename:
             self._rename_device(device)
@@ -587,26 +681,33 @@ class MainWindow(QWidget):
             self._open_device(device)
 
     def _rename_device(self, device: Device) -> None:
-        name, accepted = QInputDialog.getText(self, t(self.lang, 'rename_device'),
-            self._v4(f'{device.ip} · Up to 80 characters. Leave empty to reset.',
-                     f'{device.ip} · En fazla 80 karakter. Sıfırlamak için boş bırakın.'),
-            text=device.custom_name or '')
+        name, accepted = QInputDialog.getText(
+            self,
+            t(self.lang, "rename_device"),
+            self._v4(
+                f"{device.ip} · Up to 80 characters. Leave empty to reset.",
+                f"{device.ip} · En fazla 80 karakter. Sıfırlamak için boş bırakın.",
+            ),
+            text=device.custom_name or "",
+        )
         if not accepted:
             return
         try:
             name = self.device_names.set(self._name_scope(), device, name)
         except (OSError, ValueError) as exc:
-            QMessageBox.warning(self, t(self.lang, 'rename_device'), str(exc))
+            QMessageBox.warning(self, t(self.lang, "rename_device"), str(exc))
             return
-        # Update all live references, including results already queued by a scan.
         for entry in [device, *self.model._devices, *self._pending.values(), *self._observations.devices.values()]:
             if entry.ip == device.ip:
                 entry.custom_name = name or None
         row = self.model._rows_by_ip.get(device.ip)
         if row is not None:
-            self.model.dataChanged.emit(self.model.index(row, 0), self.model.index(row, self.model.columnCount()-1))
+            self.model.dataChanged.emit(
+                self.model.index(row, 0),
+                self.model.index(row, self.model.columnCount() - 1),
+            )
         self._refresh_map(force=True)
-        self.status_label.setText(self._v4('Device name saved locally.', 'Cihaz adı bu bilgisayara kaydedildi.'))
+        self.status_label.setText(self._v4("Device name saved locally.", "Cihaz adı bu bilgisayara kaydedildi."))
 
     def _show_conflicts(self) -> None:
         if not self._conflicts:
@@ -616,7 +717,8 @@ class MainWindow(QWidget):
             f"POTENTIAL IP CONFLICT / {conflict.ip}\n"
             f"{', '.join(conflict.macs)}\n{', '.join(conflict.vendors)}\n"
             f"{conflict.detected_at} / {conflict.confidence} confidence\n{conflict.reason}"
-            for conflict in self._conflicts)
+            for conflict in self._conflicts
+        )
         box = QMessageBox(self)
         box.setWindowTitle(t(self.lang, "conflicts"))
         box.setText(t(self.lang, "potential_conflicts"))
@@ -626,37 +728,67 @@ class MainWindow(QWidget):
     def _export(self) -> None:
         self._flush_results(all_results=True)
         path, selected = QFileDialog.getSaveFileName(
-            self, self._v4('Export report', 'Raporu dışa aktar'), "IPscans-report.pdf", "PDF (*.pdf);;HTML (*.html);;CSV (*.csv);;JSON (*.json)")
+            self,
+            self._v4("Export report", "Raporu dışa aktar"),
+            "IPscans-report.pdf",
+            "PDF (*.pdf);;HTML (*.html);;CSV (*.csv);;JSON (*.json)",
+        )
         if not path:
             return
         target = Path(path)
-        if target.suffix.lower() not in (".csv", ".json", '.html', '.pdf'):
-            target = target.with_suffix('.pdf' if 'PDF' in selected else '.html' if 'HTML' in selected else '.json' if 'JSON' in selected else '.csv')
-        devices = [self.model.device_at(self.proxy.mapToSource(self.proxy.index(row, 0)).row())
-                   for row in range(self.proxy.rowCount())]
+        if target.suffix.lower() not in (".csv", ".json", ".html", ".pdf"):
+            target = target.with_suffix(
+                ".pdf"
+                if "PDF" in selected
+                else ".html"
+                if "HTML" in selected
+                else ".json"
+                if "JSON" in selected
+                else ".csv"
+            )
+        devices = [
+            self.model.device_at(self.proxy.mapToSource(self.proxy.index(row, 0)).row())
+            for row in range(self.proxy.rowCount())
+        ]
         devices = [replace(d) for d in devices if d]
-        report_options = dict(target=self._scan_target, profile=self._metrics.get('profile', ''),
-                              completed=self._scan_complete, metrics=dict(self._metrics))
+        report_options = dict(
+            target=self._scan_target,
+            profile=self._metrics.get("profile", ""),
+            completed=self._scan_complete,
+            metrics=dict(self._metrics),
+        )
         self.export_button.setEnabled(False)
-        self.status_label.setText(self._v4('Preparing your report…', 'Raporunuz hazırlanıyor…'))
+        self.status_label.setText(self._v4("Preparing your report…", "Raporunuz hazırlanıyor…"))
+
         def save():
-            if target.suffix.lower() == '.pdf':
-                return write_pdf(devices, target, target=report_options['target'], completed=report_options['completed'], lang=self.lang)
-            if target.suffix.lower() == '.html':
-                return target.write_text(render_report(devices, **report_options), encoding='utf-8')
+            if target.suffix.lower() == ".pdf":
+                return write_pdf(
+                    devices,
+                    target,
+                    target=report_options["target"],
+                    completed=report_options["completed"],
+                    lang=self.lang,
+                )
+            if target.suffix.lower() == ".html":
+                return target.write_text(render_report(devices, **report_options), encoding="utf-8")
             return history.export_results(devices, target)
+
         def done(_):
             self.export_button.setEnabled(True)
-            self.status_label.setText(self._v4('Report saved: ', 'Rapor kaydedildi: ') + str(target))
+            self.status_label.setText(self._v4("Report saved: ", "Rapor kaydedildi: ") + str(target))
+
         def failed(message):
             self.export_button.setEnabled(True)
             self._warning(message)
-            QMessageBox.warning(self, self._v4('Export failed', 'Rapor kaydedilemedi'), message)
+            QMessageBox.warning(self, self._v4("Export failed", "Rapor kaydedilemedi"), message)
+
         self._background(save, done, failed)
 
     def closeEvent(self, event) -> None:
-        running = any(worker and worker.isRunning() for worker in (
-            self._worker, self._node_worker, *self._jobs))
+        running = any(
+            worker and worker.isRunning()
+            for worker in (self._worker, self._node_worker, *self._jobs)
+        )
         if running:
             self._close_pending = True
             self._adapter_timer.stop()

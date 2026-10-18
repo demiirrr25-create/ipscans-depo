@@ -5,12 +5,12 @@
         Title="IPCast — Remote Screen"
         Icon="/Assets/ipcast.ico"
         Width="1000" Height="660"
-        Background="#000000">
+        Background="{DynamicResource ObsidianBrush}">
     <Grid>
         <Grid RowDefinitions="Auto,*">
             <!-- Collapsible session toolbar (spec §5) -->
-            <Border Name="Toolbar" Grid.Row="0" Background="{DynamicResource SidebarBrush}"
-                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
+            <Border Name="Toolbar" Grid.Row="0" Background="{DynamicResource Surface0Brush}"
+                    BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Name="SessionAddressText" Text="Remote session" FontWeight="SemiBold" VerticalAlignment="Center" />

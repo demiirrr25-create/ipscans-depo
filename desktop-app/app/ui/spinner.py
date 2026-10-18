@@ -1,14 +1,13 @@
 """A small, dependency-free custom-painted loading spinner (QPainter + QTimer)
-with a smooth fading "comet trail" arc — used for the indeterminate
-"discovering hosts" phase of a scan and throughout the startup flow. A plain
-QProgressBar has no meaningful percentage at that point, and this reads as
-noticeably more modern than a flat static arc.
+with a smooth fading "comet trail" arc — theme-aware for Light and Dark mode.
 """
 from __future__ import annotations
 
 from PyQt6.QtCore import QPointF, QTimer, Qt
 from PyQt6.QtGui import QBrush, QColor, QConicalGradient, QPainter, QPen
 from PyQt6.QtWidgets import QWidget
+
+from app.ui.styles import ThemeManager, get_current_theme, get_tokens
 
 
 class Spinner(QWidget):
@@ -20,6 +19,7 @@ class Spinner(QWidget):
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.setInterval(16)  # ~60fps
+        ThemeManager.instance().theme_changed.connect(lambda _: self.update())
 
     def start(self) -> None:
         self.show()
@@ -40,22 +40,28 @@ class Spinner(QWidget):
         margin = width
         rect = self.rect().adjusted(margin, margin, -margin, -margin)
 
-        track = QPen(QColor(255, 255, 255, 30))
+        tokens = get_tokens()
+        is_light = get_current_theme() == "light"
+        base_col = QColor(tokens["signal"])
+        track_col = QColor(11, 13, 18, 35) if is_light else QColor(255, 255, 255, 30)
+
+        track = QPen(track_col)
         track.setWidth(width)
         track.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(track)
         painter.drawEllipse(rect)
 
-        # Comet trail: a conic gradient that fades from bright to transparent
-        # around the ring, rotated by the current angle, instead of a flat
-        # fixed-length arc — reads as a smoother, more modern loading motion.
-        # QConicalGradient requires QPointF — QRect.center() returns a plain
-        # QPoint, which PyQt6 (unlike PyQt5) will not implicitly convert.
         gradient = QConicalGradient(QPointF(rect.center()), -self._angle)
-        gradient.setColorAt(0.0, QColor(255, 255, 255, 0))
-        gradient.setColorAt(0.75, QColor(255, 255, 255, 90))
-        gradient.setColorAt(0.97, QColor(255, 255, 255, 235))
-        gradient.setColorAt(1.0, QColor(255, 255, 255, 0))
+        c0 = QColor(base_col)
+        c0.setAlpha(0)
+        c1 = QColor(base_col)
+        c1.setAlpha(100)
+        c2 = QColor(base_col)
+        c2.setAlpha(245)
+        gradient.setColorAt(0.0, c0)
+        gradient.setColorAt(0.75, c1)
+        gradient.setColorAt(0.97, c2)
+        gradient.setColorAt(1.0, c0)
         arc_pen = QPen(QBrush(gradient), width)
         arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(arc_pen)

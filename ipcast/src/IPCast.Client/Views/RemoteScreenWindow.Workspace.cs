@@ -13,7 +13,7 @@ public partial class RemoteScreenWindow
         if (_desktop is null || QualitySelector.SelectedItem is not string profile) return;
         QualitySelector.IsEnabled = false;
         try { await _desktop.SetStreamingQualityAsync(profile); SessionStatusText.Text = "Stream quality: " + profile; }
-        catch (TimeoutException) { SessionStatusText.Text = "Live quality needs IPCast 2.5 on the remote device."; }
+        catch (TimeoutException) { SessionStatusText.Text = "Live quality requires an updated IPCast client on the remote device."; }
         catch (Exception ex) { SessionStatusText.Text = "Quality change failed: " + ex.Message; }
         finally { QualitySelector.IsEnabled = true; }
     }

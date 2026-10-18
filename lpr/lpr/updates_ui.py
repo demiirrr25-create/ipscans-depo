@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QFormLayout,QLabe
     QPushButton,QLineEdit,QComboBox,QDialog,QDialogButtonBox)
 from .updates import (UpdatePolicy,UpdateManager,UpdateStatus,UpdateError,
     HTTPSReader,https_origin,verify_authenticode,decode_json)
+from .theme import apply_theme
 
 
 def policy_path(directory):
@@ -46,8 +47,9 @@ def write_policy(directory,policy):
     finally:temporary.unlink(missing_ok=True)
 
 
-def plain_label(text=''):
+def plain_label(text='',name=None):
     item=QLabel(text);item.setWordWrap(True);item.setTextFormat(Qt.TextFormat.PlainText)
+    if name:item.setObjectName(name)
     return item
 
 
@@ -55,9 +57,9 @@ class UpdatePolicyDialog(QDialog):
     def __init__(self,policy,product_name,parent=None):
         super().__init__(parent)
         self.policy=None;self.product_name=product_name
-        self.setWindowTitle('Güvenilen güncelleme yayıncısı');self.setMinimumWidth(560)
+        self.setWindowTitle('Güvenilen güncelleme yayıncısı');self.setMinimumWidth(560);apply_theme(self)
         layout=QVBoxLayout(self)
-        layout.addWidget(plain_label('Yalnız yetkili yöneticinin bağımsız olarak doğruladığı yayın adresini ve imza sertifikası parmak izini kullanın. İndirme manifesti güvenilen yayıncıyı belirleyemez.'))
+        layout.addWidget(plain_label('Yalnız yetkili yöneticinin bağımsız olarak doğruladığı yayın adresini ve imza sertifikası parmak izini kullanın. İndirme manifesti güvenilen yayıncıyı belirleyemez.','muted'))
         form=QFormLayout();layout.addLayout(form)
         self.url=QLineEdit(policy.manifest_url if policy else '');self.url.setPlaceholderText('Güvenilen HTTPS manifest adresi')
         self.url.setMaxLength(2048)
@@ -67,7 +69,7 @@ class UpdatePolicyDialog(QDialog):
         self.fingerprint.setPlaceholderText('Yayıncı sertifikasının SHA-256 parmak izi · 64 onaltılık karakter');self.fingerprint.setMaxLength(128)
         form.addRow('Yayın adresi',self.url);form.addRow('Kanal',self.channel)
         form.addRow('Sertifika SHA-256',self.fingerprint);form.addRow('İmzalı ürün adı',plain_label(product_name))
-        layout.addWidget(plain_label('Boş parmak izi indirmeyi kapalı tutar. Kaydetmek kontrol veya indirme başlatmaz. Kurulum bu ekran tarafından çalıştırılmaz.'))
+        layout.addWidget(plain_label('Boş parmak izi indirmeyi kapalı tutar. Kaydetmek kontrol veya indirme başlatmaz. Kurulum bu ekran tarafından çalıştırılmaz.','muted'))
         self.error=plain_label();layout.addWidget(self.error)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel)
         buttons.button(QDialogButtonBox.StandardButton.Save).setText('İlkeyi kaydet')
@@ -106,14 +108,15 @@ class UpdatesPanel(QWidget):
     def __init__(self,ops,session,data_directory,current_version,*,product_name='IPScans LPR Pro Preview',
                  parent=None,manager_factory=cancellable_manager):
         super().__init__(parent)
+        apply_theme(self)
         self.ops,self.session=ops,session
         self.directory=Path(data_directory);self.current_version=current_version;self.product_name=product_name
         self.manager_factory=manager_factory;self.policy=None;self.available=None;self.verified_path=None
         self.worker=None;self.closed=False;self.cancel=Event();self.results=Queue(maxsize=1);self.generation=0
         cancel=self.cancel;self.destroyed.connect(lambda *args:cancel.set())
         layout=QVBoxLayout(self);layout.setContentsMargins(0,12,0,12)
-        layout.addWidget(plain_label('Doğrulanmış güncellemeler'))
-        layout.addWidget(plain_label(f'Yüklü sürüm: {current_version} · Kurulum bu ekrandan otomatik çalıştırılmaz.'))
+        layout.addWidget(plain_label('Doğrulanmış güncellemeler','pageTitle'))
+        layout.addWidget(plain_label(f'Yüklü sürüm: {current_version} · Kurulum bu ekrandan otomatik çalıştırılmaz.','muted'))
         self.policy_summary=plain_label();layout.addWidget(self.policy_summary)
         actions=QHBoxLayout();layout.addLayout(actions)
         self.check_button=QPushButton('Yeni sürümü kontrol et');self.check_button.clicked.connect(lambda:self.begin('check'));actions.addWidget(self.check_button)

@@ -110,9 +110,13 @@ class SpatialParticlesCanvas(QWidget):
         self.update()
 
     def paintEvent(self, _event) -> None:  # noqa: N802
+        from app.ui.styles import get_current_theme, get_tokens
+        theme = get_current_theme()
+        tk = get_tokens(theme)
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor(0, 0, 0))
+        painter.fillRect(self.rect(), QColor(tk["bg_canvas"]))
 
         w = float(self.width())
         h = float(self.height())
@@ -221,6 +225,9 @@ class Win11LoadingBar(QWidget):
         self.update()
 
     def paintEvent(self, _event) -> None:  # noqa: N802
+        from app.ui.styles import get_tokens
+        tk = get_tokens()
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
@@ -230,7 +237,7 @@ class Win11LoadingBar(QWidget):
 
         # Background track
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(QColor(255, 255, 255, 22)))
+        painter.setBrush(QBrush(QColor(tk["border_default"])))
         painter.drawRoundedRect(QRectF(0, y, w, track_h), 1.75, 1.75)
 
         # Luminous progress fill
@@ -238,21 +245,13 @@ class Win11LoadingBar(QWidget):
         sweep_offset = (math.sin(self._phase * 1.5) * 0.5 + 0.5)
 
         grad = QLinearGradient(0, y, fill_w, y)
-        grad.setColorAt(0.0, QColor(88, 146, 250, 160))
+        grad.setColorAt(0.0, QColor(tk["accent_primary"]))
         mid = max(0.1, min(0.9, sweep_offset))
-        grad.setColorAt(mid, QColor(255, 255, 255, 255))
-        grad.setColorAt(1.0, QColor(50, 121, 249, 230))
+        grad.setColorAt(mid, QColor(tk["accent_hover"]))
+        grad.setColorAt(1.0, QColor(tk["accent_primary"]))
 
         painter.setBrush(QBrush(grad))
         painter.drawRoundedRect(QRectF(0, y, fill_w, track_h), 1.75, 1.75)
-
-        # Glowing tip point
-        tip_x = fill_w
-        tip_halo = QRadialGradient(tip_x, y + 1.75, 12.0)
-        tip_halo.setColorAt(0.0, QColor(255, 255, 255, 120))
-        tip_halo.setColorAt(1.0, QColor(255, 255, 255, 0))
-        painter.setBrush(QBrush(tip_halo))
-        painter.drawEllipse(QPointF(tip_x, y + 1.75), 12.0, 12.0)
 
         painter.end()
 
@@ -261,18 +260,23 @@ class Win11LoadingBar(QWidget):
 # 3. Glassmorphic Surface Container (ipscans.com Theme)
 # =========================================================================
 class Win11GlassCard(QFrame):
-    """Frosted obsidian glass card with hairline border and subtle gradient."""
+    """Surface card with hairline border and subtle gradient."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("Win11GlassCard")
+        self.apply_theme()
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        from app.ui.styles import get_tokens
+        tk = get_tokens(theme)
         self.setStyleSheet(
-            """
-            QFrame#Win11GlassCard {
-                background-color: rgba(9, 10, 14, 0.92);
-                border: 1px solid rgba(255, 255, 255, 0.14);
+            f"""
+            QFrame#Win11GlassCard {{
+                background-color: {tk['bg_surface']};
+                border: 1px solid {tk['border_default']};
                 border-radius: 24px;
-            }
+            }}
             """
         )
 
@@ -284,10 +288,9 @@ class Win11GlassCard(QFrame):
         path = QPainterPath()
         path.addRoundedRect(rect, 24.0, 24.0)
 
-        # Top-center ambient highlight
         top_glow = QRadialGradient(float(self.width()) * 0.5, 0.0, 320.0)
-        top_glow.setColorAt(0.0, QColor(255, 255, 255, 16))
-        top_glow.setColorAt(0.5, QColor(88, 146, 250, 6))
+        top_glow.setColorAt(0.0, QColor(47, 107, 255, 14))
+        top_glow.setColorAt(0.5, QColor(47, 107, 255, 5))
         top_glow.setColorAt(1.0, QColor(0, 0, 0, 0))
         painter.fillPath(path, QBrush(top_glow))
         painter.end()
@@ -320,7 +323,6 @@ class Win11OOBEWindow(QWidget):
         self._step_index = 0
         self._logo_pixmap = load_logo_pixmap(64)
 
-        # Full-screen presentation
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
@@ -334,29 +336,134 @@ class Win11OOBEWindow(QWidget):
         else:
             self.resize(1920, 1080)
 
-        # Base layout: spatial particles canvas + foreground UI stack
         self._canvas = SpatialParticlesCanvas(self)
 
-        # Foreground Stack Layout
         self._stack = QStackedLayout()
         self._stack.setStackingMode(QStackedLayout.StackingMode.StackOne)
 
-        # Build Stages
         self._build_hello_stage()
         self._build_showcase_stage()
         self._build_agreement_stage()
         self._build_loading_stage()
 
-        # Assembly
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.addLayout(self._stack)
 
-        self._stack.setCurrentIndex(0)  # Always begin with serene Hello stage
+        from app.ui.styles import ThemeManager, get_current_theme
+        self.apply_theme(get_current_theme())
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+        self._stack.setCurrentIndex(0)
         if self._mode == "splash":
-            QTimer.singleShot(1400, self._auto_advance_hello)
+            QTimer.singleShot(250, self._auto_advance_hello)
         else:
-            QTimer.singleShot(2200, self._auto_advance_hello)
+            QTimer.singleShot(450, self._auto_advance_hello)
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        from app.ui.styles import get_tokens
+        tk = get_tokens(theme)
+        if hasattr(self, "_hello_title"):
+            self._hello_title.setStyleSheet(
+                f"font-family: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, sans-serif; "
+                f"font-size: 68px; font-weight: 600; color: {tk['text_primary']}; letter-spacing: -0.6px; "
+                f"background: transparent;"
+            )
+        if hasattr(self, "_showcase_title"):
+            self._showcase_title.setStyleSheet(
+                f"font-family: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, sans-serif; "
+                f"font-size: 38px; font-weight: 600; color: {tk['text_primary']}; letter-spacing: -0.6px; "
+                f"background: transparent;"
+            )
+        if hasattr(self, "_showcase_sub"):
+            self._showcase_sub.setStyleSheet(
+                f"font-family: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, sans-serif; "
+                f"font-size: 14px; color: {tk['text_secondary']}; letter-spacing: -0.1px; background: transparent;"
+            )
+        for tile, t_lbl, d_lbl in getattr(self, "_showcase_tiles", []):
+            tile.setStyleSheet(
+                f"""
+                QFrame {{
+                    background-color: {tk['bg_surface']};
+                    border: 1px solid {tk['border_default']};
+                    border-radius: 12px;
+                }}
+                QFrame:hover {{
+                    background-color: {tk['bg_hover']};
+                    border-color: {tk['border_strong']};
+                }}
+                """
+            )
+            t_lbl.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {tk['text_primary']}; background: transparent; border: none;")
+            d_lbl.setStyleSheet(f"font-size: 11.5px; color: {tk['text_secondary']}; line-height: 1.4; background: transparent; border: none;")
+
+        if hasattr(self, "_agreement_checkbox"):
+            self._agreement_checkbox.setStyleSheet(
+                f"""
+                QCheckBox {{
+                    color: {tk['text_secondary']};
+                    font-size: 12.5px;
+                    font-weight: 500;
+                    spacing: 10px;
+                    background: transparent;
+                }}
+                QCheckBox:hover {{
+                    color: {tk['text_primary']};
+                }}
+                QCheckBox::indicator {{
+                    width: 18px;
+                    height: 18px;
+                    border: 1.5px solid {tk['border_strong']};
+                    border-radius: 4px;
+                    background-color: {tk['bg_surface']};
+                }}
+                QCheckBox::indicator:checked {{
+                    background-color: {tk['accent_primary']};
+                    border-color: {tk['accent_primary']};
+                    image: none;
+                }}
+                """
+            )
+        if hasattr(self, "_accept_btn"):
+            self._accept_btn.setStyleSheet(
+                f"""
+                QPushButton {{
+                    background-color: {tk['accent_primary']};
+                    color: {tk['text_inverse']};
+                    border: none;
+                    border-radius: 20px;
+                    padding: 12px 42px;
+                    font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    letter-spacing: -0.2px;
+                }}
+                QPushButton:hover {{
+                    background-color: {tk['accent_hover']};
+                }}
+                QPushButton:disabled {{
+                    background-color: {tk['bg_elevated']};
+                    color: {tk['text_tertiary']};
+                }}
+                """
+            )
+        if hasattr(self, "_loading_title_lbl"):
+            self._loading_title_lbl.setStyleSheet(
+                f"font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; "
+                f"font-size: 32px; font-weight: 700; color: {tk['text_primary']}; letter-spacing: -0.5px;"
+            )
+        if hasattr(self, "_loading_edition_lbl"):
+            self._loading_edition_lbl.setStyleSheet(
+                f"font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
+                f"font-size: 9px; font-weight: 600; color: {tk['text_secondary']}; letter-spacing: 2.0px;"
+            )
+        if hasattr(self, "_status_lbl"):
+            self._status_lbl.setStyleSheet(
+                f"font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
+                f"font-size: 11px; color: {tk['text_secondary']};"
+            )
+        self._canvas.update()
+        self.update()
 
     def set_target_window(self, target_window: QWidget) -> None:
         self._target_window = target_window
@@ -374,7 +481,6 @@ class Win11OOBEWindow(QWidget):
 
     def keyPressEvent(self, event) -> None:  # noqa: N802
         if event.key() == Qt.Key.Key_Escape:
-            # Safe skip on Escape key
             if hasattr(self, "_on_finish_callback") and self._on_finish_callback:
                 self._on_finish_callback()
             elif self._target_window is not None:
@@ -396,24 +502,17 @@ class Win11OOBEWindow(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Pure, minimal, luminous "Hello" / "Merhaba" matching Windows 11 Pro OOBE
         hello_text = "Merhaba" if self.lang == "tr" else "Hello"
         self._hello_title = QLabel(hello_text)
         self._hello_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._hello_title.setStyleSheet(
-            "font-family: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, sans-serif; "
-            "font-size: 68px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.6px; "
-            "background: transparent;"
-        )
         layout.addWidget(self._hello_title)
 
-        # Smooth Opacity Fade-in
         opacity = QGraphicsOpacityEffect(stage)
         stage.setGraphicsEffect(opacity)
         self._hello_opacity = opacity
 
         anim = QPropertyAnimation(opacity, b"opacity")
-        anim.setDuration(1100)
+        anim.setDuration(240)
         anim.setStartValue(0.0)
         anim.setEndValue(1.0)
         anim.setEasingCurve(QEasingCurve.Type.OutCubic)
@@ -427,7 +526,7 @@ class Win11OOBEWindow(QWidget):
             return
         if hasattr(self, "_hello_opacity"):
             fade_out = QPropertyAnimation(self._hello_opacity, b"opacity")
-            fade_out.setDuration(350)
+            fade_out.setDuration(150)
             fade_out.setStartValue(1.0)
             fade_out.setEndValue(0.0)
             fade_out.setEasingCurve(QEasingCurve.Type.InCubic)
@@ -447,7 +546,7 @@ class Win11OOBEWindow(QWidget):
         self._go_stage(1)
         if hasattr(self, "_showcase_opacity"):
             anim = QPropertyAnimation(self._showcase_opacity, b"opacity")
-            anim.setDuration(600)
+            anim.setDuration(240)
             anim.setStartValue(0.0)
             anim.setEndValue(1.0)
             anim.setEasingCurve(QEasingCurve.Type.OutCubic)
@@ -461,7 +560,6 @@ class Win11OOBEWindow(QWidget):
         stage_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         stage_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Centered transparent container matching the exact Merhaba template
         content = QWidget()
         content.setMaximumWidth(880)
         c_layout = QVBoxLayout(content)
@@ -469,39 +567,26 @@ class Win11OOBEWindow(QWidget):
         c_layout.setContentsMargins(24, 20, 24, 20)
         c_layout.setSpacing(14)
 
-        # Centered Brand Logo
         logo_lbl = QLabel()
         logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         logo_lbl.setPixmap(load_logo_pixmap(64))
         c_layout.addWidget(logo_lbl)
         c_layout.addSpacing(2)
 
-        # App Name in the exact typography style of "Merhaba"
-        title = QLabel(self._app_name)
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet(
-            "font-family: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, sans-serif; "
-            "font-size: 38px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.6px; "
-            "background: transparent;"
-        )
-        c_layout.addWidget(title)
+        self._showcase_title = QLabel(self._app_name)
+        self._showcase_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        c_layout.addWidget(self._showcase_title)
 
-        # Subtitle
         sub_text = (
             "Yüksek Performanslı Yerel Ağ Keşfi & Canlı Topoloji İstasyonu"
             if self.lang == "tr"
             else "High-Performance Network Intelligence & Live Topology Station"
         )
-        sub = QLabel(sub_text)
-        sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        sub.setStyleSheet(
-            "font-family: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, sans-serif; "
-            "font-size: 14px; color: #8A8F98; letter-spacing: -0.1px; background: transparent;"
-        )
-        c_layout.addWidget(sub)
+        self._showcase_sub = QLabel(sub_text)
+        self._showcase_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        c_layout.addWidget(self._showcase_sub)
         c_layout.addSpacing(10)
 
-        # 4 Minimalist Feature Capsules in Grid
         grid = QGridLayout()
         grid.setSpacing(12)
 
@@ -517,21 +602,9 @@ class Win11OOBEWindow(QWidget):
             ("📊", "Audit-Ready Reports", "One-click audit documentation in PDF, HTML, CSV, and JSON formats."),
         ]
 
+        self._showcase_tiles: list[tuple[QFrame, QLabel, QLabel]] = []
         for i, (icon_text, feat_title, feat_desc) in enumerate(features):
             tile = QFrame()
-            tile.setStyleSheet(
-                """
-                QFrame {
-                    background-color: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 12px;
-                }
-                QFrame:hover {
-                    background-color: rgba(255, 255, 255, 0.06);
-                    border-color: rgba(255, 255, 255, 0.20);
-                }
-                """
-            )
             t_box = QVBoxLayout(tile)
             t_box.setContentsMargins(14, 11, 14, 11)
             t_box.setSpacing(4)
@@ -541,22 +614,20 @@ class Win11OOBEWindow(QWidget):
             ico.setStyleSheet("font-size: 16px; background: transparent;")
             h_box.addWidget(ico)
             t_lbl = QLabel(feat_title)
-            t_lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #FFFFFF; background: transparent;")
             h_box.addWidget(t_lbl)
             h_box.addStretch()
             t_box.addLayout(h_box)
 
             d_lbl = QLabel(feat_desc)
             d_lbl.setWordWrap(True)
-            d_lbl.setStyleSheet("font-size: 11.5px; color: #8A8F98; line-height: 1.4; background: transparent;")
             t_box.addWidget(d_lbl)
 
+            self._showcase_tiles.append((tile, t_lbl, d_lbl))
             grid.addWidget(tile, i // 2, i % 2)
 
         c_layout.addLayout(grid)
         c_layout.addSpacing(10)
 
-        # Inline Agreement Checkbox
         agree_lbl = (
             "Kullanıcı Sözleşmesi ve Yerel Gizlilik Politikası'nı okudum, kabul ediyorum."
             if self.lang == "tr"
@@ -564,80 +635,26 @@ class Win11OOBEWindow(QWidget):
         )
         self._agreement_checkbox = QCheckBox(agree_lbl)
         self._agreement_checkbox.setChecked(True)
-        self._agreement_checkbox.setStyleSheet(
-            """
-            QCheckBox {
-                color: #A1A1A1;
-                font-size: 12.5px;
-                font-weight: 500;
-                spacing: 10px;
-                background: transparent;
-            }
-            QCheckBox:hover {
-                color: #FFFFFF;
-            }
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-                border: 1.5px solid rgba(255, 255, 255, 0.35);
-                border-radius: 4px;
-                background-color: rgba(0, 0, 0, 0.65);
-            }
-            QCheckBox::indicator:hover {
-                border-color: #FFFFFF;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #FFFFFF;
-                border-color: #FFFFFF;
-                image: none;
-            }
-            """
-        )
         self._agreement_checkbox.stateChanged.connect(self._on_agreement_toggled)
         c_layout.addWidget(self._agreement_checkbox, alignment=Qt.AlignmentFlag.AlignCenter)
         c_layout.addSpacing(6)
 
-        # Action Button: Pure White Pill
         btn_box = QHBoxLayout()
         btn_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         launch_lbl = "Uygulamayı Başlat  →" if self.lang == "tr" else "Start Application  →"
         self._accept_btn = QPushButton(launch_lbl)
         self._accept_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._accept_btn.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #FFFFFF;
-                color: #000000;
-                border: none;
-                border-radius: 20px;
-                padding: 12px 42px;
-                font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
-                font-size: 13.5px;
-                font-weight: 700;
-                letter-spacing: -0.2px;
-            }
-            QPushButton:hover {
-                background-color: #E6E6E6;
-            }
-            QPushButton:disabled {
-                background-color: rgba(255, 255, 255, 0.18);
-                color: rgba(255, 255, 255, 0.35);
-            }
-            """
-        )
         self._accept_btn.clicked.connect(self._on_accept_and_launch)
         btn_box.addWidget(self._accept_btn)
         c_layout.addLayout(btn_box)
 
-        # Escape Key Skip Hint
         c_layout.addSpacing(4)
         esc_hint = QLabel("Atlamak için ESC" if self.lang == "tr" else "Press ESC to skip")
         esc_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        esc_hint.setStyleSheet("font-size: 10px; color: #505050; background: transparent;")
+        esc_hint.setStyleSheet("font-size: 10px; color: #676F82; background: transparent;")
         c_layout.addWidget(esc_hint)
 
-        # Opacity Fade-in
         opacity = QGraphicsOpacityEffect(stage)
         stage.setGraphicsEffect(opacity)
         self._showcase_opacity = opacity
@@ -663,14 +680,14 @@ class Win11OOBEWindow(QWidget):
         top_row.addWidget(brand_icon)
 
         brand_lbl = QLabel(self._app_name)
-        brand_lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+        brand_lbl.setObjectName("TitleText")
         top_row.addWidget(brand_lbl)
         top_row.addStretch()
 
         card_layout.addLayout(top_row)
 
         title = QLabel("Kullanıcı Sözleşmesi ve Gizlilik Politikası")
-        title.setStyleSheet("font-size: 22px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.3px;")
+        title.setObjectName("TitleText")
         card_layout.addWidget(title)
 
         terms_view = QTextEdit()
@@ -683,20 +700,6 @@ class Win11OOBEWindow(QWidget):
             + "\n\nGİZLİLİK POLİTİKASI (PRIVACY POLICY)\n\n"
             + get_privacy_body(self.lang)
         )
-        terms_view.setStyleSheet(
-            """
-            QTextEdit {
-                background-color: #060709;
-                color: #C0C5CE;
-                border: 1px solid rgba(255, 255, 255, 0.10);
-                border-radius: 12px;
-                padding: 12px;
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 12px;
-                line-height: 1.5;
-            }
-            """
-        )
         card_layout.addWidget(terms_view, stretch=1)
 
         bottom = QHBoxLayout()
@@ -706,6 +709,7 @@ class Win11OOBEWindow(QWidget):
         bottom.addStretch()
 
         stage_launch = QPushButton("Kabul Et ve Başlat  →")
+        stage_launch.setObjectName("PrimaryAction")
         stage_launch.clicked.connect(self._on_accept_and_launch)
         bottom.addWidget(stage_launch)
         card_layout.addLayout(bottom)
@@ -730,7 +734,7 @@ class Win11OOBEWindow(QWidget):
         target_window: QWidget | None = None,
         on_finish: Callable[[], None] | None = None,
     ) -> None:
-        """Runs the cinematic 6.5-second launching animation sequence."""
+        """Runs a snappy launch sequence without blocking startup."""
         if target_window is not None:
             self._target_window = target_window
         if on_finish is not None:
@@ -738,35 +742,22 @@ class Win11OOBEWindow(QWidget):
 
         self._go_stage(3)
         self.set_progress(
-            0.08,
+            0.35,
             "Sistem ve donanım bileşenleri doğrulanıyor..." if self.lang == "tr" else "Verifying system and hardware components...",
         )
-
-        QTimer.singleShot(1300, lambda: self.set_progress(
-            0.28,
+        QTimer.singleShot(80, lambda: self.set_progress(
+            0.75,
             "Ağ bağdaştırıcıları ve aktif alt ağlar taranıyor..." if self.lang == "tr" else "Scanning network adapters and active subnets...",
         ))
-        QTimer.singleShot(2600, lambda: self.set_progress(
-            0.52,
-            "ARP tabloları ve donanım kimlikleri çözülüyor..." if self.lang == "tr" else "Resolving ARP tables and hardware identities...",
-        ))
-        QTimer.singleShot(3900, lambda: self.set_progress(
-            0.74,
-            "Topoloji analiz motoru ve bellek önbelleği optimize ediliyor..." if self.lang == "tr" else "Optimizing topology engine and memory cache...",
-        ))
-        QTimer.singleShot(5100, lambda: self.set_progress(
-            0.90,
-            "Kullanıcı çalışma alanı ve görsel bileşenler senkronize ediliyor..." if self.lang == "tr" else "Synchronizing workspace and visual surfaces...",
-        ))
-        QTimer.singleShot(6100, lambda: self.set_progress(
+        QTimer.singleShot(160, lambda: self.set_progress(
             1.00,
             "Çalışma alanı hazır" if self.lang == "tr" else "Workspace ready",
         ))
 
         if self._target_window is not None:
-            QTimer.singleShot(6600, lambda: self.finish_and_show(self._target_window, getattr(self, "_on_finish_callback", None)))
+            QTimer.singleShot(200, lambda: self.finish_and_show(self._target_window, getattr(self, "_on_finish_callback", None)))
         elif hasattr(self, "_on_finish_callback") and self._on_finish_callback is not None:
-            QTimer.singleShot(6600, self._on_finish_callback)
+            QTimer.singleShot(200, self._on_finish_callback)
 
     # ---------------------------------------------------- Stage 3: Loading / Ready
     def _build_loading_stage(self) -> None:
@@ -775,53 +766,35 @@ class Win11OOBEWindow(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(14)
 
-        # Luminous Center Logo
         logo_lbl = QLabel()
         logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         logo_lbl.setPixmap(load_logo_pixmap(72))
         layout.addWidget(logo_lbl)
         layout.addSpacing(10)
 
-        # App Name
-        title_lbl = QLabel(self._app_name)
-        title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_lbl.setStyleSheet(
-            "font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; "
-            "font-size: 32px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.5px;"
-        )
-        layout.addWidget(title_lbl)
+        self._loading_title_lbl = QLabel(self._app_name)
+        self._loading_title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self._loading_title_lbl)
 
-        # Edition label
-        edition_lbl = QLabel(self._edition_label.upper())
-        edition_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        edition_lbl.setStyleSheet(
-            "font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
-            "font-size: 9px; font-weight: 600; color: #8A8F98; letter-spacing: 2.0px;"
-        )
-        layout.addWidget(edition_lbl)
+        self._loading_edition_lbl = QLabel(self._edition_label.upper())
+        self._loading_edition_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self._loading_edition_lbl)
         layout.addSpacing(18)
 
-        # Hairline loading bar
         self._loading_bar = Win11LoadingBar()
         bar_box = QHBoxLayout()
         bar_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
         bar_box.addWidget(self._loading_bar)
         layout.addLayout(bar_box)
 
-        # Status text
         self._status_lbl = QLabel(self._status_text)
         self._status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._status_lbl.setStyleSheet(
-            "font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; "
-            "font-size: 11px; color: #8A8F98;"
-        )
         layout.addWidget(self._status_lbl)
 
-        # ESC skip hint
         layout.addSpacing(20)
         esc_hint = QLabel("Atlamak için ESC")
         esc_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        esc_hint.setStyleSheet("font-size: 10px; color: #505050;")
+        esc_hint.setStyleSheet("font-size: 10px; color: #676F82;")
         layout.addWidget(esc_hint)
 
         self._stack.addWidget(stage)
@@ -846,7 +819,7 @@ class Win11OOBEWindow(QWidget):
         self.set_progress(1.0, "Çalışma alanı hazır")
 
         fade_anim = QPropertyAnimation(self, b"windowOpacity")
-        fade_anim.setDuration(260)
+        fade_anim.setDuration(180)
         fade_anim.setStartValue(1.0)
         fade_anim.setEndValue(0.0)
         fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
@@ -863,6 +836,7 @@ class Win11OOBEWindow(QWidget):
         fade_anim.finished.connect(_cleanup)
         fade_anim.start()
         self._fade_anim = fade_anim
+
 
 
 # Backward-compatible aliases for existing imports and selftests

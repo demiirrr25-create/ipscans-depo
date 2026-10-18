@@ -1,545 +1,1013 @@
-"""IPScans Pure Black (#000000) Design System for IPscans+ Desktop.
-Applied globally (including QMessageBox/QToolTip popups) so every surface,
-welcome dialog, pill button, and table shares the exact ipscans.com theme.
+"""IPScans v2 Unified Design System (Light & Dark Mode) for IPscans+ and Network Health Pro.
+
+Token values mirror `design/tokens.json`. Provides:
+- `LIGHT_TOKENS` and `DARK_TOKENS`
+- `build_qss(theme)`, `LIGHT_QSS`, `DARK_QSS`, `MONOCHROME_QSS`
+- `ThemeManager`, `detect_os_theme()`, `get_current_theme()`, `set_current_theme(theme)`,
+  `toggle_theme()`, `apply_theme(widget_or_app, theme)`, `get_tokens(theme)`
+- `ThemeToggleButton` (custom-painted Sun/Moon theme switch button)
 """
 from __future__ import annotations
 
 import math
+import sys
+from typing import Callable
 
-from PyQt6.QtCore import QRectF, Qt, QTimer
-from PyQt6.QtGui import QBrush, QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtCore import QObject, QPointF, QRectF, QSettings, Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+)
+from PyQt6.QtWidgets import QApplication, QPushButton, QWidget
 
-DARK_QSS = """
-* {
-    font-family: "Segoe UI", "Inter", Arial, sans-serif;
-    color: #e8eaed;
+THEME_SETTINGS_ORG = "IPScans"
+THEME_SETTINGS_APP = "IPscansEcosystem"
+THEME_SETTINGS_KEY = "ui/theme"
+
+LIGHT_TOKENS: dict[str, str] = {
+    "bg": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "surface1": "#F8F9FA",
+    "surface2": "#F1F3F6",
+    "surface3": "#E8EAED",
+    "surfaceHover": "#EDF0F3",
+    "border": "#E5E7EB",
+    "borderStrong": "#D1D5DB",
+    "borderFocus": "#2F6BFF",
+    "text": "#0B0D12",
+    "textSecondary": "#3C4252",
+    "textTertiary": "#676F82",
+    "textMuted": "#8A9099",
+    "textDisabled": "#B0B5BD",
+    "accent": "#0B0D12",
+    "accentHover": "#22252E",
+    "accentText": "#FFFFFF",
+    "signal": "#2F6BFF",
+    "signalStrong": "#1D56E5",
+    "signalSoft": "#EBF1FF",
+    "stage": "#07080B",
+    "stageCard": "#11131A",
+    "stageBorder": "#1E222D",
+    "onStage": "#F5F7FA",
+    "onStageSecondary": "#A7B0C0",
+    "chartPrimary": "#2F6BFF",
+    "chartSecondary": "#7B61FF",
+    "chartGrid": "#E8EAED",
+    "statusOk": "#0F9D58",
+    "statusWarn": "#E37400",
+    "statusError": "#D93025",
+    "statusInfo": "#2F6BFF",
+    "overlay": "rgba(11, 13, 18, 0.45)",
+    "bg_canvas": "#FFFFFF",
+    "bg_surface": "#F8F9FA",
+    "bg_elevated": "#F1F3F6",
+    "bg_hover": "#EDF0F3",
+    "border_default": "#E5E7EB",
+    "border_subtle": "#ECEEF2",
+    "border_strong": "#D1D5DB",
+    "text_primary": "#0B0D12",
+    "text_secondary": "#3C4252",
+    "text_tertiary": "#676F82",
+    "text_inverse": "#FFFFFF",
+    "accent_primary": "#2F6BFF",
+    "accent_hover": "#1D56E5",
+    "accent_subtle": "#EBF1FF",
+    "online": "#0F9D58",
+    "warning": "#E37400",
+    "critical": "#D93025",
+    "info": "#2F6BFF",
+}
+
+DARK_TOKENS: dict[str, str] = {
+    "bg": "#07080B",
+    "surface": "#07080B",
+    "surface1": "#0D0F14",
+    "surface2": "#141821",
+    "surface3": "#1B1F2A",
+    "surfaceHover": "#222735",
+    "border": "#1E222D",
+    "borderStrong": "#2C3242",
+    "borderFocus": "#4C82FF",
+    "text": "#F5F7FA",
+    "textSecondary": "#A8B0C2",
+    "textTertiary": "#6E778C",
+    "textMuted": "#4E5666",
+    "textDisabled": "#383E4C",
+    "accent": "#F5F7FA",
+    "accentHover": "#E2E6EE",
+    "accentText": "#07080B",
+    "signal": "#4C82FF",
+    "signalStrong": "#2F6BFF",
+    "signalSoft": "#132042",
+    "stage": "#0D0F14",
+    "stageCard": "#13161E",
+    "stageBorder": "#222735",
+    "onStage": "#F5F7FA",
+    "onStageSecondary": "#A7B0C0",
+    "chartPrimary": "#4C82FF",
+    "chartSecondary": "#9B84FF",
+    "chartGrid": "#1B1F2A",
+    "statusOk": "#34D399",
+    "statusWarn": "#FBBF24",
+    "statusError": "#F87171",
+    "statusInfo": "#60A5FA",
+    "overlay": "rgba(0, 0, 0, 0.72)",
+    "bg_canvas": "#07080B",
+    "bg_surface": "#0D0F14",
+    "bg_elevated": "#141821",
+    "bg_hover": "#222735",
+    "border_default": "#1E222D",
+    "border_subtle": "#161A23",
+    "border_strong": "#2C3242",
+    "text_primary": "#F5F7FA",
+    "text_secondary": "#A8B0C2",
+    "text_tertiary": "#6E778C",
+    "text_inverse": "#07080B",
+    "accent_primary": "#4C82FF",
+    "accent_hover": "#2F6BFF",
+    "accent_subtle": "#132042",
+    "online": "#34D399",
+    "warning": "#FBBF24",
+    "critical": "#F87171",
+    "info": "#60A5FA",
+}
+
+THEMES: dict[str, dict[str, str]] = {
+    "light": LIGHT_TOKENS,
+    "dark": DARK_TOKENS,
+}
+
+
+def detect_os_theme() -> str:
+    """Detects Windows 11/10 system theme via registry AppsUseLightTheme."""
+    if sys.platform == "win32":
+        try:
+            import winreg
+
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+            ) as key:
+                value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+                return "light" if int(value) == 1 else "dark"
+        except Exception:
+            pass
+    return "dark"
+
+
+def get_tokens(theme: str | None = None) -> dict[str, str]:
+    resolved = (theme or get_current_theme()).lower()
+    return LIGHT_TOKENS if resolved == "light" else DARK_TOKENS
+
+
+def build_qss(theme: str = "dark") -> str:
+    """Builds the complete IPScans v2 QSS stylesheet for either 'light' or 'dark'."""
+    t = LIGHT_TOKENS if str(theme).lower() == "light" else DARK_TOKENS
+    is_light = str(theme).lower() == "light"
+    canvas_bg = t["surface1"] if is_light else t["bg"]
+
+    return f"""
+* {{
+    font-family: "Segoe UI Variable Text", "Segoe UI", "Inter", Arial, sans-serif;
+    color: {t["text"]};
     outline: none;
-}
+}}
 
-#AppRoot, QStackedWidget {
-    background-color: #000000;
-}
+#AppRoot, QStackedWidget, QMainWindow {{
+    background-color: {t["bg"]};
+    color: {t["text"]};
+}}
 
-QPushButton:focus, QListWidget:focus, QTableView:focus, QCheckBox:focus {
-    border: 1px solid rgba(255, 255, 255, 0.55);
-}
+QPushButton:focus, QListWidget:focus, QTableView:focus, QTableWidget:focus, QTreeWidget:focus, QCheckBox:focus {{
+    border: 1px solid {t["borderFocus"]};
+}}
 
-QListWidget {
-    background: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+QListWidget {{
+    background: {t["surface1"]};
+    border: 1px solid {t["border"]};
     border-radius: 16px;
     padding: 6px;
-}
-QListWidget::item {
+    color: {t["text"]};
+}}
+QListWidget::item {{
     padding: 12px 10px;
     border-radius: 10px;
-}
-QListWidget::item:selected {
-    background: #ffffff;
-    color: #000000;
-}
+}}
+QListWidget::item:selected {{
+    background: {t["accent"]};
+    color: {t["accentText"]};
+}}
 
-QGraphicsView {
-    border: 1px solid rgba(255, 255, 255, 0.08);
+QGraphicsView {{
+    border: 1px solid {t["border"]};
     border-radius: 20px;
-    background: #06070a;
-}
+    background: {canvas_bg};
+}}
 
-#RootCard, #SplashCard, QFrame#ScanCard, QFrame#WelcomeHeroCard {
-    background-color: #0A0A0A;
-    border: 1px solid #1F1F1F;
+#RootCard, #SplashCard, QFrame#ScanCard, QFrame#WelcomeHeroCard {{
+    background-color: {t["surface1"]};
+    border: 1px solid {t["border"]};
     border-radius: 16px;
-}
+}}
 
-#TitleBar {
-    background: transparent;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
+#TitleBar {{
+    background: {t["surface"]};
+    border-bottom: 1px solid {t["border"]};
+}}
 
-QLabel {
+QLabel {{
     font-size: 12px;
-    color: #9aa0a6;
+    color: {t["textSecondary"]};
     background: transparent;
-}
+}}
 
-QLabel#TitleText {
-    font-size: 26px;
-    font-weight: 600;
+QLabel#TitleText {{
+    font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+    font-size: 20px;
+    font-weight: 700;
     letter-spacing: -0.4px;
-    color: #ffffff;
-}
+    color: {t["text"]};
+}}
 
-QLabel#SubtitleText {
+QLabel#SubtitleText {{
     font-size: 12px;
-    color: #9aa0a6;
-}
+    color: {t["textTertiary"]};
+}}
 
-QLabel#VersionBadge {
-    color: #e8eaed;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+QLabel#VersionBadge {{
+    color: {t["textSecondary"]};
+    background: {t["surface2"]};
+    border: 1px solid {t["borderStrong"]};
     border-radius: 13px;
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.10em;
-    padding: 6px 12px;
-}
+    letter-spacing: 0.08em;
+    padding: 5px 11px;
+}}
 
-#OptionsCard {
-    background: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+#OptionsCard {{
+    background: {t["surface1"]};
+    border: 1px solid {t["border"]};
     border-radius: 18px;
-}
+}}
 
-#SegmentBar {
-    background: #090a0d;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+#SegmentBar {{
+    background: {t["surface2"]};
+    border: 1px solid {t["border"]};
     border-radius: 18px;
-}
-QPushButton#SegmentButton {
+}}
+QPushButton#SegmentButton {{
     background: transparent;
-    color: #9aa0a6;
+    color: {t["textSecondary"]};
     border: none;
     border-radius: 14px;
     padding: 8px 16px;
     font-size: 12px;
     font-weight: 600;
-}
-QPushButton#SegmentButton:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
-}
-QPushButton#SegmentButton:checked {
-    background: #ffffff;
-    color: #000000;
-}
+}}
+QPushButton#SegmentButton:hover {{
+    background: {t["surfaceHover"]};
+    color: {t["text"]};
+}}
+QPushButton#SegmentButton:checked {{
+    background: {t["accent"]};
+    color: {t["accentText"]};
+}}
 
-/* Onboarding wizard's language-picker step */
-QPushButton#LanguageOption {
-    background: #0d0e12;
-    color: #e8eaed;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
+QPushButton#LanguageOption {{
+    background: {t["surface1"]};
+    color: {t["text"]};
+    border: 1px solid {t["borderStrong"]};
+    border-radius: 16px;
     font-size: 13px;
     font-weight: 500;
     padding: 10px 16px;
-}
-QPushButton#LanguageOption:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    color: #ffffff;
-}
-QPushButton#LanguageOption:checked {
-    background: #ffffff;
-    color: #000000;
-    border: 1px solid #ffffff;
+}}
+QPushButton#LanguageOption:hover {{
+    background: {t["surfaceHover"]};
+    border: 1px solid {t["borderFocus"]};
+    color: {t["text"]};
+}}
+QPushButton#LanguageOption:checked {{
+    background: {t["accent"]};
+    color: {t["accentText"]};
+    border: 1px solid {t["accent"]};
     font-weight: 600;
-}
+}}
 
-QPushButton#WindowButton {
+QPushButton#WindowButton {{
     background: transparent;
     border: none;
     border-radius: 14px;
-    color: #9aa0a6;
+    color: {t["textSecondary"]};
     padding: 4px 10px;
-}
-QPushButton#WindowButton:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
-}
+}}
+QPushButton#WindowButton:hover {{
+    background: {t["surfaceHover"]};
+    color: {t["text"]};
+}}
 
-QRadioButton {
+QRadioButton {{
     font-size: 13px;
     spacing: 6px;
     padding: 2px 0;
-}
-QRadioButton::indicator {
+    color: {t["text"]};
+}}
+QRadioButton::indicator {{
     width: 16px;
     height: 16px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: #090a0d;
-}
-QRadioButton::indicator:checked {
-    border: 1px solid #ffffff;
+    border: 1px solid {t["borderStrong"]};
+    background: {t["surface"]};
+}}
+QRadioButton::indicator:checked {{
+    border: 1px solid {t["signal"]};
     background: qradialgradient(cx:0.5, cy:0.5, radius:0.5,
-        stop:0 #ffffff, stop:0.5 #ffffff, stop:0.6 transparent, stop:1 transparent);
-}
+        stop:0 {t["signal"]}, stop:0.5 {t["signal"]}, stop:0.6 transparent, stop:1 transparent);
+}}
 
-QCheckBox {
+QCheckBox {{
     font-size: 13px;
     spacing: 8px;
-    color: #e8eaed;
-}
-QCheckBox::indicator {
+    color: {t["text"]};
+}}
+QCheckBox::indicator {{
     width: 16px;
     height: 16px;
     border-radius: 5px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: #090a0d;
-}
-QCheckBox::indicator:checked {
-    border: 1px solid #ffffff;
-    background: #ffffff;
-}
-QCheckBox::indicator:disabled {
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
+    border: 1px solid {t["borderStrong"]};
+    background: {t["surface"]};
+}}
+QCheckBox::indicator:checked {{
+    border: 1px solid {t["signal"]};
+    background: {t["signal"]};
+}}
+QCheckBox::indicator:disabled {{
+    border: 1px solid {t["border"]};
+    background: {t["surface2"]};
+}}
 
-QLineEdit, QComboBox {
-    background: #090a0d;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 18px;
-    padding: 10px 16px;
+QLineEdit, QComboBox, QTimeEdit {{
+    background: {t["surface"]};
+    border: 1px solid {t["borderStrong"]};
+    border-radius: 16px;
+    padding: 9px 14px;
     font-size: 13px;
-    color: #ffffff;
-    selection-background-color: #ffffff;
-    selection-color: #000000;
-}
-QLineEdit:focus, QComboBox:focus {
-    border: 1px solid rgba(255, 255, 255, 0.50);
-}
+    color: {t["text"]};
+    selection-background-color: {t["signal"]};
+    selection-color: #FFFFFF;
+}}
+QLineEdit:focus, QComboBox:focus, QTimeEdit:focus {{
+    border: 1.5px solid {t["borderFocus"]};
+}}
+QLineEdit:disabled, QComboBox:disabled, QTimeEdit:disabled {{
+    background: {t["surface2"]};
+    color: {t["textDisabled"]};
+    border-color: {t["border"]};
+}}
 
-QComboBox QAbstractItemView {
-    background-color: #0d0e12;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.16);
+QComboBox QAbstractItemView {{
+    background-color: {t["surface1"]};
+    color: {t["text"]};
+    border: 1px solid {t["borderStrong"]};
     border-radius: 12px;
     outline: none;
-    selection-background-color: rgba(255, 255, 255, 0.14);
-    selection-color: #ffffff;
+    selection-background-color: {t["signalSoft"]};
+    selection-color: {t["text"]};
     padding: 4px;
-}
-QComboBox QAbstractItemView::item {
+}}
+QComboBox QAbstractItemView::item {{
     padding: 7px 12px;
     min-height: 22px;
-}
-QComboBox QAbstractItemView::item:hover {
-    background-color: rgba(255, 255, 255, 0.10);
-}
+}}
+QComboBox QAbstractItemView::item:hover {{
+    background-color: {t["surfaceHover"]};
+}}
 
-QMenu {
-    background-color: #0d0e12;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+QMenu {{
+    background-color: {t["surface1"]};
+    color: {t["text"]};
+    border: 1px solid {t["borderStrong"]};
     border-radius: 12px;
     padding: 6px;
-}
-QMenu::item {
+}}
+QMenu::item {{
     padding: 7px 20px;
     border-radius: 8px;
-}
-QMenu::item:selected {
-    background-color: #ffffff;
-    color: #000000;
-}
-QMenu::separator {
+}}
+QMenu::item:selected {{
+    background-color: {t["accent"]};
+    color: {t["accentText"]};
+}}
+QMenu::separator {{
     height: 1px;
-    background: rgba(255, 255, 255, 0.10);
+    background: {t["border"]};
     margin: 4px 8px;
-}
+}}
 
-QPushButton {
-    background: rgba(255, 255, 255, 0.06);
-    color: #e8eaed;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+QPushButton {{
+    background: {t["surface2"]};
+    color: {t["text"]};
+    border: 1px solid {t["borderStrong"]};
     border-radius: 18px;
-    padding: 10px 18px;
+    padding: 9px 18px;
     font-size: 12px;
     font-weight: 500;
-}
-QPushButton:hover {
-    background: rgba(255, 255, 255, 0.11);
-    border-color: rgba(255, 255, 255, 0.26);
-    color: #ffffff;
-}
-QPushButton:disabled {
-    color: #6f7480;
-    background: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.06);
-}
+}}
+QPushButton:hover {{
+    background: {t["surfaceHover"]};
+    border-color: {t["borderFocus"]};
+    color: {t["text"]};
+}}
+QPushButton:disabled {{
+    color: {t["textDisabled"]};
+    background: {t["surface1"]};
+    border-color: {t["border"]};
+}}
 
-QPushButton#PrimaryButton {
-    background: #ffffff;
-    color: #000000;
-    border: 1px solid #ffffff;
+QPushButton#PrimaryButton {{
+    background: {t["accent"]};
+    color: {t["accentText"]};
+    border: 1px solid {t["accent"]};
     border-radius: 18px;
     padding: 10px 24px;
     font-weight: 600;
     font-size: 13px;
-}
-QPushButton#PrimaryButton:hover {
-    background: #e6eaf0;
-    border-color: #e6eaf0;
-}
-QPushButton#PrimaryButton:pressed {
-    background: #cfd5df;
-}
-QPushButton#PrimaryButton:disabled {
-    background: rgba(255, 255, 255, 0.18);
-    color: rgba(0, 0, 0, 0.55);
-    border-color: transparent;
-}
+}}
+QPushButton#PrimaryButton:hover {{
+    background: {t["accentHover"]};
+    border-color: {t["accentHover"]};
+    color: {t["accentText"]};
+}}
+QPushButton#PrimaryButton:pressed {{
+    background: {t["signal"]};
+    border-color: {t["signal"]};
+    color: #FFFFFF;
+}}
+QPushButton#PrimaryButton:disabled {{
+    background: {t["surface3"]};
+    color: {t["textDisabled"]};
+    border-color: {t["border"]};
+}}
 
-QPushButton#GhostButton {
-    background: rgba(255, 255, 255, 0.05);
-    color: #e8eaed;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+QPushButton#GhostButton, QPushButton#TourButton {{
+    background: {t["surface1"]};
+    color: {t["textSecondary"]};
+    border: 1px solid {t["borderStrong"]};
     border-radius: 18px;
-    padding: 10px 18px;
-    font-size: 13px;
-}
-QPushButton#GhostButton:hover {
-    background: rgba(255, 255, 255, 0.10);
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    color: #ffffff;
-}
-
-QTabWidget::pane {
-    background-color: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 18px;
-}
-QTabBar::tab {
-    background: #0d0e12;
-    color: #9aa0a6;
-    padding: 10px 22px;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 18px;
-    margin-left: 6px;
+    padding: 9px 16px;
+    font-size: 12px;
     font-weight: 500;
-}
-QTabBar::tab:selected {
-    color: #000000;
-    background: #ffffff;
-    border: 1px solid #ffffff;
+}}
+QPushButton#GhostButton:hover, QPushButton#TourButton:hover {{
+    background: {t["surfaceHover"]};
+    border: 1px solid {t["borderFocus"]};
+    color: {t["text"]};
+}}
+
+QPushButton#ThemeToggleButton {{
+    background: {t["surface1"]};
+    color: {t["text"]};
+    border: 1px solid {t["borderStrong"]};
+    border-radius: 17px;
+    padding: 6px 14px;
+    font-size: 12px;
     font-weight: 600;
-}
-QTabBar::tab:!selected:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
-}
+}}
+QPushButton#ThemeToggleButton:hover {{
+    background: {t["surfaceHover"]};
+    border-color: {t["borderFocus"]};
+}}
 
-QLabel#ResultsHeading {
-    color: #e8eaed;
+QTabWidget::pane {{
+    background-color: {t["surface1"]};
+    border: 1px solid {t["border"]};
+    border-radius: 20px;
+    top: 6px;
+}}
+QTabBar::tab {{
+    background: {t["surface1"]};
+    color: {t["textSecondary"]};
+    padding: 9px 20px;
+    border: 1px solid {t["border"]};
+    border-radius: 17px;
+    margin-left: 4px;
+    margin-right: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QTabBar::tab:selected {{
+    color: {t["accentText"]};
+    background: {t["accent"]};
+    border: 1px solid {t["accent"]};
+    font-weight: 600;
+}}
+QTabBar::tab:!selected:hover {{
+    background: {t["surfaceHover"]};
+    color: {t["text"]};
+    border-color: {t["borderStrong"]};
+}}
+
+QLabel#ResultsHeading {{
+    color: {t["text"]};
     font-size: 13px;
-    padding: 4px 0 10px;
-}
+    font-weight: 500;
+    padding: 4px 0 6px;
+}}
 
-QTableView {
-    background: #000000;
-    alternate-background-color: #0A0A0A;
-    border: 1px solid #1F1F1F;
+QTableView, QTableWidget {{
+    background: {t["surface"]};
+    alternate-background-color: {t["surface1"]};
+    color: {t["text"]};
+    border: 1px solid {t["border"]};
     border-radius: 16px;
-    gridline-color: #141414;
+    gridline-color: {t["border"]};
     font-size: 13px;
-}
-QTableView QAbstractScrollArea, QTreeWidget QAbstractScrollArea {
-    background-color: #0d0e12;
-}
-QTreeWidget {
-    background-color: #0d0e12;
-    alternate-background-color: #111318;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+}}
+QTableView QAbstractScrollArea, QTreeWidget QAbstractScrollArea {{
+    background-color: {t["surface1"]};
+}}
+QTreeView, QTreeWidget {{
+    background-color: {t["surface1"]};
+    alternate-background-color: {t["surface2"]};
+    color: {t["text"]};
+    border: 1px solid {t["border"]};
     border-radius: 18px;
-}
-QTreeWidget::item {
-    padding: 7px;
+    outline: none;
+    font-size: 12px;
+    padding: 6px;
+}}
+QTreeView::item, QTreeWidget::item {{
+    padding: 6px 8px;
     min-height: 22px;
-}
-QTreeWidget::item:selected {
-    background-color: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
-}
-QTableView::item {
+    border: none;
+}}
+QTreeView::item:selected, QTreeWidget::item:selected {{
+    background-color: {t["signalSoft"]};
+    color: {t["text"]};
+    border-radius: 8px;
+}}
+QTreeView::branch, QTreeWidget::branch {{
+    background: transparent;
+}}
+QTableView::item, QTableWidget::item {{
     padding: 9px 12px;
     border: none;
-}
-QTableView::item:selected {
-    background: rgba(50, 121, 249, 0.22);
-    color: #ffffff;
-}
-QTableView::item:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-QHeaderView::section {
-    background: #090a0d;
-    color: #9aa0a6;
-    padding: 13px 10px;
+    color: {t["text"]};
+}}
+QTableView::item:selected, QTableWidget::item:selected {{
+    background: {t["signalSoft"]};
+    color: {t["text"]};
+}}
+QTableView::item:hover, QTableWidget::item:hover {{
+    background: {t["surfaceHover"]};
+}}
+QHeaderView::section {{
+    background: {t["surface1"]};
+    color: {t["textTertiary"]};
+    padding: 12px 10px;
     border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    border-bottom: 1px solid {t["border"]};
     font-size: 11px;
     font-weight: 600;
-}
+}}
 
-QScrollBar:vertical {
+QScrollArea {{
+    background: transparent;
+    border: none;
+}}
+QScrollArea > QWidget > QWidget {{
+    background: transparent;
+}}
+
+QScrollBar:vertical {{
     background: transparent;
     width: 10px;
-}
-QScrollBar::handle:vertical {
-    background: rgba(255, 255, 255, 0.18);
+}}
+QScrollBar::handle:vertical {{
+    background: {t["borderStrong"]};
     border-radius: 5px;
     min-height: 24px;
-}
-QScrollBar::handle:vertical:hover {
-    background: rgba(255, 255, 255, 0.30);
-}
-QScrollBar::add-line, QScrollBar::sub-line {
+}}
+QScrollBar::handle:vertical:hover {{
+    background: {t["textTertiary"]};
+}}
+QScrollBar::add-line, QScrollBar::sub-line {{
     height: 0;
-}
-QScrollBar:horizontal {
-    background: #090a0d;
+}}
+QScrollBar:horizontal {{
+    background: transparent;
     height: 10px;
-}
-QScrollBar::handle:horizontal {
-    background: rgba(255, 255, 255, 0.22);
+}}
+QScrollBar::handle:horizontal {{
+    background: {t["borderStrong"]};
     border-radius: 5px;
     min-width: 24px;
-}
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+}}
+QScrollBar::handle:horizontal:hover {{
+    background: {t["textTertiary"]};
+}}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
     width: 0;
-}
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-    background: #090a0d;
-}
+}}
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+    background: transparent;
+}}
 
-QLabel#StatusLabel {
-    color: #9aa0a6;
+QLabel#StatusLabel {{
+    color: {t["textSecondary"]};
     font-size: 12px;
     padding-top: 2px;
-}
+}}
 
-QLabel#SectionLabel {
-    color: #9aa0a6;
+QLabel#SectionLabel {{
+    color: {t["textTertiary"]};
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.08em;
-}
+}}
 
-QProgressBar {
-    background: rgba(255, 255, 255, 0.08);
+#HealthCard {{
+    background: {t["surface1"]};
+    border: 1px solid {t["border"]};
+    border-radius: 22px;
+}}
+QLabel#HealthScoreValue {{
+    color: {t["text"]};
+    font-size: 46px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}}
+QLabel#HealthScoreLabel {{
+    color: {t["textTertiary"]};
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}}
+#StatCard {{
+    background: {t["surface1"]};
+    border: 1px solid {t["border"]};
+    border-radius: 18px;
+}}
+QLabel#StatValue {{
+    color: {t["text"]};
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}}
+QLabel#StatLabel {{
+    color: {t["textTertiary"]};
+    font-size: 11px;
+}}
+
+QLabel#SeverityInfo {{
+    color: {t["statusInfo"]};
+    font-weight: 600;
+}}
+QLabel#SeverityWarning {{
+    color: {t["statusWarn"]};
+    font-weight: 600;
+}}
+QLabel#SeverityCritical {{
+    color: {t["statusError"]};
+    font-weight: 600;
+}}
+
+QProgressBar {{
+    background: {t["surface3"]};
     border: none;
     border-radius: 4px;
     height: 6px;
     text-align: center;
     color: transparent;
-}
-QProgressBar::chunk {
+}}
+QProgressBar::chunk {{
     border-radius: 4px;
-    background: #ffffff;
-}
+    background: {t["signal"]};
+}}
 
-QTextEdit {
-    background-color: #090a0d;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+QTextEdit {{
+    background-color: {t["surface1"]};
+    border: 1px solid {t["borderStrong"]};
     border-radius: 16px;
     padding: 12px;
     font-size: 12px;
-    color: #e8eaed;
-    selection-background-color: #ffffff;
-    selection-color: #000000;
-}
+    color: {t["text"]};
+    selection-background-color: {t["signal"]};
+    selection-color: #FFFFFF;
+}}
 
-QToolTip {
-    background: #0d0e12;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+QToolTip {{
+    background: {t["surface1"]};
+    color: {t["text"]};
+    border: 1px solid {t["borderStrong"]};
     padding: 5px 10px;
     border-radius: 8px;
-}
+}}
 
-QDialog, QMessageBox {
-    background-color: #000000;
-}
-QMessageBox QLabel {
-    color: #ffffff;
+QDialog, QMessageBox {{
+    background-color: {t["bg"]};
+    color: {t["text"]};
+}}
+QMessageBox QLabel {{
+    color: {t["text"]};
     background: transparent;
-}
-QDialog QPushButton, QMessageBox QPushButton {
-    background: #ffffff;
-    color: #000000;
-    border: none;
+}}
+QDialog QPushButton, QMessageBox QPushButton {{
+    background: {t["accent"]};
+    color: {t["accentText"]};
+    border: 1px solid {t["accent"]};
     border-radius: 16px;
     padding: 8px 18px;
     min-width: 68px;
     font-weight: 600;
-}
-QDialog QPushButton:hover, QMessageBox QPushButton:hover {
-    background: #e6eaf0;
-}
+}}
+QDialog QPushButton:hover, QMessageBox QPushButton:hover {{
+    background: {t["accentHover"]};
+}}
 
-/* Windows 11 Setup & Feature Tour components */
-QPushButton#TourButton {
-    background: rgba(255, 255, 255, 0.05);
-    color: #e8eaed;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 14px;
-    padding: 7px 16px;
-    font-size: 12px;
-    font-weight: 500;
-}
-QPushButton#TourButton:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: #ffffff;
-}
-
-QDialog#Win11SetupWindow {
-    background-color: #07080c;
-    border: 1px solid rgba(255, 255, 255, 0.16);
+QDialog#Win11SetupWindow {{
+    background-color: {t["bg"]};
+    border: 1px solid {t["borderStrong"]};
     border-radius: 20px;
-}
+}}
 
-QFrame#Win11Card {
-    background: #0d0f14;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+QFrame#Win11Card {{
+    background: {t["surface1"]};
+    border: 1px solid {t["border"]};
     border-radius: 18px;
-}
+}}
 
-QPushButton#Win11Primary {
-    background: #ffffff;
-    color: #000000;
+QPushButton#Win11Primary {{
+    background: {t["accent"]};
+    color: {t["accentText"]};
     border: none;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 10px 24px;
     font-size: 13px;
     font-weight: 600;
-}
-QPushButton#Win11Primary:hover {
-    background: #e8ebf0;
-}
-QPushButton#Win11Primary:disabled {
-    background: rgba(255, 255, 255, 0.2);
-    color: rgba(0, 0, 0, 0.4);
-}
+}}
+QPushButton#Win11Primary:hover {{
+    background: {t["accentHover"]};
+}}
+QPushButton#Win11Primary:disabled {{
+    background: {t["surface3"]};
+    color: {t["textDisabled"]};
+}}
 
-QPushButton#Win11Ghost {
-    background: transparent;
-    color: #9aa0a6;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
+QPushButton#Win11Ghost {{
+    background: {t["surface1"]};
+    color: {t["textSecondary"]};
+    border: 1px solid {t["borderStrong"]};
+    border-radius: 14px;
     padding: 10px 20px;
     font-size: 13px;
-}
-QPushButton#Win11Ghost:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.25);
-}
+}}
+QPushButton#Win11Ghost:hover {{
+    background: {t["surfaceHover"]};
+    color: {t["text"]};
+    border-color: {t["borderFocus"]};
+}}
 
-QFrame#Win11FeatureCard {
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+QFrame#Win11FeatureCard {{
+    background: {t["surface1"]};
+    border: 1px solid {t["border"]};
     border-radius: 14px;
     padding: 14px 16px;
-}
-QFrame#Win11FeatureCard:hover {
-    border-color: rgba(255, 255, 255, 0.20);
-    background: rgba(255, 255, 255, 0.045);
-}
+}}
+QFrame#Win11FeatureCard:hover {{
+    border-color: {t["borderStrong"]};
+    background: {t["surfaceHover"]};
+}}
 """
+
+
+LIGHT_QSS = build_qss("light")
+DARK_QSS = build_qss("dark")
+MONOCHROME_QSS = DARK_QSS
+
+
+class ThemeManager(QObject):
+    """Central theme controller for IPscans+ and Network Health Pro."""
+
+    theme_changed = pyqtSignal(str)
+    _instance: ThemeManager | None = None
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._callbacks: list[Callable[[str], None]] = []
+        self._theme: str | None = None
+
+    @classmethod
+    def instance(cls) -> ThemeManager:
+        if cls._instance is not None:
+            try:
+                cls._instance.objectName()
+            except RuntimeError:
+                cls._instance = None
+        if cls._instance is None:
+            cls._instance = ThemeManager()
+        return cls._instance
+
+    def current_theme(self) -> str:
+        settings = QSettings(THEME_SETTINGS_ORG, THEME_SETTINGS_APP)
+        saved = settings.value(THEME_SETTINGS_KEY, None)
+        if isinstance(saved, str) and saved.lower() in ("light", "dark"):
+            self._theme = saved.lower()
+            return self._theme
+        if self._theme in ("light", "dark"):
+            return self._theme
+        self._theme = detect_os_theme()
+        return self._theme
+
+    def set_theme(self, theme: str, persist: bool = True) -> str:
+        normalized = "light" if str(theme).lower() == "light" else "dark"
+        self._theme = normalized
+        if persist:
+            settings = QSettings(THEME_SETTINGS_ORG, THEME_SETTINGS_APP)
+            settings.setValue(THEME_SETTINGS_KEY, normalized)
+            settings.sync()
+
+        global MONOCHROME_QSS
+        MONOCHROME_QSS = LIGHT_QSS if normalized == "light" else DARK_QSS
+
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.setStyleSheet(build_qss(normalized))
+
+        try:
+            self.theme_changed.emit(normalized)
+        except RuntimeError:
+            pass
+
+        alive_callbacks: list[Callable[[str], None]] = []
+        for cb in list(self._callbacks):
+            try:
+                cb(normalized)
+                alive_callbacks.append(cb)
+            except RuntimeError:
+                pass
+        self._callbacks = alive_callbacks
+        return normalized
+
+    def toggle(self) -> str:
+        next_theme = "light" if self.current_theme() == "dark" else "dark"
+        return self.set_theme(next_theme, persist=True)
+
+    def subscribe(self, callback: Callable[[str], None]) -> None:
+        if callback not in self._callbacks:
+            self._callbacks.append(callback)
+
+    def unsubscribe(self, callback: Callable[[str], None]) -> None:
+        if callback in self._callbacks:
+            self._callbacks.remove(callback)
+
+
+def get_current_theme() -> str:
+    return ThemeManager.instance().current_theme()
+
+
+def set_current_theme(theme: str, persist: bool = True) -> str:
+    return ThemeManager.instance().set_theme(theme, persist=persist)
+
+
+def toggle_theme() -> str:
+    return ThemeManager.instance().toggle()
+
+
+def register_theme_listener(callback: Callable[[str], None]) -> None:
+    ThemeManager.instance().subscribe(callback)
+
+
+def apply_theme(widget_or_app=None, theme: str | None = None) -> str:
+    """Applies the IPScans v2 theme to a QApplication or QWidget."""
+    active = (theme or get_current_theme()).lower()
+    if active not in ("light", "dark"):
+        active = "dark"
+    qss = build_qss(active)
+    if widget_or_app is None:
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.setStyleSheet(qss)
+        return active
+    if isinstance(widget_or_app, QApplication):
+        widget_or_app.setStyleSheet(qss)
+        return active
+    if isinstance(widget_or_app, QWidget):
+        widget_or_app.setStyleSheet(qss)
+        widget_or_app.update()
+    return active
+
+
+class ThemeToggleButton(QPushButton):
+    """Sleek segmented Sun / Moon theme toggle pill button for top headers."""
+
+    def __init__(self, parent: QWidget | None = None, lang: str = "en") -> None:
+        super().__init__(parent)
+        self._lang = lang
+        self._hovered = False
+        self.setObjectName("ThemeToggleButton")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedSize(68, 34)
+        self.sync_theme(get_current_theme())
+        self.clicked.connect(self._on_clicked)
+        ThemeManager.instance().theme_changed.connect(self._on_theme_changed)
+
+    def _on_clicked(self) -> None:
+        toggle_theme()
+
+    def _on_theme_changed(self, theme: str) -> None:
+        try:
+            self.sync_theme(theme)
+        except RuntimeError:
+            pass
+
+    def set_language(self, lang: str) -> None:
+        self._lang = lang
+        self.sync_theme(get_current_theme())
+
+    def sync_theme(self, theme: str | None = None) -> None:
+        active = (theme or get_current_theme()).lower()
+        is_tr = str(self._lang).lower().startswith("tr")
+        if active == "dark":
+            tip = "Açık temaya geç (Light Mode)" if is_tr else "Switch to Light Mode"
+        else:
+            tip = "Koyu temaya geç (Dark Mode)" if is_tr else "Switch to Dark Mode"
+        self.setToolTip(tip)
+        self.setAccessibleName(tip)
+        self.update()
+
+    def enterEvent(self, event) -> None:  # noqa: N802
+        self._hovered = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        self._hovered = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, _event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        theme = get_current_theme()
+        is_light = theme == "light"
+        tokens = LIGHT_TOKENS if is_light else DARK_TOKENS
+
+        w = float(self.width())
+        h = float(self.height())
+        rect = QRectF(1.0, 1.0, w - 2.0, h - 2.0)
+
+        # Outer pill track
+        track_fill = QColor(tokens["surfaceHover"] if self._hovered else tokens["surface2"])
+        border_col = QColor(tokens["borderFocus"] if self._hovered else tokens["borderStrong"])
+        painter.setPen(QPen(border_col, 1.2))
+        painter.setBrush(QBrush(track_fill))
+        painter.drawRoundedRect(rect, (h - 2.0) / 2.0, (h - 2.0) / 2.0)
+
+        # Active thumb circle (left = Sun / Light, right = Moon / Dark)
+        thumb_d = h - 8.0
+        thumb_x = 4.0 if is_light else (w - thumb_d - 4.0)
+        thumb_rect = QRectF(thumb_x, 4.0, thumb_d, thumb_d)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(QColor(tokens["signal"])))
+        painter.drawEllipse(thumb_rect)
+
+        # Draw Sun icon on left slot
+        sun_cx = 4.0 + thumb_d / 2.0
+        sun_cy = h / 2.0
+        sun_col = QColor("#FFFFFF" if is_light else tokens["textSecondary"])
+        painter.setPen(QPen(sun_col, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawEllipse(QPointF(sun_cx, sun_cy), 3.6, 3.6)
+        for i in range(8):
+            ang = math.radians(i * 45.0)
+            r1, r2 = 5.6, 7.4
+            painter.drawLine(
+                QPointF(sun_cx + math.cos(ang) * r1, sun_cy + math.sin(ang) * r1),
+                QPointF(sun_cx + math.cos(ang) * r2, sun_cy + math.sin(ang) * r2),
+            )
+
+        # Draw Moon crescent on right slot
+        moon_cx = w - 4.0 - thumb_d / 2.0
+        moon_cy = h / 2.0
+        moon_col = QColor(tokens["textSecondary"] if is_light else "#FFFFFF")
+        moon_path = QPainterPath()
+        moon_path.addEllipse(QPointF(moon_cx, moon_cy), 5.6, 5.6)
+        cut_path = QPainterPath()
+        cut_path.addEllipse(QPointF(moon_cx + 2.6, moon_cy - 1.8), 4.8, 4.8)
+        crescent = moon_path.subtracted(cut_path)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(moon_col))
+        painter.drawPath(crescent)
+
+        painter.end()
 
 
 class IPScansWelcomeStage(QWidget):
@@ -570,6 +1038,7 @@ class IPScansWelcomeStage(QWidget):
         self._anim_timer.setInterval(45)
         self._anim_timer.timeout.connect(self._tick)
         self._anim_timer.start()
+        ThemeManager.instance().theme_changed.connect(lambda _: self.update())
 
     def set_copy(self, eyebrow: str, headline: str, subtitle: str = "") -> None:
         if headline != self._full_headline:
@@ -589,38 +1058,53 @@ class IPScansWelcomeStage(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
+        is_light = get_current_theme() == "light"
+        tokens = LIGHT_TOKENS if is_light else DARK_TOKENS
+
         rect = QRectF(0.5, 0.5, max(1.0, self.width() - 1.0), max(1.0, self.height() - 1.0))
         path = QPainterPath()
         path.addRoundedRect(rect, 20.0, 20.0)
 
         bg = QLinearGradient(0.0, 0.0, float(self.width()), float(self.height()))
-        bg.setColorAt(0.0, QColor(11, 13, 19))
-        bg.setColorAt(0.55, QColor(7, 8, 12))
-        bg.setColorAt(1.0, QColor(13, 16, 24))
+        if is_light:
+            bg.setColorAt(0.0, QColor("#F8F9FA"))
+            bg.setColorAt(0.55, QColor("#F1F3F6"))
+            bg.setColorAt(1.0, QColor("#EBF1FF"))
+        else:
+            bg.setColorAt(0.0, QColor(11, 13, 19))
+            bg.setColorAt(0.55, QColor(7, 8, 12))
+            bg.setColorAt(1.0, QColor(13, 16, 24))
         painter.fillPath(path, QBrush(bg))
 
-        # Calibrated drifting capsule particle field (monochrome silver / white)
         cols = 18 if self._compact else 22
         rows = 4 if self._compact else 6
-        palette = [
-            QColor(255, 255, 255),
-            QColor(220, 225, 235),
-            QColor(180, 185, 195),
-            QColor(140, 145, 155),
-        ]
+        palette = (
+            [
+                QColor("#2F6BFF"),
+                QColor("#3C4252"),
+                QColor("#676F82"),
+                QColor("#8A9099"),
+            ]
+            if is_light
+            else [
+                QColor(255, 255, 255),
+                QColor(220, 225, 235),
+                QColor(76, 130, 255),
+                QColor(140, 145, 155),
+            ]
+        )
         painter.save()
         painter.setClipPath(path)
         for r in range(rows):
             for c in range(cols):
                 nx = (c + 0.5) / cols
                 ny = (r + 0.5) / rows
-                # Exclude center text area so typography stays crisp
                 dx_c = (nx - 0.35) / 0.38
                 dy_c = (ny - 0.5) / 0.45
                 if dx_c * dx_c + dy_c * dy_c < 0.72:
                     continue
                 wave = math.sin(nx * 5.2 + self._phase + ny * 2.1)
-                alpha = int(max(10, min(120, 28 + (wave + 1.0) * 32)))
+                alpha = int(max(12, min(115, 28 + (wave + 1.0) * 30)))
                 col = QColor(palette[(r * cols + c) % len(palette)])
                 col.setAlpha(alpha)
 
@@ -637,28 +1121,26 @@ class IPScansWelcomeStage(QWidget):
                 painter.restore()
         painter.restore()
 
-        painter.setPen(QPen(QColor(255, 255, 255, 28), 1.0))
+        painter.setPen(QPen(QColor(tokens["borderStrong"]), 1.0))
         painter.drawPath(path)
 
-        # Eyebrow pill
         left_pad = 22.0
         top_pad = 14.0 if self._compact else 18.0
         mono_font = QFont("Consolas", 8)
         mono_font.setBold(True)
         painter.setFont(mono_font)
-        painter.setPen(QColor(154, 160, 166))
+        painter.setPen(QColor(tokens["signal"]))
         painter.drawText(
             QRectF(left_pad, top_pad, float(self.width()) - 44.0, 16.0),
             int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
             self._eyebrow.upper(),
         )
 
-        # Typewriter Headline + Clean Platinum Cursor
         shown = self._full_headline[: max(1, self._typed_chars)]
         title_font = QFont("Segoe UI", 14 if self._compact else 18)
         title_font.setWeight(QFont.Weight.DemiBold)
         painter.setFont(title_font)
-        painter.setPen(QColor(255, 255, 255))
+        painter.setPen(QColor(tokens["text"]))
         title_y = 34.0 if self._compact else 44.0
         title_rect = QRectF(left_pad, title_y, float(self.width()) - 44.0, 32.0)
         painter.drawText(
@@ -671,18 +1153,14 @@ class IPScansWelcomeStage(QWidget):
         cursor_x = min(float(self.width()) - 28.0, left_pad + fm.horizontalAdvance(shown) + 5.0)
         blink_on = (self._typed_chars < len(self._full_headline)) or (int(self._phase * 2.2) % 2 == 0)
         if blink_on:
-            grad = QLinearGradient(cursor_x, title_y + 4.0, cursor_x, title_y + 26.0)
-            grad.setColorAt(0.0, QColor(255, 255, 255, 240))
-            grad.setColorAt(0.5, QColor(220, 225, 235, 210))
-            grad.setColorAt(1.0, QColor(160, 165, 175, 180))
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(grad))
+            painter.setBrush(QBrush(QColor(tokens["signal"])))
             painter.drawRoundedRect(QRectF(cursor_x, title_y + 5.0, 3.0, 21.0), 1.5, 1.5)
 
         if not self._compact and self._subtitle:
             sub_font = QFont("Segoe UI", 10)
             painter.setFont(sub_font)
-            painter.setPen(QColor(183, 191, 217))
+            painter.setPen(QColor(tokens["textSecondary"]))
             painter.drawText(
                 QRectF(left_pad, 84.0, float(self.width()) - 44.0, 44.0),
                 int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap),
@@ -704,9 +1182,10 @@ class Win11SilkCanvas(QWidget):
         self._phase = 0.0
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
         self._timer = QTimer(self)
-        self._timer.setInterval(33)  # ~30 fps
+        self._timer.setInterval(33)
         self._timer.timeout.connect(self._on_tick)
         self._timer.start()
+        ThemeManager.instance().theme_changed.connect(lambda _: self.update())
 
     def _on_tick(self) -> None:
         self._phase += 0.028
@@ -718,16 +1197,22 @@ class Win11SilkCanvas(QWidget):
         w = float(self.width())
         h = float(self.height())
         if w < 10 or h < 10:
+            painter.end()
             return
 
-        # Deep ambient vignette background
+        is_light = get_current_theme() == "light"
         bg = QLinearGradient(0, 0, w, h)
-        bg.setColorAt(0.0, QColor(9, 10, 15))
-        bg.setColorAt(0.5, QColor(6, 7, 10))
-        bg.setColorAt(1.0, QColor(11, 13, 18))
+        if is_light:
+            bg.setColorAt(0.0, QColor("#F8F9FA"))
+            bg.setColorAt(0.5, QColor("#F1F3F6"))
+            bg.setColorAt(1.0, QColor("#EBF1FF"))
+        else:
+            bg.setColorAt(0.0, QColor(9, 10, 15))
+            bg.setColorAt(0.5, QColor(6, 7, 10))
+            bg.setColorAt(1.0, QColor(11, 13, 18))
         painter.fillRect(self.rect(), QBrush(bg))
 
-        # Render 3 layered silky harmonic waves
+        wave_rgb = (47, 107, 255) if is_light else (255, 255, 255)
         for layer in range(3):
             phase_offset = self._phase + layer * 1.35
             y_base = h * (0.35 + layer * 0.18)
@@ -736,7 +1221,6 @@ class Win11SilkCanvas(QWidget):
             path.moveTo(0, h)
             path.lineTo(0, y_base + math.sin(phase_offset) * 22)
 
-            # Cubic Bézier segments
             cp1_x = w * 0.3
             cp1_y = y_base + math.sin(phase_offset + 1.2) * 36 - 25
             cp2_x = w * 0.7
@@ -749,37 +1233,15 @@ class Win11SilkCanvas(QWidget):
             path.closeSubpath()
 
             grad = QLinearGradient(0, y_base - 30, w, h)
-            if layer == 0:
-                grad.setColorAt(0.0, QColor(255, 255, 255, 30))
-                grad.setColorAt(0.5, QColor(200, 210, 225, 18))
-                grad.setColorAt(1.0, QColor(10, 12, 16, 0))
-            elif layer == 1:
-                grad.setColorAt(0.0, QColor(255, 255, 255, 22))
-                grad.setColorAt(0.6, QColor(180, 190, 210, 14))
-                grad.setColorAt(1.0, QColor(10, 12, 16, 0))
-            else:
-                grad.setColorAt(0.0, QColor(255, 255, 255, 16))
-                grad.setColorAt(0.7, QColor(160, 175, 195, 10))
-                grad.setColorAt(1.0, QColor(10, 12, 16, 0))
-
+            grad.setColorAt(0.0, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 32 - layer * 6))
+            grad.setColorAt(0.6, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 14 - layer * 3))
+            grad.setColorAt(1.0, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 0))
             painter.fillPath(path, QBrush(grad))
 
-            # Crisp crest line
             crest = QPainterPath()
             crest.moveTo(0, y_base + math.sin(phase_offset) * 22)
             crest.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
-            painter.setPen(QPen(QColor(255, 255, 255, int(45 - layer * 10)), 1.2))
+            painter.setPen(QPen(QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], int(50 - layer * 12)), 1.2))
             painter.drawPath(crest)
 
-        # Micro glowing particles along the wave flow
-        painter.setPen(Qt.PenStyle.NoPen)
-        for i in range(12):
-            p_phase = self._phase * 0.8 + i * 0.75
-            px = ((math.sin(p_phase * 0.6 + i) * 0.5 + 0.5) * w)
-            py = h * 0.25 + ((math.cos(p_phase * 0.4 + i * 1.2) * 0.5 + 0.5) * (h * 0.55))
-            alpha = int(40 + (math.sin(p_phase + i) + 1.0) * 35)
-            painter.setBrush(QBrush(QColor(255, 255, 255, alpha)))
-            painter.drawEllipse(QRectF(px - 1.5, py - 1.5, 3.0, 3.0))
-
         painter.end()
-

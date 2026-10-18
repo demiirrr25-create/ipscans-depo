@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QDialog,QVBoxLayout,QFormLayout,QLineEdit,QSpinBo
     QPushButton,QComboBox,QLabel,QCheckBox,QTableWidget,QTableWidgetItem,
     QAbstractItemView,QHeaderView,QScrollArea,QWidget)
 from .onvif import OnvifClient,OnvifError
+from .theme import apply_theme
 
 
 class OnvifDialog(QDialog):
@@ -16,20 +17,20 @@ class OnvifDialog(QDialog):
         self.client=None;self.profiles=[];self.source=None;self.busy=False;self.closed=False
         self.device_information=None;self.capabilities=None;self.discovered=[]
         self.cancel=Event();self.results=Queue(maxsize=1)
-        self.setWindowTitle('Ağda kamera bul · ONVIF');self.resize(760,680)
+        self.setWindowTitle('Ağda kamera bul · ONVIF');self.resize(760,680);apply_theme(self)
         outer=QVBoxLayout(self);scroll=QScrollArea();scroll.setWidgetResizable(True)
         content=QWidget();root=QVBoxLayout(content);scroll.setWidget(content);outer.addWidget(scroll,1)
         scope=QLabel('Yetkili yerel ağda ONVIF WS-Discovery araması yapılır. Arama kamera hesabı göndermez. Marka, model ve dahili ANPR yeteneği keşif yanıtından doğrulanmaz.')
-        scope.setWordWrap(True);root.addWidget(scope)
+        scope.setObjectName('muted');scope.setWordWrap(True);root.addWidget(scope)
         network_form=QFormLayout();self.interface=QLineEdit();self.interface.setPlaceholderText('Otomatik ağ arayüzü')
         network_form.addRow('Yerel arayüz IPv4 (isteğe bağlı)',self.interface);root.addLayout(network_form)
-        self.network=QPushButton('Ağda kamera bul (3 saniye)');self.network.clicked.connect(self.find_devices);root.addWidget(self.network)
+        self.network=QPushButton('Ağda kamera bul (3 saniye)');self.network.setObjectName('primaryBtn');self.network.clicked.connect(self.find_devices);root.addWidget(self.network)
         self.devices=QTableWidget(0,6)
         self.devices.setHorizontalHeaderLabels(['IP adresi','Keşif adı','Marka','Model','Durum','Dahili ANPR'])
         self.devices.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.devices.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.devices.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.devices.verticalHeader().hide();self.devices.setMaximumHeight(155)
+        self.devices.setAlternatingRowColors(True);self.devices.verticalHeader().hide();self.devices.setMaximumHeight(155)
         self.devices.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.devices.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch)
         self.devices.itemSelectionChanged.connect(lambda:self.use_device.setEnabled(not self.busy and self.devices.currentRow()>=0))

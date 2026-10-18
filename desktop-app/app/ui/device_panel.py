@@ -6,17 +6,35 @@ import webbrowser
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QApplication, QCheckBox, QDialog, QFileDialog, QFormLayout, QHBoxLayout, QLabel,
-    QLineEdit, QInputDialog, QMessageBox, QPushButton, QTextEdit, QVBoxLayout,
+    QApplication,
+    QCheckBox,
+    QDialog,
+    QFileDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
 )
 
 from app.core import network_utils
 from app.core.adapters import (
-    ChangeResult, Credentials, ManagementError, NetworkConfiguration, ONVIFAdapter,
-    adapter_capabilities, change_network_configuration, validate_configuration,
+    ChangeResult,
+    Credentials,
+    ManagementError,
+    NetworkConfiguration,
+    ONVIFAdapter,
+    adapter_capabilities,
+    change_network_configuration,
+    validate_configuration,
 )
 from app.core.models import Device
 from app.i18n import t
+from app.ui.styles import ThemeManager, build_qss, get_current_theme
 from app.workers.task_worker import TaskWorker
 
 
@@ -24,21 +42,35 @@ class DeviceControlPanel(QDialog):
     device_updated = pyqtSignal(object)
     configuration_verified = pyqtSignal(object)
 
-    def __init__(self, device: Device, known_devices: list[Device],
-                 local_network: str | None, lang: str = "en", parent=None, *, allow_changes: bool = True) -> None:
+    def __init__(
+        self,
+        device: Device,
+        known_devices: list[Device],
+        local_network: str | None,
+        lang: str = "en",
+        parent=None,
+        *,
+        allow_changes: bool = True,
+    ) -> None:
         super().__init__(parent)
-        self.device, self.known_devices, self.local_network, self.lang = device, known_devices, local_network, lang
+        self.device, self.known_devices, self.local_network, self.lang = (
+            device,
+            known_devices,
+            local_network,
+            lang,
+        )
         self._adapter: ONVIFAdapter | None = None
         self._configuration: NetworkConfiguration | None = None
         self._worker: TaskWorker | None = None
         self._closing = False
         self._allow_changes = allow_changes
+        self.setObjectName("AppRoot")
         self.setWindowTitle(f"{t(lang, 'device_details')} / {device.ip}")
         self.resize(620, 760)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setWindowModality(Qt.WindowModality.WindowModal)
         layout = QVBoxLayout(self)
-        title = QLabel(f"{device.device_type} / {device.ip} / {device.reachability}")
+        title = QLabel(f"{device.device_type} / {device.ip} / {device.reachability}", objectName="TitleText")
         title.setWordWrap(True)
         layout.addWidget(title)
         self.details = QTextEdit()
@@ -57,7 +89,7 @@ class DeviceControlPanel(QDialog):
             button.clicked.connect(operation)
             actions.addWidget(button)
         layout.addLayout(actions)
-        topology_button = QPushButton('Read topology / SNMP' if lang != 'tr' else 'Bağlantıları oku / SNMP')
+        topology_button = QPushButton("Read topology / SNMP" if lang != "tr" else "Bağlantıları oku / SNMP")
         topology_button.clicked.connect(self._read_topology)
         layout.addWidget(topology_button)
         form = QFormLayout()
@@ -84,8 +116,12 @@ class DeviceControlPanel(QDialog):
         self.dhcp.toggled.connect(self._enable_configuration_fields)
         self.dns_dhcp.toggled.connect(self._enable_configuration_fields)
         network_form.addRow(self.dhcp)
-        for key, field in (("col_ip", self.ip), ("subnet_mask", self.mask),
-                           ("gateway", self.gateway), ("dns_servers", self.dns)):
+        for key, field in (
+            ("col_ip", self.ip),
+            ("subnet_mask", self.mask),
+            ("gateway", self.gateway),
+            ("dns_servers", self.dns),
+        ):
             network_form.addRow(t(lang, key), field)
         network_form.addRow(self.dns_dhcp)
         layout.addLayout(network_form)
@@ -93,7 +129,7 @@ class DeviceControlPanel(QDialog):
         self.apply_button.clicked.connect(self._apply)
         self.apply_button.setEnabled(False)
         layout.addWidget(self.apply_button)
-        self.status = QLabel(adapter_capabilities(device).reason)
+        self.status = QLabel(adapter_capabilities(device).reason, objectName="StatusLabel")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
         if not allow_changes:
@@ -103,45 +139,71 @@ class DeviceControlPanel(QDialog):
         for field in (self.username, self.password, self.ca_bundle, choose_ca, self.read_button):
             field.setEnabled(supported)
         self._enable_configuration_fields()
+        self.apply_theme(get_current_theme())
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        active = (theme or get_current_theme()).lower()
+        self.setStyleSheet(build_qss(active))
 
     def _refresh_details(self) -> None:
         device = self.device
         fields = {
-            "IP": device.ip, "MAC": device.mac, "Hostname": device.hostname, "Vendor": device.vendor,
+            "IP": device.ip,
+            "MAC": device.mac,
+            "Hostname": device.hostname,
+            "Vendor": device.vendor,
             "Type": f"{device.device_type} / {device.classification_confidence} confidence",
-            "Evidence": device.classification_evidence, "Model": device.onvif_model or device.model,
-            "Evidence score (not accuracy %)": f'{device.identification_score}/100',
-            "HTTP identity": device.http_title or device.http_server, "RTSP identity": device.rtsp_server,
-            "Serial": device.serial_number, "Firmware": device.onvif_firmware,
+            "Evidence": device.classification_evidence,
+            "Model": device.onvif_model or device.model,
+            "Evidence score (not accuracy %)": f"{device.identification_score}/100",
+            "HTTP identity": device.http_title or device.http_server,
+            "RTSP identity": device.rtsp_server,
+            "Serial": device.serial_number,
+            "Firmware": device.onvif_firmware,
             "Parent / connection": device.connection_evidence,
             "TCP connect time": f"{device.latency_ms:.1f} ms" if device.latency_ms is not None else None,
-            "First seen": device.first_seen, "Last seen": device.last_seen,
-            "Sources": ", ".join(device.sources), "Ports": ", ".join(map(str, device.open_ports)),
+            "First seen": device.first_seen,
+            "Last seen": device.last_seen,
+            "Sources": ", ".join(device.sources),
+            "Ports": ", ".join(map(str, device.open_ports)),
         }
         self.details.setPlainText("\n".join(f"{key}: {value or 'Unavailable'}" for key, value in fields.items()))
 
     def _read_topology(self) -> None:
         if self._worker and self._worker.isRunning():
             return
-        secret, accepted = QInputDialog.getText(self, 'Authorized SNMPv2c',
-            'Read-only community for this device (session only; SNMPv2c is unencrypted):', QLineEdit.EchoMode.Password)
+        secret, accepted = QInputDialog.getText(
+            self,
+            "Authorized SNMPv2c",
+            "Read-only community for this device (session only; SNMPv2c is unencrypted):",
+            QLineEdit.EchoMode.Password,
+        )
         if not accepted or not secret:
             return
-        from app.core.protocols import snmp_probe
         from app.core import intelligence
+        from app.core.protocols import snmp_probe
+
         def received(result):
             if not result:
-                self.status.setText('No authorized SNMP response; topology remains unresolved.')
+                self.status.setText("No authorized SNMP response; topology remains unresolved.")
                 return
-            self.device = replace(self.device, snmp_sys_descr=result.sys_descr, snmp_sys_name=result.sys_name,
+            self.device = replace(
+                self.device,
+                snmp_sys_descr=result.sys_descr,
+                snmp_sys_name=result.sys_name,
                 model=result.model or self.device.model,
                 serial_number=result.serial_number or self.device.serial_number,
-                lldp_neighbor_macs=list(result.lldp_neighbor_macs), cdp_neighbor_ips=list(result.cdp_neighbor_ips),
-                bridge_fdb=list(result.bridge_fdb), sources=list(set(self.device.sources) | {'SNMP'}))
+                lldp_neighbor_macs=list(result.lldp_neighbor_macs),
+                cdp_neighbor_ips=list(result.cdp_neighbor_ips),
+                bridge_fdb=list(result.bridge_fdb),
+                sources=list(set(self.device.sources) | {"SNMP"}),
+            )
             intelligence.classify(self.device)
             self.device_updated.emit(self.device)
             self._refresh_details()
-            self.status.setText('SNMP observations received. Forwarding paths are marked as inferred.')
+            self.status.setText("SNMP observations received. Forwarding paths are marked as inferred.")
+
         self._run(lambda: snmp_probe.query(self.device.ip, secret), received)
 
     def _choose_ca(self) -> None:
@@ -167,8 +229,14 @@ class DeviceControlPanel(QDialog):
             self.close()
             return
         self.read_button.setEnabled(adapter_capabilities(self.device).read_network)
-        self.apply_button.setEnabled(bool(self._configuration and self._adapter
-                                         and self._adapter.get_capabilities().write_network and self._allow_changes))
+        self.apply_button.setEnabled(
+            bool(
+                self._configuration
+                and self._adapter
+                and self._adapter.get_capabilities().write_network
+                and self._allow_changes
+            )
+        )
         self._enable_configuration_fields()
 
     def _failed(self, message: str) -> None:
@@ -201,8 +269,11 @@ class DeviceControlPanel(QDialog):
     def _configuration_loaded(self, result) -> None:
         identity, configuration = result
         self.device = replace(
-            self.device, onvif_manufacturer=identity.manufacturer, onvif_model=identity.model,
-            onvif_firmware=identity.firmware, serial_number=identity.serial,
+            self.device,
+            onvif_manufacturer=identity.manufacturer,
+            onvif_model=identity.model,
+            onvif_firmware=identity.firmware,
+            serial_number=identity.serial,
             sources=sorted(set(self.device.sources) | {"Authenticated ONVIF"}),
         )
         self._refresh_details()
@@ -222,8 +293,11 @@ class DeviceControlPanel(QDialog):
             field.setEnabled(enabled and not self.dhcp.isChecked())
         self.dns.setEnabled(enabled and not self.dns_dhcp.isChecked())
         self.dhcp.setEnabled(enabled and bool(self._adapter and self._adapter.get_capabilities().configure_dhcp))
-        self.dhcp.setToolTip("" if self.dhcp.isEnabled()
-                             else "Changing DHCP requires a stable WS-Discovery identity for safe rediscovery.")
+        self.dhcp.setToolTip(
+            ""
+            if self.dhcp.isEnabled()
+            else "Changing DHCP requires a stable WS-Discovery identity for safe rediscovery."
+        )
         self.dns_dhcp.setEnabled(enabled)
 
     def _apply(self) -> None:
@@ -234,10 +308,13 @@ class DeviceControlPanel(QDialog):
             self._failed("Read the authenticated device configuration first.")
             return
         configuration = replace(
-            self._configuration, ip=self.ip.text().strip(), subnet_mask=self.mask.text().strip(),
+            self._configuration,
+            ip=self.ip.text().strip(),
+            subnet_mask=self.mask.text().strip(),
             gateway=self.gateway.text().strip() or None,
             dns=tuple(value.strip() for value in self.dns.text().split(",") if value.strip()),
-            dhcp=self.dhcp.isChecked(), dns_from_dhcp=self.dns_dhcp.isChecked(),
+            dhcp=self.dhcp.isChecked(),
+            dns_from_dhcp=self.dns_dhcp.isChecked(),
         )
         try:
             validate_configuration(configuration, self.local_network)
@@ -252,16 +329,29 @@ class DeviceControlPanel(QDialog):
             "require a reboot. No response during collision checks does not prove an IP is free. "
             "DNS, gateway and interface writes are not atomic; partial changes are possible."
         )
-        if QMessageBox.question(self, t(self.lang, "confirm_change"), preview,
-                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+        if (
+            QMessageBox.question(
+                self,
+                t(self.lang, "confirm_change"),
+                preview,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
             return
         adapter = self._adapter
         self._configuration = None
-        self._run(lambda: change_network_configuration(
-            adapter, configuration, self.known_devices, self.local_network,
-            should_stop=lambda: bool(self._worker and self._worker.isInterruptionRequested()),
-        ), self._changed)
+        self._run(
+            lambda: change_network_configuration(
+                adapter,
+                configuration,
+                self.known_devices,
+                self.local_network,
+                should_stop=lambda: bool(self._worker and self._worker.isInterruptionRequested()),
+            ),
+            self._changed,
+        )
 
     def _changed(self, result: ChangeResult) -> None:
         self.status.setText(result.message)
@@ -276,7 +366,11 @@ class DeviceControlPanel(QDialog):
         def probe():
             icmp = network_utils.ping_once(self.device.ip)
             ports = network_utils.scan_ports(self.device.ip)
-            return f"ICMP: {'responded' if icmp else 'no response'} / TCP ports: {', '.join(map(str, ports)) or 'no response'}"
+            return (
+                f"ICMP: {'responded' if icmp else 'no response'} / "
+                f"TCP ports: {', '.join(map(str, ports)) or 'no response'}"
+            )
+
         self._run(probe, self.status.setText)
 
     def closeEvent(self, event) -> None:

@@ -4,18 +4,30 @@ from __future__ import annotations
 from collections import defaultdict, deque
 from pathlib import Path
 
-from PyQt6.QtCore import QRectF, QSize, Qt, pyqtSignal
+from PyQt6.QtCore import QPointF, QRectF, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPen
 from PyQt6.QtSvg import QSvgGenerator
 from PyQt6.QtWidgets import (
-    QApplication, QFileDialog, QGraphicsItem, QGraphicsObject, QGraphicsScene,
-    QGraphicsView, QHBoxLayout, QLabel, QMenu, QMessageBox, QPushButton, QVBoxLayout, QWidget,
+    QApplication,
+    QFileDialog,
+    QGraphicsItem,
+    QGraphicsObject,
+    QGraphicsScene,
+    QGraphicsView,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 from app.core.models import Device
 from app.core.topology import build_topology
 from app.i18n import t
 from app.ui.device_icons import icon_for_type
+from app.ui.styles import ThemeManager, get_current_theme, get_tokens
 from app.ui.widgets import matches_device
 
 
@@ -29,8 +41,10 @@ class DeviceNode(QGraphicsObject):
         super().__init__()
         self.device, self.lang = device, lang
         self.menu_owner = menu_owner
-        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
-                      | QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
+        self.setFlags(
+            QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
+            | QGraphicsItem.GraphicsItemFlag.ItemIsFocusable
+        )
         self.setToolTip(
             f"{device.display_name}\n{device.ip}\n{device.device_type} / {device.reachability}\n"
             f"{device.classification_confidence} confidence: {device.classification_evidence or 'Unknown'}\n"
@@ -41,19 +55,50 @@ class DeviceNode(QGraphicsObject):
         return QRectF(0, 0, 240, 90)
 
     def paint(self, painter: QPainter, option, widget=None) -> None:
-        painter.setPen(QPen(QColor("#ffffff" if self.isSelected() or self.hasFocus() else "#383a40"), 1))
-        painter.setBrush(QColor("#15161a"))
+        theme = get_current_theme()
+        tokens = get_tokens(theme)
+        is_light = theme == "light"
+
+        active_sel = self.isSelected() or self.hasFocus()
+        border_col = QColor(tokens["signal"] if active_sel else tokens["borderStrong"])
+        border_w = 1.8 if active_sel else 1.0
+        card_fill = QColor(tokens["surface"] if is_light else tokens["surface2"])
+
+        painter.setPen(QPen(border_col, border_w))
+        painter.setBrush(card_fill)
         painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 14, 14)
-        icon_for_type(self.device.device_type).paint(painter, 12, 14, 28, 28)
-        painter.setPen(QColor("#ffffff"))
+
+        # Status dot indicator
+        is_online = self.device.reachability == "Online"
+        status_col = QColor(tokens["statusOk"] if is_online else tokens["statusWarn"])
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(status_col)
+        painter.drawEllipse(QPointF(224.0, 18.0), 4.0, 4.0)
+
+        icon_for_type(self.device.device_type, theme).paint(painter, 12, 14, 28, 28)
+
+        painter.setPen(QColor(tokens["text"]))
         painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
-        painter.drawText(QRectF(50, 10, 180, 24), painter.fontMetrics().elidedText(
-            self.device.custom_name or self.device.ip, Qt.TextElideMode.ElideRight, 176))
+        painter.drawText(
+            QRectF(50, 10, 166, 24),
+            painter.fontMetrics().elidedText(
+                self.device.custom_name or self.device.ip,
+                Qt.TextElideMode.ElideRight,
+                162,
+            ),
+        )
         painter.setFont(QFont("Segoe UI", 9))
+        painter.setPen(QColor(tokens["textSecondary"]))
         name = self.device.ip if self.device.custom_name else self.device.display_name
-        painter.drawText(QRectF(50, 34, 180, 20), painter.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, 176))
-        painter.setPen(QColor("#cccccc"))
-        painter.drawText(QRectF(12, 62, 220, 20), f"{self.device.reachability} | {self.device.device_type}")
+        painter.drawText(
+            QRectF(50, 34, 176, 20),
+            painter.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, 172),
+        )
+        painter.setPen(QColor(tokens["textTertiary"]))
+        painter.drawText(
+            QRectF(12, 62, 220, 20),
+            f"{self.device.reachability} | {self.device.device_type}",
+        )
 
     def mouseDoubleClickEvent(self, event) -> None:
         self.activated.emit(self.device)
@@ -63,16 +108,13 @@ class DeviceNode(QGraphicsObject):
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.activated.emit(self.device)
             event.accept()
+        elif event.key() == Qt.Key.Key_F2:
+            self.rename_requested.emit(self.device)
+            event.accept()
         else:
-            if event.key() == Qt.Key.Key_F2:
-                self.rename_requested.emit(self.device)
-                event.accept()
-            else:
-                super().keyPressEvent(event)
+            super().keyPressEvent(event)
 
     def contextMenuEvent(self, event) -> None:
-        # A live scan can rebuild the scene while QMenu's nested event loop runs.
-        # Dispatch through the stable map widget, never a deleted graphics node.
         device, owner = self.device, self.menu_owner
         menu = QMenu()
         rename = menu.addAction(t(self.lang, "rename_device"))
@@ -102,15 +144,17 @@ class GroupNode(QGraphicsObject):
         super().__init__()
         self.label, self.key = label, key
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
-        self.setToolTip(label + ' / Enter')
+        self.setToolTip(label + " / Enter")
 
     def boundingRect(self):
         return QRectF(0, 0, 260, 40)
 
     def paint(self, painter, option, widget=None):
-        painter.setPen(QPen(QColor('#aaaaaa'), 1, Qt.PenStyle.DashLine))
-        painter.setBrush(QColor('#171717'))
+        tokens = get_tokens()
+        painter.setPen(QPen(QColor(tokens["borderStrong"]), 1, Qt.PenStyle.DashLine))
+        painter.setBrush(QColor(tokens["surface2"]))
         painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 14, 14)
+        painter.setPen(QColor(tokens["textSecondary"]))
         painter.drawText(self.boundingRect(), Qt.AlignmentFlag.AlignCenter, self.label)
 
     def mouseDoubleClickEvent(self, event):
@@ -125,6 +169,24 @@ class GroupNode(QGraphicsObject):
 
 
 class GraphView(QGraphicsView):
+    def drawBackground(self, painter: QPainter, rect: QRectF) -> None:  # noqa: N802
+        theme = get_current_theme()
+        tokens = get_tokens(theme)
+        is_light = theme == "light"
+        bg_col = QColor(tokens["surface1"] if is_light else tokens["bg"])
+        painter.fillRect(rect, bg_col)
+
+        # Subtle radial topology rings painted directly onto background
+        ring_col = QColor(tokens["borderStrong"] if is_light else tokens["border"])
+        ring_col.setAlpha(95 if is_light else 75)
+        painter.save()
+        painter.setPen(QPen(ring_col, 1.0, Qt.PenStyle.DotLine))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        center = QPointF(120.0, 95.0)
+        for radius in (180.0, 360.0, 560.0, 780.0):
+            painter.drawEllipse(center, radius, radius)
+        painter.restore()
+
     def wheelEvent(self, event) -> None:
         if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             self.zoom(1.2 if event.angleDelta().y() > 0 else 1 / 1.2)
@@ -153,6 +215,8 @@ class NetworkMap(QWidget):
         self.collapsed: set[str] = set()
         self.nodes: dict[str, DeviceNode] = {}
         self.expanded_groups: set[str] = set()
+        self._theme = get_current_theme()
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         actions = QHBoxLayout()
@@ -170,11 +234,10 @@ class NetworkMap(QWidget):
             actions.addWidget(button)
         actions.addStretch()
         layout.addLayout(actions)
-        legend = QLabel(t(lang, "map_legend"))
-        legend.setWordWrap(True)
-        layout.addWidget(legend)
+        self.legend = QLabel(t(lang, "map_legend"))
+        self.legend.setWordWrap(True)
+        layout.addWidget(self.legend)
         self.scene = QGraphicsScene(self)
-        self.scene.setBackgroundBrush(QColor("#0a0a0a"))
         self.view = GraphView(self.scene)
         self.view.setAccessibleName(t(lang, "network_map"))
         self.view.setAccessibleDescription(t(lang, "graph_accessibility"))
@@ -184,16 +247,35 @@ class NetworkMap(QWidget):
         self.view.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         layout.addWidget(self.view, stretch=1)
 
+        self.apply_theme(self._theme)
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        self._theme = (theme or get_current_theme()).lower()
+        tokens = get_tokens(self._theme)
+        bg = tokens["surface1"] if self._theme == "light" else tokens["bg"]
+        self.scene.setBackgroundBrush(QColor(bg))
+        if self.devices:
+            self._render()
+        else:
+            self.scene.update()
+        self.view.viewport().update()
+
     def set_filter_text(self, text: str) -> None:
         self.needle = text.strip().lower()
         self._render()
 
-    def refresh(self, devices: list[Device], gateway: str | None = None,
-                local_network: str | None = None) -> None:
+    def refresh(
+        self,
+        devices: list[Device],
+        gateway: str | None = None,
+        local_network: str | None = None,
+    ) -> None:
         self.devices, self.gateway, self.local_network = list(devices), gateway, local_network
         self._render()
 
     def _render(self) -> None:
+        tokens = get_tokens(self._theme)
         selected = {item.device.ip for item in self.scene.selectedItems() if isinstance(item, DeviceNode)}
         self.scene.clear()
         self.nodes.clear()
@@ -204,7 +286,6 @@ class NetworkMap(QWidget):
         for link in links:
             children[link.parent].append(link.child)
             parent[link.child] = link.parent
-        # Retain ancestors as dim context while highlighting actual matches.
         matches = {d.ip for d in self.devices if matches_device(d, self.needle)}
         visible = set(matches)
         for ip in list(matches):
@@ -227,6 +308,7 @@ class NetworkMap(QWidget):
                     groups[ip] = len(kids) - 24
                     effective[ip] = kids[:24]
         widths = {}
+
         def width(ip):
             stack = [(ip, False)]
             while stack:
@@ -239,7 +321,9 @@ class NetworkMap(QWidget):
                     stack.append((key, True))
                     stack.extend((c, False) for c in effective.get(key, []))
             return widths[ip]
+
         positions = {}
+
         def place(ip, x, y):
             stack = [(ip, x, y)]
             while stack:
@@ -249,6 +333,7 @@ class NetworkMap(QWidget):
                 for child in effective.get(key, []):
                     stack.append((child, offset, top + 180))
                     offset += width(child)
+
         roots = [ip for ip in by_ip if ip in visible and ip not in parent]
         roots.sort(key=lambda ip: (ip != self.gateway, ip))
         unresolved = [ip for ip in roots if not children[ip] and ip != self.gateway]
@@ -258,14 +343,17 @@ class NetworkMap(QWidget):
                 place(ip, cursor, 50)
                 cursor += width(ip) + 80
         if unresolved:
-            label = self.scene.addText(('Çözümlenmemiş cihazlar' if self.lang == 'tr' else 'Unresolved Devices') + f' / {len(unresolved)}')
-            label.setDefaultTextColor(QColor('#bbbbbb'))
+            label = self.scene.addText(
+                ("Çözümlenmemiş cihazlar" if self.lang == "tr" else "Unresolved Devices")
+                + f" / {len(unresolved)}"
+            )
+            label.setDefaultTextColor(QColor(tokens["textSecondary"]))
             label.setPos(cursor, 0)
-            shown = unresolved if self.needle or 'unresolved' in self.expanded_groups else unresolved[:24]
+            shown = unresolved if self.needle or "unresolved" in self.expanded_groups else unresolved[:24]
             for i, ip in enumerate(shown):
                 positions[ip] = (cursor + i % 4 * 260, 50 + i // 4 * 112)
             if len(shown) < len(unresolved):
-                group = GroupNode(f'+ {len(unresolved)-len(shown)} devices · double-click to expand', 'unresolved')
+                group = GroupNode(f"+ {len(unresolved) - len(shown)} devices · double-click to expand", "unresolved")
                 group.activated.connect(self.expand_group)
                 group.setPos(cursor, 50 + 6 * 112)
                 self.scene.addItem(group)
@@ -273,7 +361,7 @@ class NetworkMap(QWidget):
             device = by_ip[ip]
             node = DeviceNode(device, self.lang, self)
             node.setPos(x, y)
-            node.setOpacity(1 if ip in matches else .45)
+            node.setOpacity(1 if ip in matches else 0.45)
             node.activated.connect(self.device_activated.emit)
             node.rename_requested.connect(self.rename_requested.emit)
             node.refresh_requested.connect(self.refresh_requested.emit)
@@ -282,7 +370,7 @@ class NetworkMap(QWidget):
             self.scene.addItem(node)
             self.nodes[ip] = node
             if ip in groups:
-                group = GroupNode(f'+ {groups[ip]} branches · double-click to expand', ip)
+                group = GroupNode(f"+ {groups[ip]} branches · double-click to expand", ip)
                 group.activated.connect(self.expand_group)
                 group.setPos(x, y + 100)
                 self.scene.addItem(group)
@@ -290,7 +378,8 @@ class NetworkMap(QWidget):
             a, b = self.nodes.get(link.parent), self.nodes.get(link.child)
             if not a or not b:
                 continue
-            pen = QPen(QColor('#cccccc' if link.confirmed else '#777777'), 1.5)
+            edge_col = QColor(tokens["signal"] if link.confirmed else tokens["textTertiary"])
+            pen = QPen(edge_col, 1.6 if link.confirmed else 1.4)
             if not link.confirmed:
                 pen.setStyle(Qt.PenStyle.DashLine)
             path = QPainterPath()
@@ -331,7 +420,8 @@ class NetworkMap(QWidget):
 
     def choose_export(self) -> None:
         path, selected = QFileDialog.getSaveFileName(
-            self, t(self.lang, "export_map"), "IPscans-network-map.svg", "SVG (*.svg);;PNG (*.png)")
+            self, t(self.lang, "export_map"), "IPscans-network-map.svg", "SVG (*.svg);;PNG (*.png)"
+        )
         if not path:
             return
         target = Path(path)
@@ -352,6 +442,8 @@ class NetworkMap(QWidget):
         bounds = self.scene.sceneRect()
         factor = min(1.0, 4096 / max(bounds.width(), bounds.height()))
         size = QSize(max(1, int(bounds.width() * factor)), max(1, int(bounds.height() * factor)))
+        tokens = get_tokens(self._theme)
+        bg_hex = tokens["surface1"] if self._theme == "light" else tokens["bg"]
         image = None
         if path.suffix.lower() == ".svg":
             surface = QSvgGenerator()
@@ -360,7 +452,7 @@ class NetworkMap(QWidget):
             surface.setViewBox(QRectF(0, 0, size.width(), size.height()))
         else:
             image = QImage(size, QImage.Format.Format_RGB32)
-            image.fill(QColor("#0a0a0a"))
+            image.fill(QColor(bg_hex))
             surface = image
         painter = QPainter(surface)
         if not painter.isActive():

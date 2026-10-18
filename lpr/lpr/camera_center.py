@@ -4,22 +4,24 @@ import time
 from queue import Empty
 
 from PySide6.QtCore import Qt,QTimer,Signal
-from PySide6.QtWidgets import QDialog,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,QComboBox,QPushButton
+from PySide6.QtWidgets import QDialog,QFrame,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,QComboBox,QPushButton
 
 from .camera import CameraConfig,CameraWorker
 from .preview import VideoSurface
+from .theme import apply_theme
 
 
-class CameraTile(QWidget):
+class CameraTile(QFrame):
     activated=Signal(str)
     fullscreen=Signal(str)
 
     def __init__(self,camera,parent=None):
         super().__init__(parent)
+        self.setObjectName("card")
         self.camera_id=camera["id"]
         self.sequence=-1
         layout=QVBoxLayout(self)
-        layout.setContentsMargins(4,4,4,4)
+        layout.setContentsMargins(6,6,6,6)
         self.title=title=QPushButton(camera["name"])
         self.direction=camera.get('direction','entry');self.last_plate='—';self.ocr_status='Kapalı'
         title.clicked.connect(lambda:self.activated.emit(self.camera_id))
@@ -32,6 +34,7 @@ class CameraTile(QWidget):
         self.surface.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(self.surface,1)
         self.status=QLabel("Bağlanıyor…")
+        self.status.setObjectName("muted")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
 
@@ -65,6 +68,7 @@ class CameraCenter(QDialog):
         if not 1<=len(cameras)<=16 or len({c["id"] for c in cameras})!=len(cameras):
             raise ValueError("Use 1..16 unique cameras")
         authorize()
+        apply_theme(self)
         self.authorize,self.open_detail=authorize,open_detail
         self.cameras=list(cameras)
         self.workers={}
@@ -85,11 +89,11 @@ class CameraCenter(QDialog):
         self.previous=QPushButton("Önceki");self.previous.clicked.connect(lambda:self.change_page(-1))
         self.next=QPushButton("Sonraki");self.next.clicked.connect(lambda:self.change_page(1))
         controls.addWidget(self.previous);controls.addWidget(self.next)
-        self.health=QLabel();controls.addWidget(self.health,1)
+        self.health=QLabel();self.health.setObjectName("muted");controls.addWidget(self.health,1)
         root.addLayout(controls)
-        self.ocr_button=QPushButton('Tüm kameralarda OCR başlat');self.ocr_button.setEnabled(pipeline_factory is not None)
+        self.ocr_button=QPushButton('Tüm kameralarda OCR başlat');self.ocr_button.setObjectName("primaryBtn");self.ocr_button.setEnabled(pipeline_factory is not None)
         self.ocr_button.clicked.connect(self.toggle_ocr);controls.addWidget(self.ocr_button)
-        self.ocr_health=QLabel('OCR kapalı');root.addWidget(self.ocr_health)
+        self.ocr_health=QLabel('OCR kapalı');self.ocr_health.setObjectName("muted");root.addWidget(self.ocr_health)
         self.grid=QGridLayout();root.addLayout(self.grid,1)
         for camera in cameras:
             tile=CameraTile(camera,self)

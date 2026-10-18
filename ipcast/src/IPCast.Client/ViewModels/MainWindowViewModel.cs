@@ -386,7 +386,7 @@ public partial class MainWindowViewModel : ObservableObject
         return keywords.Any(k => k.Contains(query, StringComparison.OrdinalIgnoreCase));
     }
 
-    public bool ShowGeneralSettings => SettingMatches("general", "startup", "windows", "launch", "sign in", "boot");
+    public bool ShowGeneralSettings => SettingMatches("general", "appearance", "theme", "light", "dark", "startup", "windows", "launch", "sign in", "boot");
     public bool ShowDisplaySettings => SettingMatches("display", "performance", "quality", "speed", "balanced", "screen", "fps", "resolution");
     public bool ShowConnectionSettings => SettingMatches("connection", "relay", "internet", "network", "automatic", "server");
     public bool ShowUnattendedSettings => SettingMatches("unattended", "access", "password", "security", "remote", "login");

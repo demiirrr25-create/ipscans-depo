@@ -8,18 +8,18 @@
         MaxHeight="800"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource AppBackgroundBrush}">
+        Background="{DynamicResource ObsidianBrush}">
     <ScrollViewer><StackPanel Margin="28" Spacing="18">
 
         <StackPanel Spacing="4">
             <TextBlock Text="INCOMING CONNECTION" Classes="eyebrow" />
-            <TextBlock Text="A device wants to connect" FontSize="20" FontWeight="Bold"
+            <TextBlock Text="A device wants to connect" FontSize="20" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
         <Border Classes="device" Padding="16">
             <StackPanel Spacing="6">
-                <TextBlock Name="DeviceIdText" FontSize="24" FontWeight="Bold" FontFamily="Consolas, monospace"
+                <TextBlock Name="DeviceIdText" FontSize="24" FontWeight="SemiBold" FontFamily="Cascadia Mono, Consolas, monospace"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Name="RequestTimeText" Classes="hint" />
             </StackPanel>
@@ -43,7 +43,7 @@
             </WrapPanel>
         </StackPanel>
 
-        <Border Background="{DynamicResource SubtleFillBrush}" CornerRadius="8" Padding="12">
+        <Border Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14">
             <TextBlock Text="This connection is encrypted with TLS. New device certificates must still be verified by fingerprint before they are trusted."
                        Classes="hint" />
         </Border>

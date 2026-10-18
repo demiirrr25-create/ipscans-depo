@@ -1,4 +1,4 @@
-"""IPScans Cortex 1.0.0-rc.2 — local camera intelligence, no cloud video transfer."""
+"""IPScans Cortex 1.0.0 — local camera intelligence, no cloud video transfer."""
 import base64, collections, concurrent.futures, http.server, json, os, pathlib, secrets
 import shutil, socket, subprocess, sys, threading, time, urllib.parse, urllib.request, uuid, webbrowser
 import xml.etree.ElementTree as ET
@@ -10,7 +10,7 @@ import local_rules
 from models import Installer, Health, VISION_TEMPLATES
 from stream import Stream
 
-VERSION = "1.0.0-rc.2"
+VERSION = "1.0.0"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()

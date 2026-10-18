@@ -4,13 +4,15 @@ from __future__ import annotations
 import ctypes
 import sys
 
-from PyQt6.QtCore import QEvent, QRectF, Qt, QVariantAnimation, QEasingCurve
+from PyQt6.QtCore import QEasingCurve, QEvent, QRectF, Qt, QVariantAnimation
 from PyQt6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath
 from PyQt6.QtWidgets import QProgressBar
 
+from app.ui.styles import ThemeManager, get_current_theme, get_tokens
+
 
 def animations_enabled() -> bool:
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         enabled = ctypes.c_int(1)
         try:
             # Respect Windows Accessibility > Visual effects > Animation effects.
@@ -28,6 +30,7 @@ class ScanProgress(QProgressBar):
         self.setTextVisible(False)
         self._fraction = 0.0
         self._phase = 0.0
+        self._theme = get_current_theme()
         self._motion = animations_enabled()
         self._smooth = QVariantAnimation(self)
         self._smooth.setDuration(220)
@@ -42,6 +45,11 @@ class ScanProgress(QProgressBar):
         self.valueChanged.connect(self._value_changed)
         if parent:
             parent.installEventFilter(self)
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        self._theme = (theme or get_current_theme()).lower()
+        self.update()
 
     def _set_fraction(self, value):
         self._fraction = float(value)
@@ -95,19 +103,28 @@ class ScanProgress(QProgressBar):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        tokens = get_tokens(self._theme)
+        is_light = self._theme == "light"
+
         track = QRectF(self.rect())
         path = QPainterPath()
         path.addRoundedRect(track, 5, 5)
-        painter.fillPath(path, QColor('#25272c'))
+        painter.fillPath(path, QColor(tokens["surface3"]))
         painter.setClipPath(path)
+
         busy = self.minimum() == self.maximum()
         width = track.width() * (0.28 if busy else self._fraction)
         left = ((track.width() + width) * self._phase - width) if busy else 0
         fill = QRectF(left, 0, width, track.height())
         gradient = QLinearGradient(left, 0, left + max(width, 1), 0)
-        gradient.setColorAt(0, QColor('#777b85'))
-        gradient.setColorAt(0.65, QColor('#d5d7de'))
-        gradient.setColorAt(1, QColor('#ffffff'))
+        if is_light:
+            gradient.setColorAt(0.0, QColor(tokens["signalStrong"]))
+            gradient.setColorAt(0.65, QColor(tokens["signal"]))
+            gradient.setColorAt(1.0, QColor("#60A5FA"))
+        else:
+            gradient.setColorAt(0.0, QColor(tokens["signalStrong"]))
+            gradient.setColorAt(0.65, QColor(tokens["signal"]))
+            gradient.setColorAt(1.0, QColor(tokens["text"]))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(gradient)
         painter.drawRoundedRect(fill, 5, 5)
@@ -115,6 +132,6 @@ class ScanProgress(QProgressBar):
             glint = (width + 120) * self._phase - 120
             shine = QLinearGradient(glint, 0, glint + 120, 0)
             shine.setColorAt(0, QColor(255, 255, 255, 0))
-            shine.setColorAt(0.5, QColor(255, 255, 255, 70))
+            shine.setColorAt(0.5, QColor(255, 255, 255, 90 if is_light else 70))
             shine.setColorAt(1, QColor(255, 255, 255, 0))
             painter.fillRect(QRectF(0, 0, width, track.height()), shine)

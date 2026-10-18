@@ -1,6 +1,6 @@
 """ProMainWindow: wraps the free app's exact MainWindow as the first tab
 (untouched, unmodified — product rule #1), and adds the new Network Health
-Pro screens as additional tabs sharing the same dark theme.
+Pro screens as additional tabs sharing the same Light/Dark theme.
 
 Also owns the system tray icon, which is what makes "stay continuously on"
 possible: closing the window hides it instead of quitting, monitoring keeps
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -23,6 +24,12 @@ from PyQt6.QtWidgets import (
 )
 
 from app.ui.main_window import MainWindow
+from app.ui.styles import (
+    ThemeManager,
+    ThemeToggleButton,
+    build_qss,
+    get_current_theme,
+)
 
 from pro import startup
 from pro.database import Database
@@ -38,6 +45,7 @@ from ui.event_log_widget import EventLogWidget
 from ui.inventory_widget import InventoryWidget
 from ui.notifications_bridge import notification_for_event
 from ui.pro_resources import load_pro_app_icon, load_pro_logo_pixmap
+from ui.pro_styles import build_pro_qss
 from ui.settings_widget import SettingsWidget
 
 
@@ -51,7 +59,7 @@ class ProMainWindow(QWidget):
         self._really_quit = False
 
         self.setObjectName("AppRoot")
-        self.setWindowTitle("ipscans Network Health Pro")
+        self.setWindowTitle("IPScans Network Health Pro")
         self.resize(1280, 820)
         self.setMinimumSize(1000, 680)
 
@@ -95,6 +103,9 @@ class ProMainWindow(QWidget):
         self._build_tray_icon()
         self._maybe_resume_monitoring()
 
+        self.apply_theme(get_current_theme())
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
     # -------------------------------------------------------------- header
     def _build_header(self) -> QWidget:
         bar = QFrame(objectName="TitleBar")
@@ -110,13 +121,35 @@ class ProMainWindow(QWidget):
 
         titles = QVBoxLayout()
         titles.setSpacing(0)
-        title = QLabel("ipscans", objectName="TitleText")
+        title = QLabel("IPScans", objectName="TitleText")
         subtitle = QLabel("Network Health Pro", objectName="SubtitleText")
         titles.addWidget(title)
         titles.addWidget(subtitle)
         layout.addLayout(titles)
         layout.addStretch(1)
+
+        self.theme_toggle_btn = ThemeToggleButton(self, self.lang)
+        layout.addWidget(self.theme_toggle_btn)
+
         return bar
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        resolved = theme if theme in ("light", "dark") else get_current_theme()
+        combined_qss = build_qss(resolved) + build_pro_qss(resolved)
+        app = QApplication.instance()
+        if app is not None:
+            app.setStyleSheet(combined_qss)
+        else:
+            self.setStyleSheet(combined_qss)
+        if hasattr(self, "theme_toggle_btn"):
+            self.theme_toggle_btn.set_language(self.lang)
+            self.theme_toggle_btn.update()
+        if hasattr(self, "scanner_tab") and hasattr(self.scanner_tab, "apply_theme"):
+            self.scanner_tab.apply_theme(resolved)
+        if hasattr(self, "dashboard_tab"):
+            self.dashboard_tab.starting_spinner.update()
+            self.dashboard_tab.update()
+        self.update()
 
     # ------------------------------------------------------------ system tray
     def _build_tray_icon(self) -> None:
@@ -125,7 +158,7 @@ class ProMainWindow(QWidget):
             return  # headless/offscreen test environments, some Linux setups
 
         self.tray = QSystemTrayIcon(load_pro_app_icon(), self)
-        self.tray.setToolTip("ipscans Network Health Pro")
+        self.tray.setToolTip("IPScans Network Health Pro")
 
         menu = QMenu()
         show_action = menu.addAction(t(self.lang, "tray_show"))
@@ -170,15 +203,6 @@ class ProMainWindow(QWidget):
 
     # ---------------------------------------------------------- persistence
     def _maybe_resume_monitoring(self) -> None:
-        """Resumes continuous monitoring automatically if it was running the
-        last time the app closed (spec item 8's "keep going" intent) — only
-        if the license is still active, so an expired trial doesn't loop
-        showing the PRO-feature prompt on every launch.
-
-        Uses the cached license status (no network call) so a slow/offline
-        connection can never delay app startup — the monitor itself will
-        re-validate the license against the server on its own schedule.
-        """
         cached_status = self.license_provider.get_status_from_cache_only()
         if self.db.get_setting("monitoring_enabled") == "1" and cached_status.has_feature("continuous_monitoring"):
             self._start_monitoring()

@@ -140,3 +140,37 @@ def test_camera_rename_updates_feed_and_tile_without_worker_restart(product, mon
     assert 'Renamed actual gate' in cards(dashboard)['34ABC123']
     assert ops.camera_source(session, 'gate') == original_source
     assert ops.vehicle_passages(session)[0]['direction'] == 'entry'  # Historic direction is immutable.
+
+
+def test_light_and_dark_theme_switching_across_windows(product):
+    app, ops, session, window = product
+    from lpr.theme import DARK_TOKENS, LIGHT_TOKENS, get_theme, get_tokens, set_theme, toggle_theme
+    from lpr.application import Login
+    from lpr.desktop import RecognitionWindow
+    from lpr.splash_screen import LPRProSplash
+
+    set_theme('light', app=app, persist=False)
+    app.processEvents()
+    assert get_theme() == 'light'
+    assert get_tokens()['bg'] == LIGHT_TOKENS['bg'] == '#FFFFFF'
+    assert hasattr(window, 'theme_toggle_btn')
+    assert not window.grab().isNull()
+
+    toggled = toggle_theme(app=app, persist=False)
+    app.processEvents()
+    assert toggled == 'dark' and get_theme() == 'dark'
+    assert get_tokens()['bg'] == DARK_TOKENS['bg'] == '#07080B'
+    assert not window.grab().isNull()
+
+    login = Login(ops)
+    assert hasattr(login, 'theme_toggle_btn')
+    login.close(); login.deleteLater()
+
+    splash = LPRProSplash()
+    splash.close(); splash.deleteLater()
+
+    desktop_win = RecognitionWindow()
+    assert hasattr(desktop_win, 'theme_toggle_btn')
+    desktop_win.close(); desktop_win.deleteLater()
+    app.processEvents()
+

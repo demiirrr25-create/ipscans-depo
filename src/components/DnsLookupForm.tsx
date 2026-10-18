@@ -276,7 +276,7 @@ export function DnsLookupForm({
                   onClick={() => setActiveTab("ALL")}
                   className={`inline-flex h-9 items-center gap-2 rounded-full px-4 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
                     activeTab === "ALL"
-                      ? "bg-ink text-white shadow-soft"
+                      ? "bg-ink text-surface shadow-soft"
                       : "text-ink-2 hover:bg-surface hover:text-ink"
                   }`}
                 >
@@ -284,7 +284,7 @@ export function DnsLookupForm({
                   <span
                     className={`ds-mono ds-tabular rounded-full px-1.5 py-0.5 text-[11px] ${
                       activeTab === "ALL"
-                        ? "bg-white/15 text-white"
+                        ? "bg-surface/15 text-surface"
                         : "bg-surface-2 text-ink-3"
                     }`}
                   >
@@ -303,7 +303,7 @@ export function DnsLookupForm({
                       onClick={() => setActiveTab(type)}
                       className={`inline-flex h-9 items-center gap-2 rounded-full px-4 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
                         selected
-                          ? "bg-ink text-white shadow-soft"
+                          ? "bg-ink text-surface shadow-soft"
                           : "text-ink-2 hover:bg-surface hover:text-ink"
                       }`}
                     >
@@ -311,7 +311,7 @@ export function DnsLookupForm({
                       <span
                         className={`ds-mono ds-tabular rounded-full px-1.5 py-0.5 text-[11px] ${
                           selected
-                            ? "bg-white/15 text-white"
+                            ? "bg-surface/15 text-surface"
                             : count > 0
                               ? "bg-signal-soft text-signal"
                               : "bg-surface-2 text-ink-4"

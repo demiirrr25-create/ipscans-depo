@@ -50,6 +50,8 @@ def _stamp(value):
 class _Editor(QDialog):
     def __init__(self, title, parent):
         super().__init__(parent); self.setWindowTitle(title); self.resize(650, 660)
+        from .theme import apply_theme
+        apply_theme(self)
         outer = QVBoxLayout(self); scroll = QScrollArea(); scroll.setWidgetResizable(True)
         content = QWidget(); self.form = QFormLayout(content); self.form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         scroll.setWidget(content); outer.addWidget(scroll)
@@ -157,10 +159,12 @@ class RegistryWidget(QWidget):
 
     def __init__(self, ops, session, parent=None):
         super().__init__(parent); self.ops, self.session = ops, session; self.registry = Registry(ops)
+        from .theme import apply_theme
+        apply_theme(self)
         self.offset = 0; self.resident_offset = 0; self.rows = []; self.resident_rows = []
         outer = QVBoxLayout(self); outer.setContentsMargins(0, 0, 0, 0)
-        title = QLabel('Araç ve sakin yönetimi'); title.setStyleSheet('font-size:22px;font-weight:600'); outer.addWidget(title)
-        hint = QLabel('Plaka, kişi ve daire kayıtlarını yönetin. Kişi eşleştirmeleri yalnız kayıtlı ilişkilerden gelir.'); hint.setWordWrap(True); outer.addWidget(hint)
+        title = QLabel('Araç ve sakin yönetimi'); title.setObjectName('pageTitle'); outer.addWidget(title)
+        hint = QLabel('Plaka, kişi ve daire kayıtlarını yönetin. Kişi eşleştirmeleri yalnız kayıtlı ilişkilerden gelir.'); hint.setObjectName('muted'); hint.setWordWrap(True); outer.addWidget(hint)
         self.tabs = QTabWidget(); outer.addWidget(self.tabs)
         self.message = QLabel(); self.message.setWordWrap(True); outer.addWidget(self.message)
         self._vehicles(); self._residents(); self._locations(); self.refresh()

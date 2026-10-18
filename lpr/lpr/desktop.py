@@ -38,25 +38,17 @@ COPY={
        "no_plate":"No plate detected","timeout":"Processing time limit exceeded.",
        "pending":"Pending","recognized":"Confirmed reading","suppressed":"Duplicate suppressed","rejected":"Rejected"}}
 
-STYLE="""
-QMainWindow,QDialog,QWidget{background:#000000;color:#e8eaed;font-family:'Segoe UI','Inter',sans-serif;font-size:13px;}
-QLabel#brand{font-size:16px;font-weight:600;letter-spacing:1.4px;color:#ffffff;}
-QLabel#title{font-size:28px;font-weight:600;letter-spacing:-0.4px;color:#ffffff;}
-QLabel#muted{color:#9aa0a6;}
-QLabel#section{color:#9aa0a6;font-size:11px;font-weight:600;letter-spacing:1.6px;}
-QLineEdit,QComboBox{background:#090a0d;color:#ffffff;border:1px solid rgba(255,255,255,0.14);border-radius:16px;padding:10px 14px;min-height:20px;}
-QPushButton{background:rgba(255,255,255,0.06);color:#e8eaed;border:1px solid rgba(255,255,255,0.14);border-radius:18px;padding:10px 18px;font-weight:500;}
-QPushButton:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.28);color:#ffffff;}
-QPushButton:focus,QLineEdit:focus,QComboBox:focus{border:1px solid rgba(255,255,255,0.52);}
-QPushButton#primary{background:#ffffff;color:#000000;border-color:#ffffff;font-weight:600;}
-QPushButton#primary:hover{background:#e6eaf0;}
-QPushButton:disabled{background:rgba(255,255,255,0.02);color:#6f7480;border-color:rgba(255,255,255,0.06);}
-QTableWidget{background:#0d0e12;gridline-color:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:18px;}
-QHeaderView::section{background:#090a0d;color:#9aa0a6;padding:10px;border:0;border-bottom:1px solid rgba(255,255,255,0.10);font-weight:600;}
-QCheckBox{padding:10px 0;}
-QLabel#preview{background:#0d0e12;border:1px solid rgba(255,255,255,0.10);border-radius:18px;color:#9aa0a6;}
-QSplitter::handle{background:rgba(255,255,255,0.08);width:2px;}
-"""
+from .theme import (
+    DARK_STYLE,
+    LIGHT_STYLE,
+    STYLE,
+    apply_theme,
+    create_theme_toggle_button,
+    get_stylesheet,
+    get_theme,
+    set_theme,
+    toggle_theme,
+)
 
 
 class RecognitionWindow(QMainWindow):
@@ -79,7 +71,7 @@ class RecognitionWindow(QMainWindow):
         self.setWindowTitle("IPScans LPR Pro · Recognition Lab")
         self.resize(1280,820)
         self.setMinimumSize(900,620)
-        self.setStyleSheet(STYLE)
+        apply_theme(self)
         root=QWidget()
         self.setCentralWidget(root)
         layout=QVBoxLayout(root)
@@ -90,6 +82,8 @@ class RecognitionWindow(QMainWindow):
         brand.setObjectName("brand")
         top.addWidget(brand)
         top.addStretch()
+        self.theme_toggle_btn=create_theme_toggle_button(self)
+        top.addWidget(self.theme_toggle_btn)
         self.language=QComboBox()
         self.language.addItems(["Türkçe","English"])
         self.language.setCurrentIndex(0 if lang=="tr" else 1)
@@ -274,6 +268,9 @@ class RecognitionWindow(QMainWindow):
         super().closeEvent(event)
 
 
+DesktopMainWindow = RecognitionWindow
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--lang",choices=["tr","en"],default="tr")
@@ -287,3 +284,4 @@ def main():
 
 
 if __name__=="__main__":sys.exit(main())
+

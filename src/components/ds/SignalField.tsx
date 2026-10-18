@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-type Variant = "hero" | "ambient" | "stage";
+type Variant = "hero" | "ambient" | "stage" | "subtle";
 
 type Particle = {
   /** home position in normalized field units (-1..1) */
@@ -18,19 +18,26 @@ type Particle = {
   depth: number;
 };
 
-const STOPS: [number, number, number][] = [
-  [47, 107, 255], // signal blue
-  [0, 194, 255], // cyan
-  [122, 92, 255], // violet
+const STOPS_LIGHT: [number, number, number][] = [
+  [47, 107, 255], // signal blue (#2F6BFF)
+  [0, 194, 255], // cyan (#00C2FF)
+  [122, 92, 255], // violet (#7A5CFF)
 ];
 
-function gradientColor(t: number): [number, number, number] {
+const STOPS_DARK: [number, number, number][] = [
+  [76, 130, 255], // luminous signal blue (#4C82FF)
+  [0, 210, 255], // radiant cyan (#00D2FF)
+  [155, 132, 255], // luminous violet (#9B84FF)
+];
+
+function gradientColor(t: number, dark: boolean): [number, number, number] {
+  const stops = dark ? STOPS_DARK : STOPS_LIGHT;
   const x = ((t % 1) + 1) % 1;
-  const seg = x * STOPS.length;
+  const seg = x * stops.length;
   const i = Math.floor(seg);
   const f = seg - i;
-  const a = STOPS[i % STOPS.length];
-  const b = STOPS[(i + 1) % STOPS.length];
+  const a = stops[i % stops.length];
+  const b = stops[(i + 1) % stops.length];
   return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
 }
 
@@ -41,7 +48,7 @@ function buildParticles(variant: Variant, area: number): Particle[] {
   for (let i = 0; i < count; i++) {
     let hx: number;
     let hy: number;
-    if (variant === "ambient") {
+    if (variant === "ambient" || variant === "subtle") {
       hx = Math.random() * 2 - 1;
       hy = Math.random() * 2 - 1;
     } else {
@@ -98,6 +105,9 @@ export function SignalField({
     let running = false;
     let visible = true;
     let t = 0;
+    let isDarkTheme =
+      variant === "stage" ||
+      document.documentElement.dataset.theme === "dark";
     const pointer = { x: -9999, y: -9999, active: false };
 
     const resize = () => {
@@ -115,12 +125,13 @@ export function SignalField({
       ctx.clearRect(0, 0, width, height);
       const cx = width / 2;
       const cy = variant === "hero" ? height * 0.52 : height / 2;
-      const scale = variant === "ambient" ? Math.max(width, height) * 0.55 : Math.min(width * 0.62, height * 0.78);
+      const isField = variant === "ambient" || variant === "subtle";
+      const scale = isField ? Math.max(width, height) * 0.55 : Math.min(width * 0.62, height * 0.78);
       const rot = t * 0.035;
       const cosR = Math.cos(rot);
       const sinR = Math.sin(rot);
       const breathe = 1 + Math.sin(t * 0.6) * 0.018;
-      const alphaBase = variant === "stage" ? 0.85 : 0.75;
+      const alphaBase = variant === "stage" ? 0.85 : isDarkTheme ? 0.88 : 0.75;
 
       for (const p of particles) {
         // rotate home position, add gentle wave
@@ -158,7 +169,7 @@ export function SignalField({
         const len = p.len * (0.6 + p.depth * 0.6);
         const ex = Math.cos(ang) * len;
         const ey = Math.sin(ang) * len;
-        const [r, g, b] = gradientColor(p.hue + t * 0.01);
+        const [r, g, b] = gradientColor(p.hue + t * 0.01, isDarkTheme);
         const a = alphaBase * p.depth;
         ctx.strokeStyle = `rgba(${r | 0},${g | 0},${b | 0},${a})`;
         ctx.lineWidth = 1.1 + p.depth * 0.9;
@@ -185,11 +196,22 @@ export function SignalField({
       cancelAnimationFrame(raf);
     };
 
+    const syncTheme = () => {
+      const nextDark =
+        variant === "stage" ||
+        document.documentElement.dataset.theme === "dark";
+      if (nextDark !== isDarkTheme) {
+        isDarkTheme = nextDark;
+        if (!running) draw();
+      }
+    };
+
     resize();
     // seed positions at home so the first frame is composed
     const cx0 = width / 2;
     const cy0 = variant === "hero" ? height * 0.52 : height / 2;
-    const s0 = variant === "ambient" ? Math.max(width, height) * 0.55 : Math.min(width * 0.62, height * 0.78);
+    const isField0 = variant === "ambient" || variant === "subtle";
+    const s0 = isField0 ? Math.max(width, height) * 0.55 : Math.min(width * 0.62, height * 0.78);
     for (const p of particles) {
       p.x = cx0 + p.hx * s0 * (reduced ? 1 : 1.25);
       p.y = cy0 + p.hy * s0 * (reduced ? 1 : 1.25);
@@ -217,6 +239,15 @@ export function SignalField({
     );
     io.observe(canvas);
 
+    const mo =
+      variant !== "stage"
+        ? new MutationObserver(syncTheme)
+        : null;
+    mo?.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
     const onVisibility = () => (document.hidden ? stop() : start());
     document.addEventListener("visibilitychange", onVisibility);
 
@@ -231,14 +262,19 @@ export function SignalField({
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     document.addEventListener("pointerleave", onLeave);
+    if (variant !== "stage") {
+      window.addEventListener("ipscans-theme-change", syncTheme);
+    }
 
     return () => {
       stop();
       ro.disconnect();
       io.disconnect();
+      mo?.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("ipscans-theme-change", syncTheme);
     };
   }, [variant]);
 

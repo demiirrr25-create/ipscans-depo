@@ -12,10 +12,10 @@ public sealed class UpdateWindow : Window
     public UpdateWindow()
     {
         Title = "IPCast — Updates"; Width = 580; Height = 490;
-        var status = new TextBlock { Text = "Checking releases…", TextWrapping = TextWrapping.Wrap };
+        var status = new TextBlock { Text = "Checking releases…", Classes = { "hint" }, TextWrapping = TextWrapping.Wrap };
         var notes = new TextBox { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 200 };
         var progress = new ProgressBar { Minimum = 0, Maximum = 100 };
-        var install = new Button { Content = "Download & Install", IsVisible = false };
+        var install = new Button { Content = "Download & Install", Classes = { "primary" }, IsVisible = false };
         var cancel = new Button { Content = "Cancel download" }; cancel.Click += (_, _) => Close();
         Content = new StackPanel { Margin = new Avalonia.Thickness(24), Spacing = 16, Children = { status, notes, progress, install, cancel } };
         Closed += (_, _) => { _cts.Cancel(); _updater.Dispose(); };
@@ -23,7 +23,7 @@ public sealed class UpdateWindow : Window
         {
             try
             {
-                var current = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(2, 1, 0);
+                var current = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(2, 7, 0);
                 var update = await _updater.CheckAsync(new Version(current.Major, current.Minor, current.Build), _cts.Token);
                 if (update is null) { status.Text = "IPCast is up to date."; return; }
                 status.Text = $"IPCast {update.Version} available · {update.Size / 1048576d:0.0} MiB";

@@ -1,11 +1,8 @@
-"""Welcome wizard for ipscans Network Health Pro: language -> Terms -> Privacy
+"""Welcome wizard for IPScans Network Health Pro: language -> Terms -> Privacy
 -> a short "what's included" welcome screen. Visually mirrors the free
 app's OnboardingWizard (same QSS object names: AppRoot, TitleText,
 SubtitleText, LanguageOption, GhostButton, PrimaryButton) so it feels like
-the same product family, but content and settings are entirely Pro's own
-(see pro/pro_content.py, pro/pro_settings.py) — the free app's onboarding
-module is never imported here, so nothing is skipped just because the free
-scanner was run on this machine before.
+the same product family, with full Light Mode & Dark Mode theme support.
 """
 from __future__ import annotations
 
@@ -26,10 +23,18 @@ from PyQt6.QtWidgets import (
 
 from app.i18n import available_languages
 from app.ui.resources import load_logo_pixmap
-from app.ui.styles import IPScansWelcomeStage
+from app.ui.styles import (
+    IPScansWelcomeStage,
+    ThemeManager,
+    ThemeToggleButton,
+    build_qss,
+    get_current_theme,
+    get_tokens,
+)
 
 from pro.pro_content import get_privacy_body, get_terms_body, t
 from pro.pro_settings import accept_privacy, accept_terms, mark_welcome_seen, save_language
+from ui.pro_styles import build_pro_qss
 
 LOGO_SIZE = 56
 STEPS = ["language", "terms", "privacy", "welcome"]
@@ -46,7 +51,7 @@ class ProOnboardingWizard(QDialog):
         self._headings: dict[str, QLabel] = {}
 
         self.setObjectName("AppRoot")
-        self.setWindowTitle("ipscans Network Health Pro")
+        self.setWindowTitle("IPScans Network Health Pro")
         self.setWindowIcon(app_icon)
         self.setModal(True)
         self.setFixedSize(640, 740)
@@ -65,6 +70,8 @@ class ProOnboardingWizard(QDialog):
         outer.addWidget(self.stack, stretch=1)
 
         outer.addLayout(self._build_nav())
+        self.apply_theme(get_current_theme())
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
         self._refresh_step()
 
     # ------------------------------------------------------------- header
@@ -83,23 +90,39 @@ class ProOnboardingWizard(QDialog):
 
         brand_row = QHBoxLayout()
         brand_row.setSpacing(10)
-        brand_row.addStretch(1)
 
         self._logo_label = QLabel()
         self._logo_label.setPixmap(load_logo_pixmap(28))
         self._logo_label.setFixedSize(28, 28)
         brand_row.addWidget(self._logo_label)
 
-        title = QLabel("ipscans PRO", objectName="TitleText")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title = QLabel("IPScans Network Health Pro", objectName="TitleText")
+        title.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         self._title_label = title
         brand_row.addWidget(title)
         brand_row.addStretch(1)
+
+        self.theme_toggle_btn = ThemeToggleButton(self, self.language)
+        brand_row.addWidget(self.theme_toggle_btn)
+
         wrap.addLayout(brand_row)
 
         header = QWidget()
         header.setLayout(wrap)
         return header
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        resolved = theme if theme in ("light", "dark") else get_current_theme()
+        tk = get_tokens(resolved)
+        self.setStyleSheet(build_qss(resolved) + build_pro_qss(resolved))
+        self._welcome_stage.update()
+        if hasattr(self, "theme_toggle_btn"):
+            self.theme_toggle_btn.set_language(self.language)
+            self.theme_toggle_btn.update()
+        for i, dot in enumerate(getattr(self, "_dot_labels", [])):
+            dot.setStyleSheet(
+                f"color: {tk['accent_primary']};" if i == self.step_index else f"color: {tk['border_strong']};"
+            )
 
     def _build_dots(self) -> QWidget:
         row = QHBoxLayout()
@@ -154,6 +177,8 @@ class ProOnboardingWizard(QDialog):
 
     def _on_language_clicked(self, button: QPushButton) -> None:
         self.language = button.property("langCode")
+        if hasattr(self, "theme_toggle_btn"):
+            self.theme_toggle_btn.set_language(self.language)
         self._refresh_step()
 
     def _build_agreement_page(self, key: str) -> QWidget:
@@ -240,22 +265,28 @@ class ProOnboardingWizard(QDialog):
 
     def _refresh_step(self) -> None:
         key = self.steps[self.step_index]
+        tk = get_tokens()
         self.stack.setCurrentIndex(self.step_index)
         self.back_btn.setVisible(self.step_index > 0)
         self.back_btn.setText(t(self.language, "back"))
         self.decline_btn.setVisible(key in ("terms", "privacy"))
+
+        for i, dot in enumerate(getattr(self, "_dot_labels", [])):
+            dot.setStyleSheet(
+                f"color: {tk['accent_primary']};" if i == self.step_index else f"color: {tk['border_strong']};"
+            )
 
         if key == "language":
             self._title_label.setText(t(self.language, "lang_title"))
             self._headings["language"].setText(t(self.language, "lang_subtitle"))
             self.primary_btn.setText(t(self.language, "lang_continue"))
         elif key == "welcome":
-            self._title_label.setText("ipscans PRO")
+            self._title_label.setText("IPScans Network Health Pro")
             self._headings["welcome"].setText(t(self.language, "welcome_heading"))
             self._body_views["welcome"].setHtml(t(self.language, "welcome_body"))
             self.primary_btn.setText(t(self.language, "welcome_button"))
         else:
-            self._title_label.setText("ipscans PRO")
+            self._title_label.setText("IPScans Network Health Pro")
             get_body = get_terms_body if key == "terms" else get_privacy_body
             self._headings[key].setText(t(self.language, f"{key}_heading"))
             self._body_views[key].setHtml(get_body(self.language))

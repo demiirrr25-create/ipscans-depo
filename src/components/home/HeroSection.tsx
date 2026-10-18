@@ -31,7 +31,7 @@ export function HeroSection({
       {/* Animated concentric signal field backdrop */}
       <div aria-hidden="true" className="absolute inset-0 -z-10">
         <SignalField variant="hero" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_46%_at_50%_46%,rgb(255_255_255/0.92)_0%,rgb(255_255_255/0.68)_54%,transparent_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[image:var(--hero-scrim)]" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-surface to-transparent" />
       </div>
 

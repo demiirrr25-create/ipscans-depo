@@ -53,7 +53,17 @@ public partial class MainWindowViewModel
         OnSettingsQueryChanged(SettingsQuery);
         OnPropertyChanged(nameof(WorkspaceTitle));
     }
-    partial void OnThemeChanged(string value) { MonochromeTheme.Apply(value); SavePreferences(); }
+    partial void OnThemeChanged(string value)
+    {
+        MonochromeTheme.Apply(value);
+        OnPropertyChanged(nameof(IsLightTheme));
+        OnPropertyChanged(nameof(IsDarkTheme));
+        OnPropertyChanged(nameof(ThemeToggleTooltip));
+        OnPropertyChanged(nameof(IsDarkModeSelected));
+        OnPropertyChanged(nameof(IsLightModeSelected));
+        OnPropertyChanged(nameof(IsSystemModeSelected));
+        SavePreferences();
+    }
     partial void OnOpenAddressBookOnStartupChanged(bool value) => SavePreferences();
     partial void OnPreventDisplaySleepChanged(bool value) => SavePreferences();
     public void RefreshDeviceFilter()

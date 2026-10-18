@@ -34,7 +34,7 @@ def write_pdf(devices, path, *, target='', completed=True, lang='en'):
         raise OSError(output.errorString())
     writer = QPdfWriter(output)
     writer.setTitle(title)
-    writer.setCreator('IPScans+ 4.3.0')
+    writer.setCreator('IPScans+')
     writer.setResolution(96)
     writer.setPageLayout(QPageLayout(QPageSize(QPageSize.PageSizeId.A4),
         QPageLayout.Orientation.Landscape, QMarginsF(14, 14, 14, 14)))
@@ -86,7 +86,7 @@ def write_pdf(devices, path, *, target='', completed=True, lang='en'):
             painter.fillRect(QRectF(0, 0, width, 112), QColor('#101216'))
             painter.setPen(QColor('#ffffff'))
             painter.setFont(QFont('Segoe UI', 10, QFont.Weight.DemiBold))
-            painter.drawText(QRectF(22, 16, width-44, 22), 'IPSCANS+  /  4.3')
+            painter.drawText(QRectF(22, 16, width-44, 22), 'IPSCANS+')
             painter.setFont(QFont('Segoe UI', 24, QFont.Weight.DemiBold))
             painter.drawText(QRectF(20, 45, width-40, 44), title)
             painter.setPen(QColor('#555b66')); painter.setFont(body_font)

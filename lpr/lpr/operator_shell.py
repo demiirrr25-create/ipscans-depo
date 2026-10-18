@@ -8,37 +8,28 @@ from PySide6.QtGui import QBrush, QColor, QFont, QLinearGradient, QPainter, QPai
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QListWidget,
     QSplitter,QScrollArea,QFrame,QDialog,QDialogButtonBox,QFormLayout,QLineEdit,QTabWidget)
 from .event_service import EventService,DurablePassageQueue
-
-STYLE='''
-QMainWindow,QDialog,QWidget {background:#000000;color:#e8eaed;font-family:"Segoe UI","Inter",sans-serif;font-size:13px;}
-QLabel {background:transparent;color:#e8eaed;}
-QLabel#brand {font-size:18px;font-weight:600;letter-spacing:1.4px;color:#ffffff;}
-QLabel#pageTitle {font-size:24px;font-weight:600;letter-spacing:-0.4px;color:#ffffff;}
-QLabel#muted {color:#9aa0a6;}
-QFrame#eventCard {background:#0d0e12;border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:6px;}
-QPushButton {background:rgba(255,255,255,0.06);color:#e8eaed;border:1px solid rgba(255,255,255,0.14);border-radius:18px;padding:9px 16px;min-height:18px;font-weight:500;}
-QPushButton:hover {background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.28);color:#ffffff;}
-QPushButton:disabled {color:#6f7480;background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.06);}
-QLineEdit,QComboBox,QSpinBox,QDoubleSpinBox,QDateTimeEdit {background:#090a0d;color:#ffffff;border:1px solid rgba(255,255,255,0.14);border-radius:16px;padding:8px 14px;selection-background-color:#ffffff;selection-color:#000000;}
-QLineEdit:focus,QComboBox:focus,QSpinBox:focus,QDoubleSpinBox:focus,QDateTimeEdit:focus {border:1px solid rgba(255,255,255,0.52);}
-QTableWidget,QListWidget {background:#0d0e12;alternate-background-color:#111318;border:1px solid rgba(255,255,255,0.10);border-radius:18px;gridline-color:rgba(255,255,255,0.06);}
-QHeaderView::section {background:#090a0d;color:#9aa0a6;border:0;border-bottom:1px solid rgba(255,255,255,0.10);padding:10px 8px;font-weight:600;}
-QListWidget#navigation {border:1px solid rgba(255,255,255,0.10);border-radius:20px;background:#0d0e12;font-size:13.5px;padding:6px;}
-QListWidget#navigation::item {padding:14px 14px;margin:3px;border-radius:14px;color:#9aa0a6;font-weight:500;}
-QListWidget#navigation::item:hover {background:rgba(255,255,255,0.06);color:#ffffff;}
-QListWidget#navigation::item:selected {background:#ffffff;color:#000000;font-weight:600;}
-QTabWidget::pane {border:0;}
-QTabBar::tab {background:#0d0e12;color:#9aa0a6;border:1px solid rgba(255,255,255,0.10);border-radius:16px;padding:9px 18px;margin-right:6px;font-weight:500;}
-QTabBar::tab:selected {background:#ffffff;color:#000000;border-color:#ffffff;font-weight:600;}
-QScrollArea {border:0;}
-QSplitter::handle {background:rgba(255,255,255,0.08);}
-QCheckBox::indicator {width:16px;height:16px;border:1px solid rgba(255,255,255,0.35);background:#090a0d;border-radius:5px;}
-QCheckBox::indicator:checked {background:#ffffff;border:1px solid #ffffff;}
-'''
+from .theme import (
+    DARK_STYLE,
+    DARK_TOKENS,
+    LIGHT_STYLE,
+    LIGHT_TOKENS,
+    STYLE,
+    TOKENS,
+    apply_theme,
+    create_theme_toggle_button,
+    detect_os_theme,
+    get_stylesheet,
+    get_theme,
+    get_tokens,
+    persist_theme,
+    set_theme,
+    toggle_theme,
+    update_theme_toggle_button,
+)
 
 
 class IPScansWelcomeBanner(QWidget):
-    """Executive minimalist IPScans header bar for LPR Pro."""
+    """Executive minimalist IPScans header bar for LPR Pro (Light & Dark Mode aware)."""
 
     def __init__(self, eyebrow: str, headline: str, compact: bool = True, parent=None):
         super().__init__(parent)
@@ -54,20 +45,32 @@ class IPScansWelcomeBanner(QWidget):
         path = QPainterPath()
         path.addRoundedRect(rect, 14.0, 14.0)
 
-        # 1. Pure deep surface with subtle linear gradient
+        is_light = get_theme() == "light"
+        tokens = get_tokens()
+
+        # 1. Surface with subtle linear gradient matching active theme
         bg = QLinearGradient(0.0, 0.0, float(self.width()), float(self.height()))
-        bg.setColorAt(0.0, QColor(10, 10, 10))
-        bg.setColorAt(1.0, QColor(5, 5, 5))
+        if is_light:
+            bg.setColorAt(0.0, QColor("#F8F9FA"))
+            bg.setColorAt(1.0, QColor("#F1F3F6"))
+        else:
+            bg.setColorAt(0.0, QColor("#0D0F14"))
+            bg.setColorAt(1.0, QColor("#141821"))
         painter.fillPath(path, QBrush(bg))
 
         # 2. Subtle ambient corner illumination
         halo = QRadialGradient(30.0, 20.0, 220.0)
-        halo.setColorAt(0.0, QColor(255, 255, 255, 12))
-        halo.setColorAt(1.0, QColor(0, 0, 0, 0))
+        if is_light:
+            halo.setColorAt(0.0, QColor(47, 107, 255, 16))
+            halo.setColorAt(1.0, QColor(47, 107, 255, 0))
+        else:
+            halo.setColorAt(0.0, QColor(76, 130, 255, 22))
+            halo.setColorAt(1.0, QColor(0, 0, 0, 0))
         painter.fillPath(path, QBrush(halo))
 
         # 3. Outer hairline border
-        painter.setPen(QPen(QColor(255, 255, 255, 22), 1.0))
+        border_color = QColor(11, 13, 18, 22) if is_light else QColor(255, 255, 255, 24)
+        painter.setPen(QPen(border_color, 1.0))
         painter.drawPath(path)
 
         # 4. Eyebrow badge
@@ -75,7 +78,7 @@ class IPScansWelcomeBanner(QWidget):
         mono.setBold(True)
         mono.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.4)
         painter.setFont(mono)
-        painter.setPen(QColor(140, 145, 155))
+        painter.setPen(QColor(tokens["ink_3"]))
         painter.drawText(
             QRectF(20.0, 14.0, float(self.width()) - 40.0, 16.0),
             int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
@@ -87,7 +90,7 @@ class IPScansWelcomeBanner(QWidget):
         title_font.setWeight(QFont.Weight.DemiBold)
         title_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, -0.2)
         painter.setFont(title_font)
-        painter.setPen(QColor(255, 255, 255))
+        painter.setPen(QColor(tokens["ink"]))
         painter.drawText(
             QRectF(20.0, 32.0 if self._compact else 36.0, float(self.width()) - 40.0, 24.0),
             int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
@@ -98,6 +101,7 @@ class IPScansWelcomeBanner(QWidget):
 
 # Backward compatibility alias
 AntigravityWelcomeBanner = IPScansWelcomeBanner
+
 
 
 def label(text='',name=None):
@@ -267,7 +271,7 @@ class LiveDashboard(QWidget):
 
     def open_event(self,event_id):
         w=self.window;data=self.events.details(w.session,event_id)
-        dialog=QDialog(w);dialog.setWindowTitle('Geçiş ayrıntısı');dialog.resize(600,550);layout=QVBoxLayout(dialog)
+        dialog=QDialog(w);dialog.setWindowTitle('Geçiş ayrıntısı');dialog.resize(600,550);apply_theme(dialog);layout=QVBoxLayout(dialog)
         plate=data['corrections'][-1]['plate'] if data['corrections'] else data['plate']
         layout.addWidget(label(plate or 'PLAKA OKUNAMADI','pageTitle'))
         layout.addWidget(label(f"{data['camera_name']} · {data['direction']}\n{datetime.fromtimestamp(data['at']):%d.%m.%Y %H:%M:%S}\nOlay: {event_id}\nKaynak: yazılım / araç çizgi geçişi · Güven: {data['confidence']:.1%}"))
@@ -310,11 +314,14 @@ class LiveDashboard(QWidget):
 def install_shell(window):
     from .registry_ui import RegistryWidget
     from .camera_management import CameraManagementPanel
-    window.setStyleSheet(STYLE)
+    apply_theme(window)
     old=window.takeCentralWidget();old.hide();old.setParent(window)
     root=QWidget();window.setCentralWidget(root);layout=QVBoxLayout(root);layout.setContentsMargins(18,16,18,12)
     header=QHBoxLayout();brand=label('IPSCANS / LPR PRO','brand');brand.setWordWrap(False)
     header.addWidget(brand);header.addStretch();header.addWidget(window.account)
+    window.theme_toggle_btn=getattr(window,'theme_toggle_btn',None) or create_theme_toggle_button(window)
+    update_theme_toggle_button(window.theme_toggle_btn)
+    header.addWidget(window.theme_toggle_btn)
     lock=QPushButton('Oturumu kilitle');lock.clicked.connect(window.lock_session);header.addWidget(lock);layout.addLayout(header)
     window.welcome_banner=IPScansWelcomeBanner(
         'IPSCANS LPR PRO · STATION WORKSPACE',
@@ -357,3 +364,14 @@ def install_shell(window):
     window.passage_browser.table.cellDoubleClicked.connect(lambda row,column:window.guard(
         lambda:window.live_dashboard.open_event(window.passage_browser.table.item(row,8).text())))
     window.operator_pages={'dashboard':window.live_dashboard,'cameras':window.camera_management,'vehicles':vehicle_page,'events':events,'settings':window.widgets['settings'][0]}
+
+
+def __getattr__(name: str):
+    if name in ("OperatorMainWindow", "ProductWindow"):
+        from .application import ProductWindow
+        return ProductWindow
+    if name in ("LoginDialog", "Login"):
+        from .application import Login
+        return Login
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+

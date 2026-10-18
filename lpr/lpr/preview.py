@@ -12,6 +12,7 @@ from .camera import CameraConfig, CameraWorker
 
 from .calibration_ui import CalibrationSurface as VideoSurface, CalibrationControls
 from .calibration import CameraCalibration
+from .theme import apply_theme
 
 
 ERRORS = {
@@ -31,6 +32,7 @@ class PreviewDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("LPR PRO · Canlı kamera")
         self.resize(1100, 780)
+        apply_theme(self)
         self.authorize = authorize
         self.owns_capture=capture_worker is None
         self.worker = capture_worker if capture_worker is not None else worker_factory(CameraConfig(source, camera_id=camera_id,transport=transport,decoder_mode=decoder_mode))

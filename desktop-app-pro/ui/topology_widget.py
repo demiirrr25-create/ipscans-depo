@@ -13,6 +13,7 @@ from __future__ import annotations
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
+from app.ui.styles import ThemeManager, get_tokens
 from pro.pro_content import t
 
 _TYPE_ORDER = [
@@ -20,14 +21,12 @@ _TYPE_ORDER = [
     "Printer", "Computer", "Server", "IoT", "Unknown",
 ]
 
-_ONLINE_COLOR = QColor("#7ee787")
-_OFFLINE_COLOR = QColor("#ff7a7a")
-
 
 class TopologyWidget(QWidget):
     def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.lang = lang
+        self._devices: list = []
         outer = QVBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
 
@@ -35,10 +34,23 @@ class TopologyWidget(QWidget):
         self.tree.setHeaderHidden(True)
         outer.addWidget(self.tree)
 
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self, _theme: str | None = None) -> None:
+        if self._devices:
+            self.refresh(self._devices)
+        else:
+            self.tree.viewport().update()
+
     def refresh(self, devices) -> None:
+        self._devices = list(devices)
+        tk = get_tokens()
+        online_color = QColor(tk["online"])
+        offline_color = QColor(tk["critical"])
+
         self.tree.clear()
         groups: dict[str, list] = {}
-        for device in devices:
+        for device in self._devices:
             groups.setdefault(device["device_type"] or "Unknown", []).append(device)
 
         if not groups:
@@ -57,7 +69,7 @@ class TopologyWidget(QWidget):
                 is_online = device["status"] == "online"
                 status_text = t(self.lang, "status_online") if is_online else t(self.lang, "status_offline")
                 child = QTreeWidgetItem([f"{name} — {device['ip']} ({status_text})"])
-                child.setForeground(0, _ONLINE_COLOR if is_online else _OFFLINE_COLOR)
+                child.setForeground(0, online_color if is_online else offline_color)
                 group_item.addChild(child)
             self.tree.addTopLevelItem(group_item)
         self.tree.expandAll()

@@ -170,14 +170,14 @@ export function BlogExplorer({
                     aria-pressed={active}
                     className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors duration-200 ${
                       active
-                        ? "border-ink bg-ink text-white shadow-soft"
+                        ? "border-ink bg-ink text-surface shadow-soft"
                         : "border-line-2 bg-surface text-ink-2 hover:border-line-3 hover:bg-surface-2 hover:text-ink"
                     }`}
                   >
                     <span>{c || copy.all}</span>
                     <span
                       className={`ds-tabular text-xs ${
-                        active ? "text-white/75" : "text-ink-3"
+                        active ? "text-surface/75" : "text-ink-3"
                       }`}
                     >
                       {count}

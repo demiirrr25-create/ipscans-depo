@@ -71,7 +71,7 @@ export function LiveIp({
   );
 
   const chipClass =
-    "group inline-flex max-w-full items-center gap-2.5 rounded-full border border-line bg-white/85 px-4 py-2 text-[0.8125rem] shadow-soft backdrop-blur-md transition-all duration-300 ease-out-quart hover:border-line-2 hover:bg-surface-dim";
+    "group inline-flex max-w-full items-center gap-2.5 rounded-full border border-line bg-[var(--surface-glass)] px-4 py-2 text-[0.8125rem] shadow-soft backdrop-blur-md transition-all duration-300 ease-out-quart hover:border-line-2 hover:bg-surface-dim";
 
   if (href) {
     return (

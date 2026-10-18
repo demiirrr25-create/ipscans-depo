@@ -1,84 +1,55 @@
-# IPScans Design System
+# IPScans Unified Design System (v2.0)
 
-Single visual identity for ipscans.com and every IPScans Windows application.
-Token values live in [`tokens.json`](./tokens.json). Every product must use those exact values.
+Single visual identity, component architecture, and dual-theme (`Light` + `Dark` + `System`) specification for **IPScans.com** and every **IPScans Windows Desktop Application** (`IPscans+`, `IPScans Network Health Pro`, `IPCast`, `IPScans LPR Pro`, and `IPScans Cortex`).
 
-## Principles
+Token values live in [`tokens.json`](./tokens.json). Every web surface and desktop application must use these exact tokens.
 
-1. **Function first.** Never remove a working feature to simplify a screen. Reorganize instead.
-2. **Black canvas, white type, controlled greys.** `#000` background, `#FFF` primary text,
-   `#A1A1A1` secondary, `#6E6E6E` tertiary. Surfaces step up in small increments
-   (`#0A0A0A` → `#111` → `#191919`). Hairline borders `#1F1F1F`.
-3. **Color is information, never decoration.** Status colors (`statusOk/Warn/Error/Info`) appear
-   only as small dots, thin rings, inline text or chart series — never as filled info boxes,
-   tinted banners or green callouts.
-4. **One primary action per view.** Primary button = white fill, black text. Secondary = 1px
-   `#2E2E2E` border, white text. Ghost = text only.
-5. **Quiet chrome.** No decorative badges, gradients-for-gradients-sake, glow blobs, giant
-   watermark wordmarks, or marketing filler sentences.
-6. **Motion explains state.** 120 / 200 / 400 ms with `cubic-bezier(0.2,0,0,1)`. Animate only
-   `opacity` and `transform` (GPU friendly). Respect `prefers-reduced-motion` on web and a
-   "reduce motion" setting / Windows animation setting on desktop.
+---
 
-## Banned UI text (main surfaces)
+## 1. Core Design Philosophy
 
-Do not render any of these anywhere in primary UI (web pages, app windows, splash screens):
+1. **One Ecosystem, Zero Visual Seam**: Opening any IPScans desktop EXE (`IPscans+`, `IPCast`, `LPR Pro`, `Cortex`, `Network Health Pro`) must feel like a direct native extension of `IPScans.com`.
+2. **Dual-Theme Mastery (Light & Dark Mode)**:
+   - **Light Mode**: Crisp editorial white (`#FFFFFF`) and cool alabaster (`#F8F9FA`, `#F1F3F5`) surfaces, deep obsidian ink (`#0B0D12`), subtle hairline borders (`#E5E7EB`), and signature IPScans Signal Blue (`#2F6BFF`) focus/interactive accents.
+   - **Dark Mode**: Deep carbon-obsidian (`#07080B`) and elevated slate (`#0D0F14`, `#13161E`) surfaces, luminous off-white typography (`#F5F7FA`), hairline borders (`#1E222D`), and radiant Signal Blue (`#4C82FF`) accents.
+   - **Theme Control & Persistence**: Every application and the website provides a top-level **Sun / Moon theme toggle button** in the header/navigation bar. Theme choice (`light` | `dark`) is persisted across restarts (`localStorage` on web, `QSettings` in Qt apps, `PreferencesStore` in Avalonia, `localStorage` + settings in Cortex) and automatically detects the OS preference (`prefers-color-scheme` / Windows `AppsUseLightTheme` registry key) on first launch.
+3. **Function First**: Never remove or break an existing capability, protocol probe, camera stream, or security check. Standardize and elevate the visual hierarchy around every feature.
+4. **Quiet Chrome**: No amateur neon clutter, no gratuitous version badges in headers, no artificial splash delays.
 
-- Version tags in hero/header/splash/sidebar (e.g. `v4.3`, `Version 4.3.0`, `Beta 0.3`).
-  Version information belongs only in **About** dialogs, download metadata tables and release notes.
-- `Antigravity`, `Antigravity Design`, `Design System`, `Powered by …`, `Next Generation UI`,
-  `Premium UI`, `Black Infinity`, or any other design-technology / framework name.
-- Decorative tagline filler ("Next-gen experience", "Ultra modern", etc.).
+---
 
-## Typography
+## 2. Typography & Numeric Discipline
 
-| Role       | Web (Geist)            | Desktop (Segoe UI Variable) |
-|------------|------------------------|-----------------------------|
-| Display    | 56–72px, 600, -0.03em  | Display 40px, 600           |
-| H1         | 40px, 600, -0.02em     | Display 28px, 600           |
-| H2         | 28px, 600, -0.02em     | Display 20px, 600           |
-| Body       | 16px, 400              | Text 14px, 400              |
-| Label      | 13px, 500              | Text 13px, 500              |
-| Caption    | 12px, 400, `#6E6E6E`   | Text 12px, 400              |
-| Numeric    | Geist Mono, tabular    | Cascadia Mono / tabular     |
+| Role       | Web (`Google Sans Flex`)     | Desktop (`Segoe UI Variable`)        |
+|------------|------------------------------|--------------------------------------|
+| Display    | 56–72px, 550, `-0.035em`     | `Segoe UI Variable Display`, 32–38px, 600 |
+| H1         | 38–52px, 550, `-0.03em`      | `Segoe UI Variable Display`, 24–26px, 600 |
+| H2         | 26–34px, 550, `-0.025em`     | `Segoe UI Variable Display`, 18–20px, 600 |
+| Body       | 16px, 400                    | `Segoe UI Variable Text`, 13–14px, 400 |
+| Label      | 13px, 500                    | `Segoe UI Variable Text`, 12–13px, 500 |
+| Caption    | 12px, 450, `textTertiary`    | `Segoe UI Variable Text`, 11–12px, 400 |
+| Monospace  | `Google Sans Code`, tabular  | `Cascadia Mono`, `Consolas`, tabular |
 
-Numbers that update live (speeds, latencies, counters) always use tabular figures.
+All live telemetry, IP addresses, MAC addresses, ports, speeds, latencies, and counters must use tabular figures.
 
-## Components
+---
 
-- **Panel**: `surface1`, 1px `border`, radius `lg` (14). No shadows on black.
-- **Table**: header row `textTertiary` 12px uppercase-free labels, rows 40px, hairline separators,
-  hover `surfaceHover`, selected row = 2px white left indicator + `surface3`.
-- **Sidebar (desktop)**: 232px, `bg`, items 36px tall radius `md`, active item `surface3` + white text,
-  inactive `textSecondary`. Monochrome line icons, 1.5px stroke, 18px.
-- **Inputs**: `surface2`, 1px `borderStrong`, focus ring 1px white + 3px `rgba(255,255,255,0.12)`.
-- **Charts**: series 1 white, series 2 `chartSecondary`, grid `chartGrid`, no chart borders.
-- **Status**: 8px dot + label. Never full-row coloring.
+## 3. Unified Component Standards
 
-## Windows welcome experience (all desktop apps)
-
-Shared behaviour, implemented natively in each app's toolkit:
-
-1. **Launch splash** — frameless, full-screen black window on the primary monitor.
-   IPScans mark fades/scales in (0.92 → 1.0, 600 ms, easeOut), app name appears below in
-   Display weight, a 2px progress line and a single status line reflect **real** init steps
-   (loading settings, databases, models, network adapters…). No fake timers.
-2. **First run only** — a Windows 11 OOBE-style flow: full-screen, one question per step,
-   large left-aligned title, short helper text, primary button bottom-right, Back bottom-left,
-   step dots. Steps are app-specific (language, privacy/telemetry consent, permissions,
-   license, network/camera setup) and every step is skippable when not legally required.
-   Completion is persisted (QSettings / app settings) so it never repeats.
-3. **Daily launches** — splash stays only as long as initialization actually takes
-   (target < 1.2 s, no minimum artificial delay beyond a 250 ms fade), then cross-fades into
-   the main window.
-4. **Escape hatch** — `Esc` exits full screen / skips the splash at any time; `Alt+F4` closes;
-   the OOBE has a visible "Skip setup" text button. CLI `--no-splash` disables it.
-5. **Transition** — main window opens maximized-or-restored with a 200 ms opacity fade.
-
-## Web specifics
-
-- Max content width 1200px, 24px gutters, header 64px, sticky, `rgba(0,0,0,0.8)` + backdrop blur.
-- Footer: compact link columns + legal line. **No giant wordmark.**
-- Product pages: hero (name, one-line value, primary download), real screenshot/preview,
-  feature grid (icon + title + one sentence), technical spec table, download metadata
-  (version, size, SHA-256) at the bottom.
+- **Header / Top Bar**:
+  - Height `64–68px`, brand mark + product title on the start side, pill-shaped segmented navigation in the center or left sidebar, action controls + **Sun/Moon Theme Toggle (`☀️` / `🌙` or vector icon)** on the end side.
+- **Buttons**:
+  - Pill radius (`999px` on web / `18–20px` in desktop toolkits).
+  - **Primary**: High-contrast solid fill (`#0B0D12` text `#FFFFFF` in Light Mode; `#F5F7FA` text `#07080B` in Dark Mode) or Signal Blue (`#2F6BFF`) for active operations.
+  - **Secondary**: `surface1`/`surface2` fill with `1px` `borderStrong` stroke.
+  - **Ghost / Icon**: Transparent fill, subtle hover pill (`surfaceHover`).
+- **Cards & Panels**:
+  - `surface1` background, `1px` `border` stroke, rounded corners (`16–22px`).
+- **Tables & Data Grids**:
+  - Clean header row (`surface1`, `textTertiary` 12px semibold labels), `40–44px` row height, hairline row separators, subtle hover (`surfaceHover`), selected row highlighted with Signal Blue tint or high-contrast pill selection.
+- **Inputs, Selects & Search Bars**:
+  - `surface` / `surface1` background, `1px` `borderStrong`, `14–18px` radius, `2px` Signal Blue focus ring (`#2F6BFF` / `#4C82FF`).
+- **Scrollbars**:
+  - Minimalist 8–10px rounded thumb matching the active theme (`#D1D5DB` in Light, `#2C3242` in Dark).
+- **Charts & Topology**:
+  - Canvas, SVG, and `QGraphicsScene` backgrounds, node cards, edge lines, and text labels dynamically switch palettes when the theme toggles.

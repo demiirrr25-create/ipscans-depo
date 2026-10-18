@@ -106,14 +106,16 @@ class CalibrationSurface(QWidget):
         self.selected=None;self.selectionChanged.emit();self.documentChanged.emit();self.update()
 
     def paintEvent(self,event):
-        painter=QPainter(self);painter.fillRect(self.rect(),Qt.GlobalColor.black)
+        painter=QPainter(self);painter.fillRect(self.rect(),QColor("#07080B"))
+        painter.setPen(QPen(QColor("#1E222D"),1))
+        painter.drawRect(self.rect().adjusted(0,0,-1,-1))
         if self.image.isNull():return
         painter.drawImage(QRectF(*self.video_rect()),self.image)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         for region in self.regions:
-            color=QColor("#aaaaaa" if region.purpose=="vehicle" else "#6fc6db")
-            if region.exclude:color=QColor("#edb86a")
-            fill=QColor(color);fill.setAlpha(22)
+            color=QColor("#A8B0C2" if region.purpose=="vehicle" else "#4C82FF")
+            if region.exclude:color=QColor("#F59E0B")
+            fill=QColor(color);fill.setAlpha(28)
             painter.setBrush(fill);painter.setPen(QPen(color,2,Qt.PenStyle.DotLine if region.exclude else Qt.PenStyle.DashLine))
             polygon=QPolygonF([self.screen_point(point) for point in region.points])
             painter.drawPolygon(polygon);painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -122,7 +124,7 @@ class CalibrationSurface(QWidget):
                 for point in polygon:painter.drawEllipse(point,5,5)
         for line in self.lines+self.recognition_lines:
             recognition=isinstance(line,RecognitionLine)
-            color=QColor("#6fc6db" if recognition else "#ffffff")
+            color=QColor("#4C82FF" if recognition else "#F5F7FA")
             painter.setPen(QPen(color,3 if line.id==self.selected else 2,Qt.PenStyle.DashLine if recognition else Qt.PenStyle.SolidLine))
             a,b=self.screen_point(line.start),self.screen_point(line.end)
             painter.drawLine(a,b);painter.drawEllipse(a,5,5);painter.drawEllipse(b,5,5)

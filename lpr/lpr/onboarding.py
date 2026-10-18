@@ -33,7 +33,8 @@ def setup_status(ops,session):
         data_path=str(path.resolve()) if persistent else "Bellekte; kalıcı dosya yok")
 
 
-from .operator_shell import IPScansWelcomeBanner, STYLE
+from .operator_shell import IPScansWelcomeBanner
+from .theme import STYLE, apply_theme
 
 
 class SetupWizard(QDialog):
@@ -48,7 +49,7 @@ class SetupWizard(QDialog):
         self.current_status=None;self.exiting=False;self.busy=False
         self.setWindowTitle("IPScans LPR Pro · İstasyon Kurulumu")
         self.setWindowModality(Qt.WindowModality.WindowModal)
-        self.setStyleSheet(STYLE)
+        apply_theme(self)
         self.resize(760,600);self.setMinimumSize(640,480)
         root=QVBoxLayout(self)
         self.welcome_banner=IPScansWelcomeBanner(
@@ -60,6 +61,7 @@ class SetupWizard(QDialog):
         root.addWidget(self.welcome_banner)
         self.progress=QLabel();self.progress.setObjectName("pageTitle");root.addWidget(self.progress)
         self.description=self.label("Bu kılavuz gerçek kayıtlarınızı kullanır. Eksik adımları daha sonra tamamlayabilirsiniz.")
+        self.description.setObjectName("muted")
         root.addWidget(self.description)
         self.pages=QStackedWidget();root.addWidget(self.pages,1)
         self.account_label=self.label();self.page(self.account_label,

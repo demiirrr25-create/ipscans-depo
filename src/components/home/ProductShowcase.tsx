@@ -12,7 +12,7 @@ import { ScreenshotFrame, SectionHeader } from "@/components/ds/product";
 import { homeCopy, type ProductId } from "./copy";
 
 const CORTEX_DOWNLOAD_URL =
-  "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2/IPScans-Cortex-1.0.0-rc.2.exe";
+  "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0/IPScans-Cortex-1.0.0.exe";
 
 type ScannerView = "discovery" | "topology";
 

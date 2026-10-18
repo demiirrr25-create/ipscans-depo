@@ -10,17 +10,17 @@ public sealed class TunnelWindow : Window
 {
     private readonly TunnelSession _session;
     private readonly ListBox _list = new() { MinHeight = 180 };
-    private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Classes = { "hint" } };
     private bool _ended;
     public TunnelWindow(TunnelSession session)
     {
         _session = session;
-        Title = "IPCast — TCP tunnels"; Width = 640; Height = 530;
+        Title = "IPCast — TCP tunnels"; Width = 640; Height = 560;
         var reverse = new CheckBox { Content = "Reverse tunnel — listen on the remote device" };
         var listen = new TextBox { PlaceholderText = "Listening port", Text = "8080" };
         var host = new TextBox { PlaceholderText = "Destination host", Text = "127.0.0.1" };
         var destination = new TextBox { PlaceholderText = "Destination port", Text = "80" };
-        var create = new Button { Content = "Request tunnel", IsVisible = session.CanCreate };
+        var create = new Button { Content = "Request tunnel", Classes = { "primary" }, IsVisible = session.CanCreate };
         create.Click += async (_, _) =>
         {
             create.IsEnabled = false;
@@ -35,17 +35,17 @@ public sealed class TunnelWindow : Window
             catch (Exception ex) { _status.Text = ex.Message; }
             finally { create.IsEnabled = true; }
         };
-        var stop = new Button { Content = "Stop selected tunnel" };
+        var stop = new Button { Content = "Stop selected tunnel", Classes = { "danger" } };
         stop.Click += async (_, _) =>
         {
             if (_list.SelectedItem is not TunnelConfiguration config) return;
             try { await session.StopAsync(config.Id); _status.Text = "Tunnel stopped."; }
             catch (Exception ex) { _status.Text = ex.Message; }
         };
-        Content = new ScrollViewer { Content = new StackPanel { Margin = new Avalonia.Thickness(24), Spacing = 10, Children =
+        Content = new ScrollViewer { Content = new StackPanel { Margin = new Avalonia.Thickness(24), Spacing = 12, Children =
         {
-            new TextBlock { Text = "TCP tunnels", FontSize = 24 },
-            new TextBlock { Text = "Forward: local listener → remote destination. Reverse: remote listener → local destination. All listeners use 127.0.0.1. Each route needs the remote owner's approval.", TextWrapping = TextWrapping.Wrap },
+            new TextBlock { Text = "TCP tunnels", Classes = { "display" }, FontSize = 24 },
+            new TextBlock { Text = "Forward: local listener → remote destination. Reverse: remote listener → local destination. All listeners use 127.0.0.1. Each route needs the remote owner's approval.", Classes = { "hint" }, TextWrapping = TextWrapping.Wrap },
             reverse, listen, host, destination, create, _list, stop, _status
         } } };
         session.Changed += Refresh;
@@ -62,15 +62,15 @@ public sealed class TunnelWindow : Window
         {
             var dialog = new Window { Title = "IPCast — Allow TCP tunnel?", Width = 500, SizeToContent = SizeToContent.Height,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var approve = new Button { Content = "Allow this route" };
-            var deny = new Button { Content = "Deny" };
+            var approve = new Button { Content = "Allow this route", Classes = { "primary" } };
+            var deny = new Button { Content = "Deny", Classes = { "danger" } };
             approve.Click += (_, _) => dialog.Close(true); deny.Click += (_, _) => dialog.Close(false);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(24), Spacing = 16, Children =
             {
-                new TextBlock { Text = configuration.ToString(), TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = configuration.ToString(), FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap },
                 new TextBlock { Text = configuration.Reverse
                     ? "Applications on this device will reach the destination through the connected remote device."
-                    : "The remote device will gain TCP access to this destination from your network.", TextWrapping = TextWrapping.Wrap },
+                    : "The remote device will gain TCP access to this destination from your network.", Classes = { "hint" }, TextWrapping = TextWrapping.Wrap },
                 approve, deny
             } };
             return await dialog.ShowDialog<bool>(owner);

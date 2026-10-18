@@ -96,7 +96,7 @@ export function LanguageSwitcher({
           placement === "up"
             ? "bottom-[calc(100%+8px)] start-1/2 -translate-x-1/2 origin-bottom rtl:translate-x-1/2"
             : "end-0 top-[calc(100%+8px)] origin-top-right"
-        } border border-line bg-white p-1.5 shadow-lift transition-[opacity,transform] duration-300 ease-out-expo ${
+        } border border-line bg-[var(--surface)] p-1.5 shadow-lift transition-[opacity,transform] duration-300 ease-out-expo ${
           open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
         }`}
       >

@@ -9,6 +9,7 @@ import type { PublicDictionary } from "@/i18n/dictionaries";
 import { toolKeys, toolPath, type ToolKey } from "@/lib/tool-routes";
 import { applications, platformCopy } from "@/content/applications";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 import { LogoLockup } from "./Logo";
 import { Icon, type IconName } from "./ds/Icon";
 
@@ -168,7 +169,7 @@ export function Header({
         data-solid={solid}
         className={`fixed inset-x-0 top-0 z-50 transition-[transform,background-color,box-shadow,backdrop-filter] duration-500 ease-out-expo ${
           hidden && !activePanel && !mobileOpen ? "-translate-y-full" : "translate-y-0"
-        } ${solid ? "bg-white/80 shadow-[0_1px_0_var(--color-line)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent"}`}
+        } ${solid ? "bg-[var(--surface-glass)] shadow-[0_1px_0_var(--color-line)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent"}`}
       >
         <div className="ds-container flex h-[var(--header-h)] items-center gap-4">
           <Link
@@ -197,6 +198,7 @@ export function Header({
             <div className="hidden sm:block">
               <LanguageSwitcher locale={locale} />
             </div>
+            <ThemeToggle locale={locale} />
             <Link href={`/${locale}/download`} className="btn btn-primary btn-sm hidden sm:inline-flex">
               <Icon name="download" size={16} />
               {copy.downloadApp}
@@ -221,7 +223,7 @@ export function Header({
           onMouseLeave={hoverClose}
         >
           <div
-            className={`border-b border-line bg-white/95 backdrop-blur-xl transition-[opacity,transform] duration-500 ease-out-expo ${
+            className={`border-b border-line bg-[var(--surface)]/95 backdrop-blur-xl transition-[opacity,transform] duration-500 ease-out-expo ${
               activePanel ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"
             }`}
           >
@@ -250,7 +252,7 @@ export function Header({
                         onClick={() => openPanel(null)}
                         className="group flex items-start gap-4 rounded-lg p-4 transition-colors duration-200 hover:bg-surface-dim"
                       >
-                        <span className="grid size-12 shrink-0 place-items-center rounded-[14px] border border-line bg-white shadow-soft transition-transform duration-500 ease-out-expo group-hover:scale-105">
+                        <span className="grid size-12 shrink-0 place-items-center rounded-[14px] border border-line bg-[var(--surface)] shadow-soft transition-transform duration-500 ease-out-expo group-hover:scale-105">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={p.icon} alt="" width={26} height={26} className="size-[26px]" />
                         </span>
@@ -348,7 +350,7 @@ export function Header({
       {/* Mobile sheet */}
       <div
         id="mobile-menu"
-        className={`fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 overflow-y-auto bg-white transition-[opacity,transform] duration-500 ease-out-expo lg:hidden ${
+        className={`fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 overflow-y-auto bg-surface transition-[opacity,transform] duration-500 ease-out-expo lg:hidden ${
           mobileOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
         }`}
         aria-hidden={!mobileOpen}
@@ -412,8 +414,9 @@ export function Header({
               <Icon name="download" size={18} />
               {copy.downloadApp}
             </Link>
-            <div className="flex justify-center pt-2">
+            <div className="flex items-center justify-center gap-3 pt-2">
               <LanguageSwitcher locale={locale} placement="up" />
+              <ThemeToggle locale={locale} />
             </div>
           </div>
         </div>

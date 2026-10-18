@@ -103,7 +103,7 @@ export function CookieConsent({
       aria-label={copy.cookieTitle}
       className="fixed bottom-4 start-4 end-4 z-50 animate-fade-up sm:bottom-6 sm:start-6 sm:end-auto sm:w-full sm:max-w-[420px]"
     >
-      <div className="rounded-lg border border-line-2 bg-surface/95 p-5 shadow-float backdrop-blur-xl sm:p-6">
+      <div className="rounded-lg border border-line-2 bg-[var(--surface)]/95 p-5 shadow-float backdrop-blur-xl sm:p-6">
         <div className="flex items-center gap-2.5">
           <span className="grid size-7 shrink-0 place-items-center rounded-xs bg-signal-soft text-signal">
             <Icon name="shield" size={16} />

@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="IPCast.Client.Views.SessionChatWindow" Title="IPCast — Session chat" Icon="/Assets/ipcast.ico"
         Width="440" Height="520" MinWidth="340" MinHeight="360" ShowActivated="False"
-        Background="{DynamicResource AppBackgroundBrush}">
+        Background="{DynamicResource ObsidianBrush}">
     <Grid Margin="20" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="14">
         <StackPanel Spacing="4">
             <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Session chat" Classes="h2" VerticalAlignment="Center" /><Button Grid.Column="1" Content="Save transcript" Click="OnSaveTranscriptClick" /></Grid>

@@ -6,6 +6,7 @@ import { toolPath } from "@/lib/tool-routes";
 import { platformCopy } from "@/content/applications";
 import { LogoLockup } from "./Logo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const columns: { title: string; links: { href: string; label: string }[] }[] = [
@@ -73,7 +74,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
 
       {/* Oversized wordmark */}
       <div className="ds-container mt-20 select-none sm:mt-28" aria-hidden="true">
-        <p className="bg-[linear-gradient(180deg,var(--color-ink)_0%,var(--color-ink)_45%,rgb(11_13_18/0.08)_100%)] bg-clip-text text-center text-[22vw] font-medium leading-[0.78] tracking-[-0.07em] text-transparent lg:text-[19rem]">
+        <p className="bg-[linear-gradient(180deg,var(--color-ink)_0%,var(--color-ink)_45%,var(--wordmark-fade)_100%)] bg-clip-text text-center text-[22vw] font-medium leading-[0.78] tracking-[-0.07em] text-transparent lg:text-[19rem]">
           IPScans
         </p>
       </div>
@@ -90,7 +91,10 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
             <Link href={`/${locale}/terms`} className="ds-link hover:text-ink">
               {dict.footer.terms}
             </Link>
-            <LanguageSwitcher locale={locale} placement="up" />
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher locale={locale} placement="up" />
+              <ThemeToggle locale={locale} />
+            </div>
           </div>
         </div>
       </div>

@@ -44,10 +44,17 @@ foreach (var category in vm.SettingsCategories)
 vm.SettingsQuery = "does-not-exist"; Check(!vm.HasVisibleSettings, "settings empty search state");
 vm.SettingsQuery = "recording"; Check(vm.ShowRecordingSettings, "cross-category settings search"); vm.SettingsQuery = "";
 vm.Theme = "Light"; vm.SettingsCategory = "General"; Render(window, "settings-light");
+Check(Application.Current!.RequestedThemeVariant == Avalonia.Styling.ThemeVariant.Light, "light theme variant applied");
+Check((Application.Current.Resources["ObsidianBrush"] as Avalonia.Media.ISolidColorBrush)?.Color == Avalonia.Media.Color.Parse("#FFFFFF"), "light ObsidianBrush is #FFFFFF");
+Check((Application.Current.Resources["AccentBrush"] as Avalonia.Media.ISolidColorBrush)?.Color == Avalonia.Media.Color.Parse("#2F6BFF"), "light AccentBrush is IPScans Signal Blue #2F6BFF");
 vm.Navigate(NavSection.MyDevices); Render(window, "address-book-light");
 vm.Navigate(NavSection.Home); Render(window, "home-light");
 window.Width = 880; window.Height = 560; Render(window, "home-small");
-vm.Theme = "Dark";
+Check(window.FindControl<Button>("ThemeToggleButton") is not null, "header theme toggle button exists");
+vm.ToggleThemeCommand.Execute(null);
+Check(vm.Theme == "Dark" && Application.Current.RequestedThemeVariant == Avalonia.Styling.ThemeVariant.Dark, "ToggleThemeCommand switches Light to Dark");
+Check((Application.Current.Resources["ObsidianBrush"] as Avalonia.Media.ISolidColorBrush)?.Color == Avalonia.Media.Color.Parse("#07080B"), "dark ObsidianBrush is #07080B");
+Check((Application.Current.Resources["AccentBrush"] as Avalonia.Media.ISolidColorBrush)?.Color == Avalonia.Media.Color.Parse("#4C82FF"), "dark AccentBrush is IPScans Dark Signal Blue #4C82FF");
 var incoming = new IncomingConnectionWindow(new IncomingConnectionRequest(DeviceId.FromValidatedRaw("123456789"), PermissionProfiles.ForName("Full access")));
 incoming.Show(); Render(incoming, "incoming");
 incoming.FindControl<ComboBox>("ProfileSelector")!.SelectedItem = "Full access";

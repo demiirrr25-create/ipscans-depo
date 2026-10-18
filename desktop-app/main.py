@@ -16,7 +16,7 @@ from app.ui.main_window import MainWindow
 from app.ui.onboarding_wizard import OnboardingWizard
 from app.ui.privacy_dialog import has_accepted_privacy, has_accepted_terms
 from app.ui.resources import load_app_icon
-from app.ui.styles import DARK_QSS
+from app.ui.styles import DARK_QSS, apply_theme
 
 # Written next to every run (not just on crash) so a support request can
 # include real diagnostics even without a crash — see _log().
@@ -126,10 +126,8 @@ def main() -> None:
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-    # Applied at the QApplication level (not just the main window) so every
-    # popup — QMessageBox, tooltips, combo/list views — inherits the dark
-    # theme too, instead of falling back to the native white/black default.
-    app.setStyleSheet(DARK_QSS)
+    # Applied at the QApplication level so every popup inherits the active Light/Dark theme.
+    apply_theme(app)
     # Same mark as ipscans.com's logo, so the taskbar/desktop icon is instantly
     # recognizable as the same product.
     app_icon = load_app_icon()

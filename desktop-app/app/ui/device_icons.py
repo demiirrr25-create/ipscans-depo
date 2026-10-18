@@ -1,11 +1,13 @@
-"""Monochrome vector device glyphs rendered at the OS display scale."""
+"""Theme-aware vector device glyphs rendered at the OS display scale."""
 from __future__ import annotations
 
 from functools import lru_cache
 
-from PyQt6.QtCore import Qt, QByteArray
+from PyQt6.QtCore import QByteArray, Qt
 from PyQt6.QtGui import QIcon, QPainter, QPixmap
 from PyQt6.QtSvg import QSvgRenderer
+
+from app.ui.styles import get_current_theme
 
 _SHAPES = {
     "Online": '<circle cx="24" cy="24" r="16"/><path d="m15 24 6 6 13-14"/>',
@@ -31,18 +33,27 @@ _SHAPES = {
     "Unknown": '<rect x="10" y="10" width="28" height="28" rx="5"/><path d="M19 20a5 5 0 1 1 8 4l-3 3v2m0 4v1"/>',
 }
 _SHAPES.update({
-    'Managed Switch': _SHAPES['Switch'], 'Unmanaged Switch': _SHAPES['Switch'],
-    'Wi-Fi Extender': _SHAPES['Access Point'], 'Network Storage': _SHAPES['NAS'],
+    "Managed Switch": _SHAPES["Switch"],
+    "Unmanaged Switch": _SHAPES["Switch"],
+    "Wi-Fi Extender": _SHAPES["Access Point"],
+    "Network Storage": _SHAPES["NAS"],
 })
 
 
-@lru_cache(maxsize=24)
-def icon_for_type(device_type: str) -> QIcon:
+@lru_cache(maxsize=64)
+def _cached_icon(device_type: str, theme: str) -> QIcon:
     drawing = _SHAPES.get(device_type, _SHAPES["Unknown"])
+    is_light = theme == "light"
+    if device_type == "Online":
+        stroke = "#0F9D58" if is_light else "#34D399"
+    elif device_type == "Attention":
+        stroke = "#E37400" if is_light else "#FBBF24"
+    else:
+        stroke = "#0B0D12" if is_light else "#F5F7FA"
     icon = QIcon()
     svg = (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" '
-        'fill="none" stroke="#fff" stroke-width="2.5" '
+        f'fill="none" stroke="{stroke}" stroke-width="2.5" '
         f'stroke-linecap="round" stroke-linejoin="round">{drawing}</svg>'
     ).encode()
     renderer = QSvgRenderer(QByteArray(svg))
@@ -54,3 +65,11 @@ def icon_for_type(device_type: str) -> QIcon:
         painter.end()
         icon.addPixmap(pixmap)
     return icon
+
+
+def icon_for_type(device_type: str, theme: str | None = None) -> QIcon:
+    resolved_theme = (theme or get_current_theme()).lower()
+    return _cached_icon(device_type, "light" if resolved_theme == "light" else "dark")
+
+
+icon_for_type.cache_clear = _cached_icon.cache_clear  # type: ignore[attr-defined]

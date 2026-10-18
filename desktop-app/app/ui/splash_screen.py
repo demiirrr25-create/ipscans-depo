@@ -130,7 +130,16 @@ class IPScansSplash(QWidget):
             return
         super().keyPressEvent(event)
 
+    def apply_theme(self, theme: str | None = None) -> None:
+        self._theme = theme
+        self.update()
+
     def paintEvent(self, _event) -> None:  # noqa: N802
+        from app.ui.styles import get_current_theme, get_tokens
+        theme = getattr(self, "_theme", None) or get_current_theme()
+        tk = get_tokens(theme)
+        is_light = theme == "light"
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -140,10 +149,11 @@ class IPScansSplash(QWidget):
         cx = w / 2.0
         cy = h / 2.0 - 30.0
 
-        # 1. Pure obsidian black backdrop
-        painter.fillRect(self.rect(), QBrush(QColor(0, 0, 0)))
+        # 1. Backdrop
+        painter.fillRect(self.rect(), QBrush(QColor(tk["bg_canvas"])))
 
-        # 2. Ambient harmonic silk ribbon waves (Windows 11 Setup Silk effect)
+        # 2. Ambient harmonic silk ribbon waves
+        accent_c = QColor(tk["accent_primary"])
         for layer in range(3):
             phase_offset = self._phase + layer * 1.4
             y_base = h * (0.42 + layer * 0.16)
@@ -164,18 +174,15 @@ class IPScansSplash(QWidget):
             wave_path.closeSubpath()
 
             wave_grad = QLinearGradient(0, y_base - 40, w, h)
-            if layer == 0:
-                wave_grad.setColorAt(0.0, QColor(255, 255, 255, 14))
-                wave_grad.setColorAt(0.5, QColor(180, 190, 210, 8))
-                wave_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-            elif layer == 1:
-                wave_grad.setColorAt(0.0, QColor(255, 255, 255, 10))
-                wave_grad.setColorAt(0.6, QColor(160, 175, 195, 5))
-                wave_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-            else:
-                wave_grad.setColorAt(0.0, QColor(255, 255, 255, 7))
-                wave_grad.setColorAt(0.7, QColor(140, 150, 170, 3))
-                wave_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
+            c0 = QColor(accent_c)
+            c0.setAlpha(int(18 - layer * 4) if is_light else int(14 - layer * 3))
+            c1 = QColor(accent_c)
+            c1.setAlpha(int(8 - layer * 2) if is_light else int(8 - layer * 2))
+            c2 = QColor(accent_c)
+            c2.setAlpha(0)
+            wave_grad.setColorAt(0.0, c0)
+            wave_grad.setColorAt(0.55, c1)
+            wave_grad.setColorAt(1.0, c2)
 
             painter.fillPath(wave_path, QBrush(wave_grad))
 
@@ -183,16 +190,24 @@ class IPScansSplash(QWidget):
             crest = QPainterPath()
             crest.moveTo(0, y_base + math.sin(phase_offset) * 26)
             crest.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
-            painter.setPen(QPen(QColor(255, 255, 255, int(28 - layer * 7)), 1.2))
+            crest_c = QColor(accent_c)
+            crest_c.setAlpha(int(36 - layer * 8) if is_light else int(28 - layer * 7))
+            painter.setPen(QPen(crest_c, 1.2))
             painter.drawPath(crest)
 
         # 3. Dynamic ambient breathing halo behind central insignia
         pulse = math.sin(self._phase * 1.8) * 0.5 + 0.5
         halo_radius = 180.0 + pulse * 24.0
         halo = QRadialGradient(cx, cy - 20.0, halo_radius)
-        halo.setColorAt(0.0, QColor(255, 255, 255, int(22 + pulse * 14)))
-        halo.setColorAt(0.35, QColor(200, 210, 230, int(8 + pulse * 6)))
-        halo.setColorAt(1.0, QColor(0, 0, 0, 0))
+        h0 = QColor(accent_c)
+        h0.setAlpha(int(22 + pulse * 14))
+        h1 = QColor(accent_c)
+        h1.setAlpha(int(8 + pulse * 6))
+        h2 = QColor(accent_c)
+        h2.setAlpha(0)
+        halo.setColorAt(0.0, h0)
+        halo.setColorAt(0.35, h1)
+        halo.setColorAt(1.0, h2)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QBrush(halo))
         painter.drawEllipse(QPointF(cx, cy - 20.0), halo_radius, halo_radius)
@@ -203,12 +218,12 @@ class IPScansSplash(QWidget):
         angle_deg = (self._phase * 50.0) % 360.0
 
         # Fine orbital track
-        painter.setPen(QPen(QColor(255, 255, 255, 20), 1.0))
+        painter.setPen(QPen(QColor(tk["border_default"]), 1.0))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawEllipse(ring_rect)
 
         # Luminous orbital highlight arc
-        painter.setPen(QPen(QColor(255, 255, 255, 180), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        painter.setPen(QPen(QColor(tk["accent_primary"]), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
         painter.drawArc(ring_rect, int(angle_deg * 16), int(75 * 16))
 
         # Central Pixmap
@@ -218,7 +233,7 @@ class IPScansSplash(QWidget):
             painter.drawPixmap(int(logo_x), int(logo_y), self._logo_pixmap)
         else:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(QColor(255, 255, 255, 230)))
+            painter.setBrush(QBrush(QColor(tk["accent_primary"])))
             painter.drawEllipse(QPointF(cx, cy - 20.0), 22.0, 22.0)
 
         # 5. Application Title (Segoe UI Variable Display)
@@ -228,7 +243,7 @@ class IPScansSplash(QWidget):
         title_font.setWeight(QFont.Weight.Bold)
         title_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, -0.6)
         painter.setFont(title_font)
-        painter.setPen(QColor(255, 255, 255))
+        painter.setPen(QColor(tk["text_primary"]))
         title_rect = QRectF(cx - 300.0, cy + 60.0, 600.0, 48.0)
         painter.drawText(title_rect, int(Qt.AlignmentFlag.AlignCenter), self._app_name)
 
@@ -239,7 +254,7 @@ class IPScansSplash(QWidget):
         edition_font.setWeight(QFont.Weight.DemiBold)
         edition_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 2.0)
         painter.setFont(edition_font)
-        painter.setPen(QColor(161, 161, 161))
+        painter.setPen(QColor(tk["text_secondary"]))
         edition_rect = QRectF(cx - 300.0, cy + 112.0, 600.0, 20.0)
         painter.drawText(edition_rect, int(Qt.AlignmentFlag.AlignCenter), self._edition_label.upper())
 
@@ -251,14 +266,14 @@ class IPScansSplash(QWidget):
 
         # Base track
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(QColor(255, 255, 255, 22)))
+        painter.setBrush(QBrush(QColor(tk["border_default"])))
         painter.drawRoundedRect(QRectF(track_x, track_y, track_w, track_h), 1.25, 1.25)
 
         # Animated luminous progress
         active_w = max(4.0, track_w * self._progress)
         prog_grad = QLinearGradient(track_x, track_y, track_x + active_w, track_y)
-        prog_grad.setColorAt(0.0, QColor(255, 255, 255, 140))
-        prog_grad.setColorAt(1.0, QColor(255, 255, 255, 255))
+        prog_grad.setColorAt(0.0, QColor(tk["accent_primary"]))
+        prog_grad.setColorAt(1.0, QColor(tk["accent_hover"]))
         painter.setBrush(QBrush(prog_grad))
         painter.drawRoundedRect(QRectF(track_x, track_y, active_w, track_h), 1.25, 1.25)
 
@@ -267,7 +282,7 @@ class IPScansSplash(QWidget):
         if not status_font.exactMatch():
             status_font = QFont("Segoe UI", 10)
         painter.setFont(status_font)
-        painter.setPen(QColor(140, 145, 155))
+        painter.setPen(QColor(tk["text_secondary"]))
         status_rect = QRectF(cx - 300.0, cy + 172.0, 600.0, 24.0)
         painter.drawText(status_rect, int(Qt.AlignmentFlag.AlignCenter), self._status_text)
 
@@ -275,7 +290,7 @@ class IPScansSplash(QWidget):
         esc_font = QFont("Segoe UI", 8)
         esc_font.setWeight(QFont.Weight.Medium)
         painter.setFont(esc_font)
-        painter.setPen(QColor(110, 110, 110))
+        painter.setPen(QColor(tk["text_tertiary"]))
         painter.drawText(
             QRectF(w - 140.0, 24.0, 110.0, 24.0),
             int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter),
@@ -287,7 +302,7 @@ class IPScansSplash(QWidget):
         brand_font.setWeight(QFont.Weight.Medium)
         brand_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.2)
         painter.setFont(brand_font)
-        painter.setPen(QColor(70, 70, 70))
+        painter.setPen(QColor(tk["text_tertiary"]))
         painter.drawText(
             QRectF(0, h - 44.0, w, 24.0),
             int(Qt.AlignmentFlag.AlignCenter),
@@ -295,3 +310,4 @@ class IPScansSplash(QWidget):
         )
 
         painter.end()
+

@@ -8,13 +8,24 @@ from PyQt6.QtCore import QEvent, QPoint, Qt
 from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPen
 from PyQt6.QtSvg import QSvgGenerator
 from PyQt6.QtWidgets import (
-    QFileDialog, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QSplitter,
-    QTextEdit, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
 from app.core.models import Device
 from app.core.topology import build_topology
 from app.ui.device_icons import icon_for_type
+from app.ui.styles import ThemeManager, get_current_theme, get_tokens
 
 
 class IpTree(QWidget):
@@ -25,6 +36,8 @@ class IpTree(QWidget):
         self.local_network: str | None = None
         self._font_size = 12
         self._pan_from: QPoint | None = None
+        self._theme = get_current_theme()
+
         layout = QVBoxLayout(self)
         heading = QLabel("IP TREE  /  Logical paths only · Physical connections require verified neighbor evidence")
         heading.setWordWrap(True)
@@ -61,10 +74,21 @@ class IpTree(QWidget):
         splitter.setStretchFactor(1, 2)
         layout.addWidget(splitter, stretch=1)
 
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        self._theme = (theme or get_current_theme()).lower()
+        if self.devices:
+            self._filter()
+        self.update()
+
     def _choose_export(self) -> None:
         path, selected = QFileDialog.getSaveFileName(
-            self, "Export IP TREE", "IPscans-plus-tree.svg",
-            "Scalable Vector Graphics (*.svg);;PNG image (*.png)")
+            self,
+            "Export IP TREE",
+            "IPscans-plus-tree.svg",
+            "Scalable Vector Graphics (*.svg);;PNG image (*.png)",
+        )
         if not path:
             return
         target = Path(path)
@@ -83,45 +107,52 @@ class IpTree(QWidget):
             raise ValueError("IP TREE export supports SVG or PNG.")
         entries: list[tuple[int, str, bool]] = []
 
-        pending = [(self.tree.topLevelItem(index), 0)
-                   for index in reversed(range(self.tree.topLevelItemCount()))]
+        pending = [
+            (self.tree.topLevelItem(index), 0)
+            for index in reversed(range(self.tree.topLevelItemCount()))
+        ]
         while pending:
             item, depth = pending.pop()
             text = item.text(0)
             entries.append((depth, text, "Confirmed" in text))
-            pending.extend((item.child(index), depth + 1)
-                           for index in reversed(range(item.childCount())))
+            pending.extend(
+                (item.child(index), depth + 1)
+                for index in reversed(range(item.childCount()))
+            )
         if suffix == ".png" and len(entries) > 250:
             raise ValueError("PNG export supports up to 250 visible nodes; use SVG for larger networks.")
         width, row_height = 1200, 40
         height = 100 + len(entries) * row_height
+        tokens = get_tokens(self._theme)
+        bg_col = QColor(tokens["bg"])
         image = None
         if suffix == ".svg":
             surface = QSvgGenerator()
             surface.setFileName(str(path))
-            from PyQt6.QtCore import QSize, QRect
+            from PyQt6.QtCore import QRect, QSize
+
             surface.setSize(QSize(width, height))
             surface.setViewBox(QRect(0, 0, width, height))
         else:
             image = QImage(width, height, QImage.Format.Format_RGB32)
-            image.fill(QColor("#080808"))
+            image.fill(bg_col)
             surface = image
         painter = QPainter(surface)
         if not painter.isActive():
             raise OSError(f"Could not create IP TREE export at {path}")
         try:
-            painter.fillRect(0, 0, width, height, QColor("#080808"))
-            painter.setPen(QColor("#ffffff"))
+            painter.fillRect(0, 0, width, height, bg_col)
+            painter.setPen(QColor(tokens["text"]))
             painter.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
             painter.drawText(28, 48, "IPscans+  /  IP TREE")
             painter.setFont(QFont("Segoe UI", 9))
-            painter.setPen(QColor("#bbbbbb"))
+            painter.setPen(QColor(tokens["textSecondary"]))
             painter.drawText(28, 72, "LLDP: confirmed adjacency  ·  Gateway: inferred L3 route  ·  Other: unmapped")
             for index, (depth, label, confirmed) in enumerate(entries):
                 y = 100 + index * row_height
-                painter.setPen(QPen(QColor("#333333"), 1))
+                painter.setPen(QPen(QColor(tokens["border"]), 1))
                 painter.drawLine(28, y + row_height - 1, width - 28, y + row_height - 1)
-                painter.setPen(QColor("#ffffff" if confirmed else "#c9c9c9"))
+                painter.setPen(QColor(tokens["signal"] if confirmed else tokens["text"]))
                 painter.drawText(28 + min(depth, 12) * 26, y + 26, label[:150])
         finally:
             painter.end()
@@ -150,8 +181,12 @@ class IpTree(QWidget):
                 return True
         return super().eventFilter(watched, event)
 
-    def refresh(self, devices: list[Device], gateway: str | None = None,
-                local_network: str | None = None) -> None:
+    def refresh(
+        self,
+        devices: list[Device],
+        gateway: str | None = None,
+        local_network: str | None = None,
+    ) -> None:
         self.devices = list(devices)
         self.gateway = gateway
         self.local_network = local_network
@@ -168,10 +203,24 @@ class IpTree(QWidget):
         self.inspector.clear()
         needle = self.search.text().lower()
         category = self.category.text().lower()
-        devices = [device for device in self.devices
-                   if needle in " ".join(filter(None, (device.ip, device.mac, device.hostname,
-                                                        device.vendor, device.onvif_model))).lower()
-                   and category in device.device_type.lower()]
+        devices = [
+            device
+            for device in self.devices
+            if needle
+            in " ".join(
+                filter(
+                    None,
+                    (
+                        device.ip,
+                        device.mac,
+                        device.hostname,
+                        device.vendor,
+                        device.onvif_model,
+                    ),
+                )
+            ).lower()
+            and category in device.device_type.lower()
+        ]
         by_ip = {device.ip: device for device in devices}
         links = build_topology(devices, self.gateway, self.local_network)
         children = {link.child: link for link in links if link.parent in by_ip}
@@ -188,8 +237,11 @@ class IpTree(QWidget):
                     if link.child in visited:
                         continue
                     visited.add(link.child)
-                    evidence = ("Confirmed LLDP neighbor" if link.confirmed
-                                else "Inferred L3 route · physical path unknown")
+                    evidence = (
+                        "Confirmed LLDP neighbor"
+                        if link.confirmed
+                        else "Inferred L3 route · physical path unknown"
+                    )
                     child = self._item(by_ip[link.child], evidence)
                     parent_item.addChild(child)
                     pending.append((child, link.child))
@@ -200,13 +252,22 @@ class IpTree(QWidget):
             roots.remove(gateway_device)
             roots.insert(0, gateway_device)
         unmapped = QTreeWidgetItem(["Unmapped physical connections"])
-        for device in sorted(roots, key=lambda entry: (ipaddress.ip_address(entry.ip).version,
-                                                        int(ipaddress.ip_address(entry.ip)))):
+        for device in sorted(
+            roots,
+            key=lambda entry: (
+                ipaddress.ip_address(entry.ip).version,
+                int(ipaddress.ip_address(entry.ip)),
+            ),
+        ):
             if device.ip in visited:
                 continue
             visited.add(device.ip)
             root_item = self._item(
-                device, "Gateway address · physical role unverified" if device is gateway_device else "Parent unknown")
+                device,
+                "Gateway address · physical role unverified"
+                if device is gateway_device
+                else "Parent unknown",
+            )
             if device is gateway_device:
                 self.tree.addTopLevelItem(root_item)
             else:
@@ -220,7 +281,7 @@ class IpTree(QWidget):
     def _item(self, device: Device, evidence: str) -> QTreeWidgetItem:
         label = f"{device.hostname or device.ip}  ·  {device.device_type}  ·  {evidence}"
         item = QTreeWidgetItem([label])
-        item.setIcon(0, icon_for_type(device.device_type))
+        item.setIcon(0, icon_for_type(device.device_type, self._theme))
         item.setData(0, Qt.ItemDataRole.UserRole, device.ip)
         item.setToolTip(0, device.ip)
         return item
@@ -233,22 +294,34 @@ class IpTree(QWidget):
         device = next((candidate for candidate in self.devices if candidate.ip == ip), None)
         if not device:
             return
-        link = next((edge for edge in build_topology(self.devices, self.gateway, self.local_network)
-                     if edge.child == ip), None)
+        link = next(
+            (edge for edge in build_topology(self.devices, self.gateway, self.local_network) if edge.child == ip),
+            None,
+        )
         fields = {
-            "IP": device.ip, "MAC": device.mac, "Hostname": device.hostname,
-            "Vendor (MAC OUI)": device.vendor, "ONVIF manufacturer": device.onvif_manufacturer,
+            "IP": device.ip,
+            "MAC": device.mac,
+            "Hostname": device.hostname,
+            "Vendor (MAC OUI)": device.vendor,
+            "ONVIF manufacturer": device.onvif_manufacturer,
             "Type": device.device_type,
             "Classification evidence": device.classification_evidence,
-            "ONVIF endpoint": device.onvif_endpoint, "Model": device.onvif_model,
-            "Firmware": device.onvif_firmware, "Serial": device.serial_number,
+            "ONVIF endpoint": device.onvif_endpoint,
+            "Model": device.onvif_model,
+            "Firmware": device.onvif_firmware,
+            "Serial": device.serial_number,
             "Operating system": device.wmi_os_caption or device.nmap_os_guess,
             "Open ports": ", ".join(map(str, device.open_ports)) or None,
-            "Discovery": ", ".join(device.sources), "First seen": device.first_seen,
+            "Discovery": ", ".join(device.sources),
+            "First seen": device.first_seen,
             "mDNS services": ", ".join(device.mdns_services),
             "Last seen": device.last_seen,
-            "Connection path": (f"LLDP neighbor: {link.parent} ↔ {ip} (physical adjacency confirmed; direction unknown)"
-                                if link.confirmed else f"Inferred L3 path: {link.parent} → {ip} ({link.evidence})")
-            if link else None,
+            "Connection path": (
+                f"LLDP neighbor: {link.parent} ↔ {ip} (physical adjacency confirmed; direction unknown)"
+                if link.confirmed
+                else f"Inferred L3 path: {link.parent} → {ip} ({link.evidence})"
+            )
+            if link
+            else None,
         }
         self.inspector.setPlainText("\n\n".join(f"{key}\n{value or 'Unknown'}" for key, value in fields.items()))

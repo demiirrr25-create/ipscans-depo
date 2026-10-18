@@ -1,137 +1,145 @@
-"""Additive QSS for the Pro app's new screens — appended to (never replacing)
-the free app's DARK_QSS, so the tab strip and new cards match the existing
-monochrome dark theme (product rule #1: no redesign) instead of falling
-back to Qt's native tab styling.
+"""Additive QSS for IPScans Network Health Pro — supports both Light Mode
+and Dark Mode using the IPScans v2 Design System tokens.
 """
+from __future__ import annotations
 
-PRO_EXTRA_QSS = """
-QTabWidget::pane {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 22px;
-    background: #0d0e12;
+from app.ui.styles import DARK_TOKENS, LIGHT_TOKENS
+
+
+def build_pro_qss(theme: str = "light") -> str:
+    """Build additive QSS for Pro screens matching the active theme."""
+    tk = LIGHT_TOKENS if theme == "light" else DARK_TOKENS
+    return f"""
+QTabWidget::pane {{
+    border: 1px solid {tk['border_default']};
+    border-radius: 16px;
+    background: {tk['bg_surface']};
     top: 8px;
-}
-QTabBar::tab {
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.62);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+}}
+QTabBar::tab {{
+    background: {tk['bg_elevated']};
+    color: {tk['text_secondary']};
+    border: 1px solid {tk['border_default']};
     padding: 8px 20px;
     margin-right: 8px;
     font-size: 12px;
     font-weight: 600;
-    border-radius: 17px;
-}
-QTabBar::tab:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.18);
-}
-QTabBar::tab:selected {
-    color: #000000;
-    background: #ffffff;
-    border-color: #ffffff;
-}
+    border-radius: 12px;
+}}
+QTabBar::tab:hover {{
+    color: {tk['text_primary']};
+    background: {tk['bg_hover']};
+    border-color: {tk['border_strong']};
+}}
+QTabBar::tab:selected {{
+    color: {tk['text_inverse']};
+    background: {tk['accent_primary']};
+    border-color: {tk['accent_primary']};
+}}
 
-#HealthCard {
-    background: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 22px;
-}
-QLabel#HealthScoreValue {
+#HealthCard {{
+    background: {tk['bg_surface']};
+    border: 1px solid {tk['border_default']};
+    border-radius: 16px;
+}}
+QLabel#HealthScoreValue {{
+    color: {tk['text_primary']};
     font-size: 46px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.03em;
-}
-QLabel#HealthScoreLabel {
-    color: rgba(255, 255, 255, 0.52);
+}}
+QLabel#HealthScoreLabel {{
+    color: {tk['text_secondary']};
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.12em;
-}
-#StatCard {
-    background: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
-}
-QLabel#StatValue {
+}}
+#StatCard {{
+    background: {tk['bg_surface']};
+    border: 1px solid {tk['border_default']};
+    border-radius: 12px;
+}}
+QLabel#StatValue {{
+    color: {tk['text_primary']};
     font-size: 24px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.02em;
-}
-QLabel#StatLabel {
-    color: rgba(255, 255, 255, 0.52);
+}}
+QLabel#StatLabel {{
+    color: {tk['text_secondary']};
     font-size: 11px;
-}
+}}
 
-QLabel#SeverityInfo {
-    color: #93c5fd;
+QLabel#SeverityInfo {{
+    color: {tk['info']};
     font-weight: 600;
-}
-QLabel#SeverityWarning {
-    color: #fbbf24;
+}}
+QLabel#SeverityWarning {{
+    color: {tk['warning']};
     font-weight: 600;
-}
-QLabel#SeverityCritical {
-    color: #f87171;
+}}
+QLabel#SeverityCritical {{
+    color: {tk['critical']};
     font-weight: 600;
-}
+}}
 
-/* QTreeWidget (Topology tab) isn't covered by the free app's QTableView
-   rules, so without this it falls back to Qt's native white background. */
-QTreeView, QTreeWidget {
-    background: #0d0e12;
-    alternate-background-color: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
+QTreeView, QTreeWidget {{
+    background: {tk['bg_surface']};
+    alternate-background-color: {tk['bg_elevated']};
+    border: 1px solid {tk['border_default']};
+    border-radius: 14px;
     outline: none;
     font-size: 12px;
     padding: 8px;
-}
-QTreeView::item, QTreeWidget::item {
+    color: {tk['text_primary']};
+}}
+QTreeView::item, QTreeWidget::item {{
     padding: 6px 8px;
     border: none;
-}
-QTreeView::item:selected, QTreeWidget::item:selected {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-}
-QTreeView::branch, QTreeWidget::branch {
+}}
+QTreeView::item:selected, QTreeWidget::item:selected {{
+    background: {tk['accent_subtle']};
+    color: {tk['text_primary']};
+}}
+QTreeView::branch, QTreeWidget::branch {{
     background: transparent;
-}
+}}
 
-/* QScrollArea (Settings tab) defaults to a native white viewport unless
-   both the frame AND its inner viewport widget are explicitly made
-   transparent — otherwise it shows through as a washed-out white veil
-   over the dark-styled child widgets. */
-QScrollArea {
+QScrollArea {{
     background: transparent;
     border: none;
-}
-QScrollArea > QWidget > QWidget {
+}}
+QScrollArea > QWidget > QWidget {{
     background: transparent;
-}
+}}
 
-QScrollBar:horizontal {
+QScrollBar:horizontal {{
     background: transparent;
     height: 10px;
-}
-QScrollBar::handle:horizontal {
-    background: rgba(255, 255, 255, 0.18);
+}}
+QScrollBar::handle:horizontal {{
+    background: {tk['border_strong']};
     border-radius: 5px;
     min-width: 24px;
-}
-QScrollBar::handle:horizontal:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+}}
+QScrollBar::handle:horizontal:hover {{
+    background: {tk['text_tertiary']};
+}}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
     width: 0;
-}
+}}
 
-QTimeEdit {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 15px;
+QTimeEdit {{
+    background: {tk['bg_surface']};
+    color: {tk['text_primary']};
+    border: 1px solid {tk['border_default']};
+    border-radius: 10px;
     padding: 6px 12px;
     font-size: 12px;
-}
+}}
 """
+
+
+PRO_LIGHT_QSS = build_pro_qss("light")
+PRO_DARK_QSS = build_pro_qss("dark")
+PRO_EXTRA_QSS = PRO_DARK_QSS

@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="IPCast.Client.Views.FileManagerWindow" Title="IPCast — File manager" Icon="/Assets/ipcast.ico"
-        Width="1060" Height="680" MinWidth="760" MinHeight="480" Background="{DynamicResource AppBackgroundBrush}">
+        Width="1060" Height="680" MinWidth="760" MinHeight="480" Background="{DynamicResource ObsidianBrush}">
     <Grid Margin="20" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="12">
         <StackPanel Spacing="6">
             <TextBlock Text="File manager" Classes="h2" />

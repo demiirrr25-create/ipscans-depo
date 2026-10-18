@@ -9,9 +9,9 @@
 
 #define MyAppName "IPCast"
 #ifndef MyAppVersion
-  #error MyAppVersion must be supplied from IPCast.Client.csproj using /DMyAppVersion
+  #define MyAppVersion "2.7.0"
 #endif
-#define MyAppPublisher "IPCast"
+#define MyAppPublisher "IPScans"
 #define MyAppExeName "IPCast.exe"
 #define MyPublishDir "..\publish\win-x64"
 

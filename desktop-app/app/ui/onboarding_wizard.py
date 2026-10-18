@@ -3,7 +3,7 @@ Fluid silk ribbon waves, vertical stage tracker, and interactive feature showcas
 """
 from __future__ import annotations
 
-from PyQt6.QtCore import QEasingCurve, QPropertyAnimation, QRect, Qt
+from PyQt6.QtCore import QPropertyAnimation
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -29,7 +29,13 @@ from app.i18n import (
 )
 from app.ui.privacy_dialog import accept_privacy, accept_terms
 from app.ui.resources import load_logo_pixmap
-from app.ui.styles import Win11SilkCanvas
+from app.ui.styles import (
+    ThemeManager,
+    ThemeToggleButton,
+    Win11SilkCanvas,
+    get_current_theme,
+    get_tokens,
+)
 
 LOGO_SIZE = 42
 
@@ -55,6 +61,9 @@ class OnboardingWizard(QDialog):
         self._headings: dict[str, QLabel] = {}
         self._subheadings: dict[str, QLabel] = {}
         self._stage_labels: list[QLabel] = []
+        self._feature_titles: list[QLabel] = []
+        self._feature_descs: list[QLabel] = []
+        self._feature_cards: list[QFrame] = []
 
         self.setObjectName("Win11SetupWindow")
         self.setWindowTitle("IPscans+ · Kurulum ve Özellik Tanıtımı")
@@ -62,7 +71,6 @@ class OnboardingWizard(QDialog):
         self.setModal(True)
         self.setFixedSize(860, 580)
 
-        # Main horizontal split: Left side (Silk ribbon & Stage Tracker) | Right side (Setup Canvas)
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -70,6 +78,8 @@ class OnboardingWizard(QDialog):
         main_layout.addWidget(self._build_left_panel())
         main_layout.addWidget(self._build_right_canvas(), stretch=1)
 
+        self.apply_theme(get_current_theme())
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
         self._refresh_step()
 
     # ------------------------------------------------------------- left panel
@@ -77,9 +87,7 @@ class OnboardingWizard(QDialog):
         panel = QFrame()
         panel.setObjectName("Win11Card")
         panel.setFixedWidth(270)
-        panel.setStyleSheet(
-            "QFrame#Win11Card { background-color: #06070a; border: none; border-right: 1px solid rgba(255, 255, 255, 0.08); border-top-right-radius: 0px; border-bottom-right-radius: 0px; }"
-        )
+        self._left_panel = panel
 
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(22, 22, 22, 20)
@@ -95,12 +103,10 @@ class OnboardingWizard(QDialog):
 
         title_col = QVBoxLayout()
         title_col.setSpacing(1)
-        name_lbl = QLabel("IPscans+", objectName="TitleText")
-        name_lbl.setStyleSheet("font-size: 18px; font-weight: bold; color: #ffffff;")
-        edition_lbl = QLabel("HIGH PERFORMANCE SCANNER", objectName="SubtitleText")
-        edition_lbl.setStyleSheet("font-size: 9px; font-weight: 600; letter-spacing: 0.10em; color: #9aa0a6;")
-        title_col.addWidget(name_lbl)
-        title_col.addWidget(edition_lbl)
+        self._name_lbl = QLabel("IPscans+", objectName="TitleText")
+        self._edition_lbl = QLabel("HIGH PERFORMANCE SCANNER", objectName="SubtitleText")
+        title_col.addWidget(self._name_lbl)
+        title_col.addWidget(self._edition_lbl)
         brand.addLayout(title_col)
         brand.addStretch(1)
         layout.addLayout(brand)
@@ -116,18 +122,14 @@ class OnboardingWizard(QDialog):
         self._stage_labels = []
         for i, step_key in enumerate(self.steps):
             lbl = QLabel(f"0{i+1} · {self._step_title(step_key)}")
-            lbl.setStyleSheet("font-size: 11px; padding: 6px 10px; border-radius: 8px; color: #80868b;")
             self._stage_labels.append(lbl)
             steps_box.addWidget(lbl)
         steps_box.addStretch(1)
         layout.addLayout(steps_box, stretch=1)
 
         # Left bottom security badge
-        sec_badge = QLabel("100% ÇEVRİM DIŞI · SIFIR TELEMETRİ")
-        sec_badge.setStyleSheet(
-            "font-family: Consolas, monospace; font-size: 9px; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.45); padding: 4px 0;"
-        )
-        layout.addWidget(sec_badge)
+        self._sec_badge = QLabel("100% ÇEVRİM DIŞI · SIFIR TELEMETRİ")
+        layout.addWidget(self._sec_badge)
 
         return panel
 
@@ -156,27 +158,30 @@ class OnboardingWizard(QDialog):
     # ------------------------------------------------------------ right canvas
     def _build_right_canvas(self) -> QWidget:
         canvas = QWidget()
+        self._right_canvas = canvas
         layout = QVBoxLayout(canvas)
         layout.setContentsMargins(32, 28, 32, 24)
         layout.setSpacing(16)
 
-        # Header of active step
+        header_top = QHBoxLayout()
+        header_col = QVBoxLayout()
+        header_col.setSpacing(4)
         self._headline_label = QLabel("", objectName="TitleText")
-        self._headline_label.setStyleSheet("font-size: 22px; font-weight: 600; color: #ffffff;")
         self._subheadline_label = QLabel("", objectName="SubtitleText")
-        self._subheadline_label.setStyleSheet("font-size: 13px; color: #9aa0a6; line-height: 1.4;")
         self._subheadline_label.setWordWrap(True)
+        header_col.addWidget(self._headline_label)
+        header_col.addWidget(self._subheadline_label)
+        header_top.addLayout(header_col, stretch=1)
 
-        layout.addWidget(self._headline_label)
-        layout.addWidget(self._subheadline_label)
+        self.theme_toggle_btn = ThemeToggleButton(self, self.language)
+        header_top.addWidget(self.theme_toggle_btn)
+        layout.addLayout(header_top)
 
-        # Stacked pages for each step
         self.stack = QStackedWidget()
         for key in self.steps:
             self.stack.addWidget(self._build_page(key))
         layout.addWidget(self.stack, stretch=1)
 
-        # Bottom nav bar
         layout.addLayout(self._build_nav())
         return canvas
 
@@ -209,11 +214,6 @@ class OnboardingWizard(QDialog):
             btn.setCheckable(True)
             btn.setMinimumHeight(48)
             btn.setProperty("langCode", code)
-            btn.setStyleSheet(
-                "QPushButton#LanguageOption { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 12px; font-size: 13px; font-weight: 500; color: #ffffff; text-align: left; padding-left: 16px; }"
-                "QPushButton#LanguageOption:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.25); }"
-                "QPushButton#LanguageOption:checked { background: #ffffff; color: #000000; font-weight: bold; border-color: #ffffff; }"
-            )
             self._lang_group.addButton(btn)
             grid.addWidget(btn, index // columns, index % columns)
             if code == self.language:
@@ -225,6 +225,8 @@ class OnboardingWizard(QDialog):
 
     def _on_language_clicked(self, button: QPushButton) -> None:
         self.language = button.property("langCode")
+        if hasattr(self, "theme_toggle_btn"):
+            self.theme_toggle_btn.set_language(self.language)
         self._refresh_step()
 
     def _build_engine_page(self) -> QWidget:
@@ -329,9 +331,9 @@ class OnboardingWizard(QDialog):
         tile2 = self._create_feature_tile(
             "🚀 " + ("Windows 11 Native Entegrasyon" if is_tr else "Windows 11 Native Integration"),
             (
-                "Yüksek DPI desteği, çoklu monitör uyumluluğu ve modern Fluent/Obsidian estetiği ile üst düzey masaüstü deneyimi sunar."
+                "Yüksek DPI desteği, çoklu monitör uyumluluğu ve modern Açık/Koyu tema estetiği ile üst düzey masaüstü deneyimi sunar."
                 if is_tr
-                else "High-DPI scaling, multi-monitor geometry support, and ultra-fluid Obsidian styling provide an executive desktop experience."
+                else "High-DPI scaling, multi-monitor geometry support, and Light/Dark dual-theme styling provide an executive desktop experience."
             ),
         )
         layout.addWidget(tile1)
@@ -347,13 +349,14 @@ class OnboardingWizard(QDialog):
         v.setSpacing(6)
 
         t_lbl = QLabel(title)
-        t_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #ffffff;")
         d_lbl = QLabel(description)
-        d_lbl.setStyleSheet("font-size: 12px; color: #9aa0a6; line-height: 1.4;")
         d_lbl.setWordWrap(True)
 
         v.addWidget(t_lbl)
         v.addWidget(d_lbl)
+        self._feature_cards.append(card)
+        self._feature_titles.append(t_lbl)
+        self._feature_descs.append(d_lbl)
         return card
 
     def _build_agreement_page(self, key: str) -> QWidget:
@@ -363,18 +366,10 @@ class OnboardingWizard(QDialog):
         layout.setSpacing(12)
 
         body = QTextEdit(readOnly=True)
-        body.setStyleSheet(
-            "QTextEdit { background-color: #06070a; border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 12px; padding: 12px; font-size: 12px; color: #d0d4dc; }"
-        )
         self._body_views[key] = body
         layout.addWidget(body, stretch=1)
 
         checkbox = QCheckBox()
-        checkbox.setStyleSheet(
-            "QCheckBox { font-size: 12px; color: #e8eaed; spacing: 8px; }"
-            "QCheckBox::indicator { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.35); background: #06070a; }"
-            "QCheckBox::indicator:checked { background: #ffffff; border-color: #ffffff; image: none; }"
-        )
         checkbox.toggled.connect(self._on_checkbox_toggled)
         self._checkboxes[key] = checkbox
         layout.addWidget(checkbox)
@@ -400,13 +395,11 @@ class OnboardingWizard(QDialog):
         row.addWidget(self.decline_btn)
         row.addStretch(1)
 
-        # Step indicator dots
         self._dots_row = QHBoxLayout()
         self._dots_row.setSpacing(6)
         self._dot_widgets: list[QLabel] = []
         for _ in self.steps:
             dot = QLabel("●")
-            dot.setStyleSheet("font-size: 10px; color: rgba(255, 255, 255, 0.2);")
             self._dots_row.addWidget(dot)
             self._dot_widgets.append(dot)
         row.addLayout(self._dots_row)
@@ -414,6 +407,59 @@ class OnboardingWizard(QDialog):
 
         row.addWidget(self.primary_btn)
         return row
+
+    def apply_theme(self, theme: str | None = None) -> None:
+        tk = get_tokens(theme)
+        self.setStyleSheet(f"QDialog#Win11SetupWindow {{ background-color: {tk['bg_canvas']}; }}")
+        self._left_panel.setStyleSheet(
+            f"QFrame#Win11Card {{ background-color: {tk['bg_surface']}; border: none; border-right: 1px solid {tk['border_default']}; border-radius: 0px; }}"
+        )
+        self._name_lbl.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {tk['text_primary']};")
+        self._edition_lbl.setStyleSheet(
+            f"font-size: 9px; font-weight: 600; letter-spacing: 0.10em; color: {tk['text_tertiary']};"
+        )
+        self._sec_badge.setStyleSheet(
+            f"font-family: Consolas, monospace; font-size: 9px; letter-spacing: 0.08em; color: {tk['text_tertiary']}; padding: 4px 0;"
+        )
+        self._headline_label.setStyleSheet(f"font-size: 22px; font-weight: 600; color: {tk['text_primary']};")
+        self._subheadline_label.setStyleSheet(
+            f"font-size: 13px; color: {tk['text_secondary']}; line-height: 1.4;"
+        )
+
+        for card in self._feature_cards:
+            card.setStyleSheet(
+                f"QFrame#Win11FeatureCard {{ background-color: {tk['bg_surface']}; border: 1px solid {tk['border_default']}; border-radius: 12px; }}"
+            )
+        for t_lbl in self._feature_titles:
+            t_lbl.setStyleSheet(f"font-size: 14px; font-weight: 600; color: {tk['text_primary']};")
+        for d_lbl in self._feature_descs:
+            d_lbl.setStyleSheet(f"font-size: 12px; color: {tk['text_secondary']}; line-height: 1.4;")
+
+        if hasattr(self, "_lang_group"):
+            lang_qss = (
+                f"QPushButton#LanguageOption {{ background: {tk['bg_surface']}; border: 1px solid {tk['border_default']}; border-radius: 12px; font-size: 13px; font-weight: 500; color: {tk['text_primary']}; text-align: left; padding-left: 16px; }}"
+                f"QPushButton#LanguageOption:hover {{ background: {tk['bg_hover']}; border-color: {tk['border_strong']}; }}"
+                f"QPushButton#LanguageOption:checked {{ background: {tk['accent_subtle']}; color: {tk['accent_primary']}; font-weight: bold; border-color: {tk['accent_primary']}; }}"
+            )
+            for btn in self._lang_group.buttons():
+                btn.setStyleSheet(lang_qss)
+
+        for body in self._body_views.values():
+            body.setStyleSheet(
+                f"QTextEdit {{ background-color: {tk['bg_surface']}; border: 1px solid {tk['border_default']}; border-radius: 12px; padding: 12px; font-size: 12px; color: {tk['text_secondary']}; }}"
+            )
+        for cb in self._checkboxes.values():
+            cb.setStyleSheet(
+                f"QCheckBox {{ font-size: 12px; color: {tk['text_primary']}; spacing: 8px; }}"
+                f"QCheckBox::indicator {{ width: 18px; height: 18px; border-radius: 4px; border: 1px solid {tk['border_strong']}; background: {tk['bg_surface']}; }}"
+                f"QCheckBox::indicator:checked {{ background: {tk['accent_primary']}; border-color: {tk['accent_primary']}; image: none; }}"
+            )
+
+        self.silk_canvas.update()
+        if hasattr(self, "theme_toggle_btn"):
+            self.theme_toggle_btn.set_language(self.language)
+            self.theme_toggle_btn.update()
+        self._refresh_step()
 
     # ------------------------------------------------------------- flow
     def _current_step_is_ready(self) -> bool:
@@ -445,6 +491,7 @@ class OnboardingWizard(QDialog):
     def _refresh_step(self) -> None:
         if self.step_index >= len(self.steps):
             return
+        tk = get_tokens()
         key = self.steps[self.step_index]
         self.stack.setCurrentIndex(self.step_index)
         is_tr = str(self.language).lower().startswith("tr")
@@ -457,25 +504,25 @@ class OnboardingWizard(QDialog):
                 if i == self.step_index:
                     lbl.setText(f"● 0{i+1} · {title}")
                     lbl.setStyleSheet(
-                        "font-size: 11px; font-weight: bold; padding: 6px 10px; border-radius: 8px; background-color: #ffffff; color: #000000;"
+                        f"font-size: 11px; font-weight: bold; padding: 6px 10px; border-radius: 8px; background-color: {tk['accent_primary']}; color: {tk['text_inverse']};"
                     )
                 elif i < self.step_index:
                     lbl.setText(f"✓ 0{i+1} · {title}")
                     lbl.setStyleSheet(
-                        "font-size: 11px; padding: 6px 10px; border-radius: 8px; color: #ffffff; background-color: rgba(255, 255, 255, 0.06);"
+                        f"font-size: 11px; padding: 6px 10px; border-radius: 8px; color: {tk['text_primary']}; background-color: {tk['bg_elevated']};"
                     )
                 else:
                     lbl.setText(f"· 0{i+1} · {title}")
                     lbl.setStyleSheet(
-                        "font-size: 11px; padding: 6px 10px; border-radius: 8px; color: #80868b; background: transparent;"
+                        f"font-size: 11px; padding: 6px 10px; border-radius: 8px; color: {tk['text_tertiary']}; background: transparent;"
                     )
 
         # Update dots
         for i, dot in enumerate(self._dot_widgets):
             dot.setStyleSheet(
-                "font-size: 10px; color: #ffffff;"
+                f"font-size: 10px; color: {tk['accent_primary']};"
                 if i == self.step_index
-                else "font-size: 10px; color: rgba(255, 255, 255, 0.25);"
+                else f"font-size: 10px; color: {tk['border_strong']};"
             )
 
         # Headings per step
@@ -516,7 +563,7 @@ class OnboardingWizard(QDialog):
             self.primary_btn.setText("İleri →" if is_tr else "Next →")
             self.decline_btn.setVisible(False)
         elif key == "welcome":
-            self._headline_label.setText("IPscans+ 4.3'e Hoş Geldiniz" if is_tr else "Welcome to IPscans+ 4.3")
+            self._headline_label.setText("IPscans+'a Hoş Geldiniz" if is_tr else "Welcome to IPscans+")
             self._subheadline_label.setText(
                 "Kurumsal düzeyde yerel ağ analiz ve güvenlik platformu."
                 if is_tr
@@ -562,7 +609,7 @@ class OnboardingWizard(QDialog):
         effect = QGraphicsOpacityEffect(self._logo_label)
         self._logo_label.setGraphicsEffect(effect)
         fade = QPropertyAnimation(effect, b"opacity", self)
-        fade.setDuration(400)
+        fade.setDuration(260)
         fade.setStartValue(0.0)
         fade.setEndValue(1.0)
         fade.start()

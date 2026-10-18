@@ -5,11 +5,13 @@ from PySide6.QtCore import QDateTime,QTimeZone,Qt
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QFormLayout,QLineEdit,QComboBox,
     QCheckBox,QDateTimeEdit,QSpinBox,QPushButton,QLabel,QTableWidget,QTableWidgetItem,QHeaderView,QFileDialog)
 from .passage_query import PassageFilter
+from .theme import apply_theme
 
 
 class PassageBrowser(QWidget):
     def __init__(self,ops,session,parent=None):
         super().__init__(parent)
+        apply_theme(self)
         self.ops,self.session=ops,session
         self.filters=PassageFilter();self.cursor=None;self.snapshot=None;self.previous=[];self.next_cursor=None
         self.last_refresh=0.
@@ -45,7 +47,7 @@ class PassageBrowser(QWidget):
             widget.setDisplayFormat('yyyy-MM-dd HH:mm:ss');widget.setCalendarPopup(True);widget.setEnabled(False)
             self.use_dates.toggled.connect(widget.setEnabled);dates.addWidget(widget)
         layout.addLayout(dates)
-        actions=QHBoxLayout();apply=QPushButton('Filtrele / Apply');apply.clicked.connect(self.apply_filters)
+        actions=QHBoxLayout();apply=QPushButton('Filtrele / Apply');apply.setObjectName('primaryBtn');apply.clicked.connect(self.apply_filters)
         self.plate.returnPressed.connect(self.apply_filters);actions.addWidget(apply)
         reset=QPushButton('Temizle / Reset');reset.clicked.connect(self.reset_filters);actions.addWidget(reset)
         fresh=QPushButton('En yeni kayıtlar / Latest');fresh.clicked.connect(self.latest);actions.addWidget(fresh);actions.addStretch()
@@ -61,11 +63,12 @@ class PassageBrowser(QWidget):
         self.table=QTableWidget(0,12);self.table.setHorizontalHeaderLabels(['UTC','Kamera','Çizgi','Yön','Araç','Plaka','Güven','Karar','Olay ID','Araç kaydı','Blok','Daire'])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setAlternatingRowColors(True);self.table.verticalHeader().hide()
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setStretchLastSection(True);layout.addWidget(self.table,1)
         navigation=QHBoxLayout();self.back=QPushButton('Önceki / Previous');self.forward=QPushButton('Sonraki / Next')
         self.back.clicked.connect(self.previous_page);self.forward.clicked.connect(self.next_page)
-        navigation.addWidget(self.back);navigation.addWidget(self.forward);self.info=QLabel();navigation.addWidget(self.info,1)
+        navigation.addWidget(self.back);navigation.addWidget(self.forward);self.info=QLabel();self.info.setObjectName('muted');navigation.addWidget(self.info,1)
         layout.addLayout(navigation)
         self.error=QLabel();self.error.setWordWrap(True);layout.addWidget(self.error)
 

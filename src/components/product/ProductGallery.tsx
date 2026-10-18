@@ -82,13 +82,13 @@ export function ProductGallery({
                 onClick={() => selectIndex(idx)}
                 className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-[0.9rem] font-medium transition-all duration-300 ease-out-expo cursor-pointer ${
                   isActive
-                    ? "bg-ink text-white shadow-soft"
+                    ? "bg-ink text-surface shadow-soft"
                     : "text-ink-2 hover:bg-surface-2 hover:text-ink"
                 }`}
               >
                 <span
                   className={`ds-mono text-xs ${
-                    isActive ? "text-white/70" : "text-ink-3"
+                    isActive ? "text-surface/70" : "text-ink-3"
                   }`}
                 >
                   0{idx + 1}

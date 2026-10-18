@@ -1,55 +1,58 @@
-<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:IPCast.Client.ViewModels" xmlns:conv="using:IPCast.Client.Converters" xmlns:persistence="using:IPCast.Client.Persistence" xmlns:network="using:IPCast.Network" x:Class="IPCast.Client.Views.MainWindow" x:DataType="vm:MainWindowViewModel" Title="IPCast 2.5" Icon="/Assets/ipcast.ico" Width="1180" Height="780" MinWidth="880" MinHeight="560" Background="{DynamicResource AppBackgroundBrush}">
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:IPCast.Client.ViewModels" xmlns:conv="using:IPCast.Client.Converters" xmlns:persistence="using:IPCast.Client.Persistence" xmlns:network="using:IPCast.Network" x:Class="IPCast.Client.Views.MainWindow" x:DataType="vm:MainWindowViewModel" Title="IPCast" Icon="/Assets/ipcast.ico" Width="1180" Height="780" MinWidth="880" MinHeight="560" Background="{DynamicResource ObsidianBrush}">
 <Window.Resources><conv:EnumEqualsConverter x:Key="EnumEquals" /></Window.Resources>
 <Grid RowDefinitions="Auto,Auto,*,Auto">
-    <Border Background="{DynamicResource SidebarBrush}" Padding="18,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
-        <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"><Image Source="/Assets/ipcast-mark.png" Width="26" Height="26"/><TextBlock Text="IPCast" FontSize="21" FontWeight="Bold" VerticalAlignment="Center"/></StackPanel>
-            <ListBox Grid.Column="1" Classes="nav" ItemsSource="{Binding NavItems}" SelectedItem="{Binding SelectedNavItem}" AutomationProperties.Name="Workspace tabs">
-                <ListBox.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ListBox.ItemsPanel>
-                <ListBox.ItemTemplate><DataTemplate x:DataType="vm:NavItem"><TextBlock Text="{Binding Label}" FontSize="12" /></DataTemplate></ListBox.ItemTemplate>
+    <Border Background="{DynamicResource Surface0Brush}" Padding="20,10" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,0,8,0"><Image Source="/Assets/ipcast-mark.png" Width="26" Height="26"/><TextBlock Text="IPCast" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
+            <ListBox Grid.Column="1" Classes="nav" ItemsSource="{Binding NavItems}" SelectedItem="{Binding SelectedNavItem}" VerticalAlignment="Center" AutomationProperties.Name="Workspace tabs">
+                <ListBox.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                <ListBox.ItemTemplate><DataTemplate x:DataType="vm:NavItem"><TextBlock Text="{Binding Label}" FontSize="13" /></DataTemplate></ListBox.ItemTemplate>
             </ListBox>
-            <Button Grid.Column="2" Content="☰" Classes="ghost" ToolTip.Tip="Menu" AutomationProperties.Name="Application menu">
-                <Button.Flyout><MenuFlyout><MenuItem Header="New session" Click="OnHomeClick"/><MenuItem Header="Address book" Click="OnAddressBookClick"/><MenuItem Header="Session recordings" Click="OnOpenRecordingsClick"/><Separator/><MenuItem Header="Settings" Click="OnSettingsClick"/><MenuItem Header="Check for updates" Click="OnCheckUpdatesClick"/></MenuFlyout></Button.Flyout>
+            <Button Grid.Column="2" Name="ThemeToggleButton" Classes="ghost" Command="{Binding ToggleThemeCommand}" ToolTip.Tip="{Binding ThemeToggleTooltip}" Padding="10,8" VerticalAlignment="Center" AutomationProperties.Name="Toggle color theme">
+                <Panel Width="18" Height="18">
+                    <Path IsVisible="{Binding IsDarkTheme}" Data="M12,7 A5,5 0 1,1 12,17 A5,5 0 1,1 12,7 Z M12,1 L12,3 M12,21 L12,23 M4.22,4.22 L5.64,5.64 M18.36,18.36 L19.78,19.78 M1,12 L3,12 M21,12 L23,12 M4.22,19.78 L5.64,18.36 M18.36,5.64 L19.78,4.22" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.8" StrokeLineCap="Round" Width="16" Height="16" Stretch="Uniform" />
+                    <Path IsVisible="{Binding IsLightTheme}" Data="M21,12.79 A9,9 0 1,1 11.21,3 A7,7 0 0,0 21,12.79 Z" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
+                </Panel>
+            </Button>
+            <Button Grid.Column="3" Content="☰" Classes="ghost" ToolTip.Tip="Menu" VerticalAlignment="Center" AutomationProperties.Name="Application menu">
+                <Button.Flyout><MenuFlyout><MenuItem Header="New session" Click="OnHomeClick"/><MenuItem Header="Address book" Click="OnAddressBookClick"/><MenuItem Header="Session recordings" Click="OnOpenRecordingsClick"/><Separator/><MenuItem Header="Toggle Light / Dark theme" Command="{Binding ToggleThemeCommand}"/><MenuItem Header="Settings" Click="OnSettingsClick"/><MenuItem Header="Check for updates" Click="OnCheckUpdatesClick"/></MenuFlyout></Button.Flyout>
             </Button>
         </Grid>
     </Border>
-    <Border Grid.Row="1" Padding="20,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource SidebarBrush}">
+    <Border Grid.Row="1" Padding="20,12" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource Surface0Brush}">
         <StackPanel Spacing="10">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                <TextBlock Text="→" FontSize="24" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="→" FontSize="22" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                 <TextBox Grid.Column="1" Name="RemoteIdTextBox" PlaceholderText="Enter remote address" Text="{Binding RemoteIdInput}" KeyDown="OnRemoteIdKeyDown" FontSize="15" AutomationProperties.Name="Remote device ID or direct IP address and port"/>
                 <Button Grid.Column="2" Content="Connect →" Classes="primary" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnecting}"/>
                 <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelConnectCommand}" IsVisible="{Binding IsConnecting}"/>
-                <ToggleButton Grid.Column="3" Content="Options" IsChecked="{Binding ShowConnectionOptions}" Padding="14,6" AutomationProperties.Name="Connection options"/>
+                <ToggleButton Grid.Column="3" Content="Options" IsChecked="{Binding ShowConnectionOptions}" Padding="16,8" AutomationProperties.Name="Connection options"/>
             </Grid>
             <Grid ColumnDefinitions="220,*,160" ColumnSpacing="12" IsVisible="{Binding ShowConnectionOptions}"><ComboBox ItemsSource="{Binding PermissionProfileNames}" SelectedItem="{Binding SelectedPermissionProfile}" HorizontalAlignment="Stretch" AutomationProperties.Name="Requested permission profile"/><TextBox Grid.Column="1" Text="{Binding RemotePasswordInput}" PasswordChar="●" PlaceholderText="Unattended access password (optional)" AutomationProperties.Name="Unattended access password, optional"/><TextBox Grid.Column="2" Text="{Binding RemoteOneTimeCode}" MaxLength="6" PlaceholderText="Authenticator code" AutomationProperties.Name="Authenticator one time code"/></Grid>
             <TextBlock Text="{Binding RemoteIdValidationMessage}" IsVisible="{Binding HasRemoteIdValidationMessage}" Classes="hint" />
         </StackPanel>
     </Border>
     <Grid Grid.Row="2" ColumnDefinitions="Auto,*">
-        <Border Width="210" Padding="16,22" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0" IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
-            <StackPanel Spacing="16"><TextBlock Text="Settings" FontSize="22" Margin="10,0"/><TextBlock Text="APPLICATION &amp; SESSION" Classes="eyebrow" Margin="10,0"/><ListBox Classes="nav" ItemsSource="{Binding SettingsCategories}" SelectedItem="{Binding SettingsCategory}" AutomationProperties.Name="Settings categories" /></StackPanel>
+        <Border Width="220" Padding="16,22" Background="{DynamicResource Surface0Brush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,1,0" IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}">
+            <StackPanel Spacing="16"><TextBlock Text="Settings" FontSize="22" FontWeight="SemiBold" Margin="10,0"/><TextBlock Text="APPLICATION &amp; SESSION" Classes="eyebrow" Margin="10,0"/><ListBox Classes="nav" ItemsSource="{Binding SettingsCategories}" SelectedItem="{Binding SettingsCategory}" AutomationProperties.Name="Settings categories" /></StackPanel>
         </Border>
         <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"><Grid Margin="30,22"><StackPanel Spacing="22" IsVisible="{Binding SelectedNav, Converter={StaticResource EnumEquals}, ConverterParameter=Home}">
     <Border Classes="card" Padding="24,18">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
             <StackPanel Spacing="6">
-                <TextBlock Text="IPCAST 2.5 · ENCRYPTED REMOTE DESKTOP" Classes="eyebrow" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="IPCAST · ENCRYPTED REMOTE DESKTOP" Classes="eyebrow" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Width="3" Height="18" CornerRadius="2" Background="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                     <TextBlock Text="Peer-to-peer high-performance remote desktop &amp; encrypted session control." FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <Border Width="3" Height="18" CornerRadius="2" Background="#FFFFFF" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
-            <Border Grid.Column="1" CornerRadius="16" Padding="12,6" Background="{DynamicResource SubtleFillBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
-                <TextBlock Text="PRO EDITION" Classes="eyebrow" />
-            </Border>
         </Grid>
     </Border>
     <Border Classes="card">
         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="32">
-            <TextBlock Text="Your address" FontSize="21" />
+            <TextBlock Text="Your address" FontSize="20" FontWeight="SemiBold" />
             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="18" Margin="0,14,0,12">
-                <TextBlock Text="{Binding DeviceIdFormatted}" FontSize="40" FontFamily="Consolas" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding DeviceIdFormatted}" FontSize="40" FontFamily="Cascadia Mono, Consolas, monospace" FontWeight="SemiBold" />
                 <Button Content="Copy" Click="OnCopyIdClick" VerticalAlignment="Center" AutomationProperties.Name="Copy your IPCast ID" />
             </StackPanel>
             <TextBlock Grid.Row="2" Text="Share this address to let someone connect to this device." Classes="hint" />
@@ -247,6 +250,11 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="General" Classes="h2" />
                         <TextBlock Text="Appearance" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="20">
+                            <RadioButton GroupName="ThemeMode" Content="Light" IsChecked="{Binding IsLightModeSelected}" AutomationProperties.Name="Light theme" />
+                            <RadioButton GroupName="ThemeMode" Content="Dark" IsChecked="{Binding IsDarkModeSelected}" AutomationProperties.Name="Dark theme" />
+                            <RadioButton GroupName="ThemeMode" Content="System" IsChecked="{Binding IsSystemModeSelected}" AutomationProperties.Name="System theme" />
+                        </StackPanel>
                         <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" HorizontalAlignment="Stretch" AutomationProperties.Name="Appearance theme" />
                         <CheckBox Content="Open address book when IPCast starts" IsChecked="{Binding OpenAddressBookOnStartup}" />
                         <CheckBox Content="Keep my display awake while viewing a remote screen" IsChecked="{Binding PreventDisplaySleep}" />
@@ -294,8 +302,8 @@
                         <TextBlock Text="Unattended access" Classes="h2" />
                         <TextBlock Text="Let authorized devices connect to this computer using its ID and a password, bypassing the interactive Accept prompt."
                                    Classes="hint" />
-                        <Border CornerRadius="6" Padding="10,6" HorizontalAlignment="Left"
-                                Background="{DynamicResource SubtleFillBrush}">
+                        <Border CornerRadius="8" Padding="12,6" HorizontalAlignment="Left"
+                                Background="{DynamicResource Surface2Brush}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Ellipse Width="8" Height="8" VerticalAlignment="Center"
                                          Fill="{DynamicResource AccentBrush}" IsVisible="{Binding IsUnattendedAccessEnabled}" />
@@ -362,7 +370,7 @@
                         <TextBlock Text="This device's TLS certificate fingerprint (SHA-256). Compare it out-of-band the first time a new device connects."
                                    Classes="hint" />
                         <TextBox Text="{Binding CertificateFingerprint}" IsReadOnly="True" TextWrapping="Wrap"
-                                 FontFamily="Consolas, monospace" FontSize="12" />
+                                 FontFamily="Cascadia Mono, Consolas, monospace" FontSize="12" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -395,7 +403,7 @@
             </StackPanel>
 
 </Grid></ScrollViewer></Grid>
-    <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardBorderBrush}" Padding="20,9" Background="{DynamicResource SidebarBrush}">
+    <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource SubtleBorderBrush}" Padding="20,9" Background="{DynamicResource Surface0Brush}">
         <Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="3"><TextBlock Text="{Binding StatusMessage}" Classes="hint" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/><TextBlock Text="{Binding RelayServerMessage}" Classes="hint"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding VersionLabel}" Classes="hint" VerticalAlignment="Center" Margin="12,0,0,0"/></Grid>
     </Border>
 </Grid></Window>

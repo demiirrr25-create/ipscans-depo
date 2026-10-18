@@ -369,6 +369,60 @@ def test_monitor_detects_device_that_goes_fully_dark():
     print("PASS: monitor_detects_device_that_goes_fully_dark")
 
 
+def test_pro_theme_toggle_and_ui() -> None:
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PyQt6.QtWidgets import QApplication
+    from app.ui.styles import get_current_theme, set_current_theme, toggle_theme
+    from ui.pro_styles import PRO_DARK_QSS, PRO_LIGHT_QSS, build_pro_qss
+    from ui.topology_widget import TopologyWidget
+    from ui.device_history_dialog import DeviceHistoryDialog
+
+    _app = QApplication.instance() or QApplication([])
+    assert "#FFFFFF" in PRO_LIGHT_QSS
+    assert "#0D0F14" in PRO_DARK_QSS
+    assert build_pro_qss("light") == PRO_LIGHT_QSS
+    assert build_pro_qss("dark") == PRO_DARK_QSS
+
+    topo = TopologyWidget("en")
+    topo.refresh([
+        {"device_type": "Router", "custom_name": "Gateway", "hostname": "gw", "ip": "192.168.1.1", "status": "online"},
+        {"device_type": "IP Camera", "custom_name": "Cam", "hostname": "cam", "ip": "192.168.1.50", "status": "offline"},
+    ])
+    set_current_theme("light")
+    assert get_current_theme() == "light"
+    topo.grab()
+
+    toggle_theme()
+    assert get_current_theme() == "dark"
+    topo.grab()
+    topo.close()
+
+    hist = DeviceHistoryDialog(
+        "Gateway (192.168.1.1)",
+        [{"latency_ms": 4.0, "packet_loss_pct": 0.0}, {"latency_ms": 8.0, "packet_loss_pct": 0.0}],
+        "en",
+    )
+    set_current_theme("light")
+    hist.grab()
+    set_current_theme("dark")
+    hist.grab()
+    hist.close()
+    print("PASS: pro_theme_toggle_and_ui")
+
+
+import unittest  # noqa: E402
+
+
+class ProEngineTestSuite(unittest.TestCase):
+    pass
+
+
+for _name, _fn in list(globals().items()):
+    if _name.startswith("test_") and callable(_fn):
+        setattr(ProEngineTestSuite, _name, staticmethod(_fn))
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     failures = 0
@@ -380,3 +434,4 @@ if __name__ == "__main__":
             print(f"FAIL: {test.__name__}: {e}")
     print(f"\n{len(tests) - failures}/{len(tests)} passed")
     sys.exit(1 if failures else 0)
+

@@ -6,27 +6,31 @@ Qt/Python versions).
 """
 from __future__ import annotations
 
-from PyQt6.QtCore import QPointF, QRectF, Qt
+from PyQt6.QtCore import QPointF, QRectF
 from PyQt6.QtGui import QColor, QPainter, QPen
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
+from app.ui.styles import ThemeManager, get_tokens
 from pro.pro_content import t
 
 
 class _LineChart(QWidget):
-    def __init__(self, values: list[float | None], color: str, max_value: float, parent=None) -> None:
+    def __init__(self, values: list[float | None], token_key: str, max_value: float, parent=None) -> None:
         super().__init__(parent)
         self._values = values
-        self._color = QColor(color)
+        self._token_key = token_key
         self._max_value = max(max_value, 1.0)
         self.setMinimumHeight(140)
 
     def paintEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        tk = get_tokens()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(8, 8, self.width() - 16, self.height() - 16)
 
-        painter.setPen(QPen(QColor(255, 255, 255, 30), 1))
+        painter.fillRect(rect, QColor(tk["bg_surface"]))
+        painter.setPen(QPen(QColor(tk["border_default"]), 1))
+        painter.drawRoundedRect(rect, 8, 8)
         for i in range(1, 4):
             y = rect.top() + rect.height() * i / 4
             painter.drawLine(QPointF(rect.left(), y), QPointF(rect.right(), y))
@@ -45,7 +49,8 @@ class _LineChart(QWidget):
             y = rect.bottom() - (value / self._max_value) * rect.height()
             path_points.append(QPointF(x, y))
 
-        painter.setPen(QPen(self._color, 2))
+        line_color = QColor(tk.get(self._token_key, self._token_key))
+        painter.setPen(QPen(line_color, 2))
         for a, b in zip(path_points, path_points[1:]):
             painter.drawLine(a, b)
         painter.end()
@@ -58,6 +63,7 @@ class DeviceHistoryDialog(QDialog):
         self.resize(560, 340)
 
         layout = QVBoxLayout(self)
+        self._charts: list[_LineChart] = []
 
         if not metrics_rows:
             layout.addWidget(QLabel(t(lang, "device_history_empty")))
@@ -68,7 +74,18 @@ class DeviceHistoryDialog(QDialog):
 
         layout.addWidget(QLabel(t(lang, "device_history_latency")))
         max_latency = max([v for v in latencies if v is not None], default=100.0)
-        layout.addWidget(_LineChart(latencies, "#9fd3ff", max_latency))
+        c1 = _LineChart(latencies, "accent_primary", max_latency)
+        self._charts.append(c1)
+        layout.addWidget(c1)
 
         layout.addWidget(QLabel(t(lang, "device_history_packet_loss")))
-        layout.addWidget(_LineChart(losses, "#ff7a7a", 100.0))
+        c2 = _LineChart(losses, "critical", 100.0)
+        self._charts.append(c2)
+        layout.addWidget(c2)
+
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self, _theme: str | None = None) -> None:
+        for chart in self._charts:
+            chart.update()
+        self.update()
