@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppStepByStepTour } from "@/components/AppStepByStepTour";
+import { AppLiveDemo } from "@/components/AppLiveDemo";
 import { PageShell } from "@/components/PageShell";
 import { lprRelease } from "@/content/lpr-release";
 import { isLocale } from "@/i18n/config";
@@ -143,7 +143,7 @@ export default async function LprProPage({ params }: Props) {
         </section>
 
         <section className="my-10">
-          <AppStepByStepTour
+          <AppLiveDemo
             appId="lpr-pro"
             appName="IPScans LPR Pro"
             version={lprRelease.version}

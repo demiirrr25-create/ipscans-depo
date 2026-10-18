@@ -8,9 +8,9 @@ import { localizedAlternates } from "@/lib/seo";
 import Link from "next/link";
 import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 import { ipcastRelease } from "@/content/applications";
-import { IPCastProductSections } from "@/components/IPCastProductSections";
 import { ipcastProductCopy } from "@/content/ipcast-product";
-import { AppStepByStepTour } from "@/components/AppStepByStepTour";
+import { IPCastProductSections } from "@/components/IPCastProductSections";
+import { AppLiveDemo } from "@/components/AppLiveDemo";
 
 export async function generateMetadata({
   params,
@@ -46,7 +46,7 @@ export default async function IpCastPage({
     <PageShell title={t.title} subtitle={t.subtitle}>
       <div className="mx-auto max-w-5xl">
         <div className="my-8">
-          <AppStepByStepTour
+          <AppLiveDemo
             appId="ipcast"
             appName="IPCast"
             version={ipcastRelease.version}

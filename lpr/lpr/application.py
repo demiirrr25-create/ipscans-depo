@@ -8,7 +8,7 @@ import time
 import tempfile
 import uuid
 
-from PySide6.QtCore import Qt,QTimer
+from PySide6.QtCore import Qt,QTimer,QEventLoop
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
     QPushButton,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QTabWidget,QDialog,
     QDialogButtonBox,QFormLayout,QComboBox,QCheckBox,QSpinBox,QMessageBox,QFileDialog,QInputDialog)
@@ -33,9 +33,9 @@ class Login(QDialog):
         layout=QVBoxLayout(self)
         setup=ops.needs_setup()
         self.created_admin=setup
-        from .operator_shell import AntigravityWelcomeBanner
-        self.welcome_banner=AntigravityWelcomeBanner(
-            "IPSCANS LPR PRO · ANTIGRAVITY EDITION",
+        from .operator_shell import IPScansWelcomeBanner
+        self.welcome_banner=IPScansWelcomeBanner(
+            "IPSCANS LPR PRO · LICENSE PLATE RECOGNITION",
             "İlk yönetici hesabını oluşturun ve istasyonu başlatın." if setup else "Yerel operatör çalışma alanına oturum açın.",
             compact=True,
             parent=self,
@@ -98,13 +98,13 @@ class ProductWindow(QMainWindow):
         self.lab.language.currentIndexChanged.connect(self.switch_language)
         root=QWidget();self.setCentralWidget(root);layout=QVBoxLayout(root)
         layout.setContentsMargins(20,16,20,16)
-        header=QHBoxLayout();brand=QLabel(f"IPSCANS  /  LPR PRO  ·  {__version__}")
+        header=QHBoxLayout();brand=QLabel("IPSCANS  /  LPR PRO")
         brand.setObjectName("brand");header.addWidget(brand);header.addStretch()
         self.account=QLabel(f"{session.username} / {session.role}");header.addWidget(self.account)
         lock=QPushButton("Kilitle / Lock");lock.clicked.connect(self.lock_session);header.addWidget(lock)
         layout.addLayout(header)
-        self.banner=QLabel("Yerel beta • Fiziksel bariyer kontrolü yok / Local beta • No physical barrier control")
-        self.banner.setWordWrap(True);layout.addWidget(self.banner)
+        self.banner=QLabel("")
+        self.banner.setVisible(False)
         self.tabs=QTabWidget();layout.addWidget(self.tabs,1)
         self.widgets={};self.labels=[]
         self.dashboard=self.page("dashboard","Genel bakış","Dashboard")
@@ -686,9 +686,22 @@ def main():
     from PySide6.QtGui import QIcon
     resources=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))
     app.setWindowIcon(QIcon(str(resources/"assets"/"icons"/"lpr-pro.ico")))
+    ops=Operations(str(data_directory()/"operations.sqlite3"))
+    needs_oobe = ops.needs_setup()
+    from .splash_screen import LPRProSplash
+    splash=LPRProSplash("IPScans LPR Pro", "AI LICENSE PLATE RECOGNITION & TELEMETRY", mode="oobe" if needs_oobe else "splash")
+    splash.showFullScreen()
+    app.processEvents()
+
     # Initialize Qt font handling before the sign-in dialog.
     initializer=RecognitionWindow();initializer.close()
-    ops=Operations(str(data_directory()/"operations.sqlite3"))
+
+    loop = QEventLoop()
+    splash.set_on_finish(loop.quit)
+    splash.destroyed.connect(loop.quit)
+    loop.exec()
+    splash.close()
+
     login=Login(ops)
     if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0
     window=ProductWindow(ops,login.session);window.show()

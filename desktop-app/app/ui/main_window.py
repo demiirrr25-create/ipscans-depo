@@ -26,7 +26,7 @@ from app.i18n import DEFAULT_LANGUAGE, t
 from app.ui.scan_progress import ScanProgress
 from app.ui.resources import load_logo_pixmap
 from app.ui.network_map import NetworkMap
-from app.ui.styles import DARK_QSS
+from app.ui.styles import IPScansWelcomeStage, AntigravityWelcomeStage, DARK_QSS
 from app.ui.widgets import DeviceFilterProxyModel, DeviceTableModel, TargetInput
 from app.workers.scan_worker import ScanWorker
 from app.workers.task_worker import TaskWorker
@@ -56,9 +56,9 @@ class MainWindow(QWidget):
         self._metrics = {}
         self._scan_complete = False
         self.setObjectName("AppRoot")
-        self.setWindowTitle("IPscans+ 4.3.0 / Network Intelligence")
-        self.resize(1380, 850)
-        self.setMinimumSize(1000, 650)
+        self.setWindowTitle("IPscans+ · High Performance Network Scanner")
+        self.resize(1380, 880)
+        self.setMinimumSize(1000, 680)
         self.setStyleSheet(DARK_QSS)
         self._build_ui()
         self._batch_timer = QTimer(self)
@@ -86,86 +86,124 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         body = QVBoxLayout(self)
-        body.setContentsMargins(24, 20, 24, 16)
-        body.setSpacing(16)
+        body.setContentsMargins(24, 18, 24, 16)
+        body.setSpacing(12)
+
+        # 1. Executive Top Header
         heading = QHBoxLayout()
+        heading.setSpacing(12)
+
         logo = QLabel()
-        logo.setPixmap(load_logo_pixmap(52))
-        logo.setFixedSize(52, 52)
+        logo.setPixmap(load_logo_pixmap(32))
+        logo.setFixedSize(32, 32)
         heading.addWidget(logo)
-        heading.addSpacing(6)
-        heading.addWidget(QLabel("IPscans+", objectName="TitleText"))
-        heading.addWidget(QLabel("4.3.0 / NETWORK INTELLIGENCE", objectName="VersionBadge"))
+
+        title_label = QLabel("IPscans+", objectName="TitleText")
+        title_label.setStyleSheet("font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 19px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.4px;")
+        heading.addWidget(title_label)
+
         heading.addStretch()
+
         self.navigation = QTabBar()
         self.navigation.setDrawBase(False)
         self.navigation.setAccessibleName(t(self.lang, "navigation"))
         self.navigation.addTab(self._v4("Scan", "Tara"))
         self.navigation.addTab(t(self.lang, "network_map"))
         heading.addWidget(self.navigation)
+
+        heading.addStretch()
+
+        # Export button in Header
+        self.export_button = QPushButton(self._v4("Export Report", "Raporu Dışa Aktar"))
+        self.export_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.export_button.setToolTip(self._v4("Save a PDF with your device names", "Cihaz isimlerinizi içeren PDF raporu kaydedin"))
+        self.export_button.clicked.connect(self._export)
+        heading.addWidget(self.export_button)
+
+        self.tour_btn = QPushButton(self._v4("Info & Guide", "Rehber & Bilgi"), objectName="TourButton")
+        self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.tour_btn.clicked.connect(self._open_feature_tour)
+        self.tour_btn.setVisible(True)
+        heading.addWidget(self.tour_btn)
+
         body.addLayout(heading)
+
+        # 2. Consolidated Ultra-Clean Obsidian Command Deck
         self.scan_controls = QFrame(objectName="ScanCard")
         scan = QVBoxLayout(self.scan_controls)
-        scan.setContentsMargins(20, 18, 20, 18)
-        scan.setSpacing(12)
-        heading = QHBoxLayout()
+        scan.setContentsMargins(16, 12, 16, 12)
+        scan.setSpacing(8)
+
+        cmd_row = QHBoxLayout()
+        cmd_row.setSpacing(8)
+
         self.adapter_select = QComboBox()
         self.adapter_select.setAccessibleName(t(self.lang, "current_adapter"))
         self.adapter_select.currentIndexChanged.connect(self._adapter_changed)
-        heading.addWidget(self.adapter_select, stretch=1)
-        refresh = QPushButton(t(self.lang, "refresh_adapters"))
+        self.adapter_select.setMinimumWidth(210)
+        cmd_row.addWidget(self.adapter_select)
+
+        refresh = QPushButton("↻")
+        refresh.setToolTip(t(self.lang, "refresh_adapters"))
+        refresh.setFixedWidth(32)
         refresh.clicked.connect(self._refresh_adapters)
-        heading.addWidget(refresh)
-        scan.addLayout(heading)
-        self.adapter_details = QLabel(t(self.lang, "detecting_adapter"))
-        self.adapter_details.setWordWrap(True)
-        scan.addWidget(self.adapter_details)
-        row = QHBoxLayout()
+        cmd_row.addWidget(refresh)
+
         self.target_input = TargetInput(self.lang)
-        row.addWidget(self.target_input, stretch=1)
+        cmd_row.addWidget(self.target_input)
+
+        self.filter_edit = QLineEdit()
+        self.filter_edit.setAccessibleName(t(self.lang, "search_placeholder"))
+        self.filter_edit.setPlaceholderText(self._v4("Search devices (IP, MAC, name, port)...", "Cihaz ara (IP, MAC, isim, port)..."))
+        self.filter_edit.setToolTip('ip:192.168.1.0/24  port:443  vendor:Axis  type:"IP Camera"')
+        self.filter_edit.textChanged.connect(self._filter)
+        cmd_row.addWidget(self.filter_edit, stretch=1)
+
+        self.columns_button = QPushButton(t(self.lang, "columns"))
+        self.columns_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.columns_button.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
+        cmd_row.addWidget(self.columns_button)
+
+        self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
+        self.conflicts_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.conflicts_button.clicked.connect(self._show_conflicts)
+        cmd_row.addWidget(self.conflicts_button)
+
         self.scan_btn = QPushButton(t(self.lang, "start_scan"), objectName="PrimaryButton")
         self.stop_btn = QPushButton(t(self.lang, "stop_scan"))
+        self.scan_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.stop_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.scan_btn.clicked.connect(self._start_scan)
         self.stop_btn.clicked.connect(self._stop_scan)
         self.stop_btn.setEnabled(False)
-        row.addWidget(self.scan_btn)
-        row.addWidget(self.stop_btn)
-        scan.addLayout(row)
-        self.range_estimate = QLabel(t(self.lang, "range_hint"))
-        scan.addWidget(self.range_estimate)
-        scan.addWidget(QLabel(self._v4('Automatic discovery · Scan only networks you own or are authorized to assess.',
-            'Otomatik keşif · Yalnızca sahibi olduğunuz veya tarama yetkiniz olan ağları tarayın.')))
+        cmd_row.addWidget(self.scan_btn)
+        cmd_row.addWidget(self.stop_btn)
+        scan.addLayout(cmd_row)
+
+        sub_row = QHBoxLayout()
+        sub_row.setContentsMargins(2, 4, 2, 2)
+        self.adapter_details = QLabel(t(self.lang, "detecting_adapter"), objectName="SubtitleText")
+        self.range_estimate = QLabel(t(self.lang, "range_hint"), objectName="SubtitleText")
+        self.summary_label = QLabel(objectName="ResultsHeading")
+        self.summary_label.setWordWrap(True)
+        sub_row.addWidget(self.adapter_details)
+        sub_row.addSpacing(16)
+        sub_row.addWidget(self.summary_label)
+        sub_row.addStretch(1)
+        sub_row.addWidget(self.range_estimate)
+        scan.addLayout(sub_row)
+
         body.addWidget(self.scan_controls)
+
+        # 3. Main Views Stack
         self.pages = QStackedWidget()
         body.addWidget(self.pages, stretch=1)
+
         self.workspace = QWidget()
         workspace = QVBoxLayout(self.workspace)
         workspace.setContentsMargins(0, 0, 0, 0)
-        self.summary_label = QLabel(objectName="ResultsHeading")
-        self.summary_label.setWordWrap(True)
-        workspace.addWidget(self.summary_label)
-        filters = QHBoxLayout()
-        self.filter_edit = QLineEdit()
-        self.filter_edit.setPlaceholderText(t(self.lang, "search_placeholder"))
-        self.filter_edit.setAccessibleName(t(self.lang, "search_placeholder"))
-        self.filter_edit.setPlaceholderText(self._v4('Search devices…  port:443  source:ONVIF  -type:Unknown',
-            'Cihaz ara…  port:443  source:ONVIF  -type:Unknown'))
-        self.filter_edit.setToolTip('ip:192.168.1.0/24  port:443  vendor:Axis  type:"IP Camera"  source:ONVIF  -type:Unknown')
-        self.filter_edit.textChanged.connect(self._filter)
-        filters.addWidget(self.filter_edit, stretch=1)
-        columns = QPushButton(t(self.lang, "columns"))
-        columns.clicked.connect(lambda: self._column_menu(self.table.horizontalHeader().rect().bottomLeft()))
-        filters.addWidget(columns)
-        self.columns_button = columns
-        self.conflicts_button = QPushButton(t(self.lang, "conflicts"))
-        self.conflicts_button.clicked.connect(self._show_conflicts)
-        filters.addWidget(self.conflicts_button)
-        export = QPushButton(self._v4('Export report', 'Raporu dışa aktar'))
-        self.export_button = export
-        export.setToolTip(self._v4('Save a PDF with your device names', 'Cihaz isimlerinizi içeren PDF raporu kaydedin'))
-        export.clicked.connect(self._export)
-        filters.addWidget(export)
-        workspace.addLayout(filters)
+        workspace.setSpacing(0)
+
         self.views = QStackedWidget()
         self.table = self._build_table()
         self.network_map = NetworkMap(self.lang)
@@ -176,17 +214,24 @@ class MainWindow(QWidget):
         self.views.addWidget(self.network_map)
         workspace.addWidget(self.views, stretch=1)
         self.pages.addWidget(self.workspace)
+
+        # 4. Luminous Progress & Bottom Telemetry
         self.progress_bar = ScanProgress(self)
         self.progress_bar.setAccessibleName(self._v4("Scan progress", "Tarama ilerlemesi"))
         self.progress_bar.setVisible(False)
         body.addWidget(self.progress_bar)
+
+        status_row = QHBoxLayout()
         self.status_label = QLabel(t(self.lang, "status_ready"), objectName="StatusLabel")
         self.status_label.setWordWrap(True)
-        body.addWidget(self.status_label)
+        status_row.addWidget(self.status_label, stretch=1)
+        body.addLayout(status_row)
+
         self.warning_label = QLabel()
         self.warning_label.setWordWrap(True)
         self.warning_label.setVisible(False)
         body.addWidget(self.warning_label)
+
         self.navigation.currentChanged.connect(self._navigate)
         self.navigation.setCurrentIndex(0)
         self._update_summary()
@@ -320,6 +365,11 @@ class MainWindow(QWidget):
         self._map_dirty = True
         if self.views.currentIndex() == 1:
             self.network_map.set_filter_text(text)
+
+    def _open_feature_tour(self) -> None:
+        from app.ui.modern_welcome import ModernWelcomeDialog
+        dialog = ModernWelcomeDialog(self.lang, parent=self)
+        dialog.exec()
 
     def _start_scan(self) -> None:
         if self._worker and self._worker.isRunning() or self._node_worker and self._node_worker.isRunning():

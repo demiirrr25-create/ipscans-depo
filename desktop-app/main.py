@@ -8,6 +8,7 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from app.i18n import DEFAULT_LANGUAGE, get_saved_language
@@ -61,6 +62,30 @@ def _reset_onboarding() -> None:
     QSettings("ipscans", "NetworkScanner").clear()
 
 
+def _reset_cache() -> None:
+    """`--reset-cache` / `--clear-cache`: Clears all IPscans+ local caches,
+    scan history snapshots, custom device names, and registry settings.
+    """
+    import shutil
+    from PyQt6.QtCore import QSettings
+
+    QSettings("ipscans", "NetworkScanner").clear()
+    QSettings("ipscans", "DeviceNames").clear()
+
+    appdata_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share")) / "IPscans+"
+    if appdata_dir.exists():
+        for item in appdata_dir.iterdir():
+            try:
+                if item.is_file() or item.is_symlink():
+                    item.unlink(missing_ok=True)
+                elif item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+            except OSError:
+                pass
+
+    print("[OK] IPscans+ onbellegi, kayitli ayarlari ve tarama gecmisi basariyla sifirlandi.")
+
+
 def _pending_onboarding_steps() -> list[str]:
     steps = []
     if get_saved_language() is None:
@@ -76,6 +101,10 @@ def main() -> None:
     # `--selftest` boots the window and exits immediately (exit code 0 on
     # success) — used by CI to smoke-test a packaged .exe without a real display.
     selftest = "--selftest" in sys.argv
+
+    if "--reset-cache" in sys.argv or "--clear-cache" in sys.argv:
+        _reset_cache()
+        sys.exit(0)
 
     if "--reset-onboarding" in sys.argv:
         _reset_onboarding()
@@ -169,6 +198,10 @@ def main() -> None:
             write_pdf([Device('192.0.2.1', custom_name='Kapı kamerası', open_ports=[443])], pdf, lang='tr')
             if not pdf.read_bytes().startswith(b'%PDF-') or pdf.stat().st_size < 1000:
                 raise RuntimeError('Packaged PDF export failed')
+        from app.ui.modern_welcome import ModernWelcomeDialog
+        welcome = ModernWelcomeDialog(DEFAULT_LANGUAGE)
+        welcome.grab()
+        welcome.close()
         wizard = OnboardingWizard(["language", "terms", "privacy"], DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()  # paints every step, not just the first one shown
@@ -180,7 +213,7 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        _run_onboarding_then_show_main_window(app, app_icon)
+        _run_welcome_then_show_main_window(app, app_icon)
     except Exception:
         sys.excepthook(*sys.exc_info())
         app.quit()
@@ -188,21 +221,29 @@ def main() -> None:
     sys.exit(app.exec())
 
 
-def _run_onboarding_then_show_main_window(app: QApplication, app_icon) -> None:
-    steps = _pending_onboarding_steps()
+def _run_welcome_then_show_main_window(app: QApplication, app_icon) -> None:
+    from app.ui.modern_welcome import ModernWelcomeDialog, is_first_run
+
+    force_welcome = (
+        "--welcome" in sys.argv
+        or "--first-run" in sys.argv
+        or "--reset-welcome" in sys.argv
+        or "--oobe" in sys.argv
+        or "--wizard" in sys.argv
+    )
+    needs_welcome = force_welcome or is_first_run()
     language = get_saved_language() or DEFAULT_LANGUAGE
 
-    if steps:
-        wizard = OnboardingWizard(steps, language, app_icon)
-        if wizard.exec() != OnboardingWizard.DialogCode.Accepted:
-            app.quit()
-            return
+    if needs_welcome:
+        dialog = ModernWelcomeDialog(language)
+        dialog.setWindowIcon(app_icon)
+        dialog.exec()
         language = get_saved_language() or DEFAULT_LANGUAGE
 
     window = MainWindow(language)
     window.setWindowIcon(app_icon)
     window.show()
-    app.window_ref = window  # keep a live reference so it isn't garbage-collected
+    app.window_ref = window
     _log("Main window shown OK")
 
 

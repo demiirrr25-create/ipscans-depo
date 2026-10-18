@@ -9,7 +9,7 @@ import { applications, platformCopy } from "@/content/applications";
 import { scannerCopy } from "@/content/scanner";
 import { PageShell } from "@/components/PageShell";
 import { localizedAlternates } from "@/lib/seo";
-import { AppStepByStepTour } from "@/components/AppStepByStepTour";
+import { AppLiveDemo } from "@/components/AppLiveDemo";
 import { CopyHashButton } from "@/components/CopyHashButton";
 
 type Params = { params: Promise<{ locale: string; id: string }> };
@@ -258,9 +258,9 @@ export default async function ApplicationDetail({ params }: Params) {
         </div>
       </div>
 
-      {/* AUTHENTIC STEP-BY-STEP WORKFLOW WALKTHROUGH & INTERACTIVE PRODUCT TOUR */}
+      {/* LIVE IN-APP VIDEO & INTERACTIVE SIMULATION DEMO */}
       <div className="my-10">
-        <AppStepByStepTour
+        <AppLiveDemo
           appId={isScanner ? "scanner" : "ipcast"}
           appName={app.name}
           version={app.version}
