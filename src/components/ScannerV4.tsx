@@ -1,7 +1,7 @@
 import { uiText } from "@/i18n/ui";
 import type { Locale } from "@/i18n/config";
 import { scannerApplication } from "@/content/applications";
-import { AppLiveDemo } from "./AppLiveDemo";
+import { AppStepByStepTour } from "./AppStepByStepTour";
 
 export function ScannerV4({
   locale,
@@ -104,7 +104,7 @@ export function ScannerV4({
       </div>
 
       <div className="mb-12">
-        <AppLiveDemo
+        <AppStepByStepTour
           appId="scanner"
           appName="IPscans+"
           version="4.5.0"

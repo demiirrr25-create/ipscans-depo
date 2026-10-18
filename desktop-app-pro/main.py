@@ -17,7 +17,6 @@ from pathlib import Path
 _FREE_APP_ROOT = Path(__file__).resolve().parent.parent / "desktop-app"
 sys.path.insert(0, str(_FREE_APP_ROOT))
 
-from PyQt6.QtCore import QTimer  # noqa: E402
 from PyQt6.QtWidgets import QApplication  # noqa: E402
 
 from app.ui.styles import DARK_QSS  # noqa: E402
@@ -83,11 +82,6 @@ def main() -> None:
             window.tabs.setCurrentIndex(i)
             window.tabs.currentWidget().grab()
 
-        from app.ui.splash_screen import IPScansSplash
-        splash = IPScansSplash("IPScans Network Health Pro", "ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS")
-        splash.grab()
-        splash.close()
-
         wizard = ProOnboardingWizard(STEPS, DEFAULT_LANGUAGE, app_icon)
         for _ in wizard.steps:
             wizard.grab()
@@ -97,56 +91,18 @@ def main() -> None:
         print("selftest: pro window created OK")
         sys.exit(0)
 
-    no_splash = "--no-splash" in sys.argv
     steps = _pending_onboarding_steps()
     language = get_saved_language() or DEFAULT_LANGUAGE
-
-    if no_splash:
-        if steps:
-            wizard = ProOnboardingWizard(steps, language, app_icon)
-            if wizard.exec() != ProOnboardingWizard.DialogCode.Accepted:
-                sys.exit(0)
-            language = get_saved_language() or DEFAULT_LANGUAGE
-        window = ProMainWindow(language)
-        window.setWindowIcon(app_icon)
-        app.window_ref = window
-        window.show()
-        sys.exit(app.exec())
-
-    from app.ui.win11_oobe import Win11OOBEWindow
-
-    # First Run: Full-screen Windows 11 Pro OOBE (Hello -> Showcase -> EULA -> Loading -> Window)
     if steps:
-        window = ProMainWindow(language)
-        window.setWindowIcon(app_icon)
-        app.window_ref = window
+        wizard = ProOnboardingWizard(steps, language, app_icon)
+        if wizard.exec() != ProOnboardingWizard.DialogCode.Accepted:
+            sys.exit(0)
+        language = get_saved_language() or DEFAULT_LANGUAGE
 
-        oobe = Win11OOBEWindow(
-            app_name="IPScans Network Health Pro",
-            edition_label="ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS",
-            mode="oobe",
-            language=language,
-            target_window=window,
-        )
-        oobe.showFullScreen()
-        sys.exit(app.exec())
-
-    # Subsequent Runs: Full-screen cinematic splash with SpatialParticles
     window = ProMainWindow(language)
     window.setWindowIcon(app_icon)
+    window.show()
     app.window_ref = window
-
-    splash = Win11OOBEWindow(
-        app_name="IPScans Network Health Pro",
-        edition_label="ADVANCED TOPOLOGY & ANOMALY DIAGNOSTICS",
-        mode="splash",
-        language=language,
-        target_window=window,
-    )
-    splash.showFullScreen()
-    app.processEvents()
-
-    # Win11OOBEWindow autonomously presents Hello -> 6.5s Launch sequence
     sys.exit(app.exec())
 
 

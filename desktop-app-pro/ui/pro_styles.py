@@ -6,93 +6,91 @@ back to Qt's native tab styling.
 
 PRO_EXTRA_QSS = """
 QTabWidget::pane {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 22px;
-    background: #0d0e12;
-    top: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    top: -1px;
 }
 QTabBar::tab {
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.62);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 8px 20px;
-    margin-right: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    border: none;
+    padding: 9px 18px;
+    margin-right: 4px;
     font-size: 12px;
     font-weight: 600;
-    border-radius: 17px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
 }
 QTabBar::tab:hover {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.05);
 }
 QTabBar::tab:selected {
     color: #000000;
     background: #ffffff;
-    border-color: #ffffff;
 }
 
 #HealthCard {
-    background: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 22px;
-}
-QLabel#HealthScoreValue {
-    font-size: 46px;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-}
-QLabel#HealthScoreLabel {
-    color: rgba(255, 255, 255, 0.52);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-}
-#StatCard {
-    background: #0d0e12;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(255, 255, 255, 0.06), stop:1 rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 18px;
 }
-QLabel#StatValue {
-    font-size: 24px;
+QLabel#HealthScoreValue {
+    font-size: 44px;
+    font-weight: 700;
+}
+QLabel#HealthScoreLabel {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.08em;
+}
+#StatCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+}
+QLabel#StatValue {
+    font-size: 22px;
+    font-weight: 700;
 }
 QLabel#StatLabel {
-    color: rgba(255, 255, 255, 0.52);
+    color: rgba(255, 255, 255, 0.5);
     font-size: 11px;
 }
 
 QLabel#SeverityInfo {
-    color: #93c5fd;
+    color: #9fd3ff;
     font-weight: 600;
 }
 QLabel#SeverityWarning {
-    color: #fbbf24;
+    color: #ffd479;
     font-weight: 600;
 }
 QLabel#SeverityCritical {
-    color: #f87171;
+    color: #ff7a7a;
     font-weight: 600;
 }
 
 /* QTreeWidget (Topology tab) isn't covered by the free app's QTableView
    rules, so without this it falls back to Qt's native white background. */
 QTreeView, QTreeWidget {
-    background: #0d0e12;
-    alternate-background-color: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.02);
+    alternate-background-color: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
     outline: none;
     font-size: 12px;
-    padding: 8px;
+    padding: 6px;
 }
 QTreeView::item, QTreeWidget::item {
-    padding: 6px 8px;
+    padding: 4px 6px;
     border: none;
 }
 QTreeView::item:selected, QTreeWidget::item:selected {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.14);
     color: #ffffff;
 }
 QTreeView::branch, QTreeWidget::branch {
@@ -128,10 +126,10 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
 }
 
 QTimeEdit {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 15px;
-    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    padding: 4px 8px;
     font-size: 12px;
 }
 """
