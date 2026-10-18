@@ -5,14 +5,14 @@ type Localized = Record<Locale, string>;
 export const ipcastRelease = {
   version: "2.7.0",
   platform: "Windows 10/11 · x64",
-  bytes: 106646598,
-  sha256: "50053c4666a2c02172321199fe423b7dcb92c1cbd630cc81352340c972819da4",
+  bytes: 106667078,
+  sha256: "ba956ea7644abb3a88b91878931bda63eaedd46fcd9b4948986b36cf5263a3df",
   fileName: "IPCast-2.7.0.exe",
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.7.0/IPCast-2.7.0.exe",
-  publishedAt: "2026-10-18T18:50:00Z",
+  publishedAt: "2026-10-18T18:59:09Z",
   installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.7.0/IPCast-2.7.0-Setup.exe",
-  installerBytes: 34849851,
-  installerSha256: "edec16f613108bdaa9fbc9f4db65e0ccaa8dcc12f18d4f049558e8dcf21d66dc",
+  installerBytes: 34868115,
+  installerSha256: "1d2ea1f05c81d20e294c2844b60f26a95c09c2c882d4101a83a2a43fc38f39a3",
   releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.7.0",
 } as const;
 
