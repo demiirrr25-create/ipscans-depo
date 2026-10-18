@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Google_Sans_Flex, Google_Sans_Code } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import { isLocale, locales, ogLocales, localeTags } from "@/i18n/config";
 import { getDictionary, getPublicDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
-import { posts, localizedPostText } from "@/content/posts";
 import { Footer } from "@/components/Footer";
 import { GoogleTag } from "@/components/GoogleTag";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -14,23 +13,24 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "optional",
+const flex = Google_Sans_Flex({
+  variable: "--font-flex",
+  subsets: ["latin", "latin-ext"],
+  axes: ["opsz"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const code = Google_Sans_Code({
+  variable: "--font-code",
   subsets: ["latin"],
-  display: "optional",
+  display: "swap",
+  preload: false,
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
-  subsets: ["latin"],
-  display: "optional",
-});
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  colorScheme: "light",
+};
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -148,11 +148,10 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       dir={locale === "ar" ? "rtl" : "ltr"}
-      data-theme="dark"
-      className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${flex.variable} ${code.variable} h-full antialiased`}
     >
       <head />
-      <body className="min-h-full flex flex-col bg-black text-white selection:bg-white selection:text-black">
+      <body className="flex min-h-full flex-col bg-surface text-ink">
         {(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GOOGLE_ADS_ID) && (
           <Script id="google-consent-default" strategy="beforeInteractive">
             {`
@@ -175,12 +174,12 @@ export default async function LocaleLayout({
         />
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black"
+          className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-ink focus:px-5 focus:py-2.5 focus:text-sm focus:font-medium focus:text-white"
         >
           {dict.a11y.skipToContent}
         </a>
-        <Header locale={locale} dict={getPublicDictionary(locale)} articles={posts.filter(post=>post.body[locale]).map(post=>({name:localizedPostText(post.title,locale),description:localizedPostText(post.excerpt,locale),href:`/${locale}/blog/${post.slug}`}))} />
-        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1">
+        <Header locale={locale} dict={getPublicDictionary(locale)} />
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 outline-none">
           {children}
         </main>
         <Footer locale={locale} dict={dict} />
