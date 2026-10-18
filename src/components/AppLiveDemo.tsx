@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import type { Locale } from "@/i18n/config";
-import { uiText } from "@/i18n/ui";
 
 interface AppLiveDemoProps {
   appId: "scanner" | "ipcast" | "lpr-pro";
@@ -24,7 +22,6 @@ export function AppLiveDemo({
   const [activeTab, setActiveTab] = useState<"scan" | "map" | "telemetry">("scan");
   const [isPlaying, setIsPlaying] = useState(true);
   const [scanProgress, setScanProgress] = useState(68);
-  const [discoveredCount, setDiscoveredCount] = useState(6);
   const [selectedDevice, setSelectedDevice] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

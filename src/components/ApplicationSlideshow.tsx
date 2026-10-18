@@ -34,7 +34,6 @@ export function ApplicationSlideshow({
   slides,
   locale,
   appName,
-  platform = "WINDOWS 10/11 · x64",
 }: ApplicationSlideshowProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);

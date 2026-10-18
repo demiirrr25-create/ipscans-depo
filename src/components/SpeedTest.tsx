@@ -56,28 +56,27 @@ export function SpeedTest({
   const gradientId = useId();
   const [update, setUpdate] = useState<SpeedUpdate | null>(null);
   const [result, setResult] = useState<SpeedResult | null>(null);
-  const [trace, setTrace] = useState<Trace[]>([]);
+  const [, setTrace] = useState<Trace[]>([]);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState("");
   const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState<TestHistoryItem[]>([]);
+  const [history, setHistory] = useState<TestHistoryItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored).slice(0, 20) : [];
+    } catch {
+      return [];
+    }
+  });
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
 
   const controller = useRef<AbortController | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Load history from localStorage on mount
+  // Sync parameters from query string on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setHistory(JSON.parse(stored).slice(0, 20));
-      }
-    } catch {
-      // Ignore storage errors in privacy mode
-    }
-
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const d = parseFloat(params.get("dl") || "");
@@ -85,29 +84,31 @@ export function SpeedTest({
       const p = parseFloat(params.get("ping") || "");
       const j = parseFloat(params.get("jit") || "");
       if (!isNaN(d) && !isNaN(u) && !isNaN(p)) {
-        setResult({
-          download: d,
-          upload: u,
-          idle: p,
-          minPing: p,
-          jitter: isNaN(j) ? null : j,
-          packetLoss: 0,
-          loadedDownload: null,
-          loadedUpload: null,
-          seconds: 12,
-          bytes: (d + u) * 125000 * 6,
-          requestsFailed: 0,
-          latencySamples: 10,
-          stability: null,
-          capped: false,
-          timestamp: new Date().toISOString(),
-          trace: [],
-          server: {
-            id: "shared",
-            name: "Verified Telemetry Record",
-            location: "IPScans Network Core",
-            country: "Global",
-          },
+        queueMicrotask(() => {
+          setResult({
+            download: d,
+            upload: u,
+            idle: p,
+            minPing: p,
+            jitter: isNaN(j) ? null : j,
+            packetLoss: 0,
+            loadedDownload: null,
+            loadedUpload: null,
+            seconds: 12,
+            bytes: (d + u) * 125000 * 6,
+            requestsFailed: 0,
+            latencySamples: 10,
+            stability: null,
+            capped: false,
+            timestamp: new Date().toISOString(),
+            trace: [],
+            server: {
+              id: "shared",
+              name: "Verified Telemetry Record",
+              location: "IPScans Network Core",
+              country: "Global",
+            },
+          });
         });
       }
     }

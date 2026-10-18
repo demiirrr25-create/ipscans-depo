@@ -1,5 +1,4 @@
 import type { Locale } from "@/i18n/config";
-import { uiText } from "@/i18n/ui";
 import type { ApplicationSlide } from "@/components/ApplicationSlideshow";
 
 export function getScannerSlides(locale: Locale): ApplicationSlide[] {

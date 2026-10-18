@@ -13,6 +13,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "work/**",
+    "cortex/**",
+    "desktop-app/**",
+    "desktop-app-pro/**",
   ]),
 ]);
 
