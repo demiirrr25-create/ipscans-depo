@@ -10,6 +10,8 @@ import { IPCastReleaseDetails } from "@/components/IPCastReleaseDetails";
 import { ipcastRelease } from "@/content/applications";
 import { ipcastProductCopy } from "@/content/ipcast-product";
 import { IPCastProductSections } from "@/components/IPCastProductSections";
+import { ApplicationSlideshow } from "@/components/ApplicationSlideshow";
+import { getIpcastSlides } from "@/content/application-slides";
 
 export async function generateMetadata({
   params,
@@ -44,25 +46,13 @@ export default async function IpCastPage({
   return (
     <PageShell title={t.title} subtitle={t.subtitle}>
       <div className="mx-auto max-w-5xl">
-        <div className="feature-media-card mb-12">
-          <div className="feature-media-card__bar">
-            <span className="feature-media-card__title">
-              IPCast v{ipcastRelease.version}
-            </span>
-            <span className="feature-media-card__tag">
-              {ipcastRelease.platform} · NATIVE WIN64 · SHA-256 VERIFIED
-            </span>
-          </div>
-          <div className="feature-media-card__viewport">
-            <Image
-              src="/ipcast-v25-preview.png"
-              alt={`IPCast ${ipcastRelease.version}`}
-              width={1440}
-              height={900}
-              className="feature-image"
-              priority
-            />
-          </div>
+        <div className="mb-12">
+          <ApplicationSlideshow
+            slides={getIpcastSlides(locale)}
+            locale={locale}
+            appName="IPCast"
+            platform={ipcastRelease.platform}
+          />
         </div>
 
         <div className="agy-surface-card p-6 sm:p-10">

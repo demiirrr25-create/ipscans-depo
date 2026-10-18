@@ -1,7 +1,8 @@
 import { uiText } from "@/i18n/ui";
 import type { Locale } from "@/i18n/config";
 import { scannerApplication } from "@/content/applications";
-import { ScannerScreenshotShowcase } from "./ScannerScreenshotShowcase";
+import { ApplicationSlideshow } from "./ApplicationSlideshow";
+import { getScannerSlides } from "@/content/application-slides";
 
 export function ScannerV4({
   locale,
@@ -55,8 +56,7 @@ export function ScannerV4({
       <div className="agy-surface-card mb-12 grid items-end gap-10 p-7 sm:p-10 lg:grid-cols-[1.3fr_.7fr]">
         <div>
           <p className="agy-eyebrow">
-            IPSCANS+ {scannerApplication.version} /{" "}
-            {uiText(locale, "NETWORK INTELLIGENCE", "AĞ KEŞFİ")}
+            IPSCANS+ / {uiText(locale, "NETWORK INTELLIGENCE", "AĞ KEŞFİ")}
           </p>
           <Heading
             id="scanner-v4-title"
@@ -104,7 +104,13 @@ export function ScannerV4({
         </div>
       </div>
 
-      <ScannerScreenshotShowcase locale={locale} />
+      <div className="mb-12">
+        <ApplicationSlideshow
+          slides={getScannerSlides(locale)}
+          locale={locale}
+          appName="IPscans+"
+        />
+      </div>
 
       <div className="mt-12 grid gap-6 md:grid-cols-2">
         {features.map(([code, title, body]) => (

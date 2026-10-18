@@ -21,7 +21,7 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   return {
-    title: "IPscans+ 4.3 — Network Intelligence",
+    title: "IPscans+ — Network Intelligence",
     description: scannerApplication.description[locale],
     alternates: {
       canonical: `/${locale}/ip-scanner`,

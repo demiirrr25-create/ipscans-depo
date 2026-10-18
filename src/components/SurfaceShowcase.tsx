@@ -11,30 +11,7 @@ import { toolPath } from "@/lib/tool-routes";
 import { MorphingSolutionParticles } from "./SpatialParticles";
 import { TypewriterHeader } from "./TypewriterHeader";
 
-const BOUNCER_ICONS = [
-  "code_blocks",
-  "device_hub",
-  "check_circle",
-  "file_copy",
-  "spark",
-  "dashboard_customize",
-  "keyboard_tab",
-  "refresh",
-  "developer_mode_tv",
-  "keyboard_return",
-  "commit",
-  "folder",
-  "search_spark",
-  "code",
-  "data_object",
-  "merge",
-  "deployed_code",
-  "spark",
-  "plus_code",
-  "terminal",
-  "keyboard_command_key",
-  "pen_spark",
-] as const;
+
 
 export function SurfaceShowcase({ locale }: { locale: Locale }) {
   const [hoverSolution, setHoverSolution] = useState<number | null>(null);
@@ -100,34 +77,11 @@ export function SurfaceShowcase({ locale }: { locale: Locale }) {
 
   return (
     <>
-      {/* Section 4: IPScans .agent-first-section with 22 bouncing circle icons */}
+      {/* Section 4: IPScans Mission Statement */}
       <section className="agent-first-section" data-agent-first-section>
-        <ul className="icon-list" data-bouncer-list aria-hidden="true">
-          {BOUNCER_ICONS.map((iconId, idx) => (
-            <li key={`${iconId}-${idx}`} className="grid-col" data-bouncer>
-              <div
-                className="bouncer"
-                translate="no"
-                style={{ animationDelay: `${idx * -0.14}s` }}
-              >
-                <svg
-                  viewBox="0 0 960 960"
-                  width="1em"
-                  height="1em"
-                  fill="currentColor"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <use href={`/assets/image/icons/sprite-icons.svg#${iconId}`} />
-                </svg>
-              </div>
-            </li>
-          ))}
-        </ul>
-
         <div className="grid-container text-container" data-text-container>
           <div className="grid-row">
-            <div className="grid-col col-xs-4 col-sm-8 col-md-9">
+            <div className="grid-col col-xs-4 col-sm-8 col-md-10">
               <div className="heading-3 agent-first-text" data-typed-header>
                 <TypewriterHeader
                   text={agentFirstStatement}

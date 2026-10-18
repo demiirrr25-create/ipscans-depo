@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ApplicationSlideshow } from "@/components/ApplicationSlideshow";
 import { PageShell } from "@/components/PageShell";
+import { getLprSlides } from "@/content/application-slides";
 import { lprRelease } from "@/content/lpr-release";
 import { isLocale } from "@/i18n/config";
 import { localizedAlternates } from "@/lib/seo";
@@ -14,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isLocale(locale)) return {};
   const tr = locale === "tr";
   return {
-    title: `IPScans LPR Pro v${lprRelease.version} · ${tr ? "Windows Plaka Tanıma ve Operatör Konsolu" : "Windows License Plate Recognition & Operator Workspace"}`,
+    title: `IPScans LPR Pro · ${tr ? "Windows Plaka Tanıma ve Operatör Konsolu" : "Windows License Plate Recognition & Operator Workspace"}`,
     description: tr
       ? "Windows 10/11 x64 için yerel plaka okuma, 5 bölmeli canlı operatör çalışma alanı, bağımsız kalibrasyon çizgileri, blok/daire araç kütüğü ve şifreli olay kuyruğu."
       : "Local license plate recognition for Windows 10/11 x64 with 5-page live operator workspace, independent calibration lines, vehicle/resident registry, and durable encrypted event delivery.",
@@ -82,7 +84,7 @@ export default async function LprProPage({ params }: Props) {
 
   return (
     <PageShell
-      eyebrow={`WINDOWS 10/11 x64 · v${lprRelease.version}`}
+      eyebrow="WINDOWS 10/11 x64"
       title="IPScans LPR Pro"
       subtitle={
         tr
@@ -101,8 +103,7 @@ export default async function LprProPage({ params }: Props) {
           <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
             <div>
               <p className="caption font-mono uppercase tracking-[0.14em] text-[#9aa0a6]">
-                {tr ? "Masaüstü Operatör Paketi · v" : "Desktop Operator Suite · v"}
-                {lprRelease.version}
+                {tr ? "Masaüstü Operatör Paketi" : "Desktop Operator Suite"}
               </p>
               <h2 className="heading-4 mt-3 text-white">
                 {tr
@@ -111,12 +112,12 @@ export default async function LprProPage({ params }: Props) {
               </h2>
               <p className="body mt-4 text-[#9aa0a6]">
                 {tr
-                  ? "IPScans LPR Pro v1.0.0; 5 bölmeli operatör arayüzü, bağımsız tetik/okuma çizgileri, blok ve sakin kayıt sistemi ile Windows 10/11 x64 üzerinde tamamen yerel olarak çalışır."
-                  : "IPScans LPR Pro v1.0.0 runs locally on Windows 10/11 x64 with a 5-page operator workspace, independent trigger/recognition lines, and resident vehicle registry."}
+                  ? "IPScans LPR Pro; 5 bölmeli operatör arayüzü, bağımsız tetik/okuma çizgileri, blok ve sakin kayıt sistemi ile Windows 10/11 x64 üzerinde tamamen yerel olarak çalışır."
+                  : "IPScans LPR Pro runs locally on Windows 10/11 x64 with a 5-page operator workspace, independent trigger/recognition lines, and resident vehicle registry."}
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <a href={lprRelease.url} className="button button-primary">
-                  <span>{tr ? `Windows Kurulumunu İndir · v${lprRelease.version} EXE` : `Download Windows Installer · v${lprRelease.version} EXE`}</span>
+                  <span>{tr ? "Windows Kurulumunu İndir · EXE" : "Download Windows Installer · EXE"}</span>
                 </a>
                 <a
                   href={lprRelease.releaseUrl}
@@ -143,25 +144,13 @@ export default async function LprProPage({ params }: Props) {
           </div>
         </section>
 
-        <figure className="feature-media mb-12">
-          <div className="feature-media-card">
-            <div className="feature-media-card__bar">
-              <span className="feature-media-card__dots">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span className="feature-media-card__tag">IPScans LPR Pro v{lprRelease.version} · Windows x64</span>
-            </div>
-            <Image
-              src="/lpr-pro-preview.png"
-              alt={`LPR Pro ${lprRelease.version} · ${tr ? "operatör çalışma alanı" : "operator workspace"}`}
-              width={1440}
-              height={900}
-              className="feature-image"
-            />
-          </div>
-        </figure>
+        <section className="mb-12">
+          <ApplicationSlideshow
+            slides={getLprSlides(locale)}
+            locale={locale}
+            appName="IPScans LPR Pro"
+          />
+        </section>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(([title, body], idx) => (

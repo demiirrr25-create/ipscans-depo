@@ -9,7 +9,8 @@ import { applications, platformCopy } from "@/content/applications";
 import { scannerCopy } from "@/content/scanner";
 import { PageShell } from "@/components/PageShell";
 import { localizedAlternates } from "@/lib/seo";
-import { ScannerScreenshotShowcase } from "@/components/ScannerScreenshotShowcase";
+import { ApplicationSlideshow } from "@/components/ApplicationSlideshow";
+import { getScannerSlides, getIpcastSlides } from "@/content/application-slides";
 import { CopyHashButton } from "@/components/CopyHashButton";
 
 type Params = { params: Promise<{ locale: string; id: string }> };
@@ -258,35 +259,15 @@ export default async function ApplicationDetail({ params }: Params) {
         </div>
       </div>
 
-      {/* DEDICATED IN-APP SCREENSHOT SHOWCASE — NO OTHER APPS */}
-      {isScanner ? (
-        <div className="my-12">
-          <ScannerScreenshotShowcase locale={locale} />
-        </div>
-      ) : (
-        <div className="my-12">
-          <div className="feature-media-card">
-            <div className="feature-media-card__bar">
-              <span className="feature-media-card__title">
-                {app.name} v{app.version}
-              </span>
-              <span className="feature-media-card__tag">
-                {app.platform} · NATIVE WIN64 · SHA-256 VERIFIED
-              </span>
-            </div>
-            <div className="feature-media-card__viewport">
-              <Image
-                src="/ipcast-v25-preview.png"
-                alt={`${app.name} ${app.version}`}
-                width={1440}
-                height={900}
-                className="feature-image"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* DEDICATED IN-APP INTERACTIVE SLIDESHOW SHOWCASE */}
+      <div className="my-12">
+        <ApplicationSlideshow
+          slides={isScanner ? getScannerSlides(locale) : getIpcastSlides(locale)}
+          locale={locale}
+          appName={app.name}
+          platform={app.platform}
+        />
+      </div>
 
       {/* Comprehensive Architectural & Capabilities Breakdown */}
       <div className="product-detail-body mb-12">
