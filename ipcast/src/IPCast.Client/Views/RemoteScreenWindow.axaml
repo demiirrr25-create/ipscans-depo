@@ -10,11 +10,19 @@
         <Grid RowDefinitions="Auto,*">
             <!-- Collapsible session toolbar (spec §5) -->
             <Border Name="Toolbar" Grid.Row="0" Background="{DynamicResource Surface0Brush}"
-                    BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
+                    BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="16,10">
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Name="SessionAddressText" Text="Remote session" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1" Name="SessionStatusText" Text="TLS encrypted" Classes="hint" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border Width="3" Height="15" CornerRadius="2" Background="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                            <TextBlock Name="SessionAddressText" Text="Remote session" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Ellipse Width="6" Height="6" Fill="{DynamicResource SuccessBrush}" VerticalAlignment="Center" />
+                                <TextBlock Name="SessionStatusText" Text="TLS 1.3 · E2E Encrypted" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
                     </Grid>
                     <WrapPanel Orientation="Horizontal">
                         <Button Classes="toolbar" Content="Information" Click="OnInformationClick" AutomationProperties.Name="Connection information" />
@@ -58,17 +66,29 @@
                             <Button Name="ClearAnnotationsButton" IsVisible="False" Content="Clear annotations" Click="OnClearAnnotationsClick" />
                             <TextBlock Text="Drawings appear in your viewer. Input is paused while drawing." Classes="hint" />
                         </StackPanel></Flyout></Button.Flyout></Button>
-                        <Button Classes="primary" Content="Disconnect" MinHeight="34" Padding="12,6" Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
+                        <Button Classes="primary" Content="Disconnect" MinHeight="34" Padding="14,6" Click="OnDisconnectClick" AutomationProperties.Name="Disconnect session" />
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
-            <ScrollViewer Name="ScreenViewport" Grid.Row="1"
-                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"
-                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-                <Image Name="ScreenImage" Stretch="Uniform" StretchDirection="DownOnly" Focusable="True"
-                       AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
-            </ScrollViewer>
+            <Border Grid.Row="1" Background="{DynamicResource ObsidianBrush}">
+                <Panel>
+                    <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="32,24" MaxWidth="420"
+                            IsVisible="{Binding #ScreenImage.Source, Converter={x:Static ObjectConverters.IsNull}}">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <Path Data="M2,2 L30,2 L30,21 L2,21 Z M16,21 L16,27 M8,27 L24,27" Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.6" Width="32" Height="30" Stretch="Uniform" HorizontalAlignment="Center" />
+                            <TextBlock Text="Remote Desktop Stage" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <TextBlock Text="Waiting for encrypted video frames from the remote host." Classes="hint" HorizontalAlignment="Center" TextAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <ScrollViewer Name="ScreenViewport"
+                                  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"
+                                  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                        <Image Name="ScreenImage" Stretch="Uniform" StretchDirection="DownOnly" Focusable="True"
+                               AutomationProperties.Name="Remote desktop. Keyboard and pointer control require permission." />
+                    </ScrollViewer>
+                </Panel>
+            </Border>
             <views:AnnotationSurface Name="Annotations" Grid.Row="1" IsVisible="False" />
         </Grid>
 

@@ -74,6 +74,7 @@ class ProMainWindow(QWidget):
 
         # Tab 1: the exact free-app scanner screen, unmodified.
         self.scanner_tab = MainWindow(lang)
+        self.scanner_tab.set_embedded_mode(True)
         self.tabs.addTab(self.scanner_tab, t(lang, "tab_scanner"))
 
         self.dashboard_tab = DashboardWidget(lang)
@@ -147,6 +148,8 @@ class ProMainWindow(QWidget):
         if hasattr(self, "scanner_tab") and hasattr(self.scanner_tab, "apply_theme"):
             self.scanner_tab.apply_theme(resolved)
         if hasattr(self, "dashboard_tab"):
+            if hasattr(self.dashboard_tab, "apply_theme"):
+                self.dashboard_tab.apply_theme(resolved)
             self.dashboard_tab.starting_spinner.update()
             self.dashboard_tab.update()
         self.update()

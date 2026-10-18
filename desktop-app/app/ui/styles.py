@@ -352,30 +352,85 @@ QCheckBox::indicator:disabled {{
     background: {t["surface2"]};
 }}
 
-QLineEdit, QComboBox, QTimeEdit {{
+QLineEdit {{
     background: {t["surface"]};
     border: 1px solid {t["borderStrong"]};
-    border-radius: 16px;
-    padding: 9px 14px;
+    border-radius: 10px;
+    padding: 7px 14px;
     font-size: 13px;
     color: {t["text"]};
     selection-background-color: {t["signal"]};
     selection-color: #FFFFFF;
 }}
-QLineEdit:focus, QComboBox:focus, QTimeEdit:focus {{
+QLineEdit:focus {{
     border: 1.5px solid {t["borderFocus"]};
 }}
-QLineEdit:disabled, QComboBox:disabled, QTimeEdit:disabled {{
+QLineEdit:disabled {{
     background: {t["surface2"]};
     color: {t["textDisabled"]};
     border-color: {t["border"]};
+}}
+
+QComboBox {{
+    background: {t["surface"]};
+    border: 1px solid {t["borderStrong"]};
+    border-radius: 10px;
+    padding: 6px 32px 6px 14px;
+    font-size: 13px;
+    color: {t["text"]};
+    min-height: 22px;
+    selection-background-color: {t["signal"]};
+    selection-color: #FFFFFF;
+}}
+QComboBox:hover {{
+    border-color: {t["borderFocus"]};
+}}
+QComboBox:focus {{
+    border: 1.5px solid {t["borderFocus"]};
+}}
+QComboBox:disabled {{
+    background: {t["surface2"]};
+    color: {t["textDisabled"]};
+    border-color: {t["border"]};
+}}
+QComboBox::drop-down {{
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 28px;
+    border: none;
+    background: transparent;
+}}
+
+QSpinBox, QDoubleSpinBox, QTimeEdit, QDateTimeEdit {{
+    background: {t["surface"]};
+    border: 1px solid {t["borderStrong"]};
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: {t["text"]};
+    selection-background-color: {t["signal"]};
+    selection-color: #FFFFFF;
+}}
+QSpinBox:focus, QDoubleSpinBox:focus, QTimeEdit:focus, QDateTimeEdit:focus {{
+    border: 1.5px solid {t["borderFocus"]};
+}}
+QSpinBox:disabled, QDoubleSpinBox:disabled, QTimeEdit:disabled, QDateTimeEdit:disabled {{
+    background: {t["surface2"]};
+    color: {t["textDisabled"]};
+    border-color: {t["border"]};
+}}
+QSpinBox::up-button, QDoubleSpinBox::up-button, QTimeEdit::up-button, QDateTimeEdit::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button, QTimeEdit::down-button, QDateTimeEdit::down-button {{
+    border: none;
+    background: transparent;
+    width: 18px;
 }}
 
 QComboBox QAbstractItemView {{
     background-color: {t["surface1"]};
     color: {t["text"]};
     border: 1px solid {t["borderStrong"]};
-    border-radius: 12px;
+    border-radius: 10px;
     outline: none;
     selection-background-color: {t["signalSoft"]};
     selection-color: {t["text"]};
@@ -414,10 +469,10 @@ QPushButton {{
     background: {t["surface2"]};
     color: {t["text"]};
     border: 1px solid {t["borderStrong"]};
-    border-radius: 18px;
-    padding: 9px 18px;
+    border-radius: 10px;
+    padding: 8px 18px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
 }}
 QPushButton:hover {{
     background: {t["surfaceHover"]};
@@ -430,12 +485,31 @@ QPushButton:disabled {{
     border-color: {t["border"]};
 }}
 
+QPushButton#IconButton {{
+    background: {t["surface1"]};
+    color: {t["text"]};
+    border: 1px solid {t["borderStrong"]};
+    padding: 0px;
+    min-width: 36px;
+    max-width: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+}}
+QPushButton#IconButton:hover {{
+    background: {t["surfaceHover"]};
+    border-color: {t["borderFocus"]};
+    color: {t["text"]};
+}}
+
 QPushButton#PrimaryButton {{
     background: {t["accent"]};
     color: {t["accentText"]};
     border: 1px solid {t["accent"]};
-    border-radius: 18px;
-    padding: 10px 24px;
+    border-radius: 10px;
+    padding: 9px 22px;
     font-weight: 600;
     font-size: 13px;
 }}
@@ -459,10 +533,10 @@ QPushButton#GhostButton, QPushButton#TourButton {{
     background: {t["surface1"]};
     color: {t["textSecondary"]};
     border: 1px solid {t["borderStrong"]};
-    border-radius: 18px;
-    padding: 9px 16px;
+    border-radius: 10px;
+    padding: 8px 16px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
 }}
 QPushButton#GhostButton:hover, QPushButton#TourButton:hover {{
     background: {t["surfaceHover"]};
@@ -475,7 +549,11 @@ QPushButton#ThemeToggleButton {{
     color: {t["text"]};
     border: 1px solid {t["borderStrong"]};
     border-radius: 17px;
-    padding: 6px 14px;
+    padding: 0px;
+    min-width: 72px;
+    max-width: 72px;
+    min-height: 34px;
+    max-height: 34px;
     font-size: 12px;
     font-weight: 600;
 }}
@@ -790,6 +868,7 @@ QFrame#Win11FeatureCard:hover {{
 LIGHT_QSS = build_qss("light")
 DARK_QSS = build_qss("dark")
 MONOCHROME_QSS = DARK_QSS
+_ACTIVE_THEME: str = "dark"
 
 
 class ThemeManager(QObject):
@@ -802,6 +881,7 @@ class ThemeManager(QObject):
         super().__init__()
         self._callbacks: list[Callable[[str], None]] = []
         self._theme: str | None = None
+        self._emitting: bool = False
 
     @classmethod
     def instance(cls) -> ThemeManager:
@@ -815,35 +895,44 @@ class ThemeManager(QObject):
         return cls._instance
 
     def current_theme(self) -> str:
+        global _ACTIVE_THEME
+        if self._theme in ("light", "dark"):
+            _ACTIVE_THEME = self._theme
+            return self._theme
         settings = QSettings(THEME_SETTINGS_ORG, THEME_SETTINGS_APP)
         saved = settings.value(THEME_SETTINGS_KEY, None)
         if isinstance(saved, str) and saved.lower() in ("light", "dark"):
             self._theme = saved.lower()
-            return self._theme
-        if self._theme in ("light", "dark"):
+            _ACTIVE_THEME = self._theme
             return self._theme
         self._theme = detect_os_theme()
+        _ACTIVE_THEME = self._theme
         return self._theme
 
     def set_theme(self, theme: str, persist: bool = True) -> str:
+        global _ACTIVE_THEME, MONOCHROME_QSS
         normalized = "light" if str(theme).lower() == "light" else "dark"
         self._theme = normalized
+        _ACTIVE_THEME = normalized
         if persist:
             settings = QSettings(THEME_SETTINGS_ORG, THEME_SETTINGS_APP)
             settings.setValue(THEME_SETTINGS_KEY, normalized)
             settings.sync()
 
-        global MONOCHROME_QSS
         MONOCHROME_QSS = LIGHT_QSS if normalized == "light" else DARK_QSS
 
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.setStyleSheet(build_qss(normalized))
 
-        try:
-            self.theme_changed.emit(normalized)
-        except RuntimeError:
-            pass
+        if not self._emitting:
+            self._emitting = True
+            try:
+                self.theme_changed.emit(normalized)
+            except RuntimeError:
+                pass
+            finally:
+                self._emitting = False
 
         alive_callbacks: list[Callable[[str], None]] = []
         for cb in list(self._callbacks):
@@ -853,6 +942,15 @@ class ThemeManager(QObject):
             except RuntimeError:
                 pass
         self._callbacks = alive_callbacks
+
+        if isinstance(app, QApplication):
+            for widget in app.allWidgets():
+                if isinstance(widget, ThemeToggleButton):
+                    try:
+                        widget.sync_theme(normalized)
+                    except RuntimeError:
+                        pass
+
         return normalized
 
     def toggle(self) -> str:
@@ -885,36 +983,68 @@ def register_theme_listener(callback: Callable[[str], None]) -> None:
 
 
 def apply_theme(widget_or_app=None, theme: str | None = None) -> str:
-    """Applies the IPScans v2 theme to a QApplication or QWidget."""
-    active = (theme or get_current_theme()).lower()
-    if active not in ("light", "dark"):
-        active = "dark"
+    """Applies the IPScans v2 theme to a QApplication or QWidget and syncs ThemeManager."""
+    global _ACTIVE_THEME, MONOCHROME_QSS
+    mgr = ThemeManager.instance()
+    if theme is not None and str(theme).lower() in ("light", "dark"):
+        active = str(theme).lower()
+        mgr._theme = active
+        _ACTIVE_THEME = active
+        MONOCHROME_QSS = LIGHT_QSS if active == "light" else DARK_QSS
+        try:
+            settings = QSettings(THEME_SETTINGS_ORG, THEME_SETTINGS_APP)
+            settings.setValue(THEME_SETTINGS_KEY, active)
+            settings.sync()
+        except Exception:
+            pass
+    else:
+        active = get_current_theme().lower()
+        if active not in ("light", "dark"):
+            active = "dark"
+        _ACTIVE_THEME = active
+
     qss = build_qss(active)
-    if widget_or_app is None:
-        app = QApplication.instance()
-        if isinstance(app, QApplication):
-            app.setStyleSheet(qss)
-        return active
-    if isinstance(widget_or_app, QApplication):
-        widget_or_app.setStyleSheet(qss)
-        return active
-    if isinstance(widget_or_app, QWidget):
+    app = QApplication.instance()
+    if widget_or_app is None or isinstance(widget_or_app, QApplication):
+        target_app = widget_or_app if isinstance(widget_or_app, QApplication) else app
+        if isinstance(target_app, QApplication):
+            target_app.setStyleSheet(qss)
+    elif isinstance(widget_or_app, QWidget):
         widget_or_app.setStyleSheet(qss)
         widget_or_app.update()
+
+    if theme is not None and not mgr._emitting:
+        mgr._emitting = True
+        try:
+            mgr.theme_changed.emit(active)
+        except RuntimeError:
+            pass
+        finally:
+            mgr._emitting = False
+
+    if isinstance(app, QApplication):
+        for widget in app.allWidgets():
+            if isinstance(widget, ThemeToggleButton):
+                try:
+                    widget.sync_theme(active)
+                except RuntimeError:
+                    pass
+
     return active
 
 
 class ThemeToggleButton(QPushButton):
-    """Sleek segmented Sun / Moon theme toggle pill button for top headers."""
+    """Sleek segmented Sun / Moon theme toggle pill button (72x34) for top headers."""
 
     def __init__(self, parent: QWidget | None = None, lang: str = "en") -> None:
         super().__init__(parent)
         self._lang = lang
         self._hovered = False
+        self._theme = get_current_theme()
         self.setObjectName("ThemeToggleButton")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFixedSize(68, 34)
-        self.sync_theme(get_current_theme())
+        self.setFixedSize(72, 34)
+        self.sync_theme(self._theme)
         self.clicked.connect(self._on_clicked)
         ThemeManager.instance().theme_changed.connect(self._on_theme_changed)
 
@@ -933,8 +1063,9 @@ class ThemeToggleButton(QPushButton):
 
     def sync_theme(self, theme: str | None = None) -> None:
         active = (theme or get_current_theme()).lower()
+        self._theme = "light" if active == "light" else "dark"
         is_tr = str(self._lang).lower().startswith("tr")
-        if active == "dark":
+        if self._theme == "dark":
             tip = "Açık temaya geç (Light Mode)" if is_tr else "Switch to Light Mode"
         else:
             tip = "Koyu temaya geç (Dark Mode)" if is_tr else "Switch to Dark Mode"
@@ -957,6 +1088,7 @@ class ThemeToggleButton(QPushButton):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
         theme = get_current_theme()
+        self._theme = theme
         is_light = theme == "light"
         tokens = LIGHT_TOKENS if is_light else DARK_TOKENS
 
@@ -1031,7 +1163,7 @@ class IPScansWelcomeStage(QWidget):
         self._subtitle = subtitle_text if subtitle_text is not None else subtitle
         self._compact = compact
         self._phase = 0.0
-        self._typed_chars = 0
+        self._typed_chars = len(self._full_headline)
         self.setFixedHeight(78 if compact else 148)
 
         self._anim_timer = QTimer(self)
@@ -1041,10 +1173,9 @@ class IPScansWelcomeStage(QWidget):
         ThemeManager.instance().theme_changed.connect(lambda _: self.update())
 
     def set_copy(self, eyebrow: str, headline: str, subtitle: str = "") -> None:
-        if headline != self._full_headline:
-            self._typed_chars = 0
         self._eyebrow = eyebrow
         self._full_headline = headline
+        self._typed_chars = len(self._full_headline)
         self._subtitle = subtitle
         self.update()
 
@@ -1063,13 +1194,13 @@ class IPScansWelcomeStage(QWidget):
 
         rect = QRectF(0.5, 0.5, max(1.0, self.width() - 1.0), max(1.0, self.height() - 1.0))
         path = QPainterPath()
-        path.addRoundedRect(rect, 20.0, 20.0)
+        path.addRoundedRect(rect, 16.0, 16.0)
 
         bg = QLinearGradient(0.0, 0.0, float(self.width()), float(self.height()))
         if is_light:
-            bg.setColorAt(0.0, QColor("#F8F9FA"))
-            bg.setColorAt(0.55, QColor("#F1F3F6"))
-            bg.setColorAt(1.0, QColor("#EBF1FF"))
+            bg.setColorAt(0.0, QColor("#EEF2FF"))
+            bg.setColorAt(0.55, QColor("#F1F5F9"))
+            bg.setColorAt(1.0, QColor("#E0E7FF"))
         else:
             bg.setColorAt(0.0, QColor(11, 13, 19))
             bg.setColorAt(0.55, QColor(7, 8, 12))
@@ -1081,9 +1212,9 @@ class IPScansWelcomeStage(QWidget):
         palette = (
             [
                 QColor("#2F6BFF"),
-                QColor("#3C4252"),
-                QColor("#676F82"),
-                QColor("#8A9099"),
+                QColor("#3B82F6"),
+                QColor("#64748B"),
+                QColor("#94A3B8"),
             ]
             if is_light
             else [
@@ -1104,7 +1235,7 @@ class IPScansWelcomeStage(QWidget):
                 if dx_c * dx_c + dy_c * dy_c < 0.72:
                     continue
                 wave = math.sin(nx * 5.2 + self._phase + ny * 2.1)
-                alpha = int(max(12, min(115, 28 + (wave + 1.0) * 30)))
+                alpha = int(max(20, min(135, 38 + (wave + 1.0) * 35)))
                 col = QColor(palette[(r * cols + c) % len(palette)])
                 col.setAlpha(alpha)
 
@@ -1121,51 +1252,44 @@ class IPScansWelcomeStage(QWidget):
                 painter.restore()
         painter.restore()
 
-        painter.setPen(QPen(QColor(tokens["borderStrong"]), 1.0))
+        painter.setPen(QPen(QColor("#CBD5E1" if is_light else tokens["borderStrong"]), 1.0))
         painter.drawPath(path)
 
-        left_pad = 22.0
-        top_pad = 14.0 if self._compact else 18.0
-        mono_font = QFont("Consolas", 8)
-        mono_font.setBold(True)
-        painter.setFont(mono_font)
-        painter.setPen(QColor(tokens["signal"]))
-        painter.drawText(
-            QRectF(left_pad, top_pad, float(self.width()) - 44.0, 16.0),
-            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
-            self._eyebrow.upper(),
-        )
-
-        shown = self._full_headline[: max(1, self._typed_chars)]
-        title_font = QFont("Segoe UI", 14 if self._compact else 18)
-        title_font.setWeight(QFont.Weight.DemiBold)
-        painter.setFont(title_font)
-        painter.setPen(QColor(tokens["text"]))
-        title_y = 34.0 if self._compact else 44.0
-        title_rect = QRectF(left_pad, title_y, float(self.width()) - 44.0, 32.0)
-        painter.drawText(
-            title_rect,
-            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
-            shown,
-        )
-
-        fm = painter.fontMetrics()
-        cursor_x = min(float(self.width()) - 28.0, left_pad + fm.horizontalAdvance(shown) + 5.0)
-        blink_on = (self._typed_chars < len(self._full_headline)) or (int(self._phase * 2.2) % 2 == 0)
-        if blink_on:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(QColor(tokens["signal"])))
-            painter.drawRoundedRect(QRectF(cursor_x, title_y + 5.0, 3.0, 21.0), 1.5, 1.5)
-
-        if not self._compact and self._subtitle:
-            sub_font = QFont("Segoe UI", 10)
-            painter.setFont(sub_font)
-            painter.setPen(QColor(tokens["textSecondary"]))
+        if self._eyebrow or self._full_headline:
+            left_pad = 22.0
+            top_pad = 14.0 if self._compact else 18.0
+            mono_font = QFont("Consolas", 8)
+            mono_font.setBold(True)
+            painter.setFont(mono_font)
+            painter.setPen(QColor(tokens["signal"]))
             painter.drawText(
-                QRectF(left_pad, 84.0, float(self.width()) - 44.0, 44.0),
-                int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap),
-                self._subtitle,
+                QRectF(left_pad, top_pad, float(self.width()) - 44.0, 16.0),
+                int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+                self._eyebrow.upper(),
             )
+
+            shown = self._full_headline[: max(1, self._typed_chars)]
+            title_font = QFont("Segoe UI", 13 if self._compact else 16)
+            title_font.setWeight(QFont.Weight.DemiBold)
+            painter.setFont(title_font)
+            painter.setPen(QColor(tokens["text"]))
+            title_y = 34.0 if self._compact else 42.0
+            title_rect = QRectF(left_pad, title_y, float(self.width()) - 44.0, 32.0)
+            painter.drawText(
+                title_rect,
+                int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+                shown,
+            )
+
+            if not self._compact and self._subtitle:
+                sub_font = QFont("Segoe UI", 10)
+                painter.setFont(sub_font)
+                painter.setPen(QColor(tokens["textSecondary"]))
+                painter.drawText(
+                    QRectF(left_pad, 82.0, float(self.width()) - 44.0, 44.0),
+                    int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap),
+                    self._subtitle,
+                )
 
         painter.end()
 
@@ -1201,47 +1325,60 @@ class Win11SilkCanvas(QWidget):
             return
 
         is_light = get_current_theme() == "light"
+        rect = QRectF(0.5, 0.5, w - 1.0, h - 1.0)
+        clip = QPainterPath()
+        clip.addRoundedRect(rect, 14.0, 14.0)
+
         bg = QLinearGradient(0, 0, w, h)
         if is_light:
-            bg.setColorAt(0.0, QColor("#F8F9FA"))
-            bg.setColorAt(0.5, QColor("#F1F3F6"))
-            bg.setColorAt(1.0, QColor("#EBF1FF"))
+            bg.setColorAt(0.0, QColor("#EEF2FF"))
+            bg.setColorAt(0.5, QColor("#F1F5F9"))
+            bg.setColorAt(1.0, QColor("#E0E7FF"))
         else:
-            bg.setColorAt(0.0, QColor(9, 10, 15))
-            bg.setColorAt(0.5, QColor(6, 7, 10))
-            bg.setColorAt(1.0, QColor(11, 13, 18))
-        painter.fillRect(self.rect(), QBrush(bg))
+            bg.setColorAt(0.0, QColor(13, 16, 24))
+            bg.setColorAt(0.5, QColor(9, 11, 17))
+            bg.setColorAt(1.0, QColor(17, 21, 32))
+        painter.fillPath(clip, QBrush(bg))
 
-        wave_rgb = (47, 107, 255) if is_light else (255, 255, 255)
+        painter.save()
+        painter.setClipPath(clip)
+        wave_rgb = (47, 107, 255) if is_light else (76, 130, 255)
         for layer in range(3):
             phase_offset = self._phase + layer * 1.35
             y_base = h * (0.35 + layer * 0.18)
 
             path = QPainterPath()
             path.moveTo(0, h)
-            path.lineTo(0, y_base + math.sin(phase_offset) * 22)
+            path.lineTo(0, y_base + math.sin(phase_offset) * 18)
 
             cp1_x = w * 0.3
-            cp1_y = y_base + math.sin(phase_offset + 1.2) * 36 - 25
+            cp1_y = y_base + math.sin(phase_offset + 1.2) * 28 - 18
             cp2_x = w * 0.7
-            cp2_y = y_base + math.cos(phase_offset + 2.1) * 32 + 25
+            cp2_y = y_base + math.cos(phase_offset + 2.1) * 24 + 18
             end_x = w
-            end_y = y_base + math.sin(phase_offset + 3.1) * 24
+            end_y = y_base + math.sin(phase_offset + 3.1) * 18
 
             path.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
             path.lineTo(w, h)
             path.closeSubpath()
 
-            grad = QLinearGradient(0, y_base - 30, w, h)
-            grad.setColorAt(0.0, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 32 - layer * 6))
-            grad.setColorAt(0.6, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 14 - layer * 3))
-            grad.setColorAt(1.0, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 0))
+            grad = QLinearGradient(0, y_base - 24, w, h)
+            grad.setColorAt(0.0, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 52 - layer * 10))
+            grad.setColorAt(0.6, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 24 - layer * 5))
+            grad.setColorAt(1.0, QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], 4))
             painter.fillPath(path, QBrush(grad))
 
             crest = QPainterPath()
-            crest.moveTo(0, y_base + math.sin(phase_offset) * 22)
+            crest.moveTo(0, y_base + math.sin(phase_offset) * 18)
             crest.cubicTo(cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y)
-            painter.setPen(QPen(QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], int(50 - layer * 12)), 1.2))
+            painter.setPen(QPen(QColor(wave_rgb[0], wave_rgb[1], wave_rgb[2], int(140 - layer * 30)), 1.5))
             painter.drawPath(crest)
+        painter.restore()
+
+        border_col = QColor("#CBD5E1" if is_light else "#222735")
+        painter.setPen(QPen(border_col, 1.0))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(clip)
 
         painter.end()
+

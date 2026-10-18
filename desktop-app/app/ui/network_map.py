@@ -55,14 +55,29 @@ class DeviceNode(QGraphicsObject):
         return QRectF(0, 0, 240, 90)
 
     def paint(self, painter: QPainter, option, widget=None) -> None:
-        theme = get_current_theme()
+        theme = (
+            self.menu_owner._theme
+            if self.menu_owner is not None and hasattr(self.menu_owner, "_theme")
+            else get_current_theme()
+        )
         tokens = get_tokens(theme)
         is_light = theme == "light"
 
         active_sel = self.isSelected() or self.hasFocus()
-        border_col = QColor(tokens["signal"] if active_sel else tokens["borderStrong"])
-        border_w = 1.8 if active_sel else 1.0
-        card_fill = QColor(tokens["surface"] if is_light else tokens["surface2"])
+        if is_light:
+            border_col = QColor("#2F6BFF" if active_sel else "#CBD5E1")
+            border_w = 1.8 if active_sel else 1.2
+            card_fill = QColor("#FFFFFF")
+            primary_col = QColor("#0B0D12")
+            secondary_col = QColor("#3C4252")
+            tertiary_col = QColor("#676F82")
+        else:
+            border_col = QColor("#4C82FF" if active_sel else "#2C3242")
+            border_w = 1.8 if active_sel else 1.0
+            card_fill = QColor("#111520")
+            primary_col = QColor("#F5F7FA")
+            secondary_col = QColor("#A8B0C2")
+            tertiary_col = QColor("#6E778C")
 
         painter.setPen(QPen(border_col, border_w))
         painter.setBrush(card_fill)
@@ -77,7 +92,7 @@ class DeviceNode(QGraphicsObject):
 
         icon_for_type(self.device.device_type, theme).paint(painter, 12, 14, 28, 28)
 
-        painter.setPen(QColor(tokens["text"]))
+        painter.setPen(primary_col)
         painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
         painter.drawText(
             QRectF(50, 10, 166, 24),
@@ -88,13 +103,13 @@ class DeviceNode(QGraphicsObject):
             ),
         )
         painter.setFont(QFont("Segoe UI", 9))
-        painter.setPen(QColor(tokens["textSecondary"]))
+        painter.setPen(secondary_col)
         name = self.device.ip if self.device.custom_name else self.device.display_name
         painter.drawText(
             QRectF(50, 34, 176, 20),
             painter.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, 172),
         )
-        painter.setPen(QColor(tokens["textTertiary"]))
+        painter.setPen(tertiary_col)
         painter.drawText(
             QRectF(12, 62, 220, 20),
             f"{self.device.reachability} | {self.device.device_type}",
@@ -137,12 +152,16 @@ class DeviceNode(QGraphicsObject):
             QApplication.clipboard().setText(device.ip)
 
 
+NodeItem = DeviceNode
+
+
 class GroupNode(QGraphicsObject):
     activated = pyqtSignal(str)
 
-    def __init__(self, label, key):
+    def __init__(self, label, key, menu_owner=None):
         super().__init__()
         self.label, self.key = label, key
+        self.menu_owner = menu_owner
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
         self.setToolTip(label + " / Enter")
 
@@ -150,9 +169,14 @@ class GroupNode(QGraphicsObject):
         return QRectF(0, 0, 260, 40)
 
     def paint(self, painter, option, widget=None):
-        tokens = get_tokens()
+        theme = (
+            self.menu_owner._theme
+            if self.menu_owner is not None and hasattr(self.menu_owner, "_theme")
+            else get_current_theme()
+        )
+        tokens = get_tokens(theme)
         painter.setPen(QPen(QColor(tokens["borderStrong"]), 1, Qt.PenStyle.DashLine))
-        painter.setBrush(QColor(tokens["surface2"]))
+        painter.setBrush(QColor(tokens["surface"] if theme == "light" else tokens["surface2"]))
         painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), 14, 14)
         painter.setPen(QColor(tokens["textSecondary"]))
         painter.drawText(self.boundingRect(), Qt.AlignmentFlag.AlignCenter, self.label)
@@ -169,18 +193,20 @@ class GroupNode(QGraphicsObject):
 
 
 class GraphView(QGraphicsView):
+    def __init__(self, scene: QGraphicsScene, parent=None) -> None:
+        super().__init__(scene, parent)
+        self._theme = get_current_theme()
+
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:  # noqa: N802
-        theme = get_current_theme()
-        tokens = get_tokens(theme)
+        theme = getattr(self, "_theme", None) or get_current_theme()
         is_light = theme == "light"
-        bg_col = QColor(tokens["surface1"] if is_light else tokens["bg"])
+        bg_col = QColor("#F8F9FA" if is_light else "#07080B")
         painter.fillRect(rect, bg_col)
 
         # Subtle radial topology rings painted directly onto background
-        ring_col = QColor(tokens["borderStrong"] if is_light else tokens["border"])
-        ring_col.setAlpha(95 if is_light else 75)
+        ring_col = QColor("#E2E8F0" if is_light else "#141821")
         painter.save()
-        painter.setPen(QPen(ring_col, 1.0, Qt.PenStyle.DotLine))
+        painter.setPen(QPen(ring_col, 1.2, Qt.PenStyle.DotLine))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         center = QPointF(120.0, 95.0)
         for radius in (180.0, 360.0, 560.0, 780.0):
@@ -211,6 +237,9 @@ class NetworkMap(QWidget):
         self.devices: list[Device] = []
         self.gateway: str | None = None
         self.local_network: str | None = None
+        self._last_devices: list[Device] = []
+        self._last_gateway: str | None = None
+        self._last_network: str | None = None
         self.needle = ""
         self.collapsed: set[str] = set()
         self.nodes: dict[str, DeviceNode] = {}
@@ -243,7 +272,7 @@ class NetworkMap(QWidget):
         self.view.setAccessibleDescription(t(lang, "graph_accessibility"))
         self.view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.view.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.MinimalViewportUpdate)
+        self.view.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.view.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         layout.addWidget(self.view, stretch=1)
 
@@ -252,11 +281,17 @@ class NetworkMap(QWidget):
 
     def apply_theme(self, theme: str | None = None) -> None:
         self._theme = (theme or get_current_theme()).lower()
-        tokens = get_tokens(self._theme)
-        bg = tokens["surface1"] if self._theme == "light" else tokens["bg"]
+        self.view._theme = self._theme
+        is_light = self._theme == "light"
+        bg = "#F8F9FA" if is_light else "#07080B"
+        border = "#E5E7EB" if is_light else "#1E222D"
         self.scene.setBackgroundBrush(QColor(bg))
+        self.view.setBackgroundBrush(QColor(bg))
+        self.view.setStyleSheet(
+            f"QGraphicsView {{ background-color: {bg}; border: 1px solid {border}; border-radius: 16px; }}"
+        )
         if self.devices:
-            self._render()
+            self.refresh(self._last_devices, self._last_gateway, self._last_network)
         else:
             self.scene.update()
         self.view.viewport().update()
@@ -272,6 +307,7 @@ class NetworkMap(QWidget):
         local_network: str | None = None,
     ) -> None:
         self.devices, self.gateway, self.local_network = list(devices), gateway, local_network
+        self._last_devices, self._last_gateway, self._last_network = self.devices, gateway, local_network
         self._render()
 
     def _render(self) -> None:
@@ -353,7 +389,7 @@ class NetworkMap(QWidget):
             for i, ip in enumerate(shown):
                 positions[ip] = (cursor + i % 4 * 260, 50 + i // 4 * 112)
             if len(shown) < len(unresolved):
-                group = GroupNode(f"+ {len(unresolved) - len(shown)} devices · double-click to expand", "unresolved")
+                group = GroupNode(f"+ {len(unresolved) - len(shown)} devices · double-click to expand", "unresolved", self)
                 group.activated.connect(self.expand_group)
                 group.setPos(cursor, 50 + 6 * 112)
                 self.scene.addItem(group)
@@ -370,7 +406,7 @@ class NetworkMap(QWidget):
             self.scene.addItem(node)
             self.nodes[ip] = node
             if ip in groups:
-                group = GroupNode(f"+ {groups[ip]} branches · double-click to expand", ip)
+                group = GroupNode(f"+ {groups[ip]} branches · double-click to expand", ip, self)
                 group.activated.connect(self.expand_group)
                 group.setPos(x, y + 100)
                 self.scene.addItem(group)

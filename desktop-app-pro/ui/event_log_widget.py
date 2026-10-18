@@ -30,11 +30,13 @@ class EventLogWidget(QWidget):
     def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
-        outer.setSpacing(10)
+        outer.setContentsMargins(16, 16, 16, 16)
+        outer.setSpacing(12)
 
         filter_row = QHBoxLayout()
         self.filter_combo = QComboBox()
+        self.filter_combo.setMinimumWidth(160)
+        self.filter_combo.setMaximumWidth(220)
         self.filter_combo.addItems([
             t(lang, "filter_all"), t(lang, "filter_critical"),
             t(lang, "filter_warning"), t(lang, "filter_info"),
@@ -50,11 +52,17 @@ class EventLogWidget(QWidget):
         ]
         self.table = QTableWidget(0, len(columns))
         self.table.setHorizontalHeaderLabels(columns)
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeMode.ResizeToContents
-        )
+        self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(True)
+        header.setMinimumSectionSize(64)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        for col_idx, width in enumerate([150, 95, 130, 115, 130, 380, 100]):
+            self.table.setColumnWidth(col_idx, width)
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(38)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         outer.addWidget(self.table)
 

@@ -12,12 +12,12 @@
     <ScrollViewer><StackPanel Margin="28" Spacing="18">
 
         <StackPanel Spacing="4">
-            <TextBlock Text="INCOMING CONNECTION" Classes="eyebrow" />
+            <TextBlock Text="INCOMING CONNECTION" Classes="eyebrow" Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="A device wants to connect" FontSize="20" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
-        <Border Classes="device" Padding="16">
+        <Border Background="{DynamicResource Surface0Brush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14">
             <StackPanel Spacing="6">
                 <TextBlock Name="DeviceIdText" FontSize="24" FontWeight="SemiBold" FontFamily="Cascadia Mono, Consolas, monospace"
                            Foreground="{DynamicResource TextPrimaryBrush}" />

@@ -7,49 +7,53 @@
             <TextBlock Name="ShareStatus" Text="No folder is shared. Choose a local folder, then select Share this folder." Classes="hint" />
         </StackPanel>
         <Grid Name="Operations" Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
-            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
-                <TextBlock Text="LOCAL DEVICE" Classes="eyebrow" />
-                <StackPanel Grid.Row="1" Spacing="6">
-                    <TextBlock Name="LocalRootText" Classes="hint" />
-                    <TextBox Name="LocalPath" Text="" PlaceholderText="Path relative to local folder" />
-                    <WrapPanel>
-                        <Button Content="Choose folder" Click="OnChooseFolder" />
-                        <Button Content="Share this folder" Click="OnShareFolder" />
-                        <Button Content="Stop sharing" Click="OnStopSharing" />
-                        <Button Content="Up" Click="OnLocalUp" />
-                        <Button Content="Refresh" Click="OnLocalRefresh" />
+            <Border Classes="card" Padding="16">
+                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
+                    <TextBlock Text="LOCAL DEVICE" Classes="eyebrow" Foreground="{DynamicResource AccentBrush}" />
+                    <StackPanel Grid.Row="1" Spacing="6">
+                        <TextBlock Name="LocalRootText" Classes="hint" />
+                        <TextBox Name="LocalPath" Text="" PlaceholderText="Path relative to local folder" />
+                        <WrapPanel>
+                            <Button Content="Choose folder" Click="OnChooseFolder" />
+                            <Button Content="Share this folder" Click="OnShareFolder" />
+                            <Button Content="Stop sharing" Click="OnStopSharing" />
+                            <Button Content="Up" Click="OnLocalUp" />
+                            <Button Content="Refresh" Click="OnLocalRefresh" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <ListBox Name="LocalFiles" Grid.Row="2" Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="1" CornerRadius="10" DoubleTapped="OnLocalOpen" AutomationProperties.Name="Local files" />
+                    <WrapPanel Grid.Row="3">
+                        <Button Content="Upload →" Classes="primary" Click="OnUpload" />
+                        <Button Content="New folder" Click="OnLocalMkdir" />
+                        <Button Content="Rename" Click="OnLocalRename" />
+                        <Button Content="Copy" Click="OnLocalCopy" />
+                        <Button Content="Move" Click="OnLocalMove" />
+                        <Button Content="Delete" Classes="danger" Click="OnLocalDelete" />
                     </WrapPanel>
-                </StackPanel>
-                <ListBox Name="LocalFiles" Grid.Row="2" DoubleTapped="OnLocalOpen" AutomationProperties.Name="Local files" />
-                <WrapPanel Grid.Row="3">
-                    <Button Content="Upload →" Classes="primary" Click="OnUpload" />
-                    <Button Content="New folder" Click="OnLocalMkdir" />
-                    <Button Content="Rename" Click="OnLocalRename" />
-                    <Button Content="Copy" Click="OnLocalCopy" />
-                    <Button Content="Move" Click="OnLocalMove" />
-                    <Button Content="Delete" Classes="danger" Click="OnLocalDelete" />
-                </WrapPanel>
-            </Grid>
-            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
-                <TextBlock Name="RemoteTitle" Text="REMOTE DEVICE" Classes="eyebrow" />
-                <StackPanel Grid.Row="1" Spacing="6">
-                    <TextBlock Text="Paths are relative to the folder selected by the remote owner." Classes="hint" />
-                    <TextBox Name="RemotePath" Text="" PlaceholderText="Path relative to shared folder" />
-                    <WrapPanel>
-                        <Button Content="Up" Click="OnRemoteUp" />
-                        <Button Content="Refresh" Click="OnRemoteRefresh" />
+                </Grid>
+            </Border>
+            <Border Grid.Column="1" Classes="card" Padding="16">
+                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
+                    <TextBlock Name="RemoteTitle" Text="REMOTE DEVICE" Classes="eyebrow" Foreground="{DynamicResource AccentBrush}" />
+                    <StackPanel Grid.Row="1" Spacing="6">
+                        <TextBlock Text="Paths are relative to the folder selected by the remote owner." Classes="hint" />
+                        <TextBox Name="RemotePath" Text="" PlaceholderText="Path relative to shared folder" />
+                        <WrapPanel>
+                            <Button Content="Up" Click="OnRemoteUp" />
+                            <Button Content="Refresh" Click="OnRemoteRefresh" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <ListBox Name="RemoteFiles" Grid.Row="2" Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="1" CornerRadius="10" DoubleTapped="OnRemoteOpen" AutomationProperties.Name="Remote files" />
+                    <WrapPanel Grid.Row="3">
+                        <Button Content="← Download" Classes="primary" Click="OnDownload" />
+                        <Button Content="New folder" Click="OnRemoteMkdir" />
+                        <Button Content="Rename" Click="OnRemoteRename" />
+                        <Button Content="Copy" Click="OnRemoteCopy" />
+                        <Button Content="Move" Click="OnRemoteMove" />
+                        <Button Content="Delete" Classes="danger" Click="OnRemoteDelete" />
                     </WrapPanel>
-                </StackPanel>
-                <ListBox Name="RemoteFiles" Grid.Row="2" DoubleTapped="OnRemoteOpen" AutomationProperties.Name="Remote files" />
-                <WrapPanel Grid.Row="3">
-                    <Button Content="← Download" Classes="primary" Click="OnDownload" />
-                    <Button Content="New folder" Click="OnRemoteMkdir" />
-                    <Button Content="Rename" Click="OnRemoteRename" />
-                    <Button Content="Copy" Click="OnRemoteCopy" />
-                    <Button Content="Move" Click="OnRemoteMove" />
-                    <Button Content="Delete" Classes="danger" Click="OnRemoteDelete" />
-                </WrapPanel>
-            </Grid>
+                </Grid>
+            </Border>
         </Grid>
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="12">
             <ProgressBar Name="TransferProgress" Minimum="0" Maximum="100" />

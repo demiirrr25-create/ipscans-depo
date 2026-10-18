@@ -144,22 +144,29 @@ def test_camera_rename_updates_feed_and_tile_without_worker_restart(product, mon
 
 def test_light_and_dark_theme_switching_across_windows(product):
     app, ops, session, window = product
-    from lpr.theme import DARK_TOKENS, LIGHT_TOKENS, get_theme, get_tokens, set_theme, toggle_theme
+    from lpr.theme import DARK_TOKENS, LIGHT_TOKENS, apply_theme, get_theme, get_tokens, set_theme, toggle_theme
     from lpr.application import Login
     from lpr.desktop import RecognitionWindow
     from lpr.splash_screen import LPRProSplash
 
     set_theme('light', app=app, persist=False)
+    apply_theme(window, 'light')
     app.processEvents()
     assert get_theme() == 'light'
     assert get_tokens()['bg'] == LIGHT_TOKENS['bg'] == '#FFFFFF'
     assert hasattr(window, 'theme_toggle_btn')
+    assert '#FFFFFF' in window.styleSheet()
+    for child in (window.camera_management, window.registry_widget, window.passage_browser):
+        assert child.styleSheet() == ''
     assert not window.grab().isNull()
 
     toggled = toggle_theme(app=app, persist=False)
     app.processEvents()
     assert toggled == 'dark' and get_theme() == 'dark'
     assert get_tokens()['bg'] == DARK_TOKENS['bg'] == '#07080B'
+    assert '#07080B' in window.styleSheet()
+    for child in (window.camera_management, window.registry_widget, window.passage_browser):
+        assert child.styleSheet() == ''
     assert not window.grab().isNull()
 
     login = Login(ops)
@@ -173,4 +180,5 @@ def test_light_and_dark_theme_switching_across_windows(product):
     assert hasattr(desktop_win, 'theme_toggle_btn')
     desktop_win.close(); desktop_win.deleteLater()
     app.processEvents()
+
 

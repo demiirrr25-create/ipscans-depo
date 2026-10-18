@@ -27,7 +27,7 @@ class MySitesWidget(QWidget):
         self.lang = lang
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
+        outer.setContentsMargins(0, 4, 0, 4)
         outer.setSpacing(10)
 
         self.note_label = QLabel("")
@@ -36,6 +36,8 @@ class MySitesWidget(QWidget):
         outer.addWidget(self.note_label)
 
         self.refresh_btn = QPushButton(t(lang, "my_sites_refresh"), objectName="GhostButton")
+        self.refresh_btn.setMinimumWidth(150)
+        self.refresh_btn.setMaximumWidth(220)
         self.refresh_btn.clicked.connect(self.refresh)
         outer.addWidget(self.refresh_btn)
 
@@ -46,6 +48,9 @@ class MySitesWidget(QWidget):
         ]
         self.table = QTableWidget(0, len(columns))
         self.table.setHorizontalHeaderLabels(columns)
+        self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setMinimumHeight(180)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.verticalHeader().setVisible(False)

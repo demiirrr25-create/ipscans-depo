@@ -54,7 +54,7 @@ public partial class MainWindowViewModel
         try
         {
             using var updater = new IPCast.Network.GitHubUpdater();
-            var version = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(2, 7, 0);
+            var version = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(2, 8, 0);
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             var update = await updater.CheckAsync(new Version(version.Major, version.Minor, version.Build), timeout.Token);
             UpdateStatus = update is null ? "IPCast is up to date." : $"IPCast {update.Version} is available. Open Settings → Check for updates to review and install.";

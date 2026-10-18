@@ -68,6 +68,7 @@ const I18N = {
     'nav.settings': 'Ayarlar',
     'aside.workspace': 'Yerel çalışma alanı',
     'aside.privacy': 'Görüntüler bu bilgisayarda kalır.',
+    'aside.engine': 'Yerel RTSP + Gemma 4 Motoru',
     'aside.rc': 'V1 sürüm adayı',
     'header.badge': 'LOCAL FIRST',
     'overview.eyebrow': 'GÖREN KAMERALAR. ANLAYAN SİSTEM.',
@@ -78,6 +79,15 @@ const I18N = {
     'overview.workspace': 'Çalışma alanın',
     'overview.liveStatus': 'Gerçek bağlantı durumu',
     'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 12 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 12 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.',
+    'stats.cameras': 'KAMERALAR',
+    'stats.rules': 'ETKİN KURALLAR',
+    'stats.events': 'İNCELEME BEKLEYEN',
+    'empty.camerasTitle': 'Henüz kamera eklenmedi.',
+    'empty.camerasDesc': 'IP adresi ve giriş bilgileriyle ilk kameranı bağla.',
+    'empty.rulesTitle': 'Kütüphaneden bir konfigürasyon seç.',
+    'empty.rulesDesc': 'Aydınlatma, hareket ve bölge, görüntü sağlığı ve bağlantı kuralları model gerektirmez.',
+    'empty.eventsTitle': 'Henüz olay yok.',
+    'empty.eventsDesc': 'Tespit edilen olayların açıklamaları ve yerel klipleri burada görünür. Örnek veya sahte olay gösterilmez.',
     'cameras.eyebrow': '01 / GÖR',
     'cameras.title': 'Kameraların.',
     'cameras.subtitle': 'Aynı ağdaki cihazları keşfet veya RTSP ile bağlan.',
@@ -127,6 +137,7 @@ const I18N = {
     'settings.title': 'Kontrol sende.',
     'settings.engineTitle': 'Yerel analiz motoru',
     'settings.modelLabel': 'Ollama görsel model adı',
+    'settings.ollamaLead': 'Önce <a href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">Ollama’yı indirip açın ↗</a>. Ardından aşağıdaki düğme Gemma 3 4B’yi indirir, görsel yanıtını test eder ve Cortex’e bağlar. Model indirmesi birkaç GB internet ve disk alanı kullanır. Yeterli RAM/GPU gerekir; hazır durumu donanımda test yanıtı alınmadan gösterilmez.',
     'settings.installBtn': 'Gemma’yı kur ve bağla',
     'settings.cancelBtn': 'İptal et',
     'settings.testModelBtn': 'Model bağlantısını kontrol et',
@@ -149,6 +160,7 @@ const I18N = {
     'nav.settings': 'Settings',
     'aside.workspace': 'Local workspace',
     'aside.privacy': 'Video frames stay on this PC.',
+    'aside.engine': 'Local AI Vision Engine',
     'aside.rc': 'V1 release candidate',
     'header.badge': 'LOCAL FIRST',
     'overview.eyebrow': 'CAMERAS THAT SEE. SYSTEM THAT UNDERSTANDS.',
@@ -159,6 +171,15 @@ const I18N = {
     'overview.workspace': 'Your workspace',
     'overview.liveStatus': 'Live connection status',
     'overview.hint': 'Add a camera, define an event rule, and start monitoring. Ollama is required for Vision AI rules. 12 deterministic local rule types run without an AI model. 12 Vision AI templates are included for animals, weather, and tampering.',
+    'stats.cameras': 'CAMERAS',
+    'stats.rules': 'ACTIVE RULES',
+    'stats.events': 'PENDING REVIEW',
+    'empty.camerasTitle': 'No cameras added yet.',
+    'empty.camerasDesc': 'Connect your first camera with its IP address and RTSP credentials.',
+    'empty.rulesTitle': 'Select a configuration from the library.',
+    'empty.rulesDesc': 'Lighting, motion & zone, image health, and connection rules run without an AI model.',
+    'empty.eventsTitle': 'No events recorded yet.',
+    'empty.eventsDesc': 'Detected event descriptions and local evidence clips appear here. No sample or fake events are shown.',
     'cameras.eyebrow': '01 / SEE',
     'cameras.title': 'Your cameras.',
     'cameras.subtitle': 'Discover ONVIF devices on your LAN or connect via RTSP.',
@@ -208,6 +229,7 @@ const I18N = {
     'settings.title': 'You are in control.',
     'settings.engineTitle': 'Local analysis engine',
     'settings.modelLabel': 'Ollama vision model name',
+    'settings.ollamaLead': 'First <a href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">download &amp; open Ollama ↗</a>. Then use the button below to pull the vision model, verify inference, and bind it to Cortex.',
     'settings.installBtn': 'Install & connect Gemma',
     'settings.cancelBtn': 'Cancel',
     'settings.testModelBtn': 'Check model connection',
@@ -276,8 +298,8 @@ async function api(path, data) {
   return j;
 }
 
-function empty(title, description) {
-  return `<div class="empty"><span class="symbol">◈</span><h2>${title}</h2>${description}</div>`;
+function empty(title, description, icon = '◈') {
+  return `<div class="empty"><span class="symbol" aria-hidden="true">${icon}</span><h2>${title}</h2><p>${description}</p></div>`;
 }
 
 function updateCrumb(name) {
@@ -319,7 +341,7 @@ document.addEventListener('click', async e => {
    ========================================================================== */
 
 function camera(c) {
-  return `<article class="card"><div class="sectiontitle"><h2>${esc(c.name)}</h2><span class="tag">RTSP</span></div><div class="status">${esc(c.status)}</div>${c.status === 'Bağlı' ? `<img class="cameraimg" src="/api/frame/${c.id}?t=${Date.now()}" alt="${esc(c.name)} güncel görüntüsü">` : '<div class="empty" style="margin-top:16px">Canlı görüntü için izlemeyi başlatın.</div>'}<p class="fine">${esc(c.analysis)}${c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn'}${c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn'}${c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255'}</p><div class="actions"><button data-action="toggle" data-id="${c.id}">${c.status === 'Durduruldu' ? 'İzlemeyi başlat' : 'İzlemeyi durdur'}</button> <button data-action="camera-delete" data-id="${c.id}">Kamerayı sil</button></div></article>`;
+  return `<article class="card"><div class="sectiontitle"><h2>${esc(c.name)}</h2><span class="tag">RTSP</span></div><div class="status">${esc(c.status)}</div>${c.status === 'Bağlı' ? `<img class="cameraimg" src="/api/frame/${c.id}?t=${Date.now()}" alt="${esc(c.name)} güncel görüntüsü">` : '<div class="empty" style="margin-top:16px"><p>Canlı görüntü için izlemeyi başlatın.</p></div>'}<p class="fine">${esc(c.analysis)}${c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn'}${c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn'}${c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255'}</p><div class="actions"><button data-action="toggle" data-id="${c.id}">${c.status === 'Durduruldu' ? 'İzlemeyi başlat' : 'İzlemeyi durdur'}</button> <button data-action="camera-delete" data-id="${c.id}">Kamerayı sil</button></div></article>`;
 }
 
 async function refresh() {
@@ -329,28 +351,29 @@ async function refresh() {
     state = await api('state');
     setupCatalog();
     renderInstaller();
-    $('#version').textContent = state.version;
+    if ($('#version')) $('#version').textContent = state.version;
     $('#diskStatus').textContent = 'Olay diski boş alanı: ' + state.diskFreeGB + ' GB';
+    const dict = I18N[currentLang] || I18N.tr;
     $('#stats').innerHTML = [
-      ['KAMERALAR', state.cameras.length],
-      ['ETKİN KURALLAR', state.rules.filter(r => r.enabled).length],
-      ['İNCELEME BEKLEYEN', state.events.filter(e => !e.reviewed).length]
-    ].map(([a, b]) => `<div class="stat"><span>${a}</span><strong>${b.toString().padStart(2, '0')}</strong></div>`).join('');
+      ['stats.cameras', dict['stats.cameras'], state.cameras.length],
+      ['stats.rules', dict['stats.rules'], state.rules.filter(r => r.enabled).length],
+      ['stats.events', dict['stats.events'], state.events.filter(e => !e.reviewed).length]
+    ].map(([key, label, b]) => `<div class="stat"><span data-i18n="${key}">${label}</span><strong>${b.toString().padStart(2, '0')}</strong></div>`).join('');
 
-    const cards = state.cameras.map(camera).join('') || empty('Henüz kamera eklenmedi.', 'IP adresi ve giriş bilgileriyle ilk kameranı bağla.');
+    const cards = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '◈');
     $('#overviewCameras').innerHTML = cards;
-    $('#cameraList').innerHTML = cards;
+    $('#cameraList').innerHTML = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '▦');
 
     const selected = $('#cameraSelect').value;
     $('#cameraSelect').innerHTML = '<option value="">Kamera seçin</option>' + state.cameras.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
     $('#cameraSelect').value = selected;
 
-    $('#ruleList').innerHTML = state.rules.map(r => `<article class="card"><span class="tag">${esc(state.cameras.find(c => c.id === r.camera)?.name)} · ${esc(state.templates.find(t => t.kind === r.kind)?.category || 'Görsel AI')}</span><h2>${esc(r.name)}</h2><p>${esc(r.prompt)}</p><p class="fine">${r.kind === 'vision' || !r.kind ? 'Model eşiği ' + r.threshold : 'Yerel ölçüm · Eşik ' + (r.sensitivity ?? r.dark) + ' · ' + (r.duration ?? r.hold * 3) + ' sn doğrulama'} · Tekrar aralığı ${r.cooldown} sn<br>${esc(r.schedule?.start || '00:00')}–${esc(r.schedule?.end || '00:00')} · ${r.schedule?.days.length || 7} gün · Bölge ${(r.roi || [0, 0, 100, 100]).join(' / ')}%</p><div class="actions"><button data-action="rule-toggle" data-id="${r.id}">${r.enabled ? 'Duraklat' : 'Etkinleştir'}</button><button data-edit="${r.id}">Düzenle</button><button data-action="rule-delete" data-id="${r.id}">Sil</button></div></article>`).join('') || empty('Kütüphaneden bir konfigürasyon seç.', 'Aydınlatma, hareket ve bölge, görüntü sağlığı ve bağlantı kuralları model gerektirmez.');
+    $('#ruleList').innerHTML = state.rules.map(r => `<article class="card"><span class="tag">${esc(state.cameras.find(c => c.id === r.camera)?.name)} · ${esc(state.templates.find(t => t.kind === r.kind)?.category || 'Görsel AI')}</span><h2>${esc(r.name)}</h2><p>${esc(r.prompt)}</p><p class="fine">${r.kind === 'vision' || !r.kind ? 'Model eşiği ' + r.threshold : 'Yerel ölçüm · Eşik ' + (r.sensitivity ?? r.dark) + ' · ' + (r.duration ?? r.hold * 3) + ' sn doğrulama'} · Tekrar aralığı ${r.cooldown} sn<br>${esc(r.schedule?.start || '00:00')}–${esc(r.schedule?.end || '00:00')} · ${r.schedule?.days.length || 7} gün · Bölge ${(r.roi || [0, 0, 100, 100]).join(' / ')}%</p><div class="actions"><button data-action="rule-toggle" data-id="${r.id}">${r.enabled ? 'Duraklat' : 'Etkinleştir'}</button><button data-edit="${r.id}">Düzenle</button><button data-action="rule-delete" data-id="${r.id}">Sil</button></div></article>`).join('') || empty(dict['empty.rulesTitle'], dict['empty.rulesDesc'], '⌘');
 
     const eventKey = JSON.stringify(state.events);
     if ($('#eventList').dataset.key !== eventKey) {
       $('#eventList').dataset.key = eventKey;
-      $('#eventList').innerHTML = state.events.map(e => `<article class="card"><span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span><h2>${esc(e.rule)} · ${esc(e.camera)}</h2><p>${esc(e.reason)}</p><p class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}${e.latencyMs ? ' · AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn' : ''} · ${e.kind && e.kind !== 'vision' ? 'Yerel ölçüm' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}<div class="actions">${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : '<span>RTSP klibi alınamadı; örnek kareleri inceleyin.</span>'}${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}</div></article>`).join('') || empty('Henüz olay yok.', 'Tespit edilen olayların açıklamaları ve yerel klipleri burada görünür. Örnek veya sahte olay gösterilmez.');
+      $('#eventList').innerHTML = state.events.map(e => `<article class="card"><span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span><h2>${esc(e.rule)} · ${esc(e.camera)}</h2><p>${esc(e.reason)}</p><p class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}${e.latencyMs ? ' · AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn' : ''} · ${e.kind && e.kind !== 'vision' ? 'Yerel ölçüm' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}<div class="actions">${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : '<span>RTSP klibi alınamadı; örnek kareleri inceleyin.</span>'}${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}</div></article>`).join('') || empty(dict['empty.eventsTitle'], dict['empty.eventsDesc'], '◷');
     }
 
     if (first) {

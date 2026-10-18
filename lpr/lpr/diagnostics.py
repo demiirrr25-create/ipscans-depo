@@ -12,8 +12,9 @@ def probe_camera(source,seconds=10,preview=False,models=None,transport='tcp'):
     if preview:
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QApplication
-        from .desktop import RecognitionWindow,STYLE
+        from .desktop import RecognitionWindow
         from .preview import PreviewDialog
+        from .theme import apply_theme
         app=QApplication.instance() or QApplication([])
         initializer=RecognitionWindow();initializer.close()
         connections=[0]
@@ -28,7 +29,7 @@ def probe_camera(source,seconds=10,preview=False,models=None,transport='tcp'):
             def received(result):result_count[0]+=1
             options.update(pipeline_factory=lambda:build_pipeline(models),on_result=received)
         dialog=PreviewDialog(source,"diagnostic",**options)
-        dialog.setStyleSheet(STYLE)
+        apply_theme(dialog)
         counts={"frames":0,"paints":0}
         original_set=dialog.surface.set_frame
         original_paint=dialog.surface.paintEvent

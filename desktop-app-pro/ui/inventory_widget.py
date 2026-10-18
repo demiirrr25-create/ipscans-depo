@@ -53,17 +53,22 @@ class InventoryWidget(QWidget):
         super().__init__(parent)
         self.lang = lang
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
-        outer.setSpacing(10)
+        outer.setContentsMargins(16, 16, 16, 16)
+        outer.setSpacing(12)
 
         top_row = QHBoxLayout()
+        top_row.setSpacing(10)
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText(t(lang, "search_placeholder_inventory"))
         self.search_edit.textChanged.connect(self._apply_filter)
         self.group_combo = QComboBox()
+        self.group_combo.setMinimumWidth(140)
+        self.group_combo.setMaximumWidth(200)
         self.group_combo.addItem(t(lang, "group_filter_all"))
         self.group_combo.currentIndexChanged.connect(self._apply_filter_from_combo)
         self.export_csv_btn = QPushButton(t(lang, "export_csv"), objectName="GhostButton")
+        self.export_csv_btn.setMinimumWidth(120)
+        self.export_csv_btn.setMaximumWidth(160)
         top_row.addWidget(self.search_edit, stretch=1)
         top_row.addWidget(self.group_combo)
         top_row.addWidget(self.export_csv_btn)
@@ -85,23 +90,32 @@ class InventoryWidget(QWidget):
 
         self.table = QTableWidget(0, len(columns))
         self.table.setHorizontalHeaderLabels(columns)
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setSectionResizeMode(
-            COL_IP, QHeaderView.ResizeMode.ResizeToContents
-        )
-        # Vendor/Model are exactly what a user opens this tab to check
-        # (spec ask: "I want to fully see the manufacturer/model") — never
-        # let the default equal-width column layout truncate them.
-        self.table.horizontalHeader().setSectionResizeMode(
-            COL_VENDOR, QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.table.horizontalHeader().setSectionResizeMode(
-            COL_MODEL, QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.table.horizontalHeader().setSectionResizeMode(
-            COL_SERIAL, QHeaderView.ResizeMode.ResizeToContents
-        )
+        self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(True)
+        header.setMinimumSectionSize(52)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        col_widths = {
+            COL_IP: 102,
+            COL_MAC: 118,
+            COL_NAME: 115,
+            COL_TAGS: 72,
+            COL_VENDOR: 140,
+            COL_MODEL: 86,
+            COL_SERIAL: 106,
+            COL_STATUS: 68,
+            COL_CRITICAL: 62,
+            COL_LATENCY: 68,
+            COL_LOSS: 94,
+            COL_LAST_SEEN: 120,
+        }
+        for col_idx, width in col_widths.items():
+            self.table.setColumnWidth(col_idx, width)
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(38)
         self.table.setSortingEnabled(True)
         self.table.itemChanged.connect(self._on_item_changed)
         self.table.itemDoubleClicked.connect(self._on_item_double_clicked)

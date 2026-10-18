@@ -8,8 +8,8 @@ export const cortexRelease = {
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0/IPScans-Cortex-1.0.0.exe",
   guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0/Cortex-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "10775875136af5688617200748e1c34a01d4cf0c723e7e3ce00114c6423105fb",
-  bytes: 62_293_042,
+  sha256: "02ab3dbdc8c5be29ca4dc8eabf6c4ece1c10b3c3c6bd61e8405ffed3b01ed253",
+  bytes: 62_304_985,
 } as const;
 
 export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {

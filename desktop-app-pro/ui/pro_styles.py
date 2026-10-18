@@ -37,14 +37,14 @@ QTabBar::tab:selected {{
     border-color: {tk['accent_primary']};
 }}
 
-#HealthCard {{
+#HealthCard, #HealthHeroCard {{
     background: {tk['bg_surface']};
     border: 1px solid {tk['border_default']};
     border-radius: 16px;
 }}
 QLabel#HealthScoreValue {{
     color: {tk['text_primary']};
-    font-size: 46px;
+    font-size: 48px;
     font-weight: 700;
     letter-spacing: -0.03em;
 }}
@@ -54,20 +54,25 @@ QLabel#HealthScoreLabel {{
     font-weight: 700;
     letter-spacing: 0.12em;
 }}
+QLabel#HealthSubtitle {{
+    color: {tk['text_secondary']};
+    font-size: 13px;
+}}
 #StatCard {{
     background: {tk['bg_surface']};
     border: 1px solid {tk['border_default']};
-    border-radius: 12px;
+    border-radius: 14px;
 }}
 QLabel#StatValue {{
     color: {tk['text_primary']};
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
     letter-spacing: -0.02em;
 }}
 QLabel#StatLabel {{
     color: {tk['text_secondary']};
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 500;
 }}
 
 QLabel#SeverityInfo {{
@@ -129,6 +134,18 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
     width: 0;
 }}
 
+QComboBox {{
+    border-radius: 10px;
+    padding: 6px 32px 6px 14px;
+}}
+QComboBox::drop-down {{
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 28px;
+    border: none;
+    background: transparent;
+}}
+
 QTimeEdit {{
     background: {tk['bg_surface']};
     color: {tk['text_primary']};
@@ -136,6 +153,11 @@ QTimeEdit {{
     border-radius: 10px;
     padding: 6px 12px;
     font-size: 12px;
+}}
+QTimeEdit::up-button, QTimeEdit::down-button {{
+    border: none;
+    background: transparent;
+    width: 18px;
 }}
 """
 

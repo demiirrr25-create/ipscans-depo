@@ -41,8 +41,8 @@ class SettingsWidget(QWidget):
 
         inner = QWidget()
         inner_layout = QVBoxLayout(inner)
-        inner_layout.setContentsMargins(4, 4, 4, 4)
-        inner_layout.setSpacing(22)
+        inner_layout.setContentsMargins(20, 18, 20, 20)
+        inner_layout.setSpacing(24)
 
         self.monitoring = MonitoringControlsWidget(lang, show_buttons=False)
         inner_layout.addWidget(_section(t(lang, "settings_monitoring"), self.monitoring))

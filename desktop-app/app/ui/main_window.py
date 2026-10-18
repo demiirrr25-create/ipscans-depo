@@ -5,8 +5,19 @@ from dataclasses import replace
 from pathlib import Path
 import time
 
-from PyQt6.QtCore import Qt, QTimer, QUrl
-from PyQt6.QtGui import QAction, QDesktopServices, QKeySequence, QShortcut
+from PyQt6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, QUrl
+from PyQt6.QtGui import (
+    QAction,
+    QColor,
+    QDesktopServices,
+    QIcon,
+    QKeySequence,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QShortcut,
+)
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -77,6 +88,7 @@ class MainWindow(QWidget):
         self._map_dirty = False
         self._metrics = {}
         self._scan_complete = False
+        self._embedded = False
         self.setObjectName("AppRoot")
         self.setWindowTitle("IPscans+ · High Performance Network Scanner")
         self.resize(1380, 880)
@@ -108,23 +120,51 @@ class MainWindow(QWidget):
         QShortcut(QKeySequence("F5"), self, activated=self._start_scan)
         QShortcut(QKeySequence("Escape"), self, activated=self._stop_scan)
 
+    @staticmethod
+    def _make_refresh_icon(color_hex: str) -> QIcon:
+        pixmap = QPixmap(36, 36)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        pen = QPen(
+            QColor(color_hex),
+            2.4,
+            Qt.PenStyle.SolidLine,
+            Qt.PenCapStyle.RoundCap,
+            Qt.PenJoinStyle.RoundJoin,
+        )
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        arc_rect = QRectF(8.0, 8.0, 20.0, 20.0)
+        painter.drawArc(arc_rect, 45 * 16, 285 * 16)
+        arrow = QPainterPath()
+        arrow.moveTo(QPointF(21.5, 6.5))
+        arrow.lineTo(QPointF(26.5, 11.5))
+        arrow.lineTo(QPointF(20.5, 13.5))
+        painter.drawPath(arrow)
+        painter.end()
+        return QIcon(pixmap)
+
     def _build_ui(self) -> None:
         body = QVBoxLayout(self)
         body.setContentsMargins(24, 18, 24, 16)
         body.setSpacing(12)
+        self._body_layout = body
 
         # 1. Executive Top Header
         heading = QHBoxLayout()
         heading.setSpacing(12)
+        self._heading_layout = heading
 
-        logo = QLabel()
-        logo.setPixmap(load_logo_pixmap(32))
-        logo.setFixedSize(32, 32)
-        heading.addWidget(logo)
+        self.logo_label = QLabel()
+        self.logo_label.setPixmap(load_logo_pixmap(32))
+        self.logo_label.setFixedSize(32, 32)
+        heading.addWidget(self.logo_label)
 
         self.title_label = QLabel("IPscans+", objectName="TitleText")
         heading.addWidget(self.title_label)
 
+        self._left_header_stretch = heading.count()
         heading.addStretch()
 
         self.navigation = QTabBar()
@@ -145,7 +185,7 @@ class MainWindow(QWidget):
         self.export_button.clicked.connect(self._export)
         heading.addWidget(self.export_button)
 
-        self.tour_btn = QPushButton(self._v4("Info & Guide", "Rehber & Bilgi"), objectName="TourButton")
+        self.tour_btn = QPushButton(self._v4("Info && Guide", "Rehber && Bilgi"), objectName="TourButton")
         self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.tour_btn.clicked.connect(self._open_feature_tour)
         self.tour_btn.setVisible(True)
@@ -167,15 +207,22 @@ class MainWindow(QWidget):
 
         self.adapter_select = QComboBox()
         self.adapter_select.setAccessibleName(t(self.lang, "current_adapter"))
+        self.adapter_select.addItem(
+            self._v4("Detecting adapter...", "Bağdaştırıcı algılanıyor..."),
+            None,
+        )
         self.adapter_select.currentIndexChanged.connect(self._adapter_changed)
         self.adapter_select.setMinimumWidth(210)
         cmd_row.addWidget(self.adapter_select)
 
-        refresh = QPushButton("↻")
-        refresh.setToolTip(t(self.lang, "refresh_adapters"))
-        refresh.setFixedWidth(36)
-        refresh.clicked.connect(self._refresh_adapters)
-        cmd_row.addWidget(refresh)
+        self.refresh_btn = QPushButton("", objectName="IconButton")
+        self.refresh_btn.setToolTip(t(self.lang, "refresh_adapters"))
+        self.refresh_btn.setAccessibleName(t(self.lang, "refresh_adapters"))
+        self.refresh_btn.setFixedSize(36, 36)
+        self.refresh_btn.setIconSize(QSize(18, 18))
+        self.refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.refresh_btn.clicked.connect(self._refresh_adapters)
+        cmd_row.addWidget(self.refresh_btn)
 
         self.target_input = TargetInput(self.lang)
         cmd_row.addWidget(self.target_input)
@@ -268,6 +315,19 @@ class MainWindow(QWidget):
         self.navigation.setCurrentIndex(0)
         self._update_summary()
 
+    def set_embedded_mode(self, embedded: bool = True) -> None:
+        """Hides redundant top branding and theme toggle when embedded inside ProMainWindow."""
+        self._embedded = bool(embedded)
+        self.logo_label.setVisible(not self._embedded)
+        self.title_label.setVisible(not self._embedded)
+        self.theme_toggle_btn.setVisible(not self._embedded)
+        if self._embedded:
+            self._body_layout.setContentsMargins(14, 10, 14, 12)
+            self._body_layout.setSpacing(10)
+        else:
+            self._body_layout.setContentsMargins(24, 18, 24, 16)
+            self._body_layout.setSpacing(12)
+
     def apply_theme(self, theme: str | None = None) -> None:
         active = (theme or get_current_theme()).lower()
         tokens = get_tokens(active)
@@ -276,6 +336,7 @@ class MainWindow(QWidget):
             f"font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; "
             f"font-size: 19px; font-weight: 700; color: {tokens['text']}; letter-spacing: -0.4px;"
         )
+        self.refresh_btn.setIcon(self._make_refresh_icon(tokens["text"]))
         self.theme_toggle_btn.sync_theme(active)
         self.network_map.apply_theme(active)
         self.progress_bar.apply_theme(active)
@@ -310,9 +371,24 @@ class MainWindow(QWidget):
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         header.setSectionsMovable(True)
+        header.setStretchLastSection(True)
         header.setDefaultSectionSize(130)
         for position, column in enumerate((8, 0, 12, 3, 1, 2, 7, 9, 10, 11, 4, 5, 6)):
             header.moveSection(header.visualIndex(column), position)
+        initial_widths = {
+            8: 92,    # Status
+            0: 122,   # IP
+            12: 158,  # Device
+            3: 155,   # Hostname
+            1: 132,   # MAC
+            2: 135,   # Vendor
+            7: 135,   # Device Type
+            9: 112,   # Parent / route
+            10: 120,  # TCP connect time
+            11: 95,   # Confidence
+        }
+        for col, width in initial_widths.items():
+            table.setColumnWidth(col, width)
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         header.customContextMenuRequested.connect(self._column_menu)
         for column in (4, 5, 6):
@@ -378,17 +454,21 @@ class MainWindow(QWidget):
         ):
             self._stop_scan()
             self._warning(t(self.lang, "network_changed"))
-        if adapters == self._adapters:
+        if adapters == self._adapters and self.adapter_select.count() > 0 and self.adapter_select.itemData(0) is not None:
             return
         self._adapters = adapters
         self.adapter_select.blockSignals(True)
         self.adapter_select.clear()
-        for adapter in adapters:
-            self.adapter_select.addItem(f"{adapter.name} / {adapter.ip}", adapter)
-        selected = next((i for i, adapter in enumerate(adapters) if old and adapter.ip == old.ip), 0)
-        self.adapter_select.setCurrentIndex(selected if adapters else -1)
+        if adapters:
+            for adapter in adapters:
+                self.adapter_select.addItem(f"{adapter.name} / {adapter.ip}", adapter)
+            selected = next((i for i, adapter in enumerate(adapters) if old and adapter.ip == old.ip), 0)
+            self.adapter_select.setCurrentIndex(selected)
+        else:
+            self.adapter_select.addItem(t(self.lang, "no_adapter"), None)
+            selected = -1
         self.adapter_select.blockSignals(False)
-        self._adapter_changed(selected if adapters else -1)
+        self._adapter_changed(selected)
 
     def _adapter_changed(self, index: int) -> None:
         if not 0 <= index < len(self._adapters):

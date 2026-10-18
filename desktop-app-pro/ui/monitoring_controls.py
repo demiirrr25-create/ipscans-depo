@@ -29,15 +29,18 @@ class MonitoringControlsWidget(QWidget):
         super().__init__(parent)
         self.lang = lang
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
+        outer.setContentsMargins(0, 4, 0, 4)
         outer.setSpacing(14)
 
         card = QFrame(objectName="OptionsCard")
+        card.setMaximumWidth(760)
         form = QFormLayout(card)
-        form.setContentsMargins(18, 16, 18, 16)
-        form.setSpacing(10)
+        form.setContentsMargins(20, 18, 20, 18)
+        form.setSpacing(12)
+        form.setHorizontalSpacing(24)
 
         self.mode_combo = QComboBox()
+        self.mode_combo.setMaximumWidth(420)
         self.mode_combo.addItems([
             t(lang, "mode_quick"), t(lang, "mode_full"), t(lang, "mode_health"),
             t(lang, "mode_conflict"), t(lang, "mode_continuous"),
@@ -45,10 +48,12 @@ class MonitoringControlsWidget(QWidget):
         form.addRow(QLabel(t(lang, "scan_mode")), self.mode_combo)
 
         self.site_name_edit = QLineEdit()
+        self.site_name_edit.setMaximumWidth(420)
         self.site_name_edit.setPlaceholderText(t(lang, "site_name_placeholder"))
         form.addRow(QLabel(t(lang, "site_name")), self.site_name_edit)
 
         self.interval_combo = QComboBox()
+        self.interval_combo.setMaximumWidth(420)
         self.interval_combo.addItems([
             t(lang, "interval_10s"), t(lang, "interval_30s"), t(lang, "interval_60s"),
             t(lang, "interval_5m"), t(lang, "interval_custom"),
@@ -57,6 +62,7 @@ class MonitoringControlsWidget(QWidget):
         form.addRow(QLabel(t(lang, "monitoring_interval")), self.interval_combo)
 
         self.custom_interval_edit = QLineEdit()
+        self.custom_interval_edit.setMaximumWidth(420)
         self.custom_interval_edit.setPlaceholderText(t(lang, "custom_interval_placeholder"))
         self.custom_interval_edit.setEnabled(False)
         form.addRow(QLabel(t(lang, "custom_interval")), self.custom_interval_edit)
@@ -69,34 +75,40 @@ class MonitoringControlsWidget(QWidget):
         outer.addWidget(self.startup_checkbox)
 
         quiet_card = QFrame(objectName="OptionsCard")
+        quiet_card.setMaximumWidth(760)
         quiet_layout = QVBoxLayout(quiet_card)
-        quiet_layout.setContentsMargins(18, 16, 18, 16)
-        quiet_layout.setSpacing(8)
+        quiet_layout.setContentsMargins(20, 16, 20, 16)
+        quiet_layout.setSpacing(10)
         quiet_layout.addWidget(QLabel(t(lang, "quiet_hours"), objectName="SectionLabel"))
         self.quiet_hours_checkbox = QCheckBox(t(lang, "quiet_hours_enable"))
         quiet_layout.addWidget(self.quiet_hours_checkbox)
         time_row = QHBoxLayout()
+        time_row.setSpacing(10)
         time_row.addWidget(QLabel(t(lang, "quiet_hours_from")))
         self.quiet_from_edit = QTimeEdit(QTime(22, 0))
+        self.quiet_from_edit.setMinimumWidth(96)
+        self.quiet_from_edit.setMaximumWidth(120)
         time_row.addWidget(self.quiet_from_edit)
         time_row.addWidget(QLabel(t(lang, "quiet_hours_to")))
         self.quiet_to_edit = QTimeEdit(QTime(7, 0))
+        self.quiet_to_edit.setMinimumWidth(96)
+        self.quiet_to_edit.setMaximumWidth(120)
         time_row.addWidget(self.quiet_to_edit)
         time_row.addStretch(1)
         quiet_layout.addLayout(time_row)
         outer.addWidget(quiet_card)
 
         btn_row = QHBoxLayout()
+        btn_row.setSpacing(10)
         self.start_btn = QPushButton(f"▶  {t(lang, 'start_monitoring')}", objectName="PrimaryButton")
+        self.start_btn.setMaximumWidth(220)
         self.stop_btn = QPushButton(f"■  {t(lang, 'stop_monitoring')}", objectName="GhostButton")
+        self.stop_btn.setMaximumWidth(160)
         self.stop_btn.setEnabled(False)
         btn_row.addWidget(self.start_btn)
         btn_row.addWidget(self.stop_btn)
+        btn_row.addStretch(1)
         self.status_label = QLabel(t(lang, "monitoring_stopped"), objectName="StatusLabel")
-        # Dashboard is the single place Start/Stop lives now (spec: fewer
-        # tabs, monitoring starts from the panel) — Settings only shows
-        # configuration. The buttons still exist and stay wired so existing
-        # signal connections keep working either way.
         if show_buttons:
             outer.addLayout(btn_row)
             outer.addWidget(self.status_label)

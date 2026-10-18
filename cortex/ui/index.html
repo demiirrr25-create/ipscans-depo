@@ -36,7 +36,7 @@
     </nav>
     <div class="asidefoot">
       <div class="aside-status"><span class="dot"></span> <span data-i18n="aside.workspace">Yerel çalışma alanı</span></div>
-      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span id="version">1.0.0-rc.2</span> · <span data-i18n="aside.rc">V1 sürüm adayı</span></small>
+      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Yerel RTSP + Gemma 4 Motoru</span><span id="version" data-version="1.0.0-rc.2" hidden>1.0.0-rc.2</span></small>
     </div>
   </aside>
 
@@ -65,7 +65,7 @@
       </div>
     </header>
 
-    <div id="message" role="status" hidden></div>
+    <div id="message" class="conn-banner" role="status" hidden></div>
 
     <section id="overview" class="view">
       <div class="hero">
@@ -80,12 +80,22 @@
           <span data-i18n="overview.orb">GÖR · ANLA · BİLDİR</span>
         </div>
       </div>
-      <div id="stats" class="stats"></div>
+      <div id="stats" class="stats">
+        <div class="stat"><span data-i18n="stats.cameras">KAMERALAR</span><strong>00</strong></div>
+        <div class="stat"><span data-i18n="stats.rules">ETKİN KURALLAR</span><strong>00</strong></div>
+        <div class="stat"><span data-i18n="stats.events">İNCELEME BEKLEYEN</span><strong>00</strong></div>
+      </div>
       <div class="sectiontitle">
         <h2 data-i18n="overview.workspace">Çalışma alanın</h2>
         <span data-i18n="overview.liveStatus">Gerçek bağlantı durumu</span>
       </div>
-      <div id="overviewCameras" class="grid"></div>
+      <div id="overviewCameras" class="grid">
+        <div class="empty">
+          <span class="symbol" aria-hidden="true">◈</span>
+          <h2 data-i18n="empty.camerasTitle">Henüz kamera eklenmedi.</h2>
+          <p data-i18n="empty.camerasDesc">IP adresi ve giriş bilgileriyle ilk kameranı bağla.</p>
+        </div>
+      </div>
       <div class="hint" data-i18n="overview.hint">Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 12 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 12 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.</div>
     </section>
 
@@ -144,7 +154,13 @@
             <button type="submit" class="primary" data-i18n="cameras.saveBtn">Kaydet ve izlemeyi başlat</button>
           </div>
         </form>
-        <div id="cameraList" class="stack"></div>
+        <div id="cameraList" class="stack">
+          <div class="empty">
+            <span class="symbol" aria-hidden="true">▦</span>
+            <h2 data-i18n="empty.camerasTitle">Henüz kamera eklenmedi.</h2>
+            <p data-i18n="empty.camerasDesc">IP adresi ve giriş bilgileriyle ilk kameranı bağla.</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -237,7 +253,13 @@
             <button type="button" id="resetRule" data-i18n="rules.resetBtn">Yeni kural</button>
           </div>
         </form>
-        <div id="ruleList" class="stack"></div>
+        <div id="ruleList" class="stack">
+          <div class="empty">
+            <span class="symbol" aria-hidden="true">⌘</span>
+            <h2 data-i18n="empty.rulesTitle">Kütüphaneden bir konfigürasyon seç.</h2>
+            <p data-i18n="empty.rulesDesc">Aydınlatma, hareket ve bölge, görüntü sağlığı ve bağlantı kuralları model gerektirmez.</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -250,7 +272,13 @@
         </div>
         <button type="button" id="notify" data-i18n="events.notifyBtn">Masaüstü bildirimi aç</button>
       </div>
-      <div id="eventList" class="stack"></div>
+      <div id="eventList" class="stack">
+        <div class="empty">
+          <span class="symbol" aria-hidden="true">◷</span>
+          <h2 data-i18n="empty.eventsTitle">Henüz olay yok.</h2>
+          <p data-i18n="empty.eventsDesc">Tespit edilen olayların açıklamaları ve yerel klipleri burada görünür. Örnek veya sahte olay gösterilmez.</p>
+        </div>
+      </div>
     </section>
 
     <section id="settings" class="view" hidden>
@@ -261,7 +289,7 @@
         <label><span data-i18n="settings.modelLabel">Ollama görsel model adı</span>
           <input name="model" id="model" value="gemma3:4b" required>
         </label>
-        <p class="fine">Önce <a href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">Ollama’yı indirip açın ↗</a>. Ardından aşağıdaki düğme Gemma 3 4B’yi indirir, görsel yanıtını test eder ve Cortex’e bağlar. Model indirmesi birkaç GB internet ve disk alanı kullanır. Yeterli RAM/GPU gerekir; hazır durumu donanımda test yanıtı alınmadan gösterilmez.</p>
+        <p class="fine" data-i18n-html="settings.ollamaLead">Önce <a href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">Ollama’yı indirip açın ↗</a>. Ardından aşağıdaki düğme Gemma 3 4B’yi indirir, görsel yanıtını test eder ve Cortex’e bağlar. Model indirmesi birkaç GB internet ve disk alanı kullanır. Yeterli RAM/GPU gerekir; hazır durumu donanımda test yanıtı alınmadan gösterilmez.</p>
         <div class="model-setup">
           <div class="actions">
             <button type="button" id="installModel" class="primary" data-i18n="settings.installBtn">Gemma’yı kur ve bağla</button>

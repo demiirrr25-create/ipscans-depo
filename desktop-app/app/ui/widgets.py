@@ -18,6 +18,12 @@ from app.core.models import Device
 from app.core.search import matches_device
 from app.i18n import t
 from app.ui.device_icons import icon_for_type
+from app.ui.styles import get_current_theme
+
+
+def _device_icon(device_type: str, theme: str | None = None):
+    return icon_for_type(device_type, theme or get_current_theme())
+
 
 COLUMN_KEYS = [
     "col_ip",
@@ -137,9 +143,9 @@ class DeviceTableModel(QAbstractTableModel):
                 return {"Low": 0, "Medium": 1, "High": 2}[device.classification_confidence]
             return self.data(index, Qt.ItemDataRole.DisplayRole)
         if role == Qt.ItemDataRole.DecorationRole and index.column() == 7:
-            return icon_for_type(self._devices[index.row()].device_type)
+            return _device_icon(self._devices[index.row()].device_type)
         if role == Qt.ItemDataRole.DecorationRole and index.column() == 8:
-            return icon_for_type('Online' if self._devices[index.row()].reachability == 'Online' else 'Attention')
+            return _device_icon('Online' if self._devices[index.row()].reachability == 'Online' else 'Attention')
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         device = self._devices[index.row()]

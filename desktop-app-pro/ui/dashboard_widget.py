@@ -12,15 +12,27 @@ from pro.models import HealthBreakdown
 from pro.pro_content import t
 
 
-def _stat_card(value: str, label: str) -> QFrame:
+def _stat_card(value: str, label: str, accent_color: str = "#2F6BFF") -> QFrame:
     card = QFrame(objectName="StatCard")
+    card.setMinimumHeight(96)
     layout = QVBoxLayout(card)
-    layout.setContentsMargins(14, 12, 14, 12)
-    layout.setSpacing(2)
-    value_label = QLabel(value, objectName="StatValue")
+    layout.setContentsMargins(18, 16, 18, 16)
+    layout.setSpacing(6)
+
+    top_row = QHBoxLayout()
+    top_row.setContentsMargins(0, 0, 0, 0)
+    top_row.setSpacing(8)
+    dot = QLabel("●")
+    dot.setStyleSheet(f"color: {accent_color}; font-size: 10px; background: transparent;")
     text_label = QLabel(label, objectName="StatLabel")
+    top_row.addWidget(dot)
+    top_row.addWidget(text_label)
+    top_row.addStretch(1)
+
+    value_label = QLabel(value, objectName="StatValue")
+    layout.addLayout(top_row)
     layout.addWidget(value_label)
-    layout.addWidget(text_label)
+    layout.addStretch(1)
     card.value_label = value_label  # type: ignore[attr-defined]
     return card
 
@@ -28,64 +40,93 @@ def _stat_card(value: str, label: str) -> QFrame:
 class DashboardWidget(QWidget):
     def __init__(self, lang: str = "en", parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.lang = lang
+        is_tr = str(lang).lower().startswith("tr")
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
-        outer.setSpacing(14)
+        outer.setContentsMargins(16, 16, 16, 16)
+        outer.setSpacing(18)
 
-        health_card = QFrame(objectName="HealthCard")
-        health_layout = QVBoxLayout(health_card)
-        health_layout.setContentsMargins(24, 20, 24, 20)
-        health_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Executive Hero Banner Card
+        health_card = QFrame(objectName="HealthHeroCard")
+        hero_row = QHBoxLayout(health_card)
+        hero_row.setContentsMargins(28, 24, 28, 24)
+        hero_row.setSpacing(24)
 
-        self.health_label = QLabel(t(lang, "health_title"), objectName="HealthScoreLabel")
-        self.health_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        left_col = QVBoxLayout()
+        left_col.setSpacing(6)
+        self.health_label = QLabel(t(lang, "health_title").upper(), objectName="HealthScoreLabel")
         self.health_value = QLabel("—", objectName="HealthScoreValue")
-        self.health_value.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.score_label = self.health_value
+
+        subtitle_text = (
+            "Kesintisiz yerel L2/L3 telemetri, IP çakışma tespiti ve gecikme analizi"
+            if is_tr
+            else "Continuous local L2/L3 telemetry, conflict detection, and latency diagnostics"
+        )
+        self.subtitle_label = QLabel(subtitle_text, objectName="HealthSubtitle")
+        self.subtitle_label.setWordWrap(True)
+
         self.breakdown_label = QLabel("", objectName="StatLabel")
-        self.breakdown_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.breakdown_label.setWordWrap(True)
 
-        health_layout.addWidget(self.health_label)
-        health_layout.addWidget(self.health_value)
-        health_layout.addWidget(self.breakdown_label)
-        outer.addWidget(health_card)
+        left_col.addWidget(self.health_label)
+        left_col.addWidget(self.health_value)
+        left_col.addWidget(self.subtitle_label)
+        left_col.addWidget(self.breakdown_label)
+        hero_row.addLayout(left_col, stretch=1)
 
-        grid = QGridLayout()
-        grid.setSpacing(10)
-        self.cards: dict[str, QFrame] = {}
-        specs = [
-            ("devices", t(lang, "stat_devices")),
-            ("online", t(lang, "stat_online")),
-            ("offline", t(lang, "stat_offline")),
-            ("conflicts", t(lang, "stat_conflicts")),
-            ("high_latency", t(lang, "stat_high_latency")),
-            ("packet_loss", t(lang, "stat_packet_loss")),
-            ("unknown", t(lang, "stat_unknown")),
-        ]
-        for i, (key, label) in enumerate(specs):
-            card = _stat_card("—", label)
-            self.cards[key] = card
-            grid.addWidget(card, i // 4, i % 4)
-        outer.addLayout(grid)
+        # Right side: status spinner + action buttons side-by-side
+        right_col = QVBoxLayout()
+        right_col.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        right_col.setSpacing(10)
 
-        self.start_monitoring_btn = QPushButton(f"▶  {t(lang, 'start_monitoring')}", objectName="PrimaryButton")
-        self.stop_monitoring_btn = QPushButton(f"■  {t(lang, 'stop_monitoring')}", objectName="GhostButton")
-        self.stop_monitoring_btn.setEnabled(False)
-        outer.addWidget(self.start_monitoring_btn)
-        outer.addWidget(self.stop_monitoring_btn)
-
-        # Starting monitoring does real work before the first result comes
-        # back (a permission check, then the first full network scan) —
-        # without any feedback that can look like the click did nothing.
-        status_row = QHBoxLayout()
+        action_row = QHBoxLayout()
+        action_row.setSpacing(10)
         self.starting_spinner = Spinner(size=16)
         self.starting_spinner.hide()
         self.starting_label = QLabel(t(lang, "monitoring_starting"), objectName="StatusLabel")
         self.starting_label.hide()
-        status_row.addWidget(self.starting_spinner)
-        status_row.addWidget(self.starting_label)
-        status_row.addStretch(1)
-        outer.addLayout(status_row)
+
+        self.start_monitoring_btn = QPushButton(f"▶  {t(lang, 'start_monitoring')}", objectName="PrimaryButton")
+        self.start_monitoring_btn.setMinimumWidth(170)
+        self.start_monitoring_btn.setMaximumWidth(220)
+        self.start_monitoring_btn.setMinimumHeight(38)
+
+        self.stop_monitoring_btn = QPushButton(f"■  {t(lang, 'stop_monitoring')}", objectName="GhostButton")
+        self.stop_monitoring_btn.setMinimumWidth(110)
+        self.stop_monitoring_btn.setMaximumWidth(150)
+        self.stop_monitoring_btn.setMinimumHeight(38)
+        self.stop_monitoring_btn.setEnabled(False)
+
+        action_row.addWidget(self.starting_spinner)
+        action_row.addWidget(self.starting_label)
+        action_row.addWidget(self.start_monitoring_btn)
+        action_row.addWidget(self.stop_monitoring_btn)
+        right_col.addLayout(action_row)
+        hero_row.addLayout(right_col)
+
+        outer.addWidget(health_card)
+
+        # Metric Cards Bento Grid
+        grid = QGridLayout()
+        grid.setSpacing(14)
+        self.cards: dict[str, QFrame] = {}
+        specs = [
+            ("devices", t(lang, "stat_devices"), "#2F6BFF"),
+            ("online", t(lang, "stat_online"), "#12B76A"),
+            ("offline", t(lang, "stat_offline"), "#6E7687"),
+            ("conflicts", t(lang, "stat_conflicts"), "#F04438"),
+            ("high_latency", t(lang, "stat_high_latency"), "#F79009"),
+            ("packet_loss", t(lang, "stat_packet_loss"), "#F79009"),
+            ("unknown", t(lang, "stat_unknown"), "#0BA5EC"),
+        ]
+        for i, (key, label, accent) in enumerate(specs):
+            card = _stat_card("—", label, accent)
+            self.cards[key] = card
+            grid.addWidget(card, i // 4, i % 4)
+        for col in range(4):
+            grid.setColumnStretch(col, 1)
+        outer.addLayout(grid)
         outer.addStretch(1)
 
     def show_starting(self) -> None:

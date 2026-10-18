@@ -62,7 +62,7 @@ def reset_first_run() -> None:
 
 
 class ModernWelcomeDialog(QDialog):
-    """Sleek, Light & Dark theme-aware welcome dialog with smooth animations and first-run logic."""
+    """Sleek, Light & Dark theme-aware welcome dialog with immediate crisp rendering."""
 
     def __init__(self, initial_lang: str = DEFAULT_LANGUAGE, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -70,9 +70,7 @@ class ModernWelcomeDialog(QDialog):
         self.setObjectName("ModernWelcomeDialog")
         self.setWindowTitle("IPscans+ · Welcome")
         self.setModal(True)
-        self.setFixedSize(620, 640)
-        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setFixedSize(620, 620)
 
         self._build_ui()
         self._refresh_texts()
@@ -81,28 +79,22 @@ class ModernWelcomeDialog(QDialog):
 
     def _build_ui(self) -> None:
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(18, 18, 18, 18)
+        outer.setContentsMargins(16, 16, 16, 16)
 
         self.card = QFrame()
         self.card.setObjectName("WelcomeCard")
 
-        self._shadow = QGraphicsDropShadowEffect(self)
-        self._shadow.setBlurRadius(42)
-        self._shadow.setColor(QColor(0, 0, 0, 140))
-        self._shadow.setOffset(0, 10)
-        self.card.setGraphicsEffect(self._shadow)
-
         card_layout = QVBoxLayout(self.card)
-        card_layout.setContentsMargins(36, 32, 36, 32)
-        card_layout.setSpacing(18)
+        card_layout.setContentsMargins(32, 28, 32, 28)
+        card_layout.setSpacing(16)
 
         # 1. Header with Logo, Title, Theme Toggle & Close Button
         header_row = QHBoxLayout()
         header_row.setSpacing(14)
 
         self.logo_lbl = QLabel()
-        self.logo_lbl.setPixmap(load_logo_pixmap(54))
-        self.logo_lbl.setFixedSize(54, 54)
+        self.logo_lbl.setPixmap(load_logo_pixmap(52))
+        self.logo_lbl.setFixedSize(52, 52)
         header_row.addWidget(self.logo_lbl)
 
         title_col = QVBoxLayout()
@@ -120,7 +112,7 @@ class ModernWelcomeDialog(QDialog):
         header_row.addWidget(self.theme_toggle_btn)
 
         self.close_btn = QPushButton("✕")
-        self.close_btn.setFixedSize(28, 28)
+        self.close_btn.setFixedSize(32, 32)
         self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.close_btn.clicked.connect(self._on_dismiss)
         header_row.addWidget(self.close_btn)
@@ -152,11 +144,11 @@ class ModernWelcomeDialog(QDialog):
         for icon, title_key, desc_key, accent_key in feature_data:
             f_frame = QFrame()
             f_row = QHBoxLayout(f_frame)
-            f_row.setContentsMargins(10, 8, 10, 8)
+            f_row.setContentsMargins(14, 10, 14, 10)
             f_row.setSpacing(12)
 
             f_icon = QLabel(icon)
-            f_icon.setStyleSheet("font-size: 20px; background: transparent;")
+            f_icon.setStyleSheet("font-size: 20px; background: transparent; border: none;")
             f_row.addWidget(f_icon)
 
             f_text_col = QVBoxLayout()
@@ -179,27 +171,34 @@ class ModernWelcomeDialog(QDialog):
         card_layout.addLayout(features_layout)
 
         # 4. Language Selection Switcher
-        lang_box = QHBoxLayout()
-        lang_box.setSpacing(10)
+        lang_section = QVBoxLayout()
+        lang_section.setSpacing(8)
         self.lang_label = QLabel()
-        lang_box.addWidget(self.lang_label)
+        lang_section.addWidget(self.lang_label)
+
+        from PyQt6.QtWidgets import QGridLayout
+
+        lang_grid = QGridLayout()
+        lang_grid.setHorizontalSpacing(8)
+        lang_grid.setVerticalSpacing(8)
 
         self.lang_group = QButtonGroup(self)
         self.lang_group.setExclusive(True)
 
-        for code, name in available_languages():
+        for idx, (code, name) in enumerate(available_languages()):
             btn = QPushButton(name)
             btn.setCheckable(True)
+            btn.setMinimumHeight(34)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setProperty("code", code)
             if code == self.lang:
                 btn.setChecked(True)
             self.lang_group.addButton(btn)
-            lang_box.addWidget(btn)
+            lang_grid.addWidget(btn, idx // 3, idx % 3)
 
         self.lang_group.buttonClicked.connect(self._on_lang_switched)
-        lang_box.addStretch(1)
-        card_layout.addLayout(lang_box)
+        lang_section.addLayout(lang_grid)
+        card_layout.addLayout(lang_section)
 
         # 5. Terms & Policy Consent Checkbox
         self.terms_checkbox = QCheckBox()
@@ -221,78 +220,87 @@ class ModernWelcomeDialog(QDialog):
 
     def apply_theme(self, theme: str | None = None) -> None:
         tk = get_tokens(theme)
+        self.setStyleSheet(
+            f"QDialog#ModernWelcomeDialog {{ background-color: {tk['bg_canvas']}; color: {tk['text_primary']}; }}"
+        )
         self.card.setStyleSheet(f"""
             QFrame#WelcomeCard {{
                 background-color: {tk['bg_surface']};
                 border: 1px solid {tk['border_strong']};
-                border-radius: 20px;
+                border-radius: 18px;
             }}
         """)
         self.title_lbl.setStyleSheet(
-            f"font-size: 26px; font-weight: 700; color: {tk['text_primary']}; letter-spacing: -0.5px; background: transparent;"
+            f"font-size: 24px; font-weight: 700; color: {tk['text_primary']}; letter-spacing: -0.5px; background: transparent; border: none;"
         )
         self.badge_lbl.setStyleSheet(
-            f"font-size: 10px; font-weight: 600; color: {tk['accent_primary']}; letter-spacing: 1.5px; background: transparent;"
+            f"font-size: 10px; font-weight: 700; color: {tk['accent_primary']}; letter-spacing: 1.4px; background: transparent; border: none;"
         )
         self.close_btn.setStyleSheet(f"""
             QPushButton {{
                 background: {tk['bg_elevated']};
                 border: 1px solid {tk['border_default']};
-                border-radius: 14px;
+                border-radius: 10px;
                 color: {tk['text_secondary']};
-                font-size: 12px;
+                padding: 0px;
+                min-width: 32px;
+                max-width: 32px;
+                min-height: 32px;
+                max-height: 32px;
+                font-size: 13px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
                 background: {tk['bg_hover']};
                 color: {tk['text_primary']};
+                border-color: {tk['border_strong']};
             }}
         """)
         self._sep.setStyleSheet(f"background-color: {tk['border_default']}; max-height: 1px; border: none;")
         self.tagline_lbl.setStyleSheet(
-            f"font-size: 13.5px; line-height: 1.5; color: {tk['text_secondary']}; background: transparent;"
+            f"font-size: 13px; line-height: 1.45; color: {tk['text_secondary']}; background: transparent; border: none;"
         )
 
         for (f_frame, accent_key), (f_title, f_desc) in zip(self._feature_frames, self.feature_cards):
             accent = tk.get(accent_key, tk["accent_primary"])
             f_frame.setStyleSheet(f"""
                 QFrame {{
-                    background-color: {tk['bg_elevated']};
-                    border: 1px solid {tk['border_subtle']};
+                    background-color: {tk['bg_canvas']};
+                    border: 1px solid {tk['border_default']};
                     border-left: 3px solid {accent};
-                    border-radius: 10px;
-                    padding: 8px 12px;
+                    border-radius: 12px;
                 }}
             """)
             f_title.setStyleSheet(
-                f"font-size: 12.5px; font-weight: 600; color: {tk['text_primary']}; background: transparent; border: none;"
+                f"font-size: 13px; font-weight: 700; color: {tk['text_primary']}; background: transparent; border: none;"
             )
             f_desc.setStyleSheet(
-                f"font-size: 11px; color: {tk['text_secondary']}; background: transparent; border: none;"
+                f"font-size: 11.5px; color: {tk['text_secondary']}; background: transparent; border: none;"
             )
 
         self.lang_label.setStyleSheet(
-            f"font-size: 12px; color: {tk['text_secondary']}; font-weight: 500; background: transparent;"
+            f"font-size: 12px; color: {tk['text_secondary']}; font-weight: 600; background: transparent; border: none;"
         )
         lang_btn_qss = f"""
             QPushButton {{
-                background: {tk['bg_elevated']};
-                border: 1px solid {tk['border_default']};
+                background: {tk['bg_canvas']};
+                border: 1px solid {tk['border_strong']};
                 border-radius: 8px;
                 color: {tk['text_secondary']};
-                padding: 4px 12px;
-                font-size: 11.5px;
-                font-weight: 500;
+                padding: 5px 14px;
+                min-width: 72px;
+                font-size: 12px;
+                font-weight: 600;
             }}
             QPushButton:hover {{
                 background: {tk['bg_hover']};
                 color: {tk['text_primary']};
             }}
             QPushButton:checked {{
-                background: {tk['accent_subtle']};
+                background: {tk['accent_primary']};
                 border: 1px solid {tk['accent_primary']};
-                color: {tk['accent_primary']};
-                font-weight: 600;
+                color: #FFFFFF;
+                font-weight: 700;
             }}
         """
         for btn in self.lang_group.buttons():
@@ -301,16 +309,17 @@ class ModernWelcomeDialog(QDialog):
         self.terms_checkbox.setStyleSheet(f"""
             QCheckBox {{
                 color: {tk['text_secondary']};
-                font-size: 11.5px;
+                font-size: 12px;
                 spacing: 8px;
                 background: transparent;
+                border: none;
             }}
             QCheckBox::indicator {{
                 width: 16px;
                 height: 16px;
                 border-radius: 4px;
                 border: 1px solid {tk['border_strong']};
-                background: {tk['bg_elevated']};
+                background: {tk['bg_canvas']};
             }}
             QCheckBox::indicator:checked {{
                 background: {tk['accent_primary']};
@@ -322,25 +331,27 @@ class ModernWelcomeDialog(QDialog):
         self.start_btn.setStyleSheet(f"""
             QPushButton {{
                 background: {tk['accent_primary']};
-                border: none;
-                border-radius: 12px;
-                color: {tk['text_inverse']};
+                border: 1px solid {tk['accent_primary']};
+                border-radius: 10px;
+                color: #FFFFFF;
                 font-size: 13.5px;
                 font-weight: 700;
-                letter-spacing: 0.3px;
+                letter-spacing: 0.2px;
                 padding: 0 24px;
             }}
             QPushButton:hover {{
                 background: {tk['accent_hover']};
+                border-color: {tk['accent_hover']};
             }}
             QPushButton:disabled {{
                 background: {tk['bg_elevated']};
+                border-color: {tk['border_default']};
                 color: {tk['text_tertiary']};
             }}
         """)
         if hasattr(self, "theme_toggle_btn"):
             self.theme_toggle_btn.set_language(self.lang)
-            self.theme_toggle_btn.update()
+            self.theme_toggle_btn.sync_theme(theme)
 
     def _on_lang_switched(self, button: QPushButton) -> None:
         self.lang = button.property("code")
@@ -398,19 +409,3 @@ class ModernWelcomeDialog(QDialog):
         mark_first_run_completed()
         self.reject()
 
-    def showEvent(self, event) -> None:  # noqa: N802
-        super().showEvent(event)
-        if getattr(self, "_animated", False):
-            return
-        self._animated = True
-
-        effect = QGraphicsOpacityEffect(self.card)
-        self.card.setGraphicsEffect(effect)
-
-        fade = QPropertyAnimation(effect, b"opacity", self)
-        fade.setDuration(240)
-        fade.setStartValue(0.0)
-        fade.setEndValue(1.0)
-        fade.setEasingCurve(QEasingCurve.Type.OutCubic)
-        fade.start()
-        self._fade = fade

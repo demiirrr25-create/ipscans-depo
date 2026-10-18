@@ -455,6 +455,7 @@ class OnboardingWizard(QDialog):
                 f"QCheckBox::indicator:checked {{ background: {tk['accent_primary']}; border-color: {tk['accent_primary']}; image: none; }}"
             )
 
+        self._theme = theme if theme in ("light", "dark") else get_current_theme()
         self.silk_canvas.update()
         if hasattr(self, "theme_toggle_btn"):
             self.theme_toggle_btn.set_language(self.language)
@@ -491,7 +492,7 @@ class OnboardingWizard(QDialog):
     def _refresh_step(self) -> None:
         if self.step_index >= len(self.steps):
             return
-        tk = get_tokens()
+        tk = get_tokens(getattr(self, "_theme", None))
         key = self.steps[self.step_index]
         self.stack.setCurrentIndex(self.step_index)
         is_tr = str(self.language).lower().startswith("tr")
@@ -504,17 +505,17 @@ class OnboardingWizard(QDialog):
                 if i == self.step_index:
                     lbl.setText(f"● 0{i+1} · {title}")
                     lbl.setStyleSheet(
-                        f"font-size: 11px; font-weight: bold; padding: 6px 10px; border-radius: 8px; background-color: {tk['accent_primary']}; color: {tk['text_inverse']};"
+                        f"QLabel {{ font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 8px; background: {tk['accent_primary']}; background-color: {tk['accent_primary']}; color: #FFFFFF; }}"
                     )
                 elif i < self.step_index:
                     lbl.setText(f"✓ 0{i+1} · {title}")
                     lbl.setStyleSheet(
-                        f"font-size: 11px; padding: 6px 10px; border-radius: 8px; color: {tk['text_primary']}; background-color: {tk['bg_elevated']};"
+                        f"QLabel {{ font-size: 11px; font-weight: 600; padding: 6px 10px; border-radius: 8px; color: {tk['text_primary']}; background: {tk['bg_elevated']}; background-color: {tk['bg_elevated']}; }}"
                     )
                 else:
                     lbl.setText(f"· 0{i+1} · {title}")
                     lbl.setStyleSheet(
-                        f"font-size: 11px; padding: 6px 10px; border-radius: 8px; color: {tk['text_tertiary']}; background: transparent;"
+                        f"QLabel {{ font-size: 11px; padding: 6px 10px; border-radius: 8px; color: {tk['text_secondary']}; background: transparent; }}"
                     )
 
         # Update dots
@@ -602,15 +603,4 @@ class OnboardingWizard(QDialog):
     # ------------------------------------------------------------ entrance
     def showEvent(self, event) -> None:  # noqa: N802 (Qt override)
         super().showEvent(event)
-        if getattr(self, "_animated_in", False):
-            return
         self._animated_in = True
-
-        effect = QGraphicsOpacityEffect(self._logo_label)
-        self._logo_label.setGraphicsEffect(effect)
-        fade = QPropertyAnimation(effect, b"opacity", self)
-        fade.setDuration(260)
-        fade.setStartValue(0.0)
-        fade.setEndValue(1.0)
-        fade.start()
-        self._entrance_fade = fade

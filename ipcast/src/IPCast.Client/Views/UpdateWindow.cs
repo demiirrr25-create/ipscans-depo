@@ -23,7 +23,7 @@ public sealed class UpdateWindow : Window
         {
             try
             {
-                var current = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(2, 7, 0);
+                var current = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(2, 8, 0);
                 var update = await _updater.CheckAsync(new Version(current.Major, current.Minor, current.Build), _cts.Token);
                 if (update is null) { status.Text = "IPCast is up to date."; return; }
                 status.Text = $"IPCast {update.Version} available · {update.Size / 1048576d:0.0} MiB";

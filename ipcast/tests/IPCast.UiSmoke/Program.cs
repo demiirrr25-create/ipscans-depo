@@ -50,6 +50,9 @@ Check((Application.Current.Resources["AccentBrush"] as Avalonia.Media.ISolidColo
 vm.Navigate(NavSection.MyDevices); Render(window, "address-book-light");
 vm.Navigate(NavSection.Home); Render(window, "home-light");
 window.Width = 880; window.Height = 560; Render(window, "home-small");
+var incomingLight = new IncomingConnectionWindow(new IncomingConnectionRequest(DeviceId.FromValidatedRaw("123456789"), PermissionProfiles.ForName("Full access")));
+incomingLight.Show(); Render(incomingLight, "incoming-light"); incomingLight.Close();
+var remoteLight = new RemoteScreenWindow(); remoteLight.Show(); Render(remoteLight, "session-toolbar-light"); remoteLight.Close();
 Check(window.FindControl<Button>("ThemeToggleButton") is not null, "header theme toggle button exists");
 vm.ToggleThemeCommand.Execute(null);
 Check(vm.Theme == "Dark" && Application.Current.RequestedThemeVariant == Avalonia.Styling.ThemeVariant.Dark, "ToggleThemeCommand switches Light to Dark");

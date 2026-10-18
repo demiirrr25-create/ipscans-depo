@@ -8,6 +8,7 @@ from __future__ import annotations
 from PyQt6.QtWidgets import (
     QFormLayout,
     QFrame,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -27,13 +28,15 @@ class LicensePanel(QWidget):
         self.lang = lang
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
+        outer.setContentsMargins(0, 4, 0, 4)
         outer.setSpacing(14)
 
         card = QFrame(objectName="OptionsCard")
+        card.setMaximumWidth(760)
         form = QFormLayout(card)
-        form.setContentsMargins(18, 16, 18, 16)
+        form.setContentsMargins(20, 18, 20, 18)
         form.setSpacing(10)
+        form.setHorizontalSpacing(24)
 
         self.plan_label = QLabel("—")
         self.status_label = QLabel("—")
@@ -45,21 +48,32 @@ class LicensePanel(QWidget):
         form.addRow(QLabel(t(lang, "license_key")), self.key_label)
 
         self.email_edit = QLineEdit()
+        self.email_edit.setMinimumHeight(36)
+        self.email_edit.setMaximumWidth(420)
         self.email_edit.setPlaceholderText(t(lang, "email_placeholder"))
         form.addRow(QLabel(t(lang, "email_label")), self.email_edit)
 
         outer.addWidget(card)
 
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(10)
         self.activate_btn = QPushButton(t(lang, "start_trial"), objectName="PrimaryButton")
+        self.activate_btn.setMinimumWidth(180)
+        self.activate_btn.setMaximumWidth(260)
         self.activate_btn.clicked.connect(self._on_activate)
-        outer.addWidget(self.activate_btn)
+        btn_row.addWidget(self.activate_btn)
 
         self.check_update_btn = QPushButton(t(lang, "check_updates"), objectName="GhostButton")
+        self.check_update_btn.setMinimumWidth(160)
+        self.check_update_btn.setMaximumWidth(240)
         self.check_update_btn.clicked.connect(self._on_check_update)
-        outer.addWidget(self.check_update_btn)
+        btn_row.addWidget(self.check_update_btn)
+        btn_row.addStretch(1)
+        outer.addLayout(btn_row)
 
         self.note_label = QLabel(t(lang, "license_note"))
         self.note_label.setObjectName("StatusLabel")
+        self.note_label.setMaximumWidth(760)
         self.note_label.setWordWrap(True)
         outer.addWidget(self.note_label)
         outer.addStretch(1)
