@@ -119,6 +119,9 @@ class MonitorWorker(QThread):
             should_stop=lambda: self._stop_requested,
         )
 
+        if self._stop_requested:
+            return
+
         events: list[Event] = process_scan_pass(self._db, scan_results, self._lang)
 
         high_latency = 0
@@ -127,6 +130,7 @@ class MonitorWorker(QThread):
         found_ips = {result.ip for result in scan_results}
 
         for result in scan_results:
+            if self._stop_requested:return
             # process_scan_pass already resolved+upserted the correct
             # identity for this IP (merging an "ip:"-keyed placeholder into
             # a MAC-based key if this pass was the first to resolve a MAC —

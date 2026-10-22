@@ -12,7 +12,7 @@ import access
 from models import Installer, Health, VISION_TEMPLATES
 from stream import Stream
 
-VERSION = "1.2.0-rc.1"
+VERSION = "1.2.0-rc.2"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()

@@ -8,6 +8,7 @@ running, and problem notifications pop up from the tray (spec items 8, 25).
 """
 from __future__ import annotations
 
+from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
     QApplication,
@@ -57,6 +58,7 @@ class ProMainWindow(QWidget):
         self.license_provider = RemoteLicenseProvider(self.db)
         self._monitor: MonitorWorker | None = None
         self._really_quit = False
+        self._close_pending = False
 
         self.setObjectName("AppRoot")
         self.setWindowTitle("IPScans Network Health Pro")
@@ -200,8 +202,17 @@ class ProMainWindow(QWidget):
                 QSystemTrayIcon.MessageIcon.Information, 5000,
             )
             return
-        if self._monitor is not None:
+        if self._monitor is not None and self._monitor.isRunning():
+            self._close_pending = True
             self._monitor.stop()
+            event.ignore()
+            return
+        # The embedded scanner may still own background discovery/export jobs.
+        if not self.scanner_tab.close():
+            self._close_pending = True
+            QTimer.singleShot(100, self.close)
+            event.ignore()
+            return
         super().closeEvent(event)
 
     # ---------------------------------------------------------- persistence
@@ -250,6 +261,7 @@ class ProMainWindow(QWidget):
         self._monitor.health_updated.connect(lambda _: self._refresh_inventory())
         self._monitor.tick_finished.connect(self.dashboard_tab.hide_starting)
         self._monitor.failed.connect(self._on_monitor_failed)
+        self._monitor.finished.connect(self._monitor_finished)
         self._monitor.start()
         self.db.set_setting("monitoring_enabled", "1")
         self.monitoring_tab.set_running(True)
@@ -263,18 +275,30 @@ class ProMainWindow(QWidget):
     def _stop_monitoring(self) -> None:
         if self._monitor is not None:
             self._monitor.stop()
-            self._monitor = None
         self.db.set_setting("monitoring_enabled", "0")
         self.monitoring_tab.set_running(False)
-        self.dashboard_tab.start_monitoring_btn.setEnabled(True)
+        self.dashboard_tab.start_monitoring_btn.setEnabled(self._monitor is None)
+        self.monitoring_tab.start_btn.setEnabled(self._monitor is None)
         self.dashboard_tab.stop_monitoring_btn.setEnabled(False)
         self.dashboard_tab.hide_starting()
         if self.tray is not None:
             self._tray_start_action.setEnabled(True)
             self._tray_stop_action.setEnabled(False)
 
+    def _monitor_finished(self) -> None:
+        worker = self._monitor
+        self._monitor = None
+        if worker is not None:
+            worker.deleteLater()
+        self._stop_monitoring()
+        if self._close_pending:
+            self._really_quit = True
+            QTimer.singleShot(0, self.close)
+
     def _on_monitor_failed(self, message: str) -> None:
         self._stop_monitoring()
+        QMessageBox.warning(self, "IPScans Network Health Pro", 
+            ("İzleme durdu: " if self.lang == "tr" else "Monitoring stopped: ") + message)
 
     def _on_event_created(self, event) -> None:
         self.event_log_tab.add_event(event)
@@ -316,7 +340,11 @@ class ProMainWindow(QWidget):
     def _on_export_csv(self) -> None:
         path, _ = QFileDialog.getSaveFileName(self, t(self.lang, "export_csv"), "devices.csv", "CSV Files (*.csv)")
         if path:
-            export_devices_csv(self.db.all_devices(), path)
+            try:
+                if not path.lower().endswith('.csv'): path += '.csv'
+                export_devices_csv(self.db.all_devices(), path)
+            except OSError as exc:
+                QMessageBox.warning(self, t(self.lang, "export_csv"), str(exc))
 
     def _refresh_inventory(self) -> None:
         devices = self.db.all_devices()

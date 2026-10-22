@@ -170,7 +170,7 @@ const I18N = {
     'overview.orb': 'SEE · UNDERSTAND · NOTIFY',
     'overview.workspace': 'Your workspace',
     'overview.liveStatus': 'Live connection status',
-    'overview.hint': 'Add a camera, define an event rule, and start monitoring. Ollama is required for Vision AI rules. 12 deterministic local rule types run without an AI model. 12 Vision AI templates are included for animals, weather, and tampering.',
+    'overview.hint': 'Add a camera, define an event rule, and start monitoring. Ollama is required for Vision AI rules. 18 deterministic local rule types run without an AI model. 32 Vision AI templates are included for animals, weather, and tampering.',
     'stats.cameras': 'CAMERAS',
     'stats.rules': 'ACTIVE RULES',
     'stats.events': 'PENDING REVIEW',
@@ -368,13 +368,30 @@ async function refresh() {
       ['stats.events', dict['stats.events'], state.events.filter(e => !e.reviewed).length]
     ].map(([key, label, b]) => `<div class="stat"><span data-i18n="${key}">${label}</span><strong>${b.toString().padStart(2, '0')}</strong></div>`).join('');
 
-    const cards = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '◈');
-    $('#overviewCameras').innerHTML = cards;
-    $('#cameraList').innerHTML = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '▦');
+    for (const selector of ['#overviewCameras', '#cameraList']) {
+      const container = $(selector);
+      const structureKey = JSON.stringify([state.cameras.map(c => [c.id,c.name,c.status]),currentLang]);
+      if (container.dataset.key !== structureKey) {
+        container.dataset.key = structureKey;
+        container.innerHTML = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '◈');
+      } else {
+        container.querySelectorAll('article').forEach((card,index) => {
+          const c = state.cameras[index];
+          const image = card.querySelector('img');
+          if (image && image.complete && !document.hidden) image.src = '/api/frame/' + c.id + '?t=' + Date.now();
+          const details = card.querySelector('.fine');
+          if (details) details.textContent = c.analysis + (c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn') + (c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn') + (c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255');
+        });
+      }
+    }
 
-    const selected = $('#cameraSelect').value;
-    $('#cameraSelect').innerHTML = '<option value="">Kamera seçin</option>' + state.cameras.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
-    $('#cameraSelect').value = selected;
+    const cameraKey = JSON.stringify(state.cameras.map(c => [c.id,c.name]));
+    if ($('#cameraSelect').dataset.key !== cameraKey) {
+      const selected = $('#cameraSelect').value;
+      $('#cameraSelect').innerHTML = '<option value="">Kamera seçin</option>' + state.cameras.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      $('#cameraSelect').value = selected;
+      $('#cameraSelect').dataset.key = cameraKey;
+    }
 
     const rulesKey = JSON.stringify([state.rules,state.cameras.map(c => [c.id,c.name]),currentLang]);
     if ($('#ruleList').dataset.key !== rulesKey) {
@@ -391,7 +408,7 @@ async function refresh() {
     const eventKey = JSON.stringify([visibleEvents,currentLang]);
     if ($('#eventList').dataset.key !== eventKey) {
       $('#eventList').dataset.key = eventKey;
-      $('#eventList').innerHTML = visibleEvents.map(e => `<article class="card"><span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span><h2>${esc(e.rule)} · ${esc(e.camera)}</h2><p>${esc(e.reason)}</p><p class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}${e.latencyMs ? ' · AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn' : ''} · ${e.kind && e.kind !== 'vision' ? 'Yerel ölçüm' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}<div class="actions">${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : '<span>RTSP klibi alınamadı; örnek kareleri inceleyin.</span>'}${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}</div></article>`).join('') || empty(dict['empty.eventsTitle'], dict['empty.eventsDesc'], '◷');
+      $('#eventList').innerHTML = visibleEvents.map(e => `<article class="card"><span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span><h2>${esc(e.rule)} · ${esc(e.camera)}</h2><p>${esc(e.reason)}</p><p class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}${e.latencyMs ? ' · AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn' : ''} · ${e.kind && e.kind !== 'vision' ? 'Yerel ölçüm' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}<div class="actions">${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : `<span>${e.recording === 'pending' ? 'Video kanıtı hazırlanıyor…' : 'RTSP klibi alınamadı; örnek kareleri inceleyin.'}</span>`}${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}</div></article>`).join('') || empty(dict['empty.eventsTitle'], dict['empty.eventsDesc'], '◷');
     }
 
     if (first) {
@@ -738,7 +755,8 @@ $('#cancelModel').onclick = async () => {
 initTheme();
 initLanguage();
 refresh();
-setInterval(refresh, 1000);
+setInterval(() => { if (!document.hidden) refresh(); }, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 
 let discoveryToken=null;
 function deviceData(){const d=Object.fromEntries(new FormData($('#deviceForm')));d.sync=!!d.sync;d.https=!!d.https;return d}

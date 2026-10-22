@@ -208,8 +208,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        await Clipboard.SetTextAsync(vm.DeviceIdFormatted);
-        vm.NotifyIdCopied();
+        try
+        {
+            await Clipboard.SetTextAsync(vm.DeviceIdFormatted);
+            vm.NotifyIdCopied();
+        }
+        catch (Exception ex) { vm.StatusMessage = $"Could not copy address: {ex.Message}"; }
     }
 
     private void OnRemoteIdKeyDown(object? sender, KeyEventArgs e)

@@ -373,7 +373,7 @@ class LiveDashboard(QWidget):
             if search and search not in plate:continue
             registered=registry.lookup(self.window.session,plate) if plate and (row['status']=='recognized' or row['corrected_plate']) else None
             entries.append((row,plate,registered))
-        signature=repr(entries)
+        signature=repr((entries,names))
         if signature==self.feed_signature and not force:return
         self.feed_signature=signature
         while self.feed_layout.count():

@@ -185,11 +185,6 @@ class MainWindow(QWidget):
         self.export_button.clicked.connect(self._export)
         heading.addWidget(self.export_button)
 
-        self.tour_btn = QPushButton(self._v4("Info && Guide", "Rehber && Bilgi"), objectName="TourButton")
-        self.tour_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.tour_btn.clicked.connect(self._open_feature_tour)
-        self.tour_btn.setVisible(True)
-        heading.addWidget(self.tour_btn)
 
         self.theme_toggle_btn = ThemeToggleButton(self, self.lang)
         heading.addWidget(self.theme_toggle_btn)
@@ -228,6 +223,7 @@ class MainWindow(QWidget):
         cmd_row.addWidget(self.target_input)
 
         self.filter_edit = QLineEdit()
+        self.filter_edit.setClearButtonEnabled(True)
         self.filter_edit.setAccessibleName(t(self.lang, "search_placeholder"))
         self.filter_edit.setPlaceholderText(
             self._v4("Search devices (IP, MAC, name, port)...", "Cihaz ara (IP, MAC, isim, port)...")
@@ -504,15 +500,10 @@ class MainWindow(QWidget):
 
     def _filter(self, text: str) -> None:
         self.proxy.set_filter_text(text)
+        self._update_summary()
         self._map_dirty = True
         if self.views.currentIndex() == 1:
             self.network_map.set_filter_text(text)
-
-    def _open_feature_tour(self) -> None:
-        from app.ui.modern_welcome import ModernWelcomeDialog
-
-        dialog = ModernWelcomeDialog(self.lang, parent=self)
-        dialog.exec()
 
     def _start_scan(self) -> None:
         if (
@@ -611,8 +602,8 @@ class MainWindow(QWidget):
         devices = self.model._devices
         self.summary_label.setText(
             self._v4(
-                f"{len(devices)} devices  ·  Double-click to open the web interface ↗",
-                f"{len(devices)} cihaz  ·  Web arayüzünü açmak için çift tıklayın ↗",
+                f"{self.proxy.rowCount()} / {len(devices)} devices  ·  Double-click to open the web interface ↗",
+                f"{self.proxy.rowCount()} / {len(devices)} cihaz  ·  Web arayüzünü açmak için çift tıklayın ↗",
             )
         )
         self.conflicts_button.setText(f"{t(self.lang, 'conflicts')} ({len(self._conflicts)})")
@@ -807,6 +798,9 @@ class MainWindow(QWidget):
 
     def _export(self) -> None:
         self._flush_results(all_results=True)
+        if not self.proxy.rowCount():
+            self.status_label.setText(self._v4("No matching devices to export. Clear the search or run a scan.", "Aktarılacak cihaz yok. Aramayı temizleyin veya tarama başlatın."))
+            return
         path, selected = QFileDialog.getSaveFileName(
             self,
             self._v4("Export report", "Raporu dışa aktar"),

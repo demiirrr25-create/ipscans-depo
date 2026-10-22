@@ -204,6 +204,11 @@ class PassageBrowser(QWidget):
             self.update_cameras()
             self.update_registry_filters()
             self.snapshot=page['snapshot'];self.next_cursor=page['next_cursor'];self.last_refresh=time.monotonic()
+            selected_item = self.table.item(self.table.currentRow(), 8)
+            selected_event = selected_item.text() if selected_item else None
+            scroll_position = self.table.verticalScrollBar().value()
+            self.table.clearSelection()
+            self.table.setCurrentCell(-1, -1)
             self.table.setRowCount(len(page['rows']))
             names={c['id']:c['name'] for c in self.ops.cameras(self.session)}
             locations=self.registry_locations(page['rows'])
@@ -217,9 +222,11 @@ class PassageBrowser(QWidget):
                     '; '.join(f'{block} / {unit}' for block,unit in addresses) or '—']
                 for column,value in enumerate(values):self.table.setItem(index,column,QTableWidgetItem(value))
                 self.table.item(index,1).setData(Qt.ItemDataRole.UserRole,row['camera'])
+                if row['event_id'] == selected_event:self.table.setCurrentCell(index, 0)
                 if row.get('corrected_plate'):
                     self.table.item(index,5).setToolTip('Operatör tarafından düzeltilen plaka. İlk OCR: '+(row.get('original_plate') or 'Okunamadı'))
                     self.table.item(index,7).setText(row['status']+' · Düzeltilmiş')
+            self.table.verticalScrollBar().setValue(scroll_position)
             self.back.setEnabled(bool(self.previous));self.forward.setEnabled(self.next_cursor is not None)
             self.info.setText(f"Sayfa / Page {len(self.previous)+1} · {len(page['rows'])} kayıt / records · 100 / page")
             self.error.clear()
