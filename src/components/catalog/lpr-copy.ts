@@ -67,11 +67,11 @@ export const lprCopy: Record<Locale, EnterpriseProductCopy> = {
     name: "IPScans LPR Pro",
     headline: "Autonomous plate recognition and live gate operations, locally on your workstation.",
     lead:
-      "Read license plates locally, supervise a multi-camera live wall, calibrate independent trigger and recognition lines, and manage resident vehicle registries with durable encrypted passage logs.",
+      "Local desktop plate recognition, a localhost event review panel, and optional Ollama / Gemma vision assistance. Inspect shared records and evidence, with operator-approved corrections. AI can be disabled in settings.",
     primaryCta: "Download Installer",
     secondaryCta: "Release notes & source",
     screenshotAlt: "IPScans LPR Pro 5-page live operator workspace and camera wall",
-    screenshotCaption: "Five-pane live operator console with real-time RTSP streams, plate crops, and passage verification.",
+    screenshotCaption: "LPR Pro 1.1 light desktop interface. Passage records shown are synthetic demonstration data.",
     capabilities: {
       eyebrow: "Core capabilities",
       title: "Engineered for residential complexes, parking facilities, and controlled gates.",
@@ -80,8 +80,8 @@ export const lprCopy: Record<Locale, EnterpriseProductCopy> = {
       items: [
         {
           icon: "monitor",
-          title: "5-page live operator workspace",
-          body: "Dedicated views for Live Dashboard, Cameras, Vehicles & Residents, Events, and Settings. Manage blocks, units, residents, and multi-owner vehicles with CSV/XLSX import and export.",
+          title: "Desktop + localhost review panel",
+          body: "Desktop live cameras and calibration, plus authenticated browser access to the latest 100 passages, evidence and audited corrections on the same computer.",
         },
         {
           icon: "activity",
@@ -100,8 +100,8 @@ export const lprCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "cpu",
-          title: "Regional OCR & per-character confidence",
-          body: "Process still images, MP4/AVI recordings, and live RTSP streams with per-character confidence metrics, plate evidence crops, and SHA-256 verified local ONNX models.",
+          title: "Optional local Ollama / Gemma assistant",
+          body: "Prepare Ollama and a vision model automatically from Settings. Review stored evidence on demand; AI suggests, operators verify. First preparation needs internet and disk space. Standard ONNX OCR works with AI disabled.",
         },
         {
           icon: "lock",
@@ -181,11 +181,11 @@ export const lprCopy: Record<Locale, EnterpriseProductCopy> = {
     name: "IPScans LPR Pro",
     headline: "İş istasyonunuzda tamamen yerel çalışan otonom plaka tanıma ve canlı geçiş yönetimi.",
     lead:
-      "Plakaları yerelde okuyun, çok kameralı canlı izleme duvarını yönetin, bağımsız tetik ve okuma çizgilerini kalibre edin ve şifreli geçiş kayıtlarıyla sakin araç kütüğünüzü denetleyin.",
+      "Masaüstünde yerel plaka tanıma, tarayıcıda olay inceleme ve isteğe bağlı Ollama / Gemma desteği. Aynı kayıtları izleyin, görsel kanıtları inceleyin ve operatör onayıyla düzeltin. AI ayarlardan kapatılabilir.",
     primaryCta: "Kurulum Paketini İndir",
     secondaryCta: "Sürüm notları ve kaynak",
     screenshotAlt: "IPScans LPR Pro 5 bölmeli canlı operatör çalışma alanı ve kamera duvarı",
-    screenshotCaption: "Gerçek zamanlı RTSP akışları, plaka kırpımları ve geçiş doğrulaması sunan 5 bölmeli canlı operatör konsolu.",
+    screenshotCaption: "LPR Pro 1.1 aydınlık masaüstü arayüzü. Görseldeki geçişler tanıtım için oluşturulmuş örnek verilerdir.",
     capabilities: {
       eyebrow: "Temel yetenekler",
       title: "Site yönetimleri, otoparklar ve kontrollü geçiş noktaları için tasarlandı.",
@@ -194,8 +194,8 @@ export const lprCopy: Record<Locale, EnterpriseProductCopy> = {
       items: [
         {
           icon: "monitor",
-          title: "5 bölmeli canlı operatör çalışma alanı",
-          body: "Canlı İzleme, Kameralar, Araçlar ve Sakinler, Geçiş Kayıtları ve Ayarlar ekranları. Blok, daire, sakin ve çoklu araç sahibi kayıtları ile CSV/Excel içe ve dışa aktarma.",
+          title: "Masaüstü + yerel tarayıcı paneli",
+          body: "Masaüstünde canlı kamera ve kalibrasyon; localhost panelinde hesapla giriş, son 100 geçiş, görsel kanıt ve denetlenen düzeltmeler. Panel yalnızca aynı bilgisayardan erişilir.",
         },
         {
           icon: "activity",
@@ -214,8 +214,8 @@ export const lprCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "cpu",
-          title: "Bölgesel OCR ve karakter analizi",
-          body: "Görüntü, MP4/AVI video ve canlı RTSP kaynakları; karakter bazlı güven puanları, kanıt plaka kırpımı ve SHA-256 doğrulamalı yerel ONNX modelleri.",
+          title: "İsteğe bağlı yerel Ollama / Gemma desteği",
+          body: "Ollama ve görsel model ayarlardan otomatik hazırlanır. Kayıtlı kanıt için AI öneri verir, operatör doğrular. İlk hazırlık internet ve disk alanı gerektirir; AI kapalıyken standart ONNX OCR çalışır.",
         },
         {
           icon: "lock",

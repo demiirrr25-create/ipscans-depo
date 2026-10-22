@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `https://ipscans.com/${locale}/lpr-pro`,
       images: [
         {
-          url: "/lpr-dev4.png",
+          url: "/lpr-1-1-light.png",
           width: 1440,
           height: 900,
           alt: copy.screenshotAlt,
@@ -46,7 +46,7 @@ export default async function LprProPage({ params }: Props) {
     softwareVersion: lprRelease.version,
     downloadUrl: lprRelease.url,
     fileSize: `${(lprRelease.bytes / 1_000_000).toFixed(1)} MB`,
-    screenshot: "https://ipscans.com/lpr-dev4.png",
+    screenshot: "https://ipscans.com/lpr-1-1-light.png",
     description: copy.metaDescription,
     offers: {
       "@type": "Offer",
@@ -67,7 +67,7 @@ export default async function LprProPage({ params }: Props) {
         markSrc="/lpr-mark.svg"
         markAlt="IPScans LPR Pro"
         screenshot={{
-          src: "/lpr-dev4.png",
+          src: "/lpr-1-1-light.png",
           width: 1440,
           height: 900,
         }}

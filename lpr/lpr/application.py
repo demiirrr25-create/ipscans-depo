@@ -740,6 +740,9 @@ def main():
     login=Login(ops)
     if login.exec()!=QDialog.DialogCode.Accepted:ops.close();return 0
     window=ProductWindow(ops,login.session);window.show()
+    if '--local' in sys.argv:
+        from .local_panel import open_panel
+        QTimer.singleShot(0,lambda:window.guard(lambda:open_panel(window)))
     if login.created_admin:QTimer.singleShot(0,window.open_setup)
     code=app.exec();ops.close();return code
 

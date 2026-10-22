@@ -84,7 +84,7 @@ export function ApplicationsSection({
       valueProp: copy.apps.lprPro.valueProp,
       summary: copy.apps.lprPro.summary,
       screenshot: {
-        src: "/lpr-dev4.png",
+        src: "/lpr-1-1-light.png",
         alt: copy.apps.lprPro.screenshotAlt,
         width: 1440,
         height: 900,

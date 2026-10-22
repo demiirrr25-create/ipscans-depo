@@ -1,4 +1,4 @@
-#define ProductVersion "1.0.0.dev4"
+#define ProductVersion "1.1.0.dev1"
 #define ProductName "IPScans LPR Pro Preview"
 #define ProductExe "IPScans-LPR-Pro.exe"
 
@@ -28,7 +28,7 @@ CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
 InfoBeforeFile=INSTALL_NOTES.txt
-VersionInfoVersion=1.0.0.4
+VersionInfoVersion=1.1.0.1
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -45,6 +45,7 @@ Source: "INSTALL_NOTES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#ProductName}"; Filename: "{app}\{#ProductExe}"
+Name: "{group}\IPScans LPR Pro Local"; Filename: "{app}\{#ProductExe}"; Parameters: "--local"
 Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\{#ProductExe}"; Tasks: desktopicon
 
 [Registry]

@@ -85,7 +85,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
       downloadUrl: lprRelease.url,
       ...copy.products.lpr,
       screenshot: {
-        src: "/lpr-dev4.png",
+        src: "/lpr-1-1-light.png",
         width: 1440,
         height: 900,
         caption: copy.products.lpr.caption,

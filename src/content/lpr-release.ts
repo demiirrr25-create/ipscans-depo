@@ -1,9 +1,9 @@
 export const lprRelease = {
-  version: "1.0.0.dev4",
-  tagVersion: "1.0.0.dev4",
-  fileName: "IPScans-LPR-Pro-1.0.0.dev4-Setup.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/lpr-v1.0.0.dev4/IPScans-LPR-Pro-1.0.0.dev4-Setup.exe",
-  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/lpr-v1.0.0.dev4",
-  sha256: "0b8b528011e9d407a8434412307c96ead1a93ac277342d78f60dc921492d2255",
-  bytes: 122698916,
+  version: "1.1.0.dev1",
+  tagVersion: "1.1.0.dev1",
+  fileName: "IPScans-LPR-Pro-1.1.0.dev1-Setup.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/lpr-v1.1.0.dev1/IPScans-LPR-Pro-1.1.0.dev1-Setup.exe",
+  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/lpr-v1.1.0.dev1",
+  sha256: "2c77ee497bdd899d5e75ae138d420f682f50895e5885281b92b440f0a61dd6f0",
+  bytes: 122732609,
 } as const;
