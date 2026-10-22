@@ -69,6 +69,7 @@ def test_disabled_ai_missing_evidence_and_role_enforcement(panel, monkeypatch):
     assert request(service, 'prepare', {}, cookie, csrf)[0] == 400
     assert not starts
     assert request(service, 'settings', {'enabled': True, 'model': 'gemma3:4b'}, cookie, csrf)[0] == 200
+    assert 'AI etkin' in request(service, 'state', cookie=cookie)[1]['ai']['message']
     assert request(service, 'review', {'id': event['event_id']}, cookie, csrf)[0] == 400
     assert not starts
     audit, token = login(service, 'audit', 'a secure audit password')

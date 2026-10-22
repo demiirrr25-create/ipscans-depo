@@ -110,9 +110,14 @@ class LocalPanel:
                             self.send(403, {'error': 'Oturumu yenileyin'}); return
                         settings = owner.settings(ops)
                         if not post and route == '/api/state':
+                            ai_state = owner.ai.snapshot()
+                            if settings['enabled'] and ai_state['phase'] in ('idle', 'disabled'):
+                                ai_state.update(message='AI etkin. Motoru hazırlayın veya kanıtlı bir olayı inceleyin.')
+                            elif not settings['enabled']:
+                                ai_state.update(message='AI kapalı', result=None)
                             self.send(200, {'username': session.username, 'role': session.role, 'csrf': csrf[session.token],
                                 'events': events.latest(session, 100), 'cameras': ops.cameras(session),
-                                'settings': settings, 'models': MODELS, 'ai': owner.ai.snapshot()}); return
+                                'settings': settings, 'models': MODELS, 'ai': ai_state}); return
                         if post and route == '/api/logout':
                             csrf.pop(session.token, None); ops.logout(session)
                             self.send(200, {}, 'lpr_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return

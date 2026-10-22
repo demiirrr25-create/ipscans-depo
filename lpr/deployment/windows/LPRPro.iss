@@ -42,6 +42,7 @@ Name: "autostart"; Description: "Windows oturumu açıldığında başlat / Star
 Source: "..\..\dist\{#ProductExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\third-party-notices\*"; DestDir: "{app}\third-party-notices"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "INSTALL_NOTES.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\docs\LOCAL_AI.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#ProductName}"; Filename: "{app}\{#ProductExe}"
