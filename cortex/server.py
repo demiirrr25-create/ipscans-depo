@@ -1,4 +1,4 @@
-"""IPScans Cortex 1.0.0 — local camera intelligence, no cloud video transfer."""
+"""IPScans Cortex 1.0.0-rc.2 — local camera intelligence, no cloud video transfer."""
 import base64, collections, concurrent.futures, http.server, json, os, pathlib, secrets
 import shutil, socket, subprocess, sys, threading, time, urllib.parse, urllib.request, uuid, webbrowser
 import xml.etree.ElementTree as ET
@@ -7,10 +7,12 @@ import imageio_ffmpeg
 import io
 from PIL import Image, ImageStat
 import local_rules
+import fleet
+import access
 from models import Installer, Health, VISION_TEMPLATES
 from stream import Stream
 
-VERSION = "1.0.0"
+VERSION = "1.1.0-rc.1"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()
@@ -31,6 +33,22 @@ FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 STATE = {'cameras': [], 'rules': [], 'events': [], 'model': 'gemma3:4b', 'retention': 7, 'webhook': '', 'autostart': False}
 if (DATA / 'config.enc').exists(): STATE.update(json.loads(VAULT.decrypt((DATA / 'config.enc').read_bytes())))
 STATE['rules']=[local_rules.repair_light_rule(r) for r in STATE['rules']]
+STATE.setdefault('devices',[])
+DEVICE_STATUS={}
+DISCOVERIES={}
+
+def clock_loop(stop):
+    due={}
+    while not stop.is_set():
+        with LOCK: devices=[dict(d) for d in STATE.get('devices',[]) if d.get('sync')]
+        for d in devices:
+            if stop.is_set(): return
+            if time.monotonic()<due.get(d['id'],0): continue
+            try: result=fleet.synchronize(d)
+            except Exception: result={'phase':'error','checked':time.time(),'message':'Saat eşitlenemedi. ONVIF yetkisini, cihaz saatini ve bağlantıyı kontrol edin.'}
+            with LOCK: DEVICE_STATUS[d['id']]=result
+            due[d['id']]=time.monotonic()+d['interval']*60
+        stop.wait(5)
 
 def save():
     with LOCK:
@@ -202,6 +220,7 @@ class Camera:
         self.c = c; self.stop = threading.Event(); self.frame = None; self.frames = collections.deque(maxlen=36)
         self.status = 'Bağlanıyor'; self.analysis = 'Bekliyor'; self.last = {}; self.future = None
         self.light_detectors = {}; self.detectors = {}; self.brightness = None
+        self.access_detector=None; self.access_tracks={}; self.access_next=0
         self.stream=None; self.received=0; self.observed_at=0; self.inference_ms=None; self.ai_cursor=0; self.ai_next=0; self.sequence=0
         self.thread = threading.Thread(target=self.loop, daemon=True); self.thread.start()
     def loop(self):
@@ -214,7 +233,7 @@ class Camera:
                     if sequence!=self.sequence:
                         self.sequence=sequence;self.received=received;self.observed_at=time.time()
                         self.frame=frame;self.frames.append(frame);self.status='Bağlı'
-                        self.check_lights();self.check_local()
+                        self.check_lights();self.check_local();self.check_access()
                         if len(self.frames)>=3 and time.monotonic()>=self.ai_next and (self.future is None or self.future.done()):
                             with LOCK:has_ai=any(r['camera']==self.c['id'] and r['enabled'] and r.get('kind','vision')=='vision' and local_rules.scheduled(r) for r in STATE['rules'])
                             if has_ai and AI_SLOTS.acquire(blocking=False):
@@ -261,6 +280,30 @@ class Camera:
                 result={'confidence':1.0,'reason':f"{r['name']}: yerel ölçüm koşulu {r['duration']:g} saniye doğrulandı. {metrics}. Bu ölçüm nesne veya kişi kimliği belirlemez."}
                 enqueue_evidence(self,r,result,list(self.frames))
         if rules and (self.future is None or self.future.done()): self.analysis='Yerel kurallar etkin · AI gerekmez'
+
+    def check_access(self):
+        now=time.monotonic()
+        if now<self.access_next:return
+        self.access_next=now+.5
+        with LOCK: rules=[dict(r) for r in STATE['rules'] if r['camera']==self.c['id'] and r['enabled'] and r.get('kind') in access.KINDS and local_rules.scheduled(r)]
+        active={r['id'] for r in rules}
+        self.access_tracks={k:v for k,v in self.access_tracks.items() if k in active}
+        if not rules:return
+        try:
+            if self.access_detector is None:self.access_detector=access.Pedestrians()
+            points=self.access_detector.detect(self.frame)
+            for r in rules:
+                tracker=self.access_tracks.setdefault(r['id'],access.Tracker())
+                for direction in tracker.update(points,r,now):
+                    entry=direction==r.get('direction','positive')
+                    permitted=access.PERMITS.consume(self.c['id'],now) if entry and r['kind']=='access_unpermitted' else False
+                    hit=(entry and r['kind']=='access_crossing') or (not entry and r['kind']=='access_reverse') or (entry and r['kind']=='access_unpermitted' and not permitted)
+                    if hit:
+                        # Crossing events are discrete: never lose a second tailgating event to a cooldown.
+                        result={'confidence':1.0,'reason':r['name']+': iki taraflı insan izi geçişi. '+('Geçerli giriş izni bulunamadı. ' if r['kind']=='access_unpermitted' else '')+'Pilot dedektör; görüntüden doğrulayın.'}
+                        self.event(r,result,list(self.frames))
+            self.analysis='Yerel insan geçiş takibi · pilot'
+        except Exception:self.analysis='Geçiş dedektörü kullanılamıyor; motor kurulumunu kontrol edin.'
 
     def evaluate(self, frames=None):
         try:
@@ -366,7 +409,8 @@ def cleanup():
 def public_state():
     with LOCK:
         cams = [{k:v for k,v in c.items() if k not in ('password','username','url')} | {'status':WORKERS[c['id']].status if c['id'] in WORKERS else 'Durduruldu','analysis':WORKERS[c['id']].analysis if c['id'] in WORKERS else 'Bekliyor','brightness':WORKERS[c['id']].brightness if c['id'] in WORKERS else None,'inferenceMs':WORKERS[c['id']].inference_ms if c['id'] in WORKERS else None,'frameAge':round(time.monotonic()-WORKERS[c['id']].received,1) if c['id'] in WORKERS else None} for c in STATE['cameras']]
-        return {'cameras':cams,'rules':STATE['rules'],'events':STATE['events'],'model':STATE['model'],'retention':STATE['retention'],'webhookConfigured':bool(STATE['webhook']), 'version':VERSION, 'templates':local_rules.TEMPLATES, 'installer':INSTALLER.status(), 'modelHealth':MODEL_HEALTH.status(STATE['model']), 'visionTemplates':VISION_TEMPLATES, 'autostart':STATE['autostart'], 'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1)}
+        devices=[{k:v for k,v in d.items() if k not in ('username','password')} | {'clock':DEVICE_STATUS.get(d['id'],{'phase':'waiting','message':'Eşitleme bekleniyor.' if d['sync'] else 'Otomatik saat eşitleme kapalı.'})} for d in STATE.get('devices',[])]
+        return {'devices':devices,'cameras':cams,'rules':STATE['rules'],'events':STATE['events'],'model':STATE['model'],'retention':STATE['retention'],'webhookConfigured':bool(STATE['webhook']), 'version':VERSION, 'templates':local_rules.TEMPLATES+access.TEMPLATES, 'installer':INSTALLER.status(), 'modelHealth':MODEL_HEALTH.status(STATE['model']), 'visionTemplates':VISION_TEMPLATES, 'autostart':STATE['autostart'], 'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1)}
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args): pass
@@ -402,6 +446,56 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not 0 < length < 65536: raise ValueError('İstek çok büyük')
             d=json.loads(self.rfile.read(length)); path=self.path
             if not isinstance(d,dict): raise ValueError()
+            if path=='/api/access-permit':
+                if not any(c['id']==d.get('id') for c in STATE['cameras']):raise InputError('Kamera bulunamadı.')
+                access.PERMITS.grant(d['id'])
+                return self.send(200,{'ok':True,'message':'15 saniye için tek geçiş izni verildi.'})
+            if path=='/api/recorder-discover':
+                device=fleet.settings(d)
+                channels=fleet.discover(device)
+                token=secrets.token_urlsafe(24)
+                with LOCK:
+                    expired=[k for k,v in DISCOVERIES.items() if time.monotonic()-v['time']>600]
+                    for k in expired: DISCOVERIES.pop(k,None)
+                    if len(DISCOVERIES)>=8: raise InputError('Çok fazla keşif oturumu. Önce mevcut seçimi tamamlayın.')
+                    DISCOVERIES[token]={'device':device,'channels':channels,'time':time.monotonic()}
+                return self.send(200,{'token':token,'channels':[{k:v for k,v in ch.items() if k!='url'} for ch in channels]})
+            if path=='/api/recorder-import':
+                with LOCK:
+                    found=DISCOVERIES.get(d.get('token',''))
+                    if not found or time.monotonic()-found['time']>600: raise InputError('Keşif süresi doldu; tekrar keşfedin.')
+                    selected=d.get('channels',[])
+                    if not isinstance(selected,list) or not selected or len(set(selected))!=len(selected): raise InputError('Kanalları seçin.')
+                    channels=[ch for ch in found['channels'] if ch['token'] in selected and not ch['error']]
+                    if len(channels)!=len(selected): raise InputError('Seçilen kanallardan biri kullanılamıyor.')
+                    device=dict(found['device']); device['id']=uuid.uuid4().hex
+                    new=[]; duplicates=0
+                    for ch in channels:
+                        camera=normalize_camera({'name':(device['name']+' / '+ch['name'])[:100],'url':ch['url']})
+                        if any(c['url']==camera['url'] for c in STATE['cameras']+new): duplicates+=1; continue
+                        camera.update(id=uuid.uuid4().hex,device=device['id']); new.append(camera)
+                    if len(STATE['cameras'])+len(new)>32: raise InputError('Toplam kamera sınırı 32. Daha az kanal seçin.')
+                    previous_cameras=list(STATE['cameras']); previous_devices=list(STATE['devices'])
+                    try:
+                        if new: STATE['devices'].append(device); STATE['cameras'].extend(new); save()
+                    except Exception:
+                        STATE['cameras']=previous_cameras; STATE['devices']=previous_devices; raise
+                    DISCOVERIES.pop(d['token'],None)
+                return self.send(200,{'added':len(new),'duplicates':duplicates,'ids':[c['id'] for c in new]})
+            if path=='/api/device-add':
+                device=fleet.settings(d); device['id']=uuid.uuid4().hex
+                with LOCK:
+                    if len(STATE['devices'])>=64: raise InputError('Cihaz sınırı 64.')
+                    STATE['devices'].append(device); save()
+                return self.send(200,{'ok':True})
+            if path=='/api/device-toggle':
+                with LOCK:
+                    device=next(v for v in STATE['devices'] if v['id']==d['id'])
+                    device['sync']=not device['sync']; save()
+                return self.send(200,{'ok':True})
+            if path=='/api/device-delete':
+                with LOCK: STATE['devices']=[v for v in STATE['devices'] if v['id']!=d['id']]; save()
+                return self.send(200,{'ok':True})
             if path=='/api/model-install':
                 return self.send(202,{'started':INSTALLER.start()})
             if path=='/api/model-cancel':
@@ -429,7 +523,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if not any(c['id']==d['camera'] for c in STATE['cameras']): raise ValueError('Kamera seçin')
                 if not str(d['prompt']).strip() or not str(d['name']).strip(): raise ValueError('Kural adı ve açıklaması gerekli')
                 rule={'id':uuid.uuid4().hex,'camera':d['camera'],'name':str(d['name'])[:100],'prompt':str(d['prompt'])[:2000],'threshold':float(d['threshold']),'cooldown':int(d['cooldown']),'enabled':True,'kind':d.get('kind','vision')}
-                try: rule.update(local_rules.validate(d)); rule['visionTemplate']=str(d.get('visionTemplate','custom'))[:40]
+                try:
+                    if rule['kind'] in access.KINDS:
+                        values=local_rules.validate({**d,'kind':'vision'})
+                        values['kind']=rule['kind']; values.update(access.validate(d))
+                        if rule['kind']=='access_unpermitted' and any(r['camera']==d['camera'] and r.get('kind')=='access_unpermitted' and r['id']!=d.get('id') for r in STATE['rules']):
+                            raise ValueError('Kamera başına bir izin eşleştirme kuralı kullanılabilir.')
+                        rule.update(values)
+                    else: rule.update(local_rules.validate(d))
+                    rule['visionTemplate']=str(d.get('visionTemplate','custom'))[:40]
                 except ValueError as e: raise InputError(str(e)) from None
                 if rule['kind']=='lights_off':
                     rule.update(dark=int(d.get('dark',45)),drop=float(d.get('drop',.45)),hold=int(d.get('hold',3)))
@@ -444,6 +546,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         STATE['rules'].append(rule)
                     worker=WORKERS.get(rule['camera'])
                     if worker: worker.detectors.pop(rule['id'],None); worker.light_detectors.pop(rule['id'],None)
+                    if worker and hasattr(worker,'access_tracks'):worker.access_tracks.pop(rule['id'],None)
                     save()
             elif path=='/api/rule-delete':
                 with LOCK: STATE['rules']=[r for r in STATE['rules'] if r['id']!=d['id']]; save()
@@ -483,6 +586,20 @@ class LocalServer(http.server.ThreadingHTTPServer):
         super().server_bind()
 
 def main():
+    if '--self-test' in sys.argv:
+        buffer=io.BytesIO(); Image.new('RGB',(640,360),'black').save(buffer,format='JPEG')
+        assert access.Pedestrians().detect(buffer.getvalue())==[]
+        assert (ROOT/'ui'/'app.js').is_file()
+        assert pathlib.Path(FFMPEG).is_file()
+        print(json.dumps({'version':VERSION,'pedestrianEngine':'ok','ui':'ok','ffmpeg':'ok'}))
+        return
+    if '--no-browser' not in sys.argv:
+        try:
+            import desktop_setup
+            desktop_setup.install()
+        except Exception:
+            print('Masaüstü kısayolu oluşturulamadı; uygulama mevcut konumundan çalışıyor.')
+    if '--install-only' in sys.argv:return
     with LOCK:
         for event in STATE['events']:
             if event.get('recording')=='pending': event['recording']='Önceki oturumda kayıt kesildi.'
@@ -497,6 +614,8 @@ def main():
         return
     maintenance_stop=threading.Event()
     threading.Thread(target=maintenance,args=(maintenance_stop,),daemon=True).start()
+    threading.Thread(target=clock_loop,args=(maintenance_stop,),daemon=True).start()
+    if '--no-browser' not in sys.argv and STATE['model']=='gemma3:4b': INSTALLER.start()
     if STATE.get('autostart'):
         for c in STATE['cameras']: WORKERS[c['id']]=Camera(c)
     if '--no-browser' not in sys.argv: webbrowser.open(f'http://127.0.0.1:{PORT}/bootstrap?token={TOKEN}')

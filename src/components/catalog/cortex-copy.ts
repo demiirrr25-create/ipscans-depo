@@ -2,14 +2,14 @@ import type { Locale } from "@/i18n/config";
 import type { EnterpriseProductCopy } from "./lpr-copy";
 
 export const cortexRelease = {
-  version: "1.0.0",
+  version: "1.1.0-rc.1",
   platform: "Windows 10/11 · x64",
-  fileName: "IPScans-Cortex-1.0.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0/IPScans-Cortex-1.0.0.exe",
-  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0/Cortex-Kullanim.md",
+  fileName: "IPScans-Cortex-1.1.0-rc.1.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.1.0-rc.1/IPScans-Cortex-1.1.0-rc.1.exe",
+  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.1.0-rc.1/Cortex-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "02ab3dbdc8c5be29ca4dc8eabf6c4ece1c10b3c3c6bd61e8405ffed3b01ed253",
-  bytes: 62_304_985,
+  sha256: "66743aa0a3ba4366d225e1311519214553040e36722237ccf922e4cbfb7fb5cd",
+  bytes: 103219589,
 } as const;
 
 export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
@@ -22,7 +22,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
     name: "IPScans Cortex",
     headline: "Local intelligence for every camera.",
     lead:
-      "Connect standard RTSP cameras, evaluate 12 model-free visual rules or 12 local Gemma vision AI templates, and preserve automatic 12-second video evidence directly on your workstation.",
+      "Import recorder channels together, synchronize ONVIF device clocks and run local event rules. Version 1.1 release candidate adds three pilot pedestrian crossing rules and automatic Ollama preparation.",
     primaryCta: "Download for Windows",
     secondaryCta: "User guide",
     screenshotAlt: "IPScans Cortex multi-stream RTSP controller and local rule engine",
@@ -35,8 +35,8 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       items: [
         {
           icon: "camera",
-          title: "RTSP streams & ONVIF peering",
-          body: "Connect cameras over RTSP with automatic stream probing, TCP/UDP transport selection, and local subnet ONVIF discovery tuned for low-overhead ~2 FPS background analysis.",
+          title: "Recorder channel import",
+          body: "Discover and select channels on ONVIF Media1 recorders. Prefer the smaller stream per video source and skip duplicates. Hardware compatibility must be verified on each device.",
         },
         {
           icon: "bolt",
@@ -46,7 +46,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         {
           icon: "cpu",
           title: "12 local Gemma vision AI templates",
-          body: "Connect a local Ollama instance to unlock 12 semantic vision templates for person, vehicle, animal, and perimeter anomaly detection entirely on your own hardware.",
+          body: "Ollama and Gemma 3 4B are prepared automatically on first launch. No separate Ollama installer is required; initial preparation needs internet and several GB of disk space.",
         },
         {
           icon: "play",
@@ -60,8 +60,8 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "lock",
-          title: "Zero cloud telemetry & dynamic scaling",
-          body: "Supports up to 32 camera configurations on a single workstation, dynamically scaling analysis rates across DirectX hardware acceleration and CPU fallback.",
+          title: "Verified device clock synchronization",
+          body: "Periodically compare ONVIF device UTC clocks with the computer. Preserve the time zone, correct drift and verify the result by reading it back. Connection and permission failures remain visible.",
         },
       ],
     },
@@ -72,11 +72,11 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       items: [
         {
           title: "Launch the standalone executable",
-          body: "Run the Cortex executable on your workstation. The local control console opens immediately with no external server setup required.",
+          body: "Launch the EXE. Cortex installs into your user profile and creates Desktop and Start menu shortcuts.",
         },
         {
           title: "Choose model-free rules or connect Ollama",
-          body: "Use the 12 built-in native rules with zero AI dependencies, or install Ollama to enable the 12 local Gemma vision AI templates.",
+          body: "Use local rules immediately. Watch or cancel automatic Ollama and Gemma preparation in Settings.",
         },
         {
           title: "Connect RTSP endpoints & arm rules",
@@ -84,9 +84,9 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "Want to enable the 12 semantic vision AI templates? Install Ollama locally to run Gemma vision models on your GPU or CPU.",
-      helperLinkLabel: "Ollama Download Page",
-      helperLinkHref: cortexRelease.ollamaUrl,
+        "Initial AI preparation requires internet. Readiness is verified using an actual vision-model response.",
+      helperLinkLabel: "Setup and user guide",
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Technical architecture & scope",
@@ -102,8 +102,8 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
           body: "Configure up to 32 camera channels. The analysis scheduler targets ~2 FPS per stream and scales dynamically to match available GPU and CPU resources.",
         },
         {
-          title: "DirectX decode with CPU fallback",
-          body: "Uses DirectX hardware acceleration for stream decoding on Windows 10/11 x64 and falls back to multi-core CPU processing automatically.",
+          title: "Pilot crossing detection limits",
+          body: "Entry crossing, reverse direction and unmatched single-use permission rules are available. Full-body views are required; crowds or night scenes can cause missed crossings. Card/turnstile integration and field acceptance remain pending.",
         },
       ],
     },
@@ -136,7 +136,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
     name: "IPScans Cortex",
     headline: "Her kameraya yerel bir beyin.",
     lead:
-      "RTSP kameralarınızı bağlayın, model gerektirmeyen 12 yerel kuralı veya 12 yerel Gemma görsel AI şablonunu çalıştırın ve 12 saniyelik olay kanıt videolarını doğrudan bilgisayarınızda arşivleyin.",
+      "Kayıt cihazından toplu kanal ekleyin, ONVIF cihaz saatlerini otomatik eşitleyin ve yerel olay kurallarını çalıştırın. Üç yeni pilot insan geçiş kuralı ve otomatik Ollama hazırlığıyla 1.1 sürüm adayı.",
     primaryCta: "Windows İçin İndir",
     secondaryCta: "Kullanım kılavuzu",
     screenshotAlt: "IPScans Cortex çok kanallı RTSP denetleyicisi ve yerel kural motoru",
@@ -149,8 +149,8 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       items: [
         {
           icon: "camera",
-          title: "RTSP akışları ve ONVIF keşfi",
-          body: "RTSP üzerinden kamera bağlama, otomatik bağlantı sınaması, TCP/UDP taşıma seçimi ve yerel ağda ONVIF keşfi. Saniyede ~2 kare hedefleyen düşük tüketimli arka plan analizi.",
+          title: "Kayıt cihazından toplu kamera ekleme",
+          body: "ONVIF Media1 destekleyen kayıt cihazının kanallarını keşfedin, seçip topluca ekleyin. Aynı kaynak için düşük çözünürlüklü akış tercih edilir; tekrarlar atlanır. Üretici/model uyumluluğu cihaz üzerinde doğrulanmalıdır.",
         },
         {
           icon: "bolt",
@@ -160,7 +160,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         {
           icon: "cpu",
           title: "12 yerel Gemma görsel AI şablonu",
-          body: "Yerel Ollama kurulumunuzu bağlayarak insan, araç, hayvan ve çevre anomalisi tespiti için 12 görsel AI şablonunu tamamen kendi donanımınızda çalıştırın.",
+          body: "Ollama motoru ve Gemma 3 4B ilk açılışta otomatik hazırlanır. Ayrı Ollama kurulum adımı yoktur; ilk kullanım internet ve birkaç GB boş alan gerektirir.",
         },
         {
           icon: "play",
@@ -174,8 +174,8 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "lock",
-          title: "Sıfır bulut telemetrisi ve dinamik ölçekleme",
-          body: "32 kameraya kadar yapılandırma desteklenir; analiz hızı DirectX donanım hızlandırma ve CPU kapasitenize göre dinamik olarak ölçeklenir.",
+          title: "Doğrulanan otomatik cihaz saati",
+          body: "ONVIF cihazlarının UTC saatini bilgisayara göre düzenli kontrol edin. Saat dilimi korunur, sapma düzeltilir ve sonuç geri okunur. Yetki veya bağlantı hataları panelde görünür.",
         },
       ],
     },
@@ -186,11 +186,11 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       items: [
         {
           title: "Bağımsız EXE dosyasını çalıştırın",
-          body: "İndirilen EXE dosyasını başlatın. Yönetim konsolu harici sunucu kurulumu gerektirmeden doğrudan bilgisayarınızda açılır.",
+          body: "EXE dosyasını açın. Uygulama kullanıcı hesabınıza yerleşir; masaüstü ve Başlat menüsü kısayollarını oluşturur.",
         },
         {
           title: "Yerel kuralları veya Ollama AI modelini seçin",
-          body: "Model gerektirmeyen 12 yerleşik kuralı hemen kullanın veya Ollama üzerinden yerel Gemma görsel modelini tek tıkla bağlayın.",
+          body: "Yerel kuralları hemen kullanın. Ollama ve Gemma otomatik hazırlanırken ilerlemeyi Ayarlar bölümünden izleyin veya iptal edin.",
         },
         {
           title: "RTSP kameranızı ekleyin ve kuralı etkinleştirin",
@@ -198,9 +198,9 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "12 görsel AI şablonunu kullanmak ister misiniz? Gemma modellerini yerel GPU veya CPU üzerinde çalıştırmak için Ollama kurabilirsiniz.",
-      helperLinkLabel: "Ollama İndirme Sayfası",
-      helperLinkHref: cortexRelease.ollamaUrl,
+        "İlk AI hazırlığı internet gerektirir. Hazır durumu, gerçek görsel model yanıtı alınarak doğrulanır.",
+      helperLinkLabel: "Kurulum ve kullanım kılavuzu",
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Teknik kapsam ve donanım notları",
@@ -216,8 +216,8 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
           body: "32 kameraya kadar yapılandırma desteklenir. Analiz zamanlayıcısı akış başına ~2 FPS hedefler ve yerel CPU/GPU kaynaklarına göre otomatik uyarlanır.",
         },
         {
-          title: "DirectX hızlandırma ve CPU geri dönüşü",
-          body: "Windows 10/11 x64 üzerinde DirectX donanım hızlandırmayı kullanır ve gerektiğinde çok çekirdekli CPU moduna kesintisiz geçiş yapar.",
+          title: "Pilot geçiş kontrolünün sınırları",
+          body: "Giriş çizgisi, ters yön ve tek kullanımlık izinle eşleşmeyen geçiş şüphesi kuralları eklendi. Tam vücut görünümü gerekir; kalabalık/gecede geçiş kaçabilir. Kart/turnike entegrasyonu ve saha kabul testi henüz yoktur.",
         },
       ],
     },
@@ -314,7 +314,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "Möchten Sie die 12 KI-Vision-Vorlagen nutzen? Installieren Sie Ollama lokal, um Gemma-Modelle auf Ihrer eigenen Hardware auszuführen.",
       helperLinkLabel: "Ollama-Downloadseite",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Technische Architektur & Umfang",
@@ -428,7 +428,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "¿Desea activar las 12 plantillas de visión IA? Instale Ollama localmente para ejecutar modelos Gemma en su propio hardware.",
       helperLinkLabel: "Página de descarga de Ollama",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Arquitectura técnica y alcance",
@@ -542,7 +542,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "Vous souhaitez activer les 12 modèles de vision IA ? Installez Ollama localement pour exécuter Gemma sur votre matériel.",
       helperLinkLabel: "Page de téléchargement Ollama",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Architecture technique & périmètre",
@@ -656,7 +656,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "Vuoi attivare i 12 modelli di visione IA? Installa Ollama localmente per eseguire i modelli Gemma sul tuo hardware.",
       helperLinkLabel: "Pagina di download Ollama",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Architettura tecnica e ambito",
@@ -770,7 +770,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "Pretende ativar os 12 modelos de visão IA? Instale o Ollama localmente para executar modelos Gemma no seu próprio hardware.",
       helperLinkLabel: "Página de transferência do Ollama",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Arquitetura técnica e âmbito",
@@ -884,7 +884,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "Wilt u de 12 vision-AI-sjablonen gebruiken? Installeer Ollama lokaal om Gemma-modellen op uw eigen hardware uit te voeren.",
       helperLinkLabel: "Ollama-downloadpagina",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Technische architectuur & bereik",
@@ -998,7 +998,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "Chcesz korzystać z 12 szablonów wizji AI? Zainstaluj lokalnie Ollama, aby uruchamiać modele Gemma na własnym sprzęcie.",
       helperLinkLabel: "Strona pobierania Ollama",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Architektura techniczna i zakres",
@@ -1112,7 +1112,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "Хотите использовать 12 шаблонов ИИ-зрения? Установите Ollama локально для запуска моделей Gemma на вашем оборудовании.",
       helperLinkLabel: "Страница загрузки Ollama",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "Техническая архитектура и охват",
@@ -1226,7 +1226,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "هل ترغب في تفعيل قوالب الرؤية بالذكاء الاصطناعي؟ ثبّت Ollama محليًا لتشغيل نماذج Gemma على جهازك.",
       helperLinkLabel: "صفحة تنزيل Ollama",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "البنية التقنية والنطاق",
@@ -1340,7 +1340,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "12種類のビジョン AI テンプレートを使用する場合は、Ollama をローカルに導入して Gemma モデルを実行してください。",
       helperLinkLabel: "Ollama ダウンロードページ",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "技術アーキテクチャと範囲",
@@ -1454,7 +1454,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "12종의 비전 AI 템플릿을 사용하고 싶으신가요? Ollama를 로컬에 설치하여 자체 하드웨어에서 Gemma 모델을 실행하세요.",
       helperLinkLabel: "Ollama 다운로드 페이지",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "기술 아키텍처 및 범위",
@@ -1568,7 +1568,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
       helperText:
         "想要启用 12 项视觉 AI 模板？可在本地安装 Ollama，在您自己的 GPU 或 CPU 上运行 Gemma 视觉模型。",
       helperLinkLabel: "Ollama 下载页面",
-      helperLinkHref: cortexRelease.ollamaUrl,
+      helperLinkHref: cortexRelease.guideUrl,
     },
     compatibility: {
       eyebrow: "技术架构与系统范围",

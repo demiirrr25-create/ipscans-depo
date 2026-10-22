@@ -68,7 +68,7 @@ const I18N = {
     'nav.settings': 'Ayarlar',
     'aside.workspace': 'Yerel çalışma alanı',
     'aside.privacy': 'Görüntüler bu bilgisayarda kalır.',
-    'aside.engine': 'Yerel RTSP + Gemma 4 Motoru',
+    'aside.engine': 'Yerel RTSP + Gemma 3 4B Motoru',
     'aside.rc': 'V1 sürüm adayı',
     'header.badge': 'LOCAL FIRST',
     'overview.eyebrow': 'GÖREN KAMERALAR. ANLAYAN SİSTEM.',
@@ -341,7 +341,7 @@ document.addEventListener('click', async e => {
    ========================================================================== */
 
 function camera(c) {
-  return `<article class="card"><div class="sectiontitle"><h2>${esc(c.name)}</h2><span class="tag">RTSP</span></div><div class="status">${esc(c.status)}</div>${c.status === 'Bağlı' ? `<img class="cameraimg" src="/api/frame/${c.id}?t=${Date.now()}" alt="${esc(c.name)} güncel görüntüsü">` : '<div class="empty" style="margin-top:16px"><p>Canlı görüntü için izlemeyi başlatın.</p></div>'}<p class="fine">${esc(c.analysis)}${c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn'}${c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn'}${c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255'}</p><div class="actions"><button data-action="toggle" data-id="${c.id}">${c.status === 'Durduruldu' ? 'İzlemeyi başlat' : 'İzlemeyi durdur'}</button> <button data-action="camera-delete" data-id="${c.id}">Kamerayı sil</button></div></article>`;
+  return `<article class="card"><div class="sectiontitle"><h2>${esc(c.name)}</h2><span class="tag">RTSP</span></div><div class="status">${esc(c.status)}</div>${c.status === 'Bağlı' ? `<img class="cameraimg" src="/api/frame/${c.id}?t=${Date.now()}" alt="${esc(c.name)} güncel görüntüsü">` : '<div class="empty" style="margin-top:16px"><p>Canlı görüntü için izlemeyi başlatın.</p></div>'}<p class="fine">${esc(c.analysis)}${c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn'}${c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn'}${c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255'}</p><div class="actions"><button data-action="toggle" data-id="${c.id}">${c.status === 'Durduruldu' ? 'İzlemeyi başlat' : 'İzlemeyi durdur'}</button> <button data-action="access-permit" data-id="${c.id}">Tek geçiş izni · 15 sn</button> <button data-action="camera-delete" data-id="${c.id}">Kamerayı sil</button></div></article>`;
 }
 
 async function refresh() {
@@ -351,6 +351,7 @@ async function refresh() {
     state = await api('state');
     setupCatalog();
     renderInstaller();
+    renderDevices();
     if ($('#version')) $('#version').textContent = state.version;
     $('#diskStatus').textContent = 'Olay diski boş alanı: ' + state.diskFreeGB + ' GB';
     const dict = I18N[currentLang] || I18N.tr;
@@ -522,12 +523,13 @@ function setupCatalog() {
 }
 
 function chooseTemplate() {
+  $('#accessSettings').hidden=!$('#ruleTemplate').value.startsWith('access_');
   const value = $('#ruleTemplate').value;
   const t = state.templates.find(t => t.kind === value);
   const vision = state.visionTemplates.find(t => t.id === value);
   const f = $('#ruleForm');
   f.elements.kind.value = t ? value : 'vision';
-  $('#localSettings').hidden = !t;
+  $('#localSettings').hidden = !t || value.startsWith('access_');
   $('#scoreLabel').hidden = !!t;
   $('#modelNotice').hidden = !!t;
   f.elements.name.value = t ? t.name : vision?.name || '';
@@ -570,7 +572,7 @@ function editRule(id) {
   $('#ruleTemplate').value = r.kind === 'vision' || !r.kind ? (r.visionTemplate || 'custom') : r.kind;
   chooseTemplate();
   const f = $('#ruleForm');
-  for (const key of ['id', 'camera', 'name', 'prompt', 'threshold', 'cooldown', 'duration', 'sensitivity']) {
+  for (const key of ['id', 'camera', 'name', 'prompt', 'threshold', 'cooldown', 'duration', 'sensitivity', 'axis', 'direction', 'line', 'margin']) {
     if (r[key] !== undefined) f.elements[key].value = r[key];
   }
   if (r.kind === 'lights_off' && r.duration === undefined) {
@@ -674,7 +676,7 @@ for (const key of ['x', 'y', 'width', 'height']) {
 
 function renderInstaller() {
   const m = state.installer, h = state.modelHealth;
-  const busy = ['checking', 'pulling', 'verifying'].includes(m.phase);
+  const busy = ['checking', 'runtime', 'pulling', 'verifying'].includes(m.phase);
   const connected = h.phase === 'connected';
   const gemmaConnected = connected && h.model === 'gemma3:4b';
   $('#installModel').disabled = busy || gemmaConnected;
@@ -711,3 +713,10 @@ initTheme();
 initLanguage();
 refresh();
 setInterval(refresh, 1000);
+
+let discoveryToken=null;
+function deviceData(){const d=Object.fromEntries(new FormData($('#deviceForm')));d.sync=!!d.sync;d.https=!!d.https;return d}
+function renderDevices(){ $('#deviceList').innerHTML=(state.devices||[]).map(d=>`<article class="card"><h3>${esc(d.name)}</h3><p>${esc(d.host)} · ${d.sync?'Otomatik eşitleme açık':'Eşitleme kapalı'}</p><p class="fine">${esc(d.clock.message)}${d.clock.drift==null?'':' · Sapma '+d.clock.drift+' sn'}${d.clock.checked?' · '+new Date(d.clock.checked*1000).toLocaleString('tr-TR'):''}</p><button data-action="device-toggle" data-id="${d.id}">${d.sync?'Eşitlemeyi durdur':'Eşitlemeyi aç'}</button> <button data-action="device-delete" data-id="${d.id}">Yönetimden kaldır</button></article>`).join('') }
+$('#deviceForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;discoveryToken=null;$('#importChannels').hidden=true;$('#channelChoices').textContent='';$('#deviceResult').textContent='ONVIF kanalları okunuyor…';try{const r=await api('recorder-discover',deviceData());discoveryToken=r.token;$('#channelChoices').innerHTML=r.channels.map(c=>`<label class="check"><input type="checkbox" class="channelChoice" value="${esc(c.token)}" ${c.error?'disabled':'checked'}>${esc(c.name)} · ${c.error?esc(c.error):esc(c.encoding)+' '+c.width+'×'+c.height}</label>`).join('');$('#importChannels').hidden=!r.channels.some(c=>!c.error);$('#deviceResult').textContent=r.channels.length+' kanal bulundu. Düşük çözünürlüklü analiz akışı tercih edilir.'}catch(e){$('#deviceResult').textContent=e.message}finally{b.disabled=false}};
+$('#saveClockDevice').onclick=async()=>{if(!$('#deviceForm').reportValidity())return;try{await api('device-add',deviceData());message('Cihaz saat yönetimine eklendi.');await refresh()}catch(e){message(e.message)}};
+$('#importChannels').onclick=async()=>{const b=$('#importChannels');b.disabled=true;try{const r=await api('recorder-import',{token:discoveryToken,channels:Array.from(document.querySelectorAll('.channelChoice:checked'),el=>el.value)});let failed=0;for(const id of r.ids){try{await api('toggle',{id})}catch(e){failed++}}$('#deviceResult').textContent=r.added+' kamera eklendi; '+r.duplicates+' tekrar atlandı.'+(failed?' '+failed+' kamera başlatılamadı.':'');b.hidden=true;$('#channelChoices').textContent='';$('#deviceForm').elements.password.value='';await refresh()}catch(e){message(e.message)}finally{b.disabled=false}};

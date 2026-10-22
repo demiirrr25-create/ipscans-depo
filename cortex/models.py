@@ -80,7 +80,12 @@ class Installer:
 
     def run(self):
         try:
-            with request('tags') as response: installed=json.load(response).get('models',[])
+            try:
+                with request('tags') as response: installed=json.load(response).get('models',[])
+            except Exception:
+                from runtime_setup import ensure_runtime
+                ensure_runtime(self.set,self.check_cancel)
+                with request('tags') as response: installed=json.load(response).get('models',[])
             self.check_cancel()
             if not any(m.get('name')==MODEL or m.get('model')==MODEL for m in installed):
                 self.set(phase='pulling',message='Gemma indiriliyor; ilerleme geçerli dosya katmanına aittir.')

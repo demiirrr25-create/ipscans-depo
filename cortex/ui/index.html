@@ -36,7 +36,7 @@
     </nav>
     <div class="asidefoot">
       <div class="aside-status"><span class="dot"></span> <span data-i18n="aside.workspace">Yerel çalışma alanı</span></div>
-      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Yerel RTSP + Gemma 4 Motoru</span><span id="version" data-version="1.0.0-rc.2" hidden>1.0.0-rc.2</span></small>
+      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Yerel RTSP + Gemma 3 4B Motoru</span><span id="version" data-version="1.1.0-rc.1" hidden>1.1.0-rc.1</span></small>
     </div>
   </aside>
 
@@ -108,7 +108,7 @@
         </div>
         <button type="button" id="discover" data-i18n="cameras.discover">Ağda keşfet ↗</button>
       </div>
-      <div id="discovery"></div>
+      <div id="discovery"></div><section class="card" style="margin-bottom:24px"><h2>Kayıt cihazı ve saat yönetimi</h2><p>NVR/DVR üzerindeki ONVIF kanallarını keşfedin, seçip topluca ekleyin. Kamera saatini yönetmek için aynı formdan tek cihaz da kaydedebilirsiniz.</p><form id="deviceForm"><div class="grid"><label>Cihaz adı<input name="name" required maxlength="100" placeholder="Havuz NVR"></label><label>IP / host<input name="host" required placeholder="192.168.1.100"></label><label>ONVIF portu<input name="port" type="number" min="1" max="65535" value="80" required></label><label>Kullanıcı<input name="username" required autocomplete="off"></label><label>Parola<input name="password" type="password" autocomplete="new-password"></label><label>Saat kontrol aralığı (dakika)<input name="interval" type="number" min="5" max="1440" value="60" required></label></div><label class="check"><input name="https" type="checkbox"> HTTPS ONVIF</label><label class="check"><input name="sync" type="checkbox" checked> Cihaz tarih ve saatini otomatik eşitle</label><p class="fine">Bilgisayarın UTC saati referanstır; mevcut saat dilimi korunur. Saat sapması varsa cihaz manuel saat moduna alınır. Cortex açıkken düzenli kontrol yapılır. NVR saatini eşitlemek, bağlı kameraların kendi saatlerini mutlaka değiştirmez; gerekirse kameraları ayrı kaydedin.</p><div class="actions"><button class="primary">Kanalları keşfet</button><button type="button" id="saveClockDevice">Yalnızca saat yönetimine ekle</button></div></form><p id="deviceResult" role="status"></p><div id="channelChoices"></div><button id="importChannels" hidden>Seçili kanalları ekle ve başlat</button><div id="deviceList" class="grid"></div></section>
       <div class="twocol">
         <form id="cameraForm" class="card">
           <h2 data-i18n="cameras.addTitle">Kamera ekle</h2>
@@ -196,7 +196,7 @@
             </div>
             <p class="fine" id="thresholdHelp"></p>
           </div>
-          <details>
+          <div id="accessSettings" hidden><h3>Geçiş çizgisi</h3><div class="grid"><label>Takip ekseni<select name="axis"><option value="y">Dikey hareket (üst → alt)</option><option value="x">Yatay hareket (sol → sağ)</option></select></label><label>Giriş yönü<select name="direction"><option value="positive">Artan yönde</option><option value="negative">Azalan yönde</option></select></label><label>Çizgi konumu (%)<input name="line" type="number" min="10" max="90" value="50"></label><label>İki tarafta doğrulama mesafesi (%)<input name="margin" type="number" min="5" max="20" value="8"></label></div><p class="hint">Pilot insan dedektörü: tam vücut görünümü ve sabit kamera gerekir. Kalabalık, örtüşme ve gece görüntüsünde geçiş kaçırabilir. Havuzda üyelik/ödeme durumu görüntüden belirlenmez. Kamera kartındaki izin düğmesi 15 saniyelik tek geçiş izni verir; kart/turnike bağlantısı bu sürümde henüz yok. Geçiş başına olay oluşur; tekrar bildirim aralığı bu kurallara uygulanmaz.</p></div><details>
             <summary data-i18n="rules.roiSummary">Bölge ve çalışma takvimi</summary>
             <p class="fine" data-i18n="rules.roiHint">Bölge koordinatları görüntünün yüzdesidir. Bağlantı kuralları kameranın tamamını izler. İlk kare referanstır; düzenleme referansı sıfırlar.</p>
             <div class="grid">
@@ -289,7 +289,7 @@
         <label><span data-i18n="settings.modelLabel">Ollama görsel model adı</span>
           <input name="model" id="model" value="gemma3:4b" required>
         </label>
-        <p class="fine" data-i18n-html="settings.ollamaLead">Önce <a href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">Ollama’yı indirip açın ↗</a>. Ardından aşağıdaki düğme Gemma 3 4B’yi indirir, görsel yanıtını test eder ve Cortex’e bağlar. Model indirmesi birkaç GB internet ve disk alanı kullanır. Yeterli RAM/GPU gerekir; hazır durumu donanımda test yanıtı alınmadan gösterilmez.</p>
+        <p class="fine">Ollama motoru ve Gemma 3 4B ilk açılışta otomatik hazırlanır. Ayrı kurulum gerekmez. İlk kullanımda birkaç GB indirme ve yeterli boş disk/RAM gerekir. İlerleme aşağıda görünür.</p>
         <div class="model-setup">
           <div class="actions">
             <button type="button" id="installModel" class="primary" data-i18n="settings.installBtn">Gemma’yı kur ve bağla</button>
