@@ -46,7 +46,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Desktop applications",
     title: "Built for local networks and visual operations.",
     subtitle:
-      "Four standalone desktop applications that run directly on your machine with no cloud relays, mandatory accounts, or background telemetry.",
+      "Five standalone desktop applications that run directly on your machine with no cloud relays, mandatory accounts, or background telemetry.",
     learnMore: "Learn more",
     downloadInstaller: "Download for Windows",
     platformNote:
@@ -77,7 +77,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Local Camera Vision & Event Rules",
         valueProp: "Turn standard RTSP cameras into a local event engine with automatic video evidence.",
         summary:
-          "Twelve model-free visual rules and twelve optional local Gemma vision templates with 12-second post-trigger video archiving and webhook delivery.",
+          "18 model-free visual rules and 32 optional local Gemma vision templates with 12-second post-trigger video archiving and webhook delivery.",
         screenshotAlt: "IPScans Cortex multi-camera rule and event console",
       },
     },
@@ -121,7 +121,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Hardware & deployment",
       exploreAppsTitle: "Available now: Desktop software suite",
-      exploreAppsLead: "While we prepare our hardware catalog, all four IPScans desktop applications are available to download.",
+      exploreAppsLead: "While we prepare our hardware catalog, all five IPScans desktop applications are available to download.",
       exploreToolsTitle: "Instant browser diagnostics",
       exploreToolsLead: "Test connectivity, inspect DNS and WHOIS records, or measure bandwidth directly from your browser.",
       downloadHubCta: "View all desktop apps",
@@ -131,7 +131,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Masaüstü uygulamaları",
     title: "Yerel ağlar ve görsel operasyonlar için geliştirildi.",
     subtitle:
-      "Bulut aktarımına, zorunlu hesaplara veya arka plan telemetrisine ihtiyaç duymadan doğrudan bilgisayarınızda çalışan dört bağımsız masaüstü uygulaması.",
+      "Bulut aktarımına, zorunlu hesaplara veya arka plan telemetrisine ihtiyaç duymadan doğrudan bilgisayarınızda çalışan beş bağımsız masaüstü uygulaması.",
     learnMore: "Detayları incele",
     downloadInstaller: "Windows için indir",
     platformNote:
@@ -162,7 +162,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Yerel Kamera Görsel AI ve Kural Motoru",
         valueProp: "Standart RTSP kameraları otomatik video kanıtı üreten yerel bir olay motoruna dönüştürün.",
         summary:
-          "12 model-bağımsız görsel kural ve 12 isteğe bağlı yerel Gemma görsel şablonu; olay sonrası 12 saniyelik video arşivi ve webhook bildirimi.",
+          "18 model-bağımsız görsel kural ve 32 isteğe bağlı yerel Gemma görsel şablonu; olay sonrası 12 saniyelik video arşivi ve webhook bildirimi.",
         screenshotAlt: "IPScans Cortex çoklu kamera kural ve olay konsolu",
       },
     },
@@ -206,7 +206,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Donanım ve kurulum",
       exploreAppsTitle: "Şu anda kullanımda: Masaüstü yazılım paketi",
-      exploreAppsLead: "Donanım mağazamız hazırlanırken dört IPScans masaüstü uygulamasının tamamını hemen indirebilirsiniz.",
+      exploreAppsLead: "Donanım mağazamız hazırlanırken beş IPScans masaüstü uygulamasının tamamını hemen indirebilirsiniz.",
       exploreToolsTitle: "Anında tarayıcı tanı araçları",
       exploreToolsLead: "Bağlantıyı test edin, DNS ve WHOIS kayıtlarını inceleyin veya bant genişliğinizi doğrudan tarayıcıdan ölçün.",
       downloadHubCta: "Tüm masaüstü uygulamaları",
@@ -216,7 +216,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Desktop-Anwendungen",
     title: "Entwickelt für lokale Netzwerke und visuelle Abläufe.",
     subtitle:
-      "Vier eigenständige Desktop-Anwendungen, die direkt auf Ihrem System laufen – ohne Cloud-Relais, Pflichtkonten oder Hintergrund-Telemetrie.",
+      "Fünf eigenständige Desktop-Anwendungen, die direkt auf Ihrem System laufen – ohne Cloud-Relais, Pflichtkonten oder Hintergrund-Telemetrie.",
     learnMore: "Mehr erfahren",
     downloadInstaller: "Für Windows herunterladen",
     platformNote:
@@ -247,7 +247,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Lokale Kamera-KI & Regel-Engine",
         valueProp: "Verwandeln Sie RTSP-Kameras in eine lokale Ereignis-Engine mit automatischer Videobeweissicherung.",
         summary:
-          "Zwölf modellfreie Regeln und zwölf optionale lokale Gemma-Vision-Vorlagen mit 12-Sekunden-Videoclips und Webhook-Benachrichtigungen.",
+          "18 modellfreie Regeln und 32 optionale lokale Gemma-Vision-Vorlagen mit 12-Sekunden-Videoclips und Webhook-Benachrichtigungen.",
         screenshotAlt: "IPScans Cortex Multikamera- und Regelkonsole",
       },
     },
@@ -291,7 +291,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Hardware & Bereitstellung",
       exploreAppsTitle: "Jetzt verfügbar: Desktop-Software-Suite",
-      exploreAppsLead: "Während wir unseren Hardware-Shop vorbereiten, stehen alle vier IPScans-Desktop-Anwendungen zum Download bereit.",
+      exploreAppsLead: "Während wir unseren Hardware-Shop vorbereiten, stehen alle fünf IPScans-Desktop-Anwendungen zum Download bereit.",
       exploreToolsTitle: "Sofortige Browser-Diagnose",
       exploreToolsLead: "Testen Sie Verbindungen, prüfen Sie DNS- und WHOIS-Einträge oder messen Sie Ihre Bandbreite direkt im Browser.",
       downloadHubCta: "Alle Desktop-Apps ansehen",
@@ -301,7 +301,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Aplicaciones de escritorio",
     title: "Diseñadas para redes locales y operaciones visuales.",
     subtitle:
-      "Cuatro aplicaciones de escritorio independientes que se ejecutan directamente en su equipo sin retransmisión en la nube, cuentas obligatorias ni telemetría.",
+      "Cinco aplicaciones de escritorio independientes que se ejecutan directamente en su equipo sin retransmisión en la nube, cuentas obligatorias ni telemetría.",
     learnMore: "Más información",
     downloadInstaller: "Descargar para Windows",
     platformNote:
@@ -332,7 +332,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Visión local y motor de reglas",
         valueProp: "Convierta cámaras RTSP estándar en un motor local de eventos con evidencia en vídeo automática.",
         summary:
-          "Doce reglas visuales sin modelo y doce plantillas locales opcionales con Gemma, clips de evidencia de 12 segundos y webhooks HTTPS.",
+          "18 reglas visuales sin modelo y 32 plantillas locales opcionales con Gemma, clips de evidencia de 12 segundos y webhooks HTTPS.",
         screenshotAlt: "Consola multicámara de reglas y eventos IPScans Cortex",
       },
     },
@@ -376,7 +376,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Hardware e implementación",
       exploreAppsTitle: "Disponible ahora: Suite de software de escritorio",
-      exploreAppsLead: "Mientras preparamos nuestro catálogo de hardware, las cuatro aplicaciones de escritorio de IPScans están disponibles para descargar.",
+      exploreAppsLead: "Mientras preparamos nuestro catálogo de hardware, las cinco aplicaciones de escritorio de IPScans están disponibles para descargar.",
       exploreToolsTitle: "Diagnóstico instantáneo en el navegador",
       exploreToolsLead: "Pruebe la conectividad, consulte registros DNS y WHOIS o mida su velocidad directamente desde el navegador.",
       downloadHubCta: "Ver todas las aplicaciones",
@@ -386,7 +386,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Applications de bureau",
     title: "Conçues pour les réseaux locaux et les opérations visuelles.",
     subtitle:
-      "Quatre applications de bureau autonomes qui s'exécutent directement sur votre poste, sans relais cloud, compte obligatoire ni télémétrie.",
+      "Cinq applications de bureau autonomes qui s'exécutent directement sur votre poste, sans relais cloud, compte obligatoire ni télémétrie.",
     learnMore: "En savoir plus",
     downloadInstaller: "Télécharger pour Windows",
     platformNote:
@@ -417,7 +417,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Vision caméra locale & moteur de règles",
         valueProp: "Transformez vos caméras RTSP en moteur d'événements local avec preuves vidéo automatiques.",
         summary:
-          "Douze règles visuelles sans modèle et douze modèles locaux Gemma optionnels avec clips vidéo de 12 secondes et webhooks HTTPS.",
+          "18 règles visuelles sans modèle et 32 modèles locaux Gemma optionnels avec clips vidéo de 12 secondes et webhooks HTTPS.",
         screenshotAlt: "Console multi-caméras et règles IPScans Cortex",
       },
     },
@@ -461,7 +461,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Matériel & déploiement",
       exploreAppsTitle: "Disponible dès maintenant : Suite logicielle de bureau",
-      exploreAppsLead: "Pendant la préparation de notre boutique matérielle, les quatre applications de bureau IPScans sont disponibles au téléchargement.",
+      exploreAppsLead: "Pendant la préparation de notre boutique matérielle, les cinq applications de bureau IPScans sont disponibles au téléchargement.",
       exploreToolsTitle: "Outils de diagnostic en ligne",
       exploreToolsLead: "Testez votre connexion, consultez les enregistrements DNS et WHOIS ou mesurez votre débit depuis votre navigateur.",
       downloadHubCta: "Voir toutes les applications",
@@ -471,7 +471,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Applicazioni desktop",
     title: "Progettate per reti locali e operazioni visive.",
     subtitle:
-      "Quattro applicazioni desktop autonome che vengono eseguite direttamente sul tuo computer senza relay cloud, account obbligatori o telemetria.",
+      "Cinque applicazioni desktop autonome che vengono eseguite direttamente sul tuo computer senza relay cloud, account obbligatori o telemetria.",
     learnMore: "Scopri di più",
     downloadInstaller: "Scarica per Windows",
     platformNote:
@@ -502,7 +502,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Visione locale e motore di regole",
         valueProp: "Trasforma le telecamere RTSP in un motore di eventi locale con prove video automatiche.",
         summary:
-          "Dodici regole visive senza modello e dodici modelli locali Gemma opzionali con clip di prova da 12 secondi e webhook HTTPS.",
+          "18 regole visive senza modello e 32 modelli locali Gemma opzionali con clip di prova da 12 secondi e webhook HTTPS.",
         screenshotAlt: "Console multi-camera di regole ed eventi IPScans Cortex",
       },
     },
@@ -546,7 +546,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Hardware e installazione",
       exploreAppsTitle: "Disponibile ora: Suite software desktop",
-      exploreAppsLead: "Mentre prepariamo il catalogo hardware, tutte e quattro le applicazioni desktop IPScans sono disponibili per il download.",
+      exploreAppsLead: "Mentre prepariamo il catalogo hardware, tutte e cinque le applicazioni desktop IPScans sono disponibili per il download.",
       exploreToolsTitle: "Diagnostica immediata nel browser",
       exploreToolsLead: "Testa la connettività, consulta i record DNS e WHOIS o misura la velocità direttamente dal browser.",
       downloadHubCta: "Vedi tutte le app desktop",
@@ -556,7 +556,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Aplicações de ambiente de trabalho",
     title: "Construídas para redes locais e operações visuais.",
     subtitle:
-      "Quatro aplicações autónomas que funcionam diretamente no seu computador sem retransmissão na nuvem, contas obrigatórias ou telemetria.",
+      "Cinco aplicações autónomas que funcionam diretamente no seu computador sem retransmissão na nuvem, contas obrigatórias ou telemetria.",
     learnMore: "Saber mais",
     downloadInstaller: "Descarregar para Windows",
     platformNote:
@@ -587,7 +587,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Visão local e motor de regras",
         valueProp: "Transforme câmaras RTSP num motor de eventos local com provas de vídeo automáticas.",
         summary:
-          "Doze regras visuais sem modelo e doze modelos locais Gemma opcionais com clips de vídeo de 12 segundos e webhooks HTTPS.",
+          "18 regras visuais sem modelo e 32 modelos locais Gemma opcionais com clips de vídeo de 12 segundos e webhooks HTTPS.",
         screenshotAlt: "Consola multicâmara de regras e eventos IPScans Cortex",
       },
     },
@@ -631,7 +631,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Hardware e implementação",
       exploreAppsTitle: "Disponível agora: Suite de software para computador",
-      exploreAppsLead: "Enquanto preparamos a nossa loja de hardware, as quatro aplicações de ambiente de trabalho IPScans estão disponíveis para transferência.",
+      exploreAppsLead: "Enquanto preparamos a nossa loja de hardware, as cinco aplicações de ambiente de trabalho IPScans estão disponíveis para transferência.",
       exploreToolsTitle: "Diagnóstico imediato no navegador",
       exploreToolsLead: "Teste a conectividade, consulte registos DNS e WHOIS ou meça a largura de banda diretamente no navegador.",
       downloadHubCta: "Ver todas as aplicações",
@@ -641,7 +641,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Desktopapplicaties",
     title: "Gebouwd voor lokale netwerken en visuele operaties.",
     subtitle:
-      "Vier zelfstandige desktopapplicaties die rechtstreeks op uw systeem draaien zonder cloudrelays, verplichte accounts of achtergrondtelemetrie.",
+      "Vijf zelfstandige desktopapplicaties die rechtstreeks op uw systeem draaien zonder cloudrelays, verplichte accounts of achtergrondtelemetrie.",
     learnMore: "Meer informatie",
     downloadInstaller: "Downloaden voor Windows",
     platformNote:
@@ -672,7 +672,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Lokale camera-AI & regelengine",
         valueProp: "Verander standaard RTSP-camera's in een lokale event-engine met automatisch videobewijs.",
         summary:
-          "Twaalf modelvrije regels en twaalf optionele lokale Gemma-visiesjablonen met videoclips van 12 seconden en HTTPS-webhooks.",
+          "18 modelvrije regels en 32 optionele lokale Gemma-visiesjablonen met videoclips van 12 seconden en HTTPS-webhooks.",
         screenshotAlt: "IPScans Cortex multicamera- en regelconsole",
       },
     },
@@ -716,7 +716,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Hardware & implementatie",
       exploreAppsTitle: "Nu beschikbaar: Desktop-softwaresuite",
-      exploreAppsLead: "Terwijl we onze hardwarewinkel voorbereiden, zijn alle vier de IPScans-desktopapplicaties direct beschikbaar om te downloaden.",
+      exploreAppsLead: "Terwijl we onze hardwarewinkel voorbereiden, zijn alle vijf de IPScans-desktopapplicaties direct beschikbaar om te downloaden.",
       exploreToolsTitle: "Directe browserdiagnose",
       exploreToolsLead: "Test uw verbinding, bekijk DNS- en WHOIS-gegevens of meet uw snelheid rechtstreeks vanuit uw browser.",
       downloadHubCta: "Alle desktop-apps bekijken",
@@ -726,7 +726,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Aplikacje komputerowe",
     title: "Stworzone dla sieci lokalnych i operacji wizyjnych.",
     subtitle:
-      "Cztery samodzielne aplikacje dla systemu Windows działające bezpośrednio na Twoim komputerze — bez chmury, obowiązkowych kont i telemetrii.",
+      "Pięć samodzielnych aplikacji dla systemu Windows działających bezpośrednio na Twoim komputerze — bez chmury, obowiązkowych kont i telemetrii.",
     learnMore: "Dowiedz się więcej",
     downloadInstaller: "Pobierz dla Windows",
     platformNote:
@@ -757,7 +757,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Lokalna wizja AI i silnik reguł",
         valueProp: "Zamień kamery RTSP w lokalny silnik zdarzeń z automatycznym zapisem dowodów wideo.",
         summary:
-          "Dwanaście reguł bezmodelowych i dwanaście opcjonalnych szablonów Gemma AI z 12-sekundowymi nagraniami dowodowymi i webhookami HTTPS.",
+          "18 reguł bezmodelowych i 32 opcjonalne szablony Gemma AI z 12-sekundowymi nagraniami dowodowymi i webhookami HTTPS.",
         screenshotAlt: "Wielokamerowa konsola reguł i zdarzeń IPScans Cortex",
       },
     },
@@ -801,7 +801,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Sprzęt i wdrożenia",
       exploreAppsTitle: "Dostępne teraz: Pakiet aplikacji komputerowych",
-      exploreAppsLead: "Podczas gdy przygotowujemy nasz sklep ze sprzętem, wszystkie cztery aplikacje komputerowe IPScans są dostępne do pobrania.",
+      exploreAppsLead: "Podczas gdy przygotowujemy nasz sklep ze sprzętem, wszystkie pięć aplikacji komputerowych IPScans są dostępne do pobrania.",
       exploreToolsTitle: "Natychmiastowa diagnostyka w przeglądarce",
       exploreToolsLead: "Testuj połączenie, sprawdzaj rekordy DNS i WHOIS lub mierz prędkość łącza bezpośrednio w przeglądarce.",
       downloadHubCta: "Zobacz wszystkie aplikacje",
@@ -811,7 +811,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "Настольные приложения",
     title: "Созданы для локальных сетей и видеоаналитики.",
     subtitle:
-      "Четыре автономных настольных приложения, работающих непосредственно на вашем компьютере без облачных ретрансляторов, обязательных аккаунтов и телеметрии.",
+      "Пять автономных настольных приложений, работающих непосредственно на вашем компьютере без облачных ретрансляторов, обязательных аккаунтов и телеметрии.",
     learnMore: "Подробнее",
     downloadInstaller: "Скачать для Windows",
     platformNote:
@@ -842,7 +842,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "Локальное зрение ИИ и движок правил",
         valueProp: "Превратите RTSP-камеры в локальную систему контроля событий с автоматической видеофиксацией.",
         summary:
-          "Двенадцать правил без ИИ и двенадцать локальных шаблонов Gemma с сохранением 12-секундных видеодоказательств и отправкой HTTPS-вебхуков.",
+          "18 правил без ИИ и 32 локальных шаблона Gemma с сохранением 12-секундных видеодоказательств и отправкой HTTPS-вебхуков.",
         screenshotAlt: "Многокамерная консоль правил и событий IPScans Cortex",
       },
     },
@@ -886,7 +886,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "Оборудование и внедрение",
       exploreAppsTitle: "Доступно сейчас: Пакет настольных программ",
-      exploreAppsLead: "Пока мы готовим каталог оборудования, все четыре настольных приложения IPScans доступны для бесплатной загрузки.",
+      exploreAppsLead: "Пока мы готовим каталог оборудования, все пять настольных приложений IPScans доступны для бесплатной загрузки.",
       exploreToolsTitle: "Мгновенная диагностика в браузере",
       exploreToolsLead: "Проверяйте соединение, просматривайте записи DNS и WHOIS или измеряйте скорость интернета прямо в браузере.",
       downloadHubCta: "Все настольные приложения",
@@ -896,7 +896,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "تطبيقات سطح المكتب",
     title: "مصممة للشبكات المحلية والعمليات البصرية.",
     subtitle:
-      "أربعة تطبيقات مكتبية مستقلة تعمل مباشرة على جهازك دون وسطاء سحابيين أو حسابات إلزامية أو قياس عن بُعد في الخلفية.",
+      "خمسة تطبيقات مكتبية مستقلة تعمل مباشرة على جهازك دون وسطاء سحابيين أو حسابات إلزامية أو قياس عن بُعد في الخلفية.",
     learnMore: "اعرف المزيد",
     downloadInstaller: "تنزيل لنظام Windows",
     platformNote:
@@ -927,7 +927,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "رؤية الكاميرا المحلية ومحرك القواعد",
         valueProp: "حوّل كاميرات RTSP القياسية إلى محرك أحداث محلي مع توثيق فيديو تلقائي.",
         summary:
-          "اثنتا عشرة قاعدة بصرية بدون نماذج واثنا عشر قالبًا محليًا اختياريًا عبر Gemma مع مقاطع إثبات مدتها 12 ثانية وتنبيهات Webhook.",
+          "18 قاعدة بصرية بدون نماذج و32 قالبًا محليًا اختياريًا عبر Gemma مع مقاطع إثبات مدتها 12 ثانية وتنبيهات Webhook.",
         screenshotAlt: "وحدة تحكم القواعد والأحداث متعددة الكاميرات IPScans Cortex",
       },
     },
@@ -971,7 +971,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "الأجهزة والنشر",
       exploreAppsTitle: "متاح الآن: حزمة تطبيقات سطح المكتب",
-      exploreAppsLead: "بينما نجهز متجر الأجهزة، تتوفر تطبيقات IPScans المكتبية الأربعة للتنزيل المباشر.",
+      exploreAppsLead: "بينما نجهز متجر الأجهزة، تتوفر تطبيقات IPScans المكتبية الخمسة للتنزيل المباشر.",
       exploreToolsTitle: "أدوات تشخيص فورية في المتصفح",
       exploreToolsLead: "اختبر الاتصال أو راجع سجلات DNS وWHOIS أو قِس سرعة الإنترنت مباشرة من متصفحك.",
       downloadHubCta: "عرض جميع تطبيقات سطح المكتب",
@@ -981,7 +981,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "デスクトップアプリケーション",
     title: "ローカルネットワークと映像運用のために設計。",
     subtitle:
-      "クラウド中継、必須アカウント、バックグラウンドのテレメトリなしで、お使いのマシン上で直接動作する4つのスタンドアロン・デスクトップアプリ。",
+      "クラウド中継、必須アカウント、バックグラウンドのテレメトリなしで、お使いのマシン上で直接動作する5つのスタンドアロン・デスクトップアプリ。",
     learnMore: "詳細を見る",
     downloadInstaller: "Windows版をダウンロード",
     platformNote:
@@ -1012,7 +1012,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "ローカルカメラ AI・ルールエンジン",
         valueProp: "標準的な RTSP カメラを自動映像証跡付きのローカルイベントエンジンへ。",
         summary:
-          "モデル不要の12ルールとオプションのローカル Gemma ビジョン12テンプレート、トリガー後12秒の映像保存、HTTPS Webhook 通知。",
+          "モデル不要の18ルールとオプションのローカル Gemma ビジョン32テンプレート、トリガー後12秒の映像保存、HTTPS Webhook 通知。",
         screenshotAlt: "IPScans Cortex マルチカメラ・ルールコンソール",
       },
     },
@@ -1056,7 +1056,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "ハードウェア・導入支援",
       exploreAppsTitle: "現在利用可能：デスクトップソフトウェアスイート",
-      exploreAppsLead: "ハードウェアショップの準備中も、4つの IPScans デスクトップアプリケーションはすべてダウンロードいただけます。",
+      exploreAppsLead: "ハードウェアショップの準備中も、5つの IPScans デスクトップアプリケーションはすべてダウンロードいただけます。",
       exploreToolsTitle: "ブラウザで使える即時診断ツール",
       exploreToolsLead: "接続テスト、DNS・WHOIS レコードの照会、回線速度の測定をブラウザから直接実行できます。",
       downloadHubCta: "すべてのデスクトップアプリを見る",
@@ -1066,7 +1066,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "데스크톱 애플리케이션",
     title: "로컬 네트워크와 비전 운영을 위해 설계된 네이티브 도구.",
     subtitle:
-      "클라우드 릴레이, 필수 계정, 백그라운드 텔레메트리 없이 사용자의 PC에서 직접 실행되는 4종의 독립형 데스크톱 애플리케이션입니다.",
+      "클라우드 릴레이, 필수 계정, 백그라운드 텔레메트리 없이 사용자의 PC에서 직접 실행되는 5종의 독립형 데스크톱 애플리케이션입니다.",
     learnMore: "자세히 보기",
     downloadInstaller: "Windows용 다운로드",
     platformNote:
@@ -1097,7 +1097,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "로컬 카메라 비전 AI 및 규칙 엔진",
         valueProp: "표준 RTSP 카메라를 자동 비디오 증거를 남기는 로컬 이벤트 엔진으로 전환합니다.",
         summary:
-          "모델이 필요 없는 12가지 규칙과 선택형 로컬 Gemma 비전 템플릿 12종, 12초 사후 비디오 아카이브 및 HTTPS 웹훅 전송.",
+          "모델이 필요 없는 18가지 규칙과 선택형 로컬 Gemma 비전 템플릿 32종, 12초 사후 비디오 아카이브 및 HTTPS 웹훅 전송.",
         screenshotAlt: "IPScans Cortex 멀티 카메라 규칙 및 이벤트 콘솔",
       },
     },
@@ -1141,7 +1141,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "하드웨어 및 구축",
       exploreAppsTitle: "지금 이용 가능: 데스크톱 소프트웨어 제품군",
-      exploreAppsLead: "하드웨어 스토어를 준비하는 동안 4종의 IPScans 데스크톱 애플리케이션을 모두 다운로드하여 사용할 수 있습니다.",
+      exploreAppsLead: "하드웨어 스토어를 준비하는 동안 5종의 IPScans 데스크톱 애플리케이션을 모두 다운로드하여 사용할 수 있습니다.",
       exploreToolsTitle: "즉시 실행하는 브라우저 진단 도구",
       exploreToolsLead: "브라우저에서 바로 연결 상태를 테스트하고 DNS 및 WHOIS 레코드를 조회하거나 속도를 측정하세요.",
       downloadHubCta: "모든 데스크톱 앱 보기",
@@ -1151,7 +1151,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     eyebrow: "桌面应用程序",
     title: "专为本地网络与视觉运维打造。",
     subtitle:
-      "四款独立运行的桌面应用程序，直接在您的计算机上本地执行，无需云端中继、强制账号或后台遥测。",
+      "五款独立运行的桌面应用程序，直接在您的计算机上本地执行，无需云端中继、强制账号或后台遥测。",
     learnMore: "了解更多",
     downloadInstaller: "下载 Windows 版",
     platformNote:
@@ -1182,7 +1182,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
         category: "本地摄像头视觉 AI 与规则引擎",
         valueProp: "将标准 RTSP 摄像头转化为具备自动视频留证能力的本地事件引擎。",
         summary:
-          "内置 12 项免模型视觉规则与 12 项可选本地 Gemma 视觉模板，支持触发后 12 秒视频取证归档与 HTTPS Webhook 推送。",
+          "内置 18 项免模型视觉规则与 32 项可选本地 Gemma 视觉模板，支持触发后 12 秒视频取证归档与 HTTPS Webhook 推送。",
         screenshotAlt: "IPScans Cortex 多路摄像头规则与事件控制台",
       },
     },
@@ -1226,7 +1226,7 @@ export const downloadHubCopy: Record<Locale, DownloadHubCopy> = {
     shop: {
       eyebrow: "硬件与部署",
       exploreAppsTitle: "现已推出：桌面软件套件",
-      exploreAppsLead: "在我们筹备硬件商店期间，全部四款 IPScans 桌面应用程序均可直接免费下载。",
+      exploreAppsLead: "在我们筹备硬件商店期间，全部五款 IPScans 桌面应用程序均可直接免费下载。",
       exploreToolsTitle: "即开即用的浏览器诊断工具",
       exploreToolsLead: "无需安装，直接通过浏览器测试连通性、查询 DNS 与 WHOIS 记录或测量网络带宽。",
       downloadHubCta: "查看全部桌面应用",
