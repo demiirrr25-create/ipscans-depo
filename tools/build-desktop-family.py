@@ -13,6 +13,7 @@ for key in ('PYTHONPATH','PYTHONHOME','QT_PLUGIN_PATH','QT_QPA_PLATFORM_PLUGIN_P
     environment.pop(key,None)
 
 for folder,name,icon in [('desktop-app','IPscans-Plus','icon'),('desktop-app-pro','ipscans-network-health-pro','icon_pro')]:
+    if len(sys.argv) > 1 and folder not in sys.argv[1:]:continue
     project=root/folder
     args=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--name',name,'--onefile','--windowed','--noupx',
           '--exclude-module','PySide6','--icon',f'assets/{icon}.ico','--version-file','version_info.txt','--add-data','assets;assets']

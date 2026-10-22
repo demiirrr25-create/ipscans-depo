@@ -63,6 +63,7 @@ class PassageBrowser(QWidget):
         self.table=QTableWidget(0,12);self.table.setHorizontalHeaderLabels(['UTC','Kamera','Çizgi','Yön','Araç','Plaka','Güven','Karar','Olay ID','Araç kaydı','Blok','Daire'])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setColumnHidden(8, True)  # Internal event identity remains available to detail actions.
         self.table.setAlternatingRowColors(True);self.table.verticalHeader().hide()
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setStretchLastSection(True);layout.addWidget(self.table,1)

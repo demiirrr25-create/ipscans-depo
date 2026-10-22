@@ -87,7 +87,7 @@ class DashboardWidget(QWidget):
         self.starting_label = QLabel(t(lang, "monitoring_starting"), objectName="StatusLabel")
         self.starting_label.hide()
 
-        self.start_monitoring_btn = QPushButton(f"▶  {t(lang, 'start_monitoring')}", objectName="PrimaryButton")
+        self.start_monitoring_btn = QPushButton(t(lang, 'start_monitoring'), objectName="PrimaryButton")
         self.start_monitoring_btn.setMinimumWidth(170)
         self.start_monitoring_btn.setMaximumWidth(220)
         self.start_monitoring_btn.setMinimumHeight(38)
