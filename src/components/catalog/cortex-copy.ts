@@ -6,7 +6,7 @@ export const cortexRelease = {
   platform: "Windows 10/11 · x64",
   fileName: "IPScans-Cortex-1.2.0-rc.1.exe",
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.1/IPScans-Cortex-1.2.0-rc.1.exe",
-  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.1/Cortex-Kullanim.md",
+  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.1/Cortex-1.2-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
   sha256: "c4df2f9500914b2b89ad487f9caa95299c43255ca14701c7623390fe4ba0d197",
   bytes: 103326102,
