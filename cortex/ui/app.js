@@ -322,6 +322,13 @@ document.addEventListener('click', async e => {
   if (!b) return;
   if (b.dataset.tab) return tab(b.dataset.tab);
   if (b.dataset.edit) { editRule(b.dataset.edit); return; }
+  if (b.dataset.duplicate) {
+    editRule(b.dataset.duplicate);
+    $('#ruleForm').elements.id.value = '';
+    $('#ruleForm').elements.name.value += ' · kopya';
+    $('#saveRule').textContent = 'Yeni kural olarak kaydet';
+    return;
+  }
   if (b.dataset.action) {
     if (b.dataset.action.endsWith('-delete') && !confirm('Bu kaydı silmek istiyor musunuz? Kamera silinirse bağlı kurallar da silinir; olay arşivi korunur.')) return;
     b.disabled = true;
@@ -369,12 +376,22 @@ async function refresh() {
     $('#cameraSelect').innerHTML = '<option value="">Kamera seçin</option>' + state.cameras.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
     $('#cameraSelect').value = selected;
 
-    $('#ruleList').innerHTML = state.rules.map(r => `<article class="card"><span class="tag">${esc(state.cameras.find(c => c.id === r.camera)?.name)} · ${esc(state.templates.find(t => t.kind === r.kind)?.category || 'Görsel AI')}</span><h2>${esc(r.name)}</h2><p>${esc(r.prompt)}</p><p class="fine">${r.kind === 'vision' || !r.kind ? 'Model eşiği ' + r.threshold : 'Yerel ölçüm · Eşik ' + (r.sensitivity ?? r.dark) + ' · ' + (r.duration ?? r.hold * 3) + ' sn doğrulama'} · Tekrar aralığı ${r.cooldown} sn<br>${esc(r.schedule?.start || '00:00')}–${esc(r.schedule?.end || '00:00')} · ${r.schedule?.days.length || 7} gün · Bölge ${(r.roi || [0, 0, 100, 100]).join(' / ')}%</p><div class="actions"><button data-action="rule-toggle" data-id="${r.id}">${r.enabled ? 'Duraklat' : 'Etkinleştir'}</button><button data-edit="${r.id}">Düzenle</button><button data-action="rule-delete" data-id="${r.id}">Sil</button></div></article>`).join('') || empty(dict['empty.rulesTitle'], dict['empty.rulesDesc'], '⌘');
+    const rulesKey = JSON.stringify([state.rules,state.cameras.map(c => [c.id,c.name]),currentLang]);
+    if ($('#ruleList').dataset.key !== rulesKey) {
+    $('#ruleList').dataset.key = rulesKey;
+    $('#ruleList').innerHTML = state.rules.map(r => `<article class="card"><span class="tag">${esc(state.cameras.find(c => c.id === r.camera)?.name)} · ${esc(state.templates.find(t => t.kind === r.kind)?.category || 'Görsel AI')}</span><h2>${esc(r.name)}</h2><p>${esc(r.prompt)}</p><p class="fine">${r.kind === 'vision' || !r.kind ? 'Model eşiği ' + r.threshold : 'Yerel ölçüm · Eşik ' + (r.sensitivity ?? r.dark) + ' · ' + (r.duration ?? r.hold * 3) + ' sn doğrulama'} · Tekrar aralığı ${r.cooldown} sn<br>${esc(r.schedule?.start || '00:00')}–${esc(r.schedule?.end || '00:00')} · ${r.schedule?.days.length || 7} gün · Bölge ${(r.roi || [0, 0, 100, 100]).join(' / ')}%</p><div class="actions"><button data-action="rule-toggle" data-id="${r.id}">${r.enabled ? 'Duraklat' : 'Etkinleştir'}</button><button data-edit="${r.id}">Düzenle</button><button data-duplicate="${r.id}">Kopyala</button><button data-action="rule-delete" data-id="${r.id}">Sil</button></div></article>`).join('') || empty(dict['empty.rulesTitle'], dict['empty.rulesDesc'], '⌘');
 
-    const eventKey = JSON.stringify(state.events);
+    }
+    const query = $('#eventSearch').value.toLocaleLowerCase(currentLang).trim();
+    const filter = $('#eventFilter').value;
+    const visibleEvents = state.events.filter(e =>
+      (!query || [e.camera,e.rule,e.reason].join(' ').toLocaleLowerCase(currentLang).includes(query)) &&
+      (filter === 'all' || (filter === 'reviewed' ? e.reviewed : !e.reviewed)));
+    $('#eventCount').textContent = visibleEvents.length + ' / ' + state.events.length + ' olay';
+    const eventKey = JSON.stringify([visibleEvents,currentLang]);
     if ($('#eventList').dataset.key !== eventKey) {
       $('#eventList').dataset.key = eventKey;
-      $('#eventList').innerHTML = state.events.map(e => `<article class="card"><span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span><h2>${esc(e.rule)} · ${esc(e.camera)}</h2><p>${esc(e.reason)}</p><p class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}${e.latencyMs ? ' · AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn' : ''} · ${e.kind && e.kind !== 'vision' ? 'Yerel ölçüm' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}<div class="actions">${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : '<span>RTSP klibi alınamadı; örnek kareleri inceleyin.</span>'}${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}</div></article>`).join('') || empty(dict['empty.eventsTitle'], dict['empty.eventsDesc'], '◷');
+      $('#eventList').innerHTML = visibleEvents.map(e => `<article class="card"><span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span><h2>${esc(e.rule)} · ${esc(e.camera)}</h2><p>${esc(e.reason)}</p><p class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}${e.latencyMs ? ' · AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn' : ''} · ${e.kind && e.kind !== 'vision' ? 'Yerel ölçüm' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}<div class="actions">${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : '<span>RTSP klibi alınamadı; örnek kareleri inceleyin.</span>'}${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}</div></article>`).join('') || empty(dict['empty.eventsTitle'], dict['empty.eventsDesc'], '◷');
     }
 
     if (first) {
@@ -542,10 +559,18 @@ function chooseTemplate() {
   if (t) {
     f.elements.sensitivity.value = t.sensitivity;
     f.elements.duration.value = t.duration;
-    const light = t.category === 'Aydınlatma', link = t.category === 'Bağlantı';
+    const light = ['lights_off','lights_on','darkness','overexposure'].includes(t.kind), link = t.category === 'Bağlantı';
     $('#sensitivityLabel').hidden = link;
     f.elements.sensitivity.max = light ? 255 : 100;
-    $('#thresholdHelp').textContent = light
+    const metricHelp = {
+      low_contrast: 'Eşik: gri ton standart sapması (0–100). Düşük değer daha düz bir görüntüyü gösterir.',
+      black_pixels: 'Eşik: 20/255 altındaki siyah piksellerin yüzdesi.',
+      white_pixels: 'Eşik: 235/255 üzerindeki beyaz piksellerin yüzdesi.',
+      brightness_shift: 'Eşik: ilk referanstan mutlak parlaklık sapması, 0–100%.',
+      scene_restored: 'Eşik: referanstan farklı kalan piksel yüzdesi. Önce belirgin sahne değişimi görülmelidir.',
+      motion_stopped: 'Eşik: hareketli piksel yüzdesi. Önce hareket görülmelidir.'
+    };
+    $('#thresholdHelp').textContent = metricHelp[t.kind] || (light
       ? 'Eşik: gri parlaklık (0–255). IR/gece görüşü ve otomatik pozlama sonucu değiştirebilir.'
       : link
         ? 'Kesinti en az 15 saniye doğrulanır. Geri gelme kuralı ilk bağlantıda alarm vermez.'
@@ -553,7 +578,7 @@ function chooseTemplate() {
           ? 'Eşik: ortalama piksel farkı (0–255 ölçeği). Durağan sahne de tetikleyebilir.'
           : t.kind === 'low_detail'
             ? 'Eşik: başlangıç referansına göre ayrıntı kaybı yüzdesi. İlk görüntü yeterli ayrıntı içermelidir.'
-            : 'Eşik: değişen piksel yüzdesi. Hareket ölçümü insan, hayvan veya nesne sınıflandırmaz.';
+            : 'Eşik: değişen piksel yüzdesi. Hareket ölçümü insan, hayvan veya nesne sınıflandırmaz.');
   }
 }
 
@@ -728,3 +753,6 @@ $('#templateSearch').addEventListener('input', () => {
     option.hidden = !!query && !option.textContent.toLocaleLowerCase(currentLang).includes(query);
   }
 });
+
+$('#eventSearch').addEventListener('input', refresh);
+$('#eventFilter').addEventListener('change', refresh);

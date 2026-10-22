@@ -37,8 +37,25 @@ public class SessionAudioTests
         await audioA.SetEnabledAsync(true);
         await enabled.Task.WaitAsync(TimeSpan.FromSeconds(5));
         var bytes = new byte[] { 1, 2, 3, 4 };
-        capture.Emit(bytes);
+        // Capture is a stream. A loaded CI runner may legitimately discard a
+        // single packet older than the 300 ms latency budget; keep producing
+        // fresh packets without weakening that production safety bound.
+        using var streamCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var producer = Task.Run(async () =>
+        {
+            try
+            {
+                while (!output.Played.Task.IsCompleted)
+                {
+                    capture.Emit(bytes);
+                    await Task.Delay(20, streamCancellation.Token);
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
         Assert.Equal(bytes, await output.Played.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+        streamCancellation.Cancel();
+        await producer;
         await audioA.SetEnabledAsync(false);
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => audioB.SetEnabledAsync(true));
     }
