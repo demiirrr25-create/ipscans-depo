@@ -2,21 +2,21 @@ import type { Locale } from "@/i18n/config";
 import type { EnterpriseProductCopy } from "./lpr-copy";
 
 export const cortexRelease = {
-  version: "1.1.0-rc.1",
+  version: "1.2.0-rc.1",
   platform: "Windows 10/11 · x64",
-  fileName: "IPScans-Cortex-1.1.0-rc.1.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.1.0-rc.1/IPScans-Cortex-1.1.0-rc.1.exe",
-  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.1.0-rc.1/Cortex-Kullanim.md",
+  fileName: "IPScans-Cortex-1.2.0-rc.1.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.1/IPScans-Cortex-1.2.0-rc.1.exe",
+  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.1/Cortex-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "66743aa0a3ba4366d225e1311519214553040e36722237ccf922e4cbfb7fb5cd",
-  bytes: 103219589,
+  sha256: "c4df2f9500914b2b89ad487f9caa95299c43255ca14701c7623390fe4ba0d197",
+  bytes: 103326102,
 } as const;
 
 export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   en: {
     metaTitle: "IPScans Cortex — Local Camera Vision AI & Smart Event Engine",
     metaDescription:
-      "Connect RTSP cameras with 12 model-free rules, 12 optional Gemma local vision AI templates, 12-second post-trigger video evidence, and encrypted webhook delivery.",
+      "Connect RTSP cameras with 12 model-free rules, 32 optional Gemma local vision AI templates, 12-second post-trigger video evidence, and encrypted webhook delivery.",
     backToApps: "All applications",
     eyebrow: "Local Camera Vision & Event Engine",
     name: "IPScans Cortex",
@@ -130,13 +130,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   tr: {
     metaTitle: "IPScans Cortex — Yerel Kamera Görsel AI ve Akıllı Kural Motoru",
     metaDescription:
-      "RTSP kameralar, model gerektirmeyen 12 yerel kural, 12 isteğe bağlı Gemma görsel AI şablonu, 12 saniyelik kanıt video arşivi ve güvenli webhook bildirimi.",
+      "RTSP kameralar, model gerektirmeyen 18 yerel kural, 32 isteğe bağlı Gemma görsel AI şablonu, 12 saniyelik kanıt video arşivi ve güvenli webhook bildirimi.",
     backToApps: "Tüm uygulamalar",
     eyebrow: "Yerel Kamera Görsel AI ve Kural Motoru",
     name: "IPScans Cortex",
     headline: "Her kameraya yerel bir beyin.",
     lead:
-      "Kayıt cihazından toplu kanal ekleyin, ONVIF cihaz saatlerini otomatik eşitleyin ve yerel olay kurallarını çalıştırın. Üç yeni pilot insan geçiş kuralı ve otomatik Ollama hazırlığıyla 1.1 sürüm adayı.",
+      "Kayıt cihazından toplu kanal ekleyin, ONVIF cihaz saatlerini otomatik eşitleyin ve yerel olay kurallarını çalıştırın. 18 yerel ölçüm, 3 pilot geçiş kuralı, 32 Gemma şablonu, olay filtreleri ve ayarlanabilir AI çalışma profilleriyle 1.2 sürüm adayı.",
     primaryCta: "Windows İçin İndir",
     secondaryCta: "Kullanım kılavuzu",
     screenshotAlt: "IPScans Cortex çok kanallı RTSP denetleyicisi ve yerel kural motoru",
@@ -154,12 +154,12 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "Model gerektirmeyen 12 yerel kural",
-          body: "Hareket eşiği, bölge ihlali, aydınlatma değişimi, sinyal sağlığı ve bağlantı kesintisi için yapay zekâ modeli indirmeden anında çalışan 12 yerleşik kural.",
+          title: "Model gerektirmeyen 18 yerel kural",
+          body: "Hareket eşiği, bölge ihlali, aydınlatma değişimi, sinyal sağlığı ve bağlantı kesintisi için yapay zekâ modeli indirmeden anında çalışan 18 yerleşik kural.",
         },
         {
           icon: "cpu",
-          title: "12 yerel Gemma görsel AI şablonu",
+          title: "32 yerel Gemma görsel AI şablonu",
           body: "Ollama motoru ve Gemma 3 4B ilk açılışta otomatik hazırlanır. Ayrı Ollama kurulum adımı yoktur; ilk kullanım internet ve birkaç GB boş alan gerektirir.",
         },
         {
@@ -882,7 +882,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "Wilt u de 12 vision-AI-sjablonen gebruiken? Installeer Ollama lokaal om Gemma-modellen op uw eigen hardware uit te voeren.",
+        "Wilt u de 32 vision-AI-sjablonen gebruiken? Installeer Ollama lokaal om Gemma-modellen op uw eigen hardware uit te voeren.",
       helperLinkLabel: "Ollama-downloadpagina",
       helperLinkHref: cortexRelease.guideUrl,
     },

@@ -1,5 +1,6 @@
 """Install the frozen application for the current user and create Windows shortcuts."""
 import base64
+import hashlib
 import os
 import pathlib
 import shutil
@@ -8,10 +9,15 @@ import sys
 
 def install():
     if os.name!='nt' or not getattr(sys,'frozen',False) or '--portable' in sys.argv:return
-    destination=pathlib.Path(os.environ['LOCALAPPDATA'])/'Programs'/'IPScansCortex'
+    source=pathlib.Path(sys.executable)
+    # Immutable version folders let an upgrade succeed while the old EXE is
+    # locked by a running session. A changed path also refreshes Windows icons.
+    with source.open('rb') as stream:
+        identity=hashlib.file_digest(stream,'sha256').hexdigest()[:16]
+    destination=pathlib.Path(os.environ['LOCALAPPDATA'])/'Programs'/'IPScansCortex'/'versions'/identity
     destination.mkdir(parents=True,exist_ok=True)
-    executable=destination/'Cortex.exe'; source=pathlib.Path(sys.executable)
-    if source.resolve()!=executable.resolve():
+    executable=destination/'Cortex.exe'
+    if source.resolve()!=executable.resolve() and not executable.exists():
         pending=destination/'Cortex.new.exe';shutil.copy2(source,pending);pending.replace(executable)
     def quote(value):return "'"+str(value).replace("'","''")+"'"
     script="$ErrorActionPreference='Stop'; $s=New-Object -ComObject WScript.Shell; "

@@ -36,6 +36,15 @@ export function ApplicationsSection({
 
   const products = [
     {
+      id: "health-pro", name: "Network Health Pro", mark: "/brand/health.svg",
+      category: locale === "tr" ? "Ağ sağlığı" : "Network health",
+      valueProp: locale === "tr" ? "Ağının sağlığını takip et." : "Track your network health.",
+      summary: locale === "tr" ? "Yeni simge ve ortak açık/koyu tema. Tarayıcı, sağlık paneli, olay günlüğü ve envanter tek uygulamada." : "A new icon and shared light/dark theme. Scanner, health dashboard, event log and inventory in one application.",
+      screenshot: { src: "/health-pro-preview.png", alt: "Network Health Pro", width: 1440, height: 900 },
+      downloadUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.8.0/Network-Health-Pro-Setup.exe",
+      detailHref: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.8.0",
+    },
+    {
       id: "scanner",
       name: "IPscans+",
       mark: "/scanner-mark.svg",

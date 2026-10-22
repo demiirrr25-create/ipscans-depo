@@ -603,6 +603,7 @@ def main():
             desktop_setup.install()
         except Exception:
             print('Masaüstü kısayolu oluşturulamadı; uygulama mevcut konumundan çalışıyor.')
+            if '--install-only' in sys.argv: raise SystemExit(1)
     if '--install-only' in sys.argv:return
     with LOCK:
         for event in STATE['events']:

@@ -3,29 +3,29 @@ import type { Locale } from "@/i18n/config";
 type Localized = Record<Locale, string>;
 
 export const ipcastRelease = {
-  version: "2.8.0",
+  version: "2.9.0",
   platform: "Windows 10/11 · x64",
-  bytes: 106650694,
-  sha256: "c74d9312cc40169c07676a82d4142d9a38555dc5a732aa8addcc362948141efa",
-  fileName: "IPCast-2.8.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.8.0/IPCast-2.8.0.exe",
-  publishedAt: "2026-10-18T19:59:00Z",
-  installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.8.0/IPCast-2.8.0-Setup.exe",
-  installerBytes: 34846728,
-  installerSha256: "ea6756c7b93c8cadff077291152187ba7dbfb092b7e12e556519bb11e0d74c8c",
-  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.8.0",
+  bytes: 106888262,
+  sha256: "0d4fa8735e13e3885a79cf76476fe8a7b370169e2d90985a26432cfdfcfffe35",
+  fileName: "IPCast-2.9.0.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.9.0/IPCast-2.9.0.exe",
+  publishedAt: "2026-10-22T18:00:00Z",
+  installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v2.9.0/IPCast-2.9.0-Setup.exe",
+  installerBytes: 34938055,
+  installerSha256: "99f5b397892fb78bdda38796420f0083275c350ab985efb6a30eb497cbd64e9e",
+  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v2.9.0",
 } as const;
 
 export const desktopRelease = {
   scanner: {
-    version: "4.7.0",
-    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.7.0",
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.7.0/IPscans-Plus-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.7.0/IPscans-Plus.exe",
-    installerBytes: 47193050,
-    installerSha256: "a2ea7e150a0e68ab5e55e19b7213e308eb5991adc42a9d086427ef30e5eccbd5",
-    portableBytes: 45094848,
-    portableSha256: "632e07f5e39ecfc96fdeb8ed2a696a722d24a3648bebf284cff425b6b36b67af",
+    version: "4.8.0",
+    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.8.0",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.8.0/IPscans-Plus-Setup.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.8.0/IPscans-Plus.exe",
+    installerBytes: 45798759,
+    installerSha256: "b09520d59a2c8ad3d348588d66df2cbbd97250b8ac5634e4c73cbe7629f7072c",
+    portableBytes: 43736589,
+    portableSha256: "48ad35bd0e17443f57a106e15673db6d5b3d4a25b00be805ed8bd9c78ead0847",
   },
 } as const;
 
