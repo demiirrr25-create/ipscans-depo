@@ -16,13 +16,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   en: {
     metaTitle: "IPScans Cortex — Local Camera Vision AI & Smart Event Engine",
     metaDescription:
-      "Connect RTSP cameras with 12 model-free rules, 32 optional Gemma local vision AI templates, 12-second post-trigger video evidence, and encrypted webhook delivery.",
+      "Connect RTSP cameras with 18 model-free rules, 32 optional Gemma local vision AI templates, 12-second post-trigger video evidence, and encrypted webhook delivery.",
     backToApps: "All applications",
     eyebrow: "Local Camera Vision & Event Engine",
     name: "IPScans Cortex",
     headline: "Local intelligence for every camera.",
     lead:
-      "Import recorder channels together, synchronize ONVIF device clocks and run local event rules. Version 1.1 release candidate adds three pilot pedestrian crossing rules and automatic Ollama preparation.",
+      "Import recorder channels together, synchronize ONVIF device clocks and run local event rules. Version 1.2 adds 18 local measurements, three pilot crossing rules, 32 Gemma templates, event filters and adjustable AI request intervals.",
     primaryCta: "Download for Windows",
     secondaryCta: "User guide",
     screenshotAlt: "IPScans Cortex multi-stream RTSP controller and local rule engine",
@@ -40,12 +40,12 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 model-free native rules",
+          title: "18 model-free native rules",
           body: "Zero-AI rules for motion thresholds, intrusion zones, lighting shifts, camera tampering, signal health, and connection loss—running immediately with no model downloads.",
         },
         {
           icon: "cpu",
-          title: "12 local Gemma vision AI templates",
+          title: "32 local Gemma vision AI templates",
           body: "Ollama and Gemma 3 4B are prepared automatically on first launch. No separate Ollama installer is required; initial preparation needs internet and several GB of disk space.",
         },
         {
@@ -244,13 +244,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   de: {
     metaTitle: "IPScans Cortex — Lokale Kamera-KI & Ereignis-Engine",
     metaDescription:
-      "RTSP-Kameras, 12 modellfreie Regeln, 12 optionale lokale Gemma-Vision-Vorlagen, 12-Sekunden-Videobeweise und verschlüsselte Webhook-Zustellung.",
+      "RTSP-Kameras, 18 modellfreie Regeln, 32 optionale lokale Gemma-Vision-Vorlagen, 12-Sekunden-Videobeweise und verschlüsselte Webhook-Zustellung.",
     backToApps: "Alle Anwendungen",
     eyebrow: "Lokale Kamera-Vision & Regel-Engine",
     name: "IPScans Cortex",
     headline: "Lokale Intelligenz für jede Kamera.",
     lead:
-      "Verbinden Sie RTSP-Kameras, nutzen Sie 12 modellfreie Regeln oder 12 lokale Gemma-KI-Vorlagen und archivieren Sie automatisch 12-Sekunden-Videobeweise auf Ihrer Workstation.",
+      "Verbinden Sie RTSP-Kameras, nutzen Sie 18 modellfreie Regeln oder 32 lokale Gemma-KI-Vorlagen und archivieren Sie automatisch 12-Sekunden-Videobeweise auf Ihrer Workstation.",
     primaryCta: "Für Windows herunterladen",
     secondaryCta: "Benutzerhandbuch",
     screenshotAlt: "IPScans Cortex Multi-Stream-RTSP-Controller und lokale Regel-Engine",
@@ -268,13 +268,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 modellfreie native Regeln",
+          title: "18 modellfreie native Regeln",
           body: "Sofort einsatzbereite Regeln ohne KI-Modell für Bewegung, Sperrzonen, Beleuchtungsspitzen, Signalqualität und Verbindungsabbrüche.",
         },
         {
           icon: "cpu",
-          title: "12 lokale Gemma-Vision-Vorlagen",
-          body: "Verbinden Sie eine lokale Ollama-Instanz für 12 semantische KI-Vorlagen zur Erkennung von Personen, Fahrzeugen, Tieren und Perimeter-Anomalien.",
+          title: "32 lokale Gemma-Vision-Vorlagen",
+          body: "Verbinden Sie eine lokale Ollama-Instanz für 32 semantische KI-Vorlagen zur Erkennung von Personen, Fahrzeugen, Tieren und Perimeter-Anomalien.",
         },
         {
           icon: "play",
@@ -304,7 +304,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Modellfreie Regeln oder Ollama wählen",
-          body: "Nutzen Sie die 12 nativen Regeln ohne KI-Modell oder verbinden Sie das lokale Gemma-Modell über Ollama mit einem Klick.",
+          body: "Nutzen Sie die 18 nativen Regeln ohne KI-Modell oder verbinden Sie das lokale Gemma-Modell über Ollama mit einem Klick.",
         },
         {
           title: "RTSP-Kameras verbinden & Regeln aktivieren",
@@ -312,7 +312,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "Möchten Sie die 12 KI-Vision-Vorlagen nutzen? Installieren Sie Ollama lokal, um Gemma-Modelle auf Ihrer eigenen Hardware auszuführen.",
+        "Möchten Sie die 32 KI-Vision-Vorlagen nutzen? Installieren Sie Ollama lokal, um Gemma-Modelle auf Ihrer eigenen Hardware auszuführen.",
       helperLinkLabel: "Ollama-Downloadseite",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -358,13 +358,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   es: {
     metaTitle: "IPScans Cortex — Visión IA Local para Cámaras y Motor de Eventos",
     metaDescription:
-      "Cámaras RTSP, 12 reglas sin modelo, 12 plantillas locales de visión IA Gemma, evidencia en vídeo de 12 segundos y entrega cifrada por webhook.",
+      "Cámaras RTSP, 18 reglas sin modelo, 32 plantillas locales de visión IA Gemma, evidencia en vídeo de 12 segundos y entrega cifrada por webhook.",
     backToApps: "Todas las aplicaciones",
     eyebrow: "Visión Local para Cámaras y Motor de Reglas",
     name: "IPScans Cortex",
     headline: "Inteligencia local para cada cámara.",
     lead:
-      "Conecte sus cámaras RTSP, defina 12 reglas locales sin modelo o 12 plantillas de visión IA con Gemma y conserve clips de evidencia de 12 segundos directamente en su equipo.",
+      "Conecte sus cámaras RTSP, defina 18 reglas locales sin modelo o 32 plantillas de visión IA con Gemma y conserve clips de evidencia de 12 segundos directamente en su equipo.",
     primaryCta: "Descargar para Windows",
     secondaryCta: "Guía de uso",
     screenshotAlt: "Controlador RTSP multiflujo y motor de reglas local IPScans Cortex",
@@ -382,13 +382,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 reglas nativas sin modelo",
+          title: "18 reglas nativas sin modelo",
           body: "Reglas inmediatas sin IA para movimiento, zonas de intrusión, cambios bruscos de iluminación, salud de señal y pérdida de conexión.",
         },
         {
           icon: "cpu",
-          title: "12 plantillas de visión IA local Gemma",
-          body: "Conecte Ollama localmente para activar 12 plantillas semánticas de detección de objetos, personas, animales y anomalías perimetrales.",
+          title: "32 plantillas de visión IA local Gemma",
+          body: "Conecte Ollama localmente para activar 32 plantillas semánticas de detección de objetos, personas, animales y anomalías perimetrales.",
         },
         {
           icon: "play",
@@ -418,7 +418,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Elija reglas nativas o conecte Ollama",
-          body: "Utilice las 12 reglas sin modelo sin requisitos de IA, o conecte Gemma localmente a través de Ollama con un clic.",
+          body: "Utilice las 18 reglas sin modelo sin requisitos de IA, o conecte Gemma localmente a través de Ollama con un clic.",
         },
         {
           title: "Conecte su cámara RTSP y active la regla",
@@ -426,7 +426,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "¿Desea activar las 12 plantillas de visión IA? Instale Ollama localmente para ejecutar modelos Gemma en su propio hardware.",
+        "¿Desea activar las 32 plantillas de visión IA? Instale Ollama localmente para ejecutar modelos Gemma en su propio hardware.",
       helperLinkLabel: "Página de descarga de Ollama",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -441,7 +441,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Hasta 32 cámaras con escalado dinámico",
-          body: "Las 12 reglas nativas operan sin inferencia IA. Admite hasta 32 cámaras escalando la frecuencia según su hardware.",
+          body: "Las 18 reglas nativas operan sin inferencia IA. Admite hasta 32 cámaras escalando la frecuencia según su hardware.",
         },
         {
           title: "DirectX con respaldo en CPU",
@@ -472,13 +472,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   fr: {
     metaTitle: "IPScans Cortex — Vision IA Locale et Moteur de Règles Caméra",
     metaDescription:
-      "Caméras RTSP, 12 règles sans modèle, 12 modèles de vision IA locale Gemma, preuves vidéo de 12 secondes et notifications webhook chiffrées.",
+      "Caméras RTSP, 18 règles sans modèle, 32 modèles de vision IA locale Gemma, preuves vidéo de 12 secondes et notifications webhook chiffrées.",
     backToApps: "Toutes les applications",
     eyebrow: "Vision Caméra Locale & Moteur d'Événements",
     name: "IPScans Cortex",
     headline: "Une intelligence locale pour chaque caméra.",
     lead:
-      "Connectez vos caméras RTSP, définissez 12 règles locales sans modèle ou 12 modèles de vision IA Gemma, et archivez des preuves vidéo de 12 secondes directement sur votre machine.",
+      "Connectez vos caméras RTSP, définissez 18 règles locales sans modèle ou 32 modèles de vision IA Gemma, et archivez des preuves vidéo de 12 secondes directement sur votre machine.",
     primaryCta: "Télécharger pour Windows",
     secondaryCta: "Guide d'utilisation",
     screenshotAlt: "Contrôleur RTSP multi-flux et moteur de règles local IPScans Cortex",
@@ -496,13 +496,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 règles natives sans modèle",
+          title: "18 règles natives sans modèle",
           body: "Règles locales immédiates sans IA pour le mouvement, les zones d'intrusion, les variations d'éclairage, la qualité du signal et les coupures.",
         },
         {
           icon: "cpu",
-          title: "12 modèles de vision IA locale Gemma",
-          body: "Connectez Ollama en local pour activer 12 modèles d'analyse visuelle détectant objets, personnes, animaux et anomalies de périmètre.",
+          title: "32 modèles de vision IA locale Gemma",
+          body: "Connectez Ollama en local pour activer 32 modèles d'analyse visuelle détectant objets, personnes, animaux et anomalies de périmètre.",
         },
         {
           icon: "play",
@@ -532,7 +532,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Choisir les règles natives ou connecter Ollama",
-          body: "Utilisez les 12 règles sans modèle immédiatement, ou connectez le modèle local Gemma via Ollama en un clic.",
+          body: "Utilisez les 18 règles sans modèle immédiatement, ou connectez le modèle local Gemma via Ollama en un clic.",
         },
         {
           title: "Connecter le flux RTSP et activer la règle",
@@ -540,7 +540,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "Vous souhaitez activer les 12 modèles de vision IA ? Installez Ollama localement pour exécuter Gemma sur votre matériel.",
+        "Vous souhaitez activer les 32 modèles de vision IA ? Installez Ollama localement pour exécuter Gemma sur votre matériel.",
       helperLinkLabel: "Page de téléchargement Ollama",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -555,7 +555,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Jusqu'à 32 caméras avec cadence adaptative",
-          body: "Les 12 règles natives fonctionnent sans modèle IA. Prend en charge jusqu'à 32 caméras avec adaptation dynamique à votre CPU/GPU.",
+          body: "Les 18 règles natives fonctionnent sans modèle IA. Prend en charge jusqu'à 32 caméras avec adaptation dynamique à votre CPU/GPU.",
         },
         {
           title: "Accélération DirectX & repli CPU",
@@ -586,13 +586,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   it: {
     metaTitle: "IPScans Cortex — Visione IA Locale per Telecamere e Motore Eventi",
     metaDescription:
-      "Telecamere RTSP, 12 regole senza modello, 12 modelli locali di visione IA Gemma, prove video di 12 secondi e notifiche webhook crittografate.",
+      "Telecamere RTSP, 18 regole senza modello, 32 modelli locali di visione IA Gemma, prove video di 12 secondi e notifiche webhook crittografate.",
     backToApps: "Tutte le applicazioni",
     eyebrow: "Visione Locale Telecamere e Motore di Regole",
     name: "IPScans Cortex",
     headline: "Intelligenza locale per ogni telecamera.",
     lead:
-      "Collega le tue telecamere RTSP, definisci 12 regole locali senza modello o 12 modelli di visione IA Gemma e conserva prove video di 12 secondi direttamente sul tuo computer.",
+      "Collega le tue telecamere RTSP, definisci 18 regole locali senza modello o 32 modelli di visione IA Gemma e conserva prove video di 12 secondi direttamente sul tuo computer.",
     primaryCta: "Scarica per Windows",
     secondaryCta: "Guida d'uso",
     screenshotAlt: "Controller RTSP multi-stream e motore di regole locale IPScans Cortex",
@@ -610,13 +610,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 regole native senza modello",
+          title: "18 regole native senza modello",
           body: "Regole immediate senza IA per movimento, zone di intrusione, variazioni di luminosità, qualità del segnale e perdita di connessione.",
         },
         {
           icon: "cpu",
-          title: "12 modelli locali di visione IA Gemma",
-          body: "Collega Ollama in locale per attivare 12 modelli visivi dedicati al rilevamento di oggetti, persone, animali e anomalie perimetrali.",
+          title: "32 modelli locali di visione IA Gemma",
+          body: "Collega Ollama in locale per attivare 32 modelli visivi dedicati al rilevamento di oggetti, persone, animali e anomalie perimetrali.",
         },
         {
           icon: "play",
@@ -646,7 +646,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Scegli le regole native o collega Ollama",
-          body: "Usa le 12 regole senza modello con zero requisiti IA, oppure collega il modello locale Gemma tramite Ollama con un clic.",
+          body: "Usa le 18 regole senza modello con zero requisiti IA, oppure collega il modello locale Gemma tramite Ollama con un clic.",
         },
         {
           title: "Collega il flusso RTSP e attiva la regola",
@@ -654,7 +654,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "Vuoi attivare i 12 modelli di visione IA? Installa Ollama localmente per eseguire i modelli Gemma sul tuo hardware.",
+        "Vuoi attivare i 32 modelli di visione IA? Installa Ollama localmente per eseguire i modelli Gemma sul tuo hardware.",
       helperLinkLabel: "Pagina di download Ollama",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -669,7 +669,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Fino a 32 telecamere con frequenza dinamica",
-          body: "Le 12 regole native operano senza modelli IA. Supporta fino a 32 telecamere scalando la frequenza di analisi in base a CPU e GPU.",
+          body: "Le 18 regole native operano senza modelli IA. Supporta fino a 32 telecamere scalando la frequenza di analisi in base a CPU e GPU.",
         },
         {
           title: "DirectX con fallback CPU",
@@ -700,13 +700,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   pt: {
     metaTitle: "IPScans Cortex — Visão IA Local para Câmaras e Motor de Eventos",
     metaDescription:
-      "Câmaras RTSP, 12 regras sem modelo, 12 modelos locais de visão IA Gemma, provas de vídeo de 12 segundos e entrega encriptada por webhook.",
+      "Câmaras RTSP, 18 regras sem modelo, 12 modelos locais de visão IA Gemma, provas de vídeo de 12 segundos e entrega encriptada por webhook.",
     backToApps: "Todas as aplicações",
     eyebrow: "Visão Local para Câmaras e Motor de Regras",
     name: "IPScans Cortex",
     headline: "Inteligência local para cada câmara.",
     lead:
-      "Ligue as suas câmaras RTSP, defina 12 regras locais sem modelo ou 12 modelos de visão IA Gemma e preserve provas de vídeo de 12 segundos diretamente no seu computador.",
+      "Ligue as suas câmaras RTSP, defina 18 regras locais sem modelo ou 12 modelos de visão IA Gemma e preserve provas de vídeo de 12 segundos diretamente no seu computador.",
     primaryCta: "Descarregar para Windows",
     secondaryCta: "Guia de utilização",
     screenshotAlt: "Controlador RTSP multifluxo e motor de regras local IPScans Cortex",
@@ -724,7 +724,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 regras nativas sem modelo",
+          title: "18 regras nativas sem modelo",
           body: "Regras imediatas sem IA para movimento, zonas de intrusão, variações de iluminação, saúde do sinal e perda de ligação.",
         },
         {
@@ -760,7 +760,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Escolha regras nativas ou ligue o Ollama",
-          body: "Utilize as 12 regras sem modelo sem requisitos de IA, ou ligue o modelo local Gemma via Ollama com um clique.",
+          body: "Utilize as 18 regras sem modelo sem requisitos de IA, ou ligue o modelo local Gemma via Ollama com um clique.",
         },
         {
           title: "Ligue a câmara RTSP e ative a regra",
@@ -783,7 +783,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Até 32 câmaras com escala dinâmica",
-          body: "As 12 regras nativas funcionam sem inferência IA. Suporta até 32 câmaras adaptando a taxa de análise ao seu hardware.",
+          body: "As 18 regras nativas funcionam sem inferência IA. Suporta até 32 câmaras adaptando a taxa de análise ao seu hardware.",
         },
         {
           title: "DirectX com alternativa em CPU",
@@ -814,13 +814,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   nl: {
     metaTitle: "IPScans Cortex — Lokale Camera-Vision AI & Slimme Regelengine",
     metaDescription:
-      "RTSP-camera's, 12 modelvrije regels, 12 optionele lokale Gemma vision-AI-sjablonen, 12-seconden videobewijs en versleutelde webhook-levering.",
+      "RTSP-camera's, 18 modelvrije regels, 32 optionele lokale Gemma vision-AI-sjablonen, 12-seconden videobewijs en versleutelde webhook-levering.",
     backToApps: "Alle applicaties",
     eyebrow: "Lokale Camera-Vision & Event-Engine",
     name: "IPScans Cortex",
     headline: "Lokale intelligentie voor elke camera.",
     lead:
-      "Verbind uw RTSP-camera's, definieer 12 lokale modelvrije regels of 12 lokale Gemma vision-AI-sjablonen en bewaar automatisch videobewijs van 12 seconden op uw machine.",
+      "Verbind uw RTSP-camera's, definieer 18 lokale modelvrije regels of 32 lokale Gemma vision-AI-sjablonen en bewaar automatisch videobewijs van 12 seconden op uw machine.",
     primaryCta: "Downloaden voor Windows",
     secondaryCta: "Gebruikershandleiding",
     screenshotAlt: "IPScans Cortex multi-stream RTSP-controller en lokale regelengine",
@@ -838,13 +838,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 modelvrije native regels",
+          title: "18 modelvrije native regels",
           body: "Direct bruikbare regels zonder AI-model voor beweging, verboden zones, lichtpieken, signaalkwaliteit en verbindingsverlies.",
         },
         {
           icon: "cpu",
-          title: "12 lokale Gemma vision-AI-sjablonen",
-          body: "Koppel een lokale Ollama-instantie voor 12 visuele AI-sjablonen voor detectie van objecten, personen, dieren en terreinafwijkingen.",
+          title: "32 lokale Gemma vision-AI-sjablonen",
+          body: "Koppel een lokale Ollama-instantie voor 32 visuele AI-sjablonen voor detectie van objecten, personen, dieren en terreinafwijkingen.",
         },
         {
           icon: "play",
@@ -874,7 +874,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Kies modelvrije regels of koppel Ollama",
-          body: "Gebruik de 12 ingebouwde regels zonder AI-vereisten, of verbind met één klik het lokale Gemma-model via Ollama.",
+          body: "Gebruik de 18 ingebouwde regels zonder AI-vereisten, of verbind met één klik het lokale Gemma-model via Ollama.",
         },
         {
           title: "Verbind uw RTSP-camera & activeer regels",
@@ -897,7 +897,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Tot 32 camera's met dynamische snelheid",
-          body: "12 native regels werken zonder AI-inferentie. Ondersteunt tot 32 camera's met dynamische schaling op basis van uw hardware.",
+          body: "18 native regels werken zonder AI-inferentie. Ondersteunt tot 32 camera's met dynamische schaling op basis van uw hardware.",
         },
         {
           title: "DirectX met CPU-terugval",
@@ -928,13 +928,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   pl: {
     metaTitle: "IPScans Cortex — Lokalna Wizja AI Kamer i Silnik Zdarzeń",
     metaDescription:
-      "Kamery RTSP, 12 reguł bezmodelowych, 12 lokalnych szablonów wizji AI Gemma, 12-sekundowe dowody wideo i szyfrowane powiadomienia webhook.",
+      "Kamery RTSP, 18 reguł bezmodelowych, 32 lokalnych szablonów wizji AI Gemma, 12-sekundowe dowody wideo i szyfrowane powiadomienia webhook.",
     backToApps: "Wszystkie aplikacje",
     eyebrow: "Lokalna Wizja Kamer i Silnik Reguł",
     name: "IPScans Cortex",
     headline: "Lokalna inteligencja dla każdej kamery.",
     lead:
-      "Podłącz kamery RTSP, zdefiniuj 12 lokalnych reguł bezmodelowych lub 12 szablonów wizji AI Gemma i zachowuj 12-sekundowe nagrania dowodowe bezpośrednio na swoim komputerze.",
+      "Podłącz kamery RTSP, zdefiniuj 18 lokalnych reguł bezmodelowych lub 32 szablonów wizji AI Gemma i zachowuj 12-sekundowe nagrania dowodowe bezpośrednio na swoim komputerze.",
     primaryCta: "Pobierz dla Windows",
     secondaryCta: "Instrukcja obsługi",
     screenshotAlt: "Wielostrumieniowy kontroler RTSP i lokalny silnik reguł IPScans Cortex",
@@ -952,13 +952,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 natywnych reguł bez modelu AI",
+          title: "18 natywnych reguł bez modelu AI",
           body: "Gotowe do działania reguły ruchu, stref wtargnięcia, zmian oświetlenia, jakości sygnału i utraty połączenia — bez pobierania modeli.",
         },
         {
           icon: "cpu",
-          title: "12 lokalnych szablonów wizji AI Gemma",
-          body: "Połącz lokalną instancję Ollama, aby aktywować 12 szablonów wykrywania obiektów, osób, zwierząt i anomalii obwodowych.",
+          title: "32 lokalnych szablonów wizji AI Gemma",
+          body: "Połącz lokalną instancję Ollama, aby aktywować 32 szablonów wykrywania obiektów, osób, zwierząt i anomalii obwodowych.",
         },
         {
           icon: "play",
@@ -988,7 +988,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Wybierz reguły lokalne lub podłącz Ollama",
-          body: "Użyj 12 reguł bezmodelowych bez wymagań AI lub jednym kliknięciem podłącz lokalny model Gemma przez Ollama.",
+          body: "Użyj 18 reguł bezmodelowych bez wymagań AI lub jednym kliknięciem podłącz lokalny model Gemma przez Ollama.",
         },
         {
           title: "Dodaj kamerę RTSP i aktywuj regułę",
@@ -996,7 +996,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "Chcesz korzystać z 12 szablonów wizji AI? Zainstaluj lokalnie Ollama, aby uruchamiać modele Gemma na własnym sprzęcie.",
+        "Chcesz korzystać z 32 szablonów wizji AI? Zainstaluj lokalnie Ollama, aby uruchamiać modele Gemma na własnym sprzęcie.",
       helperLinkLabel: "Strona pobierania Ollama",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -1011,7 +1011,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Do 32 kamer z dynamicznym skalowaniem",
-          body: "12 natywnych reguł działa bez modeli AI. Obsługuje do 32 kamer, skalując szybkość analizy do mocy CPU/GPU.",
+          body: "18 natywnych reguł działa bez modeli AI. Obsługuje do 32 kamer, skalując szybkość analizy do mocy CPU/GPU.",
         },
         {
           title: "DirectX z przełączaniem na CPU",
@@ -1042,13 +1042,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   ru: {
     metaTitle: "IPScans Cortex — Локальное Зрение ИИ для Камер и Движок Правил",
     metaDescription:
-      "Камеры RTSP, 12 правил без моделей, 12 локальных шаблонов зрения ИИ Gemma, 12-секундные видеодоказательства и шифрованная отправка вебхуков.",
+      "Камеры RTSP, 18 правил без моделей, 32 локальных шаблонов зрения ИИ Gemma, 12-секундные видеодоказательства и шифрованная отправка вебхуков.",
     backToApps: "Все приложения",
     eyebrow: "Локальная Видеоаналитика и Движок Событий",
     name: "IPScans Cortex",
     headline: "Локальный интеллект для каждой камеры.",
     lead:
-      "Подключайте RTSP-камеры, настраивайте 12 локальных правил без моделей или 12 шаблонов зрения ИИ Gemma и сохраняйте 12-секундные видеодоказательства прямо на своём компьютере.",
+      "Подключайте RTSP-камеры, настраивайте 18 локальных правил без моделей или 32 шаблонов зрения ИИ Gemma и сохраняйте 12-секундные видеодоказательства прямо на своём компьютере.",
     primaryCta: "Скачать для Windows",
     secondaryCta: "Руководство пользователя",
     screenshotAlt: "Многопоточный RTSP-контроллер и локальный движок правил IPScans Cortex",
@@ -1066,13 +1066,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 встроенных правил без моделей ИИ",
+          title: "18 встроенных правил без моделей ИИ",
           body: "Готовые локальные правила для детекции движения, контроля зон вторжения, скачков освещённости, качества сигнала и потери связи.",
         },
         {
           icon: "cpu",
-          title: "12 локальных шаблонов зрения Gemma",
-          body: "Подключите локальный Ollama для запуска 12 семантических шаблонов обнаружения людей, транспорта, животных и аномалий периметра.",
+          title: "32 локальных шаблонов зрения Gemma",
+          body: "Подключите локальный Ollama для запуска 32 семантических шаблонов обнаружения людей, транспорта, животных и аномалий периметра.",
         },
         {
           icon: "play",
@@ -1102,7 +1102,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Выберите локальные правила или подключите Ollama",
-          body: "Используйте 12 правил без моделей ИИ или подключите локальную модель Gemma через Ollama одним нажатием.",
+          body: "Используйте 18 правил без моделей ИИ или подключите локальную модель Gemma через Ollama одним нажатием.",
         },
         {
           title: "Подключите RTSP-камеру и активируйте правило",
@@ -1110,7 +1110,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "Хотите использовать 12 шаблонов ИИ-зрения? Установите Ollama локально для запуска моделей Gemma на вашем оборудовании.",
+        "Хотите использовать 32 шаблонов ИИ-зрения? Установите Ollama локально для запуска моделей Gemma на вашем оборудовании.",
       helperLinkLabel: "Страница загрузки Ollama",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -1125,7 +1125,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "До 32 камер с динамическим темпом",
-          body: "12 базовых правил работают без моделей ИИ. Поддерживается до 32 камер с адаптацией частоты анализа под ваш CPU/GPU.",
+          body: "18 базовых правил работают без моделей ИИ. Поддерживается до 32 камер с адаптацией частоты анализа под ваш CPU/GPU.",
         },
         {
           title: "DirectX и резервный режим CPU",
@@ -1156,13 +1156,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   ar: {
     metaTitle: "IPScans Cortex — رؤية الذكاء الاصطناعي المحلية للكاميرات ومحرك الأحداث",
     metaDescription:
-      "كاميرات RTSP، و12 قاعدة محلية بدون نماذج، و12 قالب رؤية ذكاء اصطناعي محلي عبر Gemma، وأدلة فيديو مدتها 12 ثانية، وتنبيهات Webhook مشفرة.",
+      "كاميرات RTSP، و18 قاعدة محلية بدون نماذج، و32 قالب رؤية ذكاء اصطناعي محلي عبر Gemma، وأدلة فيديو مدتها 12 ثانية، وتنبيهات Webhook مشفرة.",
     backToApps: "جميع التطبيقات",
     eyebrow: "الرؤية المحلية للكاميرات ومحرك القواعد",
     name: "IPScans Cortex",
     headline: "ذكاء محلي لكل كاميرا.",
     lead:
-      "اربط كاميرات RTSP، وحدد 12 قاعدة محلية بدون نماذج أو 12 قالب رؤية ذكاء اصطناعي عبر Gemma، واحفظ مقاطع إثبات الفيديو لمدة 12 ثانية مباشرة على جهازك.",
+      "اربط كاميرات RTSP، وحدد 18 قاعدة محلية بدون نماذج أو 32 قالب رؤية ذكاء اصطناعي عبر Gemma، واحفظ مقاطع إثبات الفيديو لمدة 12 ثانية مباشرة على جهازك.",
     primaryCta: "تنزيل لنظام Windows",
     secondaryCta: "دليل الاستخدام",
     screenshotAlt: "وحدة تحكم بث RTSP متعددة القنوات ومحرك القواعد المحلي IPScans Cortex",
@@ -1180,13 +1180,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 قاعدة أصلية بدون نماذج",
+          title: "18 قاعدة أصلية بدون نماذج",
           body: "قواعد فورية بدون ذكاء اصطناعي للحركة ومناطق الاختراق وتغيرات الإضاءة وجودة الإشارة وانقطاع الاتصال.",
         },
         {
           icon: "cpu",
-          title: "12 قالب رؤية ذكاء اصطناعي محلي عبر Gemma",
-          body: "اربط Ollama محليًا لتفعيل 12 قالبًا دلاليًا لاكتشاف الأشخاص والمركبات والحيوانات وشذوذ المحيط على عتادك الخاص.",
+          title: "32 قالب رؤية ذكاء اصطناعي محلي عبر Gemma",
+          body: "اربط Ollama محليًا لتفعيل 32 قالبًا دلاليًا لاكتشاف الأشخاص والمركبات والحيوانات وشذوذ المحيط على عتادك الخاص.",
         },
         {
           icon: "play",
@@ -1216,7 +1216,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "اختر القواعد المحلية أو اربط Ollama",
-          body: "استخدم 12 قاعدة محلية بدون متطلبات ذكاء اصطناعي، أو اربط نموذج Gemma المحلي عبر Ollama بنقرة واحدة.",
+          body: "استخدم 18 قاعدة محلية بدون متطلبات ذكاء اصطناعي، أو اربط نموذج Gemma المحلي عبر Ollama بنقرة واحدة.",
         },
         {
           title: "أدخل رابط RTSP وفعّل القاعدة",
@@ -1239,7 +1239,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "حتى 32 كاميرا بمعدل ديناميكي",
-          body: "تعمل 12 قاعدة أصلية دون الحاجة إلى نماذج ذكاء اصطناعي. يدعم حتى 32 كاميرا مع تكيّف سرعة التحليل وفق موارد CPU/GPU.",
+          body: "تعمل 18 قاعدة أصلية دون الحاجة إلى نماذج ذكاء اصطناعي. يدعم حتى 32 كاميرا مع تكيّف سرعة التحليل وفق موارد CPU/GPU.",
         },
         {
           title: "تسريع DirectX مع رجوع تلقائي للمعالج",
@@ -1270,13 +1270,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   ja: {
     metaTitle: "IPScans Cortex — ローカルカメラビジョン AI＆スマートイベントエンジン",
     metaDescription:
-      "RTSP カメラ接続、モデル不要の12ルール、ローカル Gemma ビジョン AI 12テンプレート、トリガー後12秒の証拠映像保存、暗号化 Webhook 配信。",
+      "RTSP カメラ接続、モデル不要の18ルール、ローカル Gemma ビジョン AI 32テンプレート、トリガー後12秒の証拠映像保存、暗号化 Webhook 配信。",
     backToApps: "すべてのアプリケーション",
     eyebrow: "ローカルカメラビジョン＆ルールエンジン",
     name: "IPScans Cortex",
     headline: "すべてのカメラにローカルの頭脳を。",
     lead:
-      "標準的な RTSP カメラを接続し、モデル不要の12種類のローカルルールや12種類の Gemma ビジョン AI テンプレートを実行。トリガー後12秒間の映像証跡をマシン上に直接保存します。",
+      "標準的な RTSP カメラを接続し、モデル不要の18種類のローカルルールや32種類の Gemma ビジョン AI テンプレートを実行。トリガー後12秒間の映像証跡をマシン上に直接保存します。",
     primaryCta: "Windows版をダウンロード",
     secondaryCta: "ユーザーガイド",
     screenshotAlt: "IPScans Cortex マルチストリーム RTSP コントローラーとローカルルールエンジン",
@@ -1294,13 +1294,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "モデル不要の12種類のネイティブルール",
+          title: "モデル不要の18種類のネイティブルール",
           body: "動体検知、侵入ゾーン、照度変化、信号品質、接続断に対応するゼロ AI ルール。モデルダウンロード不要で即座に稼働します。",
         },
         {
           icon: "cpu",
-          title: "12種類のローカル Gemma ビジョン AI テンプレート",
-          body: "ローカルの Ollama と連携し、人物・車両・動物・外周異常を検知する12の視覚 AI テンプレートを自社ハードウェア上で実行。",
+          title: "32種類のローカル Gemma ビジョン AI テンプレート",
+          body: "ローカルの Ollama と連携し、人物・車両・動物・外周異常を検知する32の視覚 AI テンプレートを自社ハードウェア上で実行。",
         },
         {
           icon: "play",
@@ -1330,7 +1330,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "ネイティブルールまたは Ollama を選択",
-          body: "AI 不要の12種類のローカルルールをそのまま使うか、Ollama 経由でローカル Gemma モデルをワンクリック接続します。",
+          body: "AI 不要の18種類のローカルルールをそのまま使うか、Ollama 経由でローカル Gemma モデルをワンクリック接続します。",
         },
         {
           title: "RTSP カメラを接続してルールを有効化",
@@ -1338,7 +1338,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "12種類のビジョン AI テンプレートを使用する場合は、Ollama をローカルに導入して Gemma モデルを実行してください。",
+        "32種類のビジョン AI テンプレートを使用する場合は、Ollama をローカルに導入して Gemma モデルを実行してください。",
       helperLinkLabel: "Ollama ダウンロードページ",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -1353,7 +1353,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "最大32カメラ・動的スケーリング",
-          body: "12のネイティブルールは AI 推論なしで動作。最大32カメラをサポートし、ハードウェア性能に合わせて解析速度を自動調整します。",
+          body: "18のネイティブルールは AI 推論なしで動作。最大32カメラをサポートし、ハードウェア性能に合わせて解析速度を自動調整します。",
         },
         {
           title: "DirectX アクセラレーション＆CPU フォールバック",
@@ -1384,13 +1384,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   ko: {
     metaTitle: "IPScans Cortex — 로컬 카메라 비전 AI 및 스마트 이벤트 엔진",
     metaDescription:
-      "RTSP 카메라 연결, 모델이 필요 없는 12가지 로컬 규칙, 12종 Gemma 비전 AI 템플릿, 12초 사후 비디오 증거 아카이브 및 암호화 웹훅 전송.",
+      "RTSP 카메라 연결, 모델이 필요 없는 18가지 로컬 규칙, 32종 Gemma 비전 AI 템플릿, 12초 사후 비디오 증거 아카이브 및 암호화 웹훅 전송.",
     backToApps: "모든 애플리케이션",
     eyebrow: "로컬 카메라 비전 및 이벤트 엔진",
     name: "IPScans Cortex",
     headline: "모든 카메라를 위한 로컬 인텔리전스.",
     lead:
-      "RTSP 카메라를 연결하고 모델이 필요 없는 12가지 로컬 규칙 또는 12종의 Gemma 비전 AI 템플릿을 정의하여 12초 비디오 증거 클립을 PC에 직접 보관하세요.",
+      "RTSP 카메라를 연결하고 모델이 필요 없는 18가지 로컬 규칙 또는 32종의 Gemma 비전 AI 템플릿을 정의하여 12초 비디오 증거 클립을 PC에 직접 보관하세요.",
     primaryCta: "Windows용 다운로드",
     secondaryCta: "사용자 가이드",
     screenshotAlt: "IPScans Cortex 멀티 스트림 RTSP 컨트롤러 및 로컬 규칙 엔진",
@@ -1408,13 +1408,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "모델이 필요 없는 12가지 기본 규칙",
+          title: "모델이 필요 없는 18가지 기본 규칙",
           body: "모션 감지, 침입 구역, 조도 급변, 신호 상태 및 연결 끊김을 위한 제로 AI 로컬 규칙으로 모델 다운로드 없이 즉시 작동합니다.",
         },
         {
           icon: "cpu",
-          title: "12종의 로컬 Gemma 비전 AI 템플릿",
-          body: "로컬 Ollama를 연결하여 사람, 차량, 동물 및 외곽 이상 징후를 감지하는 12종의 시맨틱 비전 템플릿을 자체 하드웨어에서 실행합니다.",
+          title: "32종의 로컬 Gemma 비전 AI 템플릿",
+          body: "로컬 Ollama를 연결하여 사람, 차량, 동물 및 외곽 이상 징후를 감지하는 32종의 시맨틱 비전 템플릿을 자체 하드웨어에서 실행합니다.",
         },
         {
           icon: "play",
@@ -1444,7 +1444,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "기본 규칙 선택 또는 Ollama 연결",
-          body: "AI 요구 사항 없이 12가지 모델 프리 규칙을 사용하거나 Ollama를 통해 로컬 Gemma 모델을 원클릭으로 연결합니다.",
+          body: "AI 요구 사항 없이 18가지 모델 프리 규칙을 사용하거나 Ollama를 통해 로컬 Gemma 모델을 원클릭으로 연결합니다.",
         },
         {
           title: "RTSP 카메라 연결 및 규칙 활성화",
@@ -1452,7 +1452,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "12종의 비전 AI 템플릿을 사용하고 싶으신가요? Ollama를 로컬에 설치하여 자체 하드웨어에서 Gemma 모델을 실행하세요.",
+        "32종의 비전 AI 템플릿을 사용하고 싶으신가요? Ollama를 로컬에 설치하여 자체 하드웨어에서 Gemma 모델을 실행하세요.",
       helperLinkLabel: "Ollama 다운로드 페이지",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -1467,7 +1467,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "최대 32대 카메라 동적 스케일링",
-          body: "12가지 기본 규칙은 AI 추론 없이 작동합니다. 최대 32대 카메라를 지원하며 하드웨어 성능에 따라 분석 속도가 동적으로 조정됩니다.",
+          body: "18가지 기본 규칙은 AI 추론 없이 작동합니다. 최대 32대 카메라를 지원하며 하드웨어 성능에 따라 분석 속도가 동적으로 조정됩니다.",
         },
         {
           title: "DirectX 가속 및 CPU 폴백",
@@ -1498,13 +1498,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   zh: {
     metaTitle: "IPScans Cortex — 本地摄像头视觉 AI 与智能事件规则引擎",
     metaDescription:
-      "连接 RTSP 摄像头，提供 12 项免模型本地规则、12 项可选本地 Gemma 视觉 AI 模板、触发后 12 秒视频取证归档与加密 Webhook 推送。",
+      "连接 RTSP 摄像头，提供 18 项免模型本地规则、32 项可选本地 Gemma 视觉 AI 模板、触发后 12 秒视频取证归档与加密 Webhook 推送。",
     backToApps: "全部应用程序",
     eyebrow: "本地摄像头视觉与事件规则引擎",
     name: "IPScans Cortex",
     headline: "为每一路摄像头赋予本地智慧。",
     lead:
-      "接入标准 RTSP 摄像头，配置 12 项免模型本地规则或 12 项本地 Gemma 视觉 AI 模板，并将触发后 12 秒的视频证据直接保存在您的工作站上。",
+      "接入标准 RTSP 摄像头，配置 18 项免模型本地规则或 32 项本地 Gemma 视觉 AI 模板，并将触发后 12 秒的视频证据直接保存在您的工作站上。",
     primaryCta: "下载 Windows 版",
     secondaryCta: "使用指南",
     screenshotAlt: "IPScans Cortex 多路 RTSP 控制器与本地规则引擎",
@@ -1522,13 +1522,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "bolt",
-          title: "12 项免模型原生规则",
+          title: "18 项免模型原生规则",
           body: "针对移动侦测、区域入侵、光照突变、信号健康度与断连告警提供零 AI 依赖的本地规则，无需下载模型即可即刻运行。",
         },
         {
           icon: "cpu",
-          title: "12 项本地 Gemma 视觉 AI 模板",
-          body: "连接本地 Ollama 实例即可启用 12 项语义视觉模板，完全在自有硬件上完成人员、车辆、动物与周界异常检测。",
+          title: "32 项本地 Gemma 视觉 AI 模板",
+          body: "连接本地 Ollama 实例即可启用 32 项语义视觉模板，完全在自有硬件上完成人员、车辆、动物与周界异常检测。",
         },
         {
           icon: "play",
@@ -1558,7 +1558,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "选择原生规则或连接 Ollama",
-          body: "零 AI 门槛直接使用 12 项免模型规则，或通过 Ollama 一键连接本地 Gemma 视觉模型。",
+          body: "零 AI 门槛直接使用 18 项免模型规则，或通过 Ollama 一键连接本地 Gemma 视觉模型。",
         },
         {
           title: "接入 RTSP 地址并启用规则",
@@ -1566,7 +1566,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
       ],
       helperText:
-        "想要启用 12 项视觉 AI 模板？可在本地安装 Ollama，在您自己的 GPU 或 CPU 上运行 Gemma 视觉模型。",
+        "想要启用 32 项视觉 AI 模板？可在本地安装 Ollama，在您自己的 GPU 或 CPU 上运行 Gemma 视觉模型。",
       helperLinkLabel: "Ollama 下载页面",
       helperLinkHref: cortexRelease.guideUrl,
     },
@@ -1581,7 +1581,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "最高 32 路摄像头动态伸缩",
-          body: "12 项原生规则无需 AI 模型即可工作。支持最多 32 路摄像头配置，分析速率随本地 CPU/GPU 算力动态调整。",
+          body: "18 项原生规则无需 AI 模型即可工作。支持最多 32 路摄像头配置，分析速率随本地 CPU/GPU 算力动态调整。",
         },
         {
           title: "DirectX 加速与 CPU 回退",
