@@ -2,14 +2,14 @@ import type { Locale } from "@/i18n/config";
 import type { EnterpriseProductCopy } from "./lpr-copy";
 
 export const cortexRelease = {
-  version: "1.2.0-rc.1",
+  version: "1.2.0-rc.2",
   platform: "Windows 10/11 · x64",
-  fileName: "IPScans-Cortex-1.2.0-rc.1.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.1/IPScans-Cortex-1.2.0-rc.1.exe",
-  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.1/Cortex-1.2-Kullanim.md",
+  fileName: "IPScans-Cortex-1.2.0-rc.2.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.2/IPScans-Cortex-1.2.0-rc.2.exe",
+  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.2.0-rc.2/Cortex-1.2-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "c4df2f9500914b2b89ad487f9caa95299c43255ca14701c7623390fe4ba0d197",
-  bytes: 103326102,
+  sha256: "e0e969c405954b981fddd773739eee519869fec08da2b2b35905eab8bcc378cc",
+  bytes: 103325200,
 } as const;
 
 export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {

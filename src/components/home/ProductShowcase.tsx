@@ -57,7 +57,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
               caption: copy.scannerViews.topologyCaption,
             }
           : {
-              src: "/scanner-v43-preview.png",
+              src: "/scanner-4-8-1.png",
               width: 1440,
               height: 900,
               caption: copy.scannerViews.discoveryCaption,
@@ -71,7 +71,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
       downloadUrl: ipcastApp.downloadUrl,
       ...copy.products.ipcast,
       screenshot: {
-        src: "/ipcast-v25-preview.png",
+        src: "/ipcast-2-9-1.png",
         width: 1440,
         height: 900,
         caption: copy.products.ipcast.caption,
@@ -85,7 +85,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
       downloadUrl: lprRelease.url,
       ...copy.products.lpr,
       screenshot: {
-        src: "/lpr-pro-preview.png",
+        src: "/lpr-dev4.png",
         width: 1440,
         height: 900,
         caption: copy.products.lpr.caption,
@@ -99,7 +99,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
       downloadUrl: CORTEX_DOWNLOAD_URL,
       ...copy.products.cortex,
       screenshot: {
-        src: "/cortex-preview.png",
+        src: "/cortex-1-2-rc2.png",
         width: 1265,
         height: 712,
         caption: copy.products.cortex.caption,

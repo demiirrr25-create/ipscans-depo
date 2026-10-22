@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `https://ipscans.com/${locale}/cortex`,
       images: [
         {
-          url: "/cortex-preview.png",
+          url: "/cortex-1-2-rc2.png",
           width: 1265,
           height: 712,
           alt: copy.screenshotAlt,
@@ -45,7 +45,7 @@ export default async function CortexPage({ params }: Props) {
     softwareVersion: cortexRelease.version,
     downloadUrl: cortexRelease.url,
     fileSize: `${(cortexRelease.bytes / 1_000_000).toFixed(1)} MB`,
-    screenshot: "https://ipscans.com/cortex-preview.png",
+    screenshot: "https://ipscans.com/cortex-1-2-rc2.png",
     description: copy.metaDescription,
     offers: {
       "@type": "Offer",
@@ -66,7 +66,7 @@ export default async function CortexPage({ params }: Props) {
         markSrc="/cortex-mark.svg"
         markAlt="IPScans Cortex"
         screenshot={{
-          src: "/cortex-preview.png",
+          src: "/cortex-1-2-rc2.png",
           width: 1265,
           height: 712,
         }}

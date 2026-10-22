@@ -36,23 +36,23 @@ export function ApplicationsSection({
 
   const products = [
     {
-      id: "health-pro", name: "Network Health Pro", mark: "/brand/health.svg",
+      id: "health-pro", version: "1.4.1", name: "Network Health Pro", mark: "/brand/health.svg",
       category: locale === "tr" ? "Ağ sağlığı" : "Network health",
       valueProp: locale === "tr" ? "Ağının sağlığını takip et." : "Track your network health.",
       summary: locale === "tr" ? "Yeni simge ve ortak açık/koyu tema. Tarayıcı, sağlık paneli, olay günlüğü ve envanter tek uygulamada." : "A new icon and shared light/dark theme. Scanner, health dashboard, event log and inventory in one application.",
-      screenshot: { src: "/health-pro-preview.png", alt: "Network Health Pro", width: 1440, height: 900 },
-      downloadUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.8.0/Network-Health-Pro-Setup.exe",
-      detailHref: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.8.0",
+      screenshot: { src: "/health-pro-1-4-1.png", alt: "Network Health Pro", width: 1440, height: 900 },
+      downloadUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v4.8.1/Network-Health-Pro-Setup.exe",
+      detailHref: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v4.8.1",
     },
     {
-      id: "scanner",
+      id: "scanner", version: "4.8.1",
       name: "IPscans+",
       mark: "/scanner-mark.svg",
       category: copy.apps.scanner.category,
       valueProp: copy.apps.scanner.valueProp,
       summary: copy.apps.scanner.summary,
       screenshot: {
-        src: "/scanner-v43-preview.png",
+        src: "/scanner-4-8-1.png",
         alt: copy.apps.scanner.screenshotAlt,
         width: 1440,
         height: 900,
@@ -61,30 +61,30 @@ export function ApplicationsSection({
       detailHref: `/${locale}/applications/scanner`,
     },
     {
-      id: "ipcast",
+      id: "ipcast", version: "2.9.1",
       name: "IPCast",
       mark: "/ipcast-mark.svg",
       category: copy.apps.ipcast.category,
       valueProp: copy.apps.ipcast.valueProp,
       summary: copy.apps.ipcast.summary,
       screenshot: {
-        src: "/ipcast-v25-preview.png",
+        src: "/ipcast-2-9-1.png",
         alt: copy.apps.ipcast.screenshotAlt,
-        width: 1440,
-        height: 900,
+        width: 1180,
+        height: 780,
       },
       downloadUrl: ipcastRelease.installerUrl,
       detailHref: `/${locale}/applications/ipcast`,
     },
     {
-      id: "lpr-pro",
+      id: "lpr-pro", version: "1.0.0.dev4",
       name: "IPScans LPR Pro",
       mark: "/lpr-mark.svg",
       category: copy.apps.lprPro.category,
       valueProp: copy.apps.lprPro.valueProp,
       summary: copy.apps.lprPro.summary,
       screenshot: {
-        src: "/lpr-pro-preview.png",
+        src: "/lpr-dev4.png",
         alt: copy.apps.lprPro.screenshotAlt,
         width: 1440,
         height: 900,
@@ -93,17 +93,17 @@ export function ApplicationsSection({
       detailHref: `/${locale}/lpr-pro`,
     },
     {
-      id: "cortex",
+      id: "cortex", version: "1.2.0-rc.2",
       name: "IPScans Cortex",
       mark: "/cortex-mark.svg",
       category: copy.apps.cortex.category,
       valueProp: copy.apps.cortex.valueProp,
       summary: copy.apps.cortex.summary,
       screenshot: {
-        src: "/cortex-preview.png",
+        src: "/cortex-1-2-rc2.png",
         alt: copy.apps.cortex.screenshotAlt,
-        width: 1265,
-        height: 712,
+        width: 1271,
+        height: 715,
       },
       downloadUrl: cortexRelease.url,
       detailHref: `/${locale}/cortex`,
@@ -112,7 +112,7 @@ export function ApplicationsSection({
 
   return (
     <div className="space-y-24 sm:space-y-32">
-      {/* Four Flagship Desktop Product Cards */}
+      {/* Five Flagship Desktop Product Cards */}
       <section aria-label={copy.eyebrow}>
         <div className="grid gap-8 lg:gap-10">
           {products.map((product, index) => (
@@ -162,8 +162,9 @@ export function ApplicationsSection({
 
                 <div>
                   <Link
-                    href={product.detailHref}
-                    aria-label={`${product.name} — ${copy.learnMore}`}
+                    href={product.screenshot.src}
+                    target="_blank"
+                    aria-label={`${product.name} — ${locale === "tr" ? "Ekran görüntüsünü büyüt" : "View full screenshot"}`}
                     className="block transition-transform duration-300 hover:scale-[1.01]"
                   >
                     <ScreenshotFrame
@@ -175,6 +176,10 @@ export function ApplicationsSection({
                       sizes="(min-width: 1024px) 640px, 92vw"
                     />
                   </Link>
+                  <p className="mt-3 text-xs leading-relaxed text-ink-3">
+                    {product.name} · {product.version} · {locale === "tr" ? "Güncel uygulama ekranı — büyütmek için tıklayın." : "Current application screen — click to enlarge."}
+                    {(product.id === "scanner" || product.id === "lpr-pro") && (locale === "tr" ? " Örnek veriler gösterilir." : " Sample data shown.")}
+                  </p>
                 </div>
               </div>
             </Reveal>

@@ -196,8 +196,8 @@ export function ProductShowcase({
       }));
   const markSrc = isScanner ? "/scanner-mark.svg" : "/ipcast-mark.svg";
   const heroScreenshot = isScanner
-    ? "/scanner-v43-preview.png"
-    : "/ipcast-v25-preview.png";
+    ? "/scanner-4-8-1.png"
+    : "/ipcast-2-9-1.png";
 
   return (
     <div className="relative">
