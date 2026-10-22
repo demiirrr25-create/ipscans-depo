@@ -5,6 +5,12 @@ import math
 from PIL import Image, ImageChops, ImageFilter, ImageStat
 
 CATALOG = [
+    ('low_contrast', 'Görüntü sağlığı', 'Düşük kontrast', 'Gri ton dağılımının daralmasını izler; sis veya lens örtülmesi olabilir. Nedeni belirlemez.', 10, 20),
+    ('black_pixels', 'Görüntü sağlığı', 'Siyah alan oranı', '20/255 altındaki piksellerin yüzde oranını izler.', 85, 15),
+    ('white_pixels', 'Görüntü sağlığı', 'Beyaz alan oranı', '235/255 üzerindeki piksellerin yüzde oranını izler.', 85, 15),
+    ('brightness_shift', 'Aydınlatma', 'Referanstan parlaklık sapması', 'İlk kareye göre mutlak parlaklık değişimini yüzde olarak izler.', 25, 10),
+    ('scene_restored', 'Hareket ve bölge', 'Sahne referansa döndü', 'Önce referanstan uzaklaşan sahnenin tekrar başlangıç görünümüne dönmesini izler.', 10, 10),
+    ('motion_stopped', 'Hareket ve bölge', 'Hareket durdu', 'Önce hareket gözlenmesini bekler; ardından düşük hareketin sürmesini doğrular.', 3, 20),
     ('lights_off', 'Aydınlatma', 'Işık kapandı', 'Önce aydınlık referans öğrenir; belirgin kararmayı doğrular.', 45, 2),
     ('lights_on', 'Aydınlatma', 'Işık açıldı', 'Önce karanlık referans öğrenir; aydınlanmayı doğrular.', 100, 2),
     ('darkness', 'Aydınlatma', 'Uzun süre karanlık', 'Başlangıçtan itibaren düşük parlaklığı izler.', 40, 60),
@@ -65,11 +71,32 @@ def sample(frame, roi):
         gray=source.convert('L'); x,y,w,h=roi; sw,sh=gray.size
         return gray.crop((round(sw*x/100),round(sh*y/100),round(sw*(x+w)/100),round(sh*(y+h)/100))).resize((96,72))
 
+class FrameSamples:
+    """One JPEG decode per frame, one spatial preparation per distinct ROI.
+
+    Lifetime is a single camera tick: images cannot leak into later observations.
+    Detector-specific temporal references remain independent.
+    """
+    def __init__(self, frame):
+        with Image.open(io.BytesIO(frame)) as source:
+            self.gray = source.convert('L')
+        self.cache = {}
+
+    def get(self, roi):
+        key = tuple(roi)
+        if key not in self.cache:
+            x,y,w,h = roi; sw,sh = self.gray.size
+            img = self.gray.crop((round(sw*x/100),round(sh*y/100),round(sw*(x+w)/100),round(sh*(y+h)/100))).resize((96,72))
+            stat = ImageStat.Stat(img); histogram = img.histogram()
+            detail = ImageStat.Stat(img.filter(ImageFilter.FIND_EDGES).crop((1,1,95,71))).mean[0]
+            self.cache[key] = (img, stat.mean[0], detail, stat.stddev[0], 100*sum(histogram[:20])/6912, 100*sum(histogram[236:])/6912)
+        return self.cache[key]
+
 class Detector:
     def __init__(self):
         self.previous=None; self.reference=None; self.level=None; self.detail=None
         self.since=None; self.active=False; self.clear_since=None; self.disconnected=None
-        self.was_offline=False; self.last_time=None; self.metrics={}
+        self.was_offline=False; self.last_time=None; self.metrics={}; self.armed=False
 
     def gate(self, condition, now, duration):
         if condition:
@@ -83,7 +110,7 @@ class Detector:
             if now-self.clear_since>=min(duration,9): self.active=False
         return False
 
-    def update(self, rule, frame, now):
+    def update(self, rule, frame, now, prepared=None):
         kind=rule['kind']; duration=rule.get('duration',9); threshold=rule.get('sensitivity',8)
         if kind in ('offline','online'):
             if frame is None:
@@ -101,8 +128,7 @@ class Detector:
         # Unknown gaps cannot count as continuously observed evidence.
         if self.last_time is not None and now-self.last_time>30: self.__init__()
         self.last_time=now
-        img=sample(frame,rule.get('roi',[0,0,100,100])); level=ImageStat.Stat(img).mean[0]
-        detail=ImageStat.Stat(img.filter(ImageFilter.FIND_EDGES).crop((1,1,95,71))).mean[0]
+        img,level,detail,contrast,black,white=(prepared or FrameSamples(frame)).get(rule.get('roi',[0,0,100,100]))
         if self.previous is None:
             self.previous=img; self.reference=img.copy(); self.level=level; self.detail=detail
             if kind in ('darkness','overexposure'): self.since=now if (level<=threshold if kind=='darkness' else level>=threshold) else None
@@ -112,7 +138,9 @@ class Detector:
         delta=ImageStat.Stat(difference).mean[0]
         scene=100*sum(ImageChops.difference(img,self.reference).histogram()[25:])/(96*72)
         self.previous=img
-        self.metrics={'brightness':round(level,1),'motion':round(motion,2),'difference':round(delta,3),'scene':round(scene,2),'detail':round(detail,2)}
+        self.metrics={'brightness':round(level,1),'motion':round(motion,2),'difference':round(delta,3),'scene':round(scene,2),'detail':round(detail,2),'contrast':round(contrast,2),'blackPct':round(black,1),'whitePct':round(white,1)}
+        if kind=='scene_restored' and scene>=max(20,threshold+10): self.armed=True
+        if kind=='motion_stopped' and motion>=max(5,threshold+2): self.armed=True
         conditions={
             'lights_off': self.level>=threshold+15 and level<=threshold and level<=self.level*rule.get('drop',.45),
             'lights_on': self.level<=threshold-20 and level>=threshold,
@@ -121,8 +149,14 @@ class Detector:
             'inactivity':motion<=threshold, 'scene_change':scene>=threshold,
             'low_detail':self.detail>=3 and detail<=self.detail*(1-threshold/100),
             'frozen':delta<=threshold,
+            'low_contrast':contrast<=threshold, 'black_pixels':black>=threshold, 'white_pixels':white>=threshold,
+            'brightness_shift':abs(level-self.level)/255*100>=threshold,
+            'scene_restored':self.armed and scene<=threshold,
+            'motion_stopped':self.armed and motion<=threshold,
         }
         condition=conditions[kind]
         if kind=='lights_off' and level>=threshold+15 and not self.active: self.level=max(self.level,level)
         if kind=='lights_on' and level<=threshold-20 and not self.active: self.level=min(self.level,level)
-        return self.gate(condition,now,duration)
+        fired=self.gate(condition,now,duration)
+        if fired and kind in ('scene_restored','motion_stopped'): self.armed=False
+        return fired

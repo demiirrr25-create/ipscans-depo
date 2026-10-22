@@ -1,5 +1,5 @@
 #define MyAppName "Network Health Pro"
-#define MyAppVersion "1.3.0"
+#define MyAppVersion "1.4.0"
 #define MyAppExeName "ipscans-network-health-pro.exe"
 
 [Setup]

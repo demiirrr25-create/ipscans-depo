@@ -36,7 +36,7 @@
     </nav>
     <div class="asidefoot">
       <div class="aside-status"><span class="dot"></span> <span data-i18n="aside.workspace">Yerel çalışma alanı</span></div>
-      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Yerel RTSP + Gemma 3 4B Motoru</span><span id="version" data-version="1.1.0-rc.1" hidden>1.1.0-rc.1</span></small>
+      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Yerel RTSP + Gemma 3 4B Motoru</span><span id="version" data-version="1.2.0-rc.1" hidden>1.2.0-rc.1</span></small>
     </div>
   </aside>
 
@@ -96,7 +96,7 @@
           <p data-i18n="empty.camerasDesc">IP adresi ve giriş bilgileriyle ilk kameranı bağla.</p>
         </div>
       </div>
-      <div class="hint" data-i18n="overview.hint">Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 12 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 12 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.</div>
+      <div class="hint" data-i18n="overview.hint">Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 18 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 32 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.</div>
     </section>
 
     <section id="cameras" class="view" hidden>
@@ -171,7 +171,7 @@
         <form id="ruleForm" class="card">
           <h2 data-i18n="rules.formTitle">Yeni olay kuralı</h2>
           <label><span data-i18n="rules.catalogLabel">Konfigürasyon kütüphanesi</span>
-            <select id="ruleTemplate"></select>
+            <input id="templateSearch" type="search" placeholder="Şablon ara: havuz, kapı, araç…" aria-label="Şablon ara"><select id="ruleTemplate"></select>
           </label>
           <p id="templateDescription" class="hint"></p>
           <input type="hidden" name="id" value="">
@@ -300,7 +300,7 @@
         </div>
         <button type="button" id="modelTest" data-i18n="settings.testModelBtn">Model bağlantısını kontrol et</button>
         <p id="modelResult" role="status"></p>
-        <label><span data-i18n="settings.retentionLabel">Kayıt saklama süresi (gün)</span>
+        <label>AI çalışma profili<select name="aiInterval" id="aiInterval"><option value="1">Hızlı · analizler arasında 1 sn</option><option value="3">Dengeli · analizler arasında 3 sn</option><option value="10">Tasarruf · analizler arasında 10 sn</option></select></label><p class="fine">Yerel kurallar ve geçiş takibi kesintisiz kalır. Bu ayar yalnızca AI istek sıklığını azaltır; model yanıt hızını değiştirmez.</p><label><span data-i18n="settings.retentionLabel">Kayıt saklama süresi (gün)</span>
           <input id="retention" name="retention" type="number" min="1" max="30" value="7">
         </label>
         <p class="fine" data-i18n="settings.retentionHint">Süreyi azaltmak, süresi dolan olay kayıtlarını ve kliplerini siler.</p>

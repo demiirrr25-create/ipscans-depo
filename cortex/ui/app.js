@@ -78,7 +78,7 @@ const I18N = {
     'overview.orb': 'GÖR · ANLA · BİLDİR',
     'overview.workspace': 'Çalışma alanın',
     'overview.liveStatus': 'Gerçek bağlantı durumu',
-    'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 12 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 12 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.',
+    'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 18 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 32 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.',
     'stats.cameras': 'KAMERALAR',
     'stats.rules': 'ETKİN KURALLAR',
     'stats.events': 'İNCELEME BEKLEYEN',
@@ -380,6 +380,7 @@ async function refresh() {
     if (first) {
       $('#model').value = state.model;
       $('#retention').value = state.retention;
+      $('#aiInterval').value = state.aiInterval || 1;
       $('#autostart').checked = state.autostart;
     }
     for (const e of state.events) {
@@ -720,3 +721,10 @@ function renderDevices(){ $('#deviceList').innerHTML=(state.devices||[]).map(d=>
 $('#deviceForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;discoveryToken=null;$('#importChannels').hidden=true;$('#channelChoices').textContent='';$('#deviceResult').textContent='ONVIF kanalları okunuyor…';try{const r=await api('recorder-discover',deviceData());discoveryToken=r.token;$('#channelChoices').innerHTML=r.channels.map(c=>`<label class="check"><input type="checkbox" class="channelChoice" value="${esc(c.token)}" ${c.error?'disabled':'checked'}>${esc(c.name)} · ${c.error?esc(c.error):esc(c.encoding)+' '+c.width+'×'+c.height}</label>`).join('');$('#importChannels').hidden=!r.channels.some(c=>!c.error);$('#deviceResult').textContent=r.channels.length+' kanal bulundu. Düşük çözünürlüklü analiz akışı tercih edilir.'}catch(e){$('#deviceResult').textContent=e.message}finally{b.disabled=false}};
 $('#saveClockDevice').onclick=async()=>{if(!$('#deviceForm').reportValidity())return;try{await api('device-add',deviceData());message('Cihaz saat yönetimine eklendi.');await refresh()}catch(e){message(e.message)}};
 $('#importChannels').onclick=async()=>{const b=$('#importChannels');b.disabled=true;try{const r=await api('recorder-import',{token:discoveryToken,channels:Array.from(document.querySelectorAll('.channelChoice:checked'),el=>el.value)});let failed=0;for(const id of r.ids){try{await api('toggle',{id})}catch(e){failed++}}$('#deviceResult').textContent=r.added+' kamera eklendi; '+r.duplicates+' tekrar atlandı.'+(failed?' '+failed+' kamera başlatılamadı.':'');b.hidden=true;$('#channelChoices').textContent='';$('#deviceForm').elements.password.value='';await refresh()}catch(e){message(e.message)}finally{b.disabled=false}};
+
+$('#templateSearch').addEventListener('input', () => {
+  const query = $('#templateSearch').value.toLocaleLowerCase(currentLang).trim();
+  for (const option of $('#ruleTemplate').options) {
+    option.hidden = !!query && !option.textContent.toLocaleLowerCase(currentLang).includes(query);
+  }
+});

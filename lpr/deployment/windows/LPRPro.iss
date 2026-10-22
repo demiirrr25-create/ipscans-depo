@@ -1,4 +1,4 @@
-#define ProductVersion "1.0.0.dev2"
+#define ProductVersion "1.0.0.dev3"
 #define ProductName "IPScans LPR Pro Preview"
 #define ProductExe "IPScans-LPR-Pro.exe"
 
@@ -28,7 +28,7 @@ CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
 InfoBeforeFile=INSTALL_NOTES.txt
-VersionInfoVersion=1.0.0.2
+VersionInfoVersion=1.0.0.3
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

@@ -12,7 +12,7 @@ import access
 from models import Installer, Health, VISION_TEMPLATES
 from stream import Stream
 
-VERSION = "1.1.0-rc.1"
+VERSION = "1.2.0-rc.1"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()
@@ -34,6 +34,7 @@ STATE = {'cameras': [], 'rules': [], 'events': [], 'model': 'gemma3:4b', 'retent
 if (DATA / 'config.enc').exists(): STATE.update(json.loads(VAULT.decrypt((DATA / 'config.enc').read_bytes())))
 STATE['rules']=[local_rules.repair_light_rule(r) for r in STATE['rules']]
 STATE.setdefault('devices',[])
+STATE.setdefault('aiInterval',1)
 DEVICE_STATUS={}
 DISCOVERIES={}
 
@@ -271,9 +272,10 @@ class Camera:
             rules=[dict(r) for r in STATE['rules'] if r['camera']==self.c['id'] and r['enabled'] and r.get('kind') in local_rules.KINDS and not (r.get('kind')=='lights_off' and 'duration' not in r) and local_rules.scheduled(r)]
         ids={r['id'] for r in rules}
         self.detectors={k:v for k,v in self.detectors.items() if k in ids}
+        prepared=local_rules.FrameSamples(self.frame) if self.frame is not None and any(r['kind'] not in ('offline','online') for r in rules) else None
         for r in rules:
             detector=self.detectors.setdefault(r['id'],local_rules.Detector())
-            if detector.update(r,self.frame,time.monotonic()):
+            if detector.update(r,self.frame,time.monotonic(),prepared):
                 if time.time()-self.last.get(r['id'],0)<r['cooldown']: continue
                 self.last[r['id']]=time.time()
                 metrics=', '.join(f'{k}: {v}' for k,v in detector.metrics.items())
@@ -335,7 +337,7 @@ class Camera:
                     self.event(r,result,frames)
         except Exception:self.analysis='AI yanıtı alınamadı; Ollama, model ve donanım durumunu kontrol edin'
         finally:
-            self.ai_next=time.monotonic()+1
+            self.ai_next=time.monotonic()+STATE.get('aiInterval',1)
             AI_SLOTS.release()
 
     def event(self, rule, result, frames):
@@ -410,7 +412,7 @@ def public_state():
     with LOCK:
         cams = [{k:v for k,v in c.items() if k not in ('password','username','url')} | {'status':WORKERS[c['id']].status if c['id'] in WORKERS else 'Durduruldu','analysis':WORKERS[c['id']].analysis if c['id'] in WORKERS else 'Bekliyor','brightness':WORKERS[c['id']].brightness if c['id'] in WORKERS else None,'inferenceMs':WORKERS[c['id']].inference_ms if c['id'] in WORKERS else None,'frameAge':round(time.monotonic()-WORKERS[c['id']].received,1) if c['id'] in WORKERS else None} for c in STATE['cameras']]
         devices=[{k:v for k,v in d.items() if k not in ('username','password')} | {'clock':DEVICE_STATUS.get(d['id'],{'phase':'waiting','message':'Eşitleme bekleniyor.' if d['sync'] else 'Otomatik saat eşitleme kapalı.'})} for d in STATE.get('devices',[])]
-        return {'devices':devices,'cameras':cams,'rules':STATE['rules'],'events':STATE['events'],'model':STATE['model'],'retention':STATE['retention'],'webhookConfigured':bool(STATE['webhook']), 'version':VERSION, 'templates':local_rules.TEMPLATES+access.TEMPLATES, 'installer':INSTALLER.status(), 'modelHealth':MODEL_HEALTH.status(STATE['model']), 'visionTemplates':VISION_TEMPLATES, 'autostart':STATE['autostart'], 'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1)}
+        return {'aiInterval':STATE.get('aiInterval',1),'devices':devices,'cameras':cams,'rules':STATE['rules'],'events':STATE['events'],'model':STATE['model'],'retention':STATE['retention'],'webhookConfigured':bool(STATE['webhook']), 'version':VERSION, 'templates':local_rules.TEMPLATES+access.TEMPLATES, 'installer':INSTALLER.status(), 'modelHealth':MODEL_HEALTH.status(STATE['model']), 'visionTemplates':VISION_TEMPLATES, 'autostart':STATE['autostart'], 'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1)}
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args): pass
@@ -566,8 +568,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 retention=int(d['retention']); model=str(d['model']).strip(); webhook=str(d.get('webhook','')).strip()
                 if not 1<=retention<=30 or not model: raise ValueError('Saklama 1–30 gün ve model adı gerekli')
                 if webhook and urllib.parse.urlsplit(webhook).scheme!='https': raise ValueError('Webhook HTTPS olmalı')
+                interval=int(d.get('aiInterval',STATE.get('aiInterval',1)))
+                if interval not in (1,3,10): raise InputError('AI aralığı 1, 3 veya 10 saniye olmalı.')
                 with LOCK:
-                    STATE.update(model=model,retention=retention,autostart=bool(d.get('autostart',False)))
+                    STATE.update(model=model,retention=retention,autostart=bool(d.get('autostart',False)),aiInterval=interval)
                     if d.get('replaceWebhook'): STATE['webhook']=webhook
                     save()
                 cleanup()

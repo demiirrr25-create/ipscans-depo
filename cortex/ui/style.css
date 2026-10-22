@@ -8,21 +8,21 @@
 
   /* Core IPScans v2 Theme Tokens (Light Mode) */
   --bg: #FFFFFF;
-  --bg-subtle: #F8F9FA;
-  --bg-muted: #F1F3F6;
+  --bg-subtle: #F7F8FA;
+  --bg-muted: #F1F3F5;
   --surface: #FFFFFF;
   --surface-glass: rgba(255, 255, 255, 0.82);
 
   /* Surface Hierarchy (design/tokens.json) */
-  --surface-1: #F8F9FA;
+  --surface-1: #F7F8FA;
   --surface-2: #F1F3F5;
-  --surface-3: #E8EAED;
+  --surface-3: #E8EBEF;
   --surface-hover: #EDF0F3;
 
   /* Typography & Ink */
   --ink: #0B0D12;
-  --ink-2: #3C4252;
-  --ink-3: #676F82;
+  --ink-2: #464A53;
+  --ink-3: #616773;
   --ink-disabled: #9AA1B2;
   --text: #0B0D12;
   --text-secondary: #3C4048;
@@ -34,8 +34,8 @@
   --accent-hover: #22252E;
   --accent-text: #FFFFFF;
   --signal: #2F6BFF;
-  --signal-hover: #1E56E8;
-  --signal-strong: #1D56E5;
+  --signal-hover: #1F54E0;
+  --signal-strong: #1F54E0;
   --signal-soft: rgba(47, 107, 255, 0.10);
 
   /* Semantic Status */
@@ -87,26 +87,26 @@
 
   /* Core IPScans v2 Theme Tokens (Dark Mode) */
   --bg: #07080B;
-  --bg-subtle: #0D0F14;
+  --bg-subtle: #101218;
   --bg-muted: #141821;
-  --surface: #0D0F14;
+  --surface: #101218;
   --surface-glass: rgba(13, 15, 20, 0.82);
 
   /* Surface Hierarchy (design/tokens.json) */
-  --surface-1: #0D0F14;
+  --surface-1: #101218;
   --surface-2: #13161E;
   --surface-3: #1B1F2A;
   --surface-hover: #222735;
 
   /* Typography & Ink */
   --ink: #F5F7FA;
-  --ink-2: #A8B0C2;
-  --ink-3: #6E778C;
+  --ink-2: #B6BDCC;
+  --ink-3: #919BAD;
   --ink-disabled: #454C5E;
   --text: #F5F7FA;
   --text-secondary: #A7B0C0;
   --text-tertiary: #6D7688;
-  --text-muted: #4E5666;
+  --text-muted: #7E899C;
 
   /* Brand & Interactive Accents */
   --accent: #F5F7FA;
@@ -133,7 +133,7 @@
   --border-focus: #4C82FF;
 
   /* Dark Stage Viewports */
-  --stage: #0D0F14;
+  --stage: #101218;
   --stage-card: #13161E;
   --stage-border: #222735;
   --on-stage: #F5F7FA;

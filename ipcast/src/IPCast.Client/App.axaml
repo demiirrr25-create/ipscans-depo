@@ -6,17 +6,17 @@
     <Application.Resources>
         <!-- ============ IPScans v2 Design System Tokens (Default: Dark) ============ -->
         <SolidColorBrush x:Key="ObsidianBrush" Color="#07080B" />
-        <SolidColorBrush x:Key="Surface0Brush" Color="#0D0F14" />
-        <SolidColorBrush x:Key="Surface1Brush" Color="#111520" />
-        <SolidColorBrush x:Key="Surface2Brush" Color="#171C29" />
+        <SolidColorBrush x:Key="Surface0Brush" Color="#101218" />
+        <SolidColorBrush x:Key="Surface1Brush" Color="#101218" />
+        <SolidColorBrush x:Key="Surface2Brush" Color="#181B23" />
         <SolidColorBrush x:Key="GlassSurfaceBrush" Color="#CC0D0F14" />
         <SolidColorBrush x:Key="GlassBorderBrush" Color="#17FFFFFF" />
         <SolidColorBrush x:Key="SubtleBorderBrush" Color="#17FFFFFF" />
         <SolidColorBrush x:Key="HoverBorderBrush" Color="#29FFFFFF" />
 
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F5F7FA" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A8B0C2" />
-        <SolidColorBrush x:Key="TextMutedBrush" Color="#6E778C" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B6BDCC" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#919BAD" />
 
         <SolidColorBrush x:Key="AccentBrush" Color="#4C82FF" />
         <SolidColorBrush x:Key="AccentHoverBrush" Color="#6B99FF" />
@@ -31,13 +31,13 @@
 
         <!-- Semantic aliases mapped to IPScans v2 tokens -->
         <SolidColorBrush x:Key="AppBackgroundBrush" Color="#07080B" />
-        <SolidColorBrush x:Key="SidebarBrush" Color="#0D0F14" />
-        <SolidColorBrush x:Key="CardBrush" Color="#111520" />
-        <SolidColorBrush x:Key="CardBrushElevated" Color="#171C29" />
+        <SolidColorBrush x:Key="SidebarBrush" Color="#101218" />
+        <SolidColorBrush x:Key="CardBrush" Color="#101218" />
+        <SolidColorBrush x:Key="CardBrushElevated" Color="#181B23" />
         <SolidColorBrush x:Key="CardBorderBrush" Color="#17FFFFFF" />
         <SolidColorBrush x:Key="CardBorderHoverBrush" Color="#29FFFFFF" />
-        <SolidColorBrush x:Key="ControlFillBrush" Color="#171C29" />
-        <SolidColorBrush x:Key="SubtleFillBrush" Color="#171C29" />
+        <SolidColorBrush x:Key="ControlFillBrush" Color="#181B23" />
+        <SolidColorBrush x:Key="SubtleFillBrush" Color="#181B23" />
         <SolidColorBrush x:Key="AccentBrushHover" Color="#6B99FF" />
         <SolidColorBrush x:Key="AccentPressedBrush" Color="#2F6BFF" />
         <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />

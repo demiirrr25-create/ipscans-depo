@@ -1,4 +1,4 @@
-IPScans LPR Pro Preview 1.0.0.dev2
+IPScans LPR Pro Preview 1.0.0.dev3
 
 Development evaluation build. This package is not digitally signed and is not a production release.
 The installer includes the Python and Qt runtime; no separate Python/Node.js installation is required.

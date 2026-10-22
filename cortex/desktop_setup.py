@@ -16,7 +16,7 @@ def install():
     def quote(value):return "'"+str(value).replace("'","''")+"'"
     script="$ErrorActionPreference='Stop'; $s=New-Object -ComObject WScript.Shell; "
     script+="$dirs=@([Environment]::GetFolderPath('Desktop'),[Environment]::GetFolderPath('Programs')); "
-    script+="foreach($d in $dirs){$link=$s.CreateShortcut((Join-Path $d 'IPScans Cortex.lnk')); $link.TargetPath="+quote(executable)+"; $link.WorkingDirectory="+quote(destination)+"; $link.Description='IPScans Cortex kamera zekası'; $link.Save()}"
+    script+="foreach($d in $dirs){$link=$s.CreateShortcut((Join-Path $d 'IPScans Cortex.lnk')); $link.TargetPath="+quote(executable)+"; $link.WorkingDirectory="+quote(destination)+"; $link.IconLocation="+quote(str(executable)+',0')+"; $link.Description='IPScans Cortex kamera zekası'; $link.Save()}"
     encoded=base64.b64encode(script.encode('utf-16le')).decode()
     subprocess.run(['powershell','-NoProfile','-NonInteractive','-EncodedCommand',encoded],check=True,
                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=0x08000000,timeout=30)
