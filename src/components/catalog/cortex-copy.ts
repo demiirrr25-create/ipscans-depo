@@ -235,7 +235,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
     },
     closing: {
       title: "Kameralarınıza kurumsal bir kural ve yapay zekâ motoru kazandırın.",
-      lead: "IPScans Cortex 2.1'yu indirin ve olay bazlı video kanıtlarını kendi donanımınızda arşivlemeye başlayın.",
+      lead: "IPScans Cortex 2.1 sürümünü indirin ve olay bazlı video kanıtlarını kendi donanımınızda arşivlemeye başlayın.",
       primaryCta: "IPScans Cortex'i İndir",
       secondaryCta: "Tüm uygulamalar",
       note: "Bağımsız Windows uygulaması. Dosya bütünlüğünü SHA-256 ile doğrulayabilirsiniz.",
