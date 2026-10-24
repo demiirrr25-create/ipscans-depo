@@ -145,6 +145,15 @@ class AlertsAndTwoWayTelegramBotTests(unittest.TestCase):
             out = iot_automation.process_bot_command(cmd, snap, chat_id='777888')
             self.assertIn(expected_word, out['reply'])
 
+        # Test phone number normalization and @intelligentcortexbot phone binding
+        self.assertEqual(iot_automation.normalize_phone('0532 123 45 67'), '905321234567')
+        self.assertEqual(iot_automation.format_phone_display('05321234567'), '+90 (532) 123 45 67')
+        with patch.object(iot_automation, '_tg_api', return_value=[]):
+            bound = iot_automation.bind_telegram_phone('0532 123 45 67', send_welcome=False)
+            self.assertTrue(bound['ok'])
+            self.assertEqual(bound['phone'], '905321234567')
+            self.assertEqual(bound['botUsername'], 'intelligentcortexbot')
+
 
 class ForensicsAdminAndCommercialApiTests(unittest.TestCase):
     request = base.Tests.request

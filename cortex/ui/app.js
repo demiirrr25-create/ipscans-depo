@@ -900,13 +900,16 @@ async function refresh() {
       $('#autostart').checked = state.autostart;
       if ($('#soundAlert')) $('#soundAlert').checked = state.soundAlert !== false;
       if ($('#smartCascade')) $('#smartCascade').checked = state.smartCascade !== false;
+      if ($('#tgPhone') && (state.telegram?.phoneDisplay || state.telegram?.phone)) $('#tgPhone').value = state.telegram.phoneDisplay || state.telegram.phone;
       if ($('#tgChatId') && state.telegram?.chatId) $('#tgChatId').value = state.telegram.chatId;
-      if ($('#tgEnabled') && state.telegram) $('#tgEnabled').checked = !!state.telegram.enabled;
+      if ($('#tgEnabled') && state.telegram) $('#tgEnabled').checked = state.telegram.enabled !== false;
     }
     if ($('#telegramStatus') && state.telegram) {
-      $('#telegramStatus').textContent = state.telegram.configured
-        ? (state.telegram.enabled ? '✓ Telegram bildirimleri ve iki yönlü komutlar etkin (Chat: ' + state.telegram.chatId + ')' : 'Telegram yapılandırıldı ancak şu an kapalı.')
-        : 'Telegram Bot Token henüz girilmedi.';
+      const botTag = '@' + (state.telegram.botUsername || 'intelligentcortexbot');
+      const phoneLabel = state.telegram.phoneDisplay || state.telegram.phone || 'Tüm bağlı operatörler';
+      $('#telegramStatus').textContent = state.telegram.enabled
+        ? `✓ Resmi Bot (${botTag}) aktif · Bildirim Hattı: ${phoneLabel} · Chat ID: ${state.telegram.chatId || 'Otomatik'}`
+        : `Telegram bildirimleri duraklatıldı (${botTag}).`;
     }
     let newAlarm = false;
     for (const e of state.events) {
@@ -1660,10 +1663,30 @@ $('#telegramForm')?.addEventListener('submit', async e => {
   try {
     const d = Object.fromEntries(new FormData(e.target));
     d.enabled = !!d.enabled;
-    const r = await api('telegram-settings', d);
+    d.sendWelcome = true;
+    const r = await api('telegram-bind-phone', d);
+    if ($('#tgPhone') && r.phoneDisplay) $('#tgPhone').value = r.phoneDisplay;
+    if ($('#tgChatId') && r.chatId) $('#tgChatId').value = r.chatId;
     message(r.message);
     await refresh();
   } catch (err) { message(err.message); }
+});
+
+$('#openTelegramDesktopBtn')?.addEventListener('click', async () => {
+  const phoneVal = $('#tgPhone')?.value || '';
+  try {
+    if (phoneVal.trim()) {
+      const r = await api('telegram-bind-phone', { phone: phoneVal, enabled: true, openDesktop: true, sendWelcome: true });
+      if ($('#tgPhone') && r.phoneDisplay) $('#tgPhone').value = r.phoneDisplay;
+      if ($('#tgChatId') && r.chatId) $('#tgChatId').value = r.chatId;
+      message(r.message);
+      await refresh();
+    } else {
+      window.open('https://t.me/intelligentcortexbot', '_blank', 'noopener');
+    }
+  } catch (err) {
+    window.open('https://t.me/intelligentcortexbot', '_blank', 'noopener');
+  }
 });
 
 $('#discoverTelegramChatBtn')?.addEventListener('click', async () => {

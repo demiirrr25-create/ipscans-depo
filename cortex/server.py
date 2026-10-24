@@ -46,7 +46,23 @@ if (DATA / 'config.enc').exists(): STATE.update(json.loads(VAULT.decrypt((DATA /
 STATE['rules']=[local_rules.repair_light_rule(r) for r in STATE['rules']]
 STATE.setdefault('devices',[])
 STATE.setdefault('aiInterval',1)
-STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False,'botUsername':'','lastUpdateId':0})
+STATE.setdefault('telegram',{
+    'botToken':iot_automation.OFFICIAL_BOT_TOKEN,
+    'chatId':iot_automation.DEFAULT_ADMIN_CHAT_ID,
+    'phone':'',
+    'phoneDisplay':'',
+    'phoneDirectory':{},
+    'enabled':True,
+    'botUsername':iot_automation.OFFICIAL_BOT_USERNAME,
+    'lastUpdateId':0,
+})
+if not STATE['telegram'].get('botToken'):
+    STATE['telegram']['botToken'] = iot_automation.OFFICIAL_BOT_TOKEN
+if not STATE['telegram'].get('botUsername'):
+    STATE['telegram']['botUsername'] = iot_automation.OFFICIAL_BOT_USERNAME
+STATE['telegram'].setdefault('phone','')
+STATE['telegram'].setdefault('phoneDisplay','')
+STATE['telegram'].setdefault('phoneDirectory',{})
 STATE.setdefault('telegramBotLog',[])
 STATE.setdefault('webhookSecret','')
 STATE.setdefault('soundAlert',True)
@@ -505,8 +521,11 @@ def deliver_notifications():
         webhook=STATE['webhook']
         secret=STATE.get('webhookSecret','')
         tg=dict(STATE.get('telegram',{}))
+        tg_token=str(tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN).strip()
+        tg_chat=str(tg.get('chatId') or iot_automation.DEFAULT_ADMIN_CHAT_ID).strip()
+        tg_phone=str(tg.get('phone','')).strip()
         pending=[e for e in STATE['events'] if e.get('attempts',3)<3 and e.get('retryAt',0)<=time.time() and e.get('notification')!='Webhook gönderildi'][:10] if webhook else []
-        tg_pending=[e for e in STATE['events'] if not e.get('telegramSent') and e.get('telegramAttempts',0)<2][:5] if tg.get('enabled') and tg.get('botToken') and tg.get('chatId') else []
+        tg_pending=[e for e in STATE['events'] if not e.get('telegramSent') and e.get('telegramAttempts',0)<2][:5] if tg.get('enabled') and tg_token and tg_chat else []
     for event in pending:
         try:
             payload={k:event[k] for k in ('id','camera','rule','time','reason','confidence','kind') if k in event}
@@ -527,7 +546,7 @@ def deliver_notifications():
         try:
             snap_file=DATA/'events'/event['id']/'00.jpg'
             frame_bytes=snap_file.read_bytes() if snap_file.is_file() else None
-            iot_automation.send_telegram_alert(tg['botToken'],tg['chatId'],event,frame_bytes)
+            iot_automation.send_telegram_alert(tg_token,tg_chat,event,frame_bytes,phone_number=tg_phone)
             with LOCK:
                 event['telegramSent']=True
                 if event.get('notification')=='Panel': event['notification']='Telegram gönderildi'
@@ -545,30 +564,29 @@ def execute_telegram_command_context(text):
         lic = dict(STATE.get('license', forensics.default_license()))
         model_name = STATE.get('model', 'gemma3:4b')
         disk_free = round(shutil.disk_usage(DATA).free / 1024**3, 1)
+        safe_mode = bool(STATE.get('safeMode', False))
+        tg_phone = str(STATE.get('telegram', {}).get('phone', ''))
 
-    def _get_snapshot(cam_query):
-        target = None
-        if cam_query:
-            q = cam_query.lower()
-            target = next((c for c in cams if q in c['name'].lower() or q == c['id'].lower()), None)
-        if not target and cams:
-            target = cams[0]
-        if not target:
-            return None, None
-        worker = WORKERS.get(target['id'])
-        if worker and worker.frame:
-            return target['name'], worker.frame
-        try:
-            return target['name'], snapshot(target)
-        except Exception:
-            return target['name'], None
-
-    def _set_armed(arm_state):
+    def _on_action(act, arg):
         with LOCK:
-            STATE['safeMode'] = not bool(arm_state)
-            if 'telegram' in STATE:
-                STATE['telegram']['enabled'] = bool(arm_state)
-            audit('Telegram Komutu', 'Koruma Aktif (/koru)' if arm_state else 'Bildirimler Susturuldu (/sustur)', actor='Telegram Bot')
+            if act == 'arm_all':
+                STATE['safeMode'] = False
+                for r in STATE['rules']: r['enabled'] = True
+                audit('Telegram Komutu', 'Tüm kurallar korumaya alındı (/koru)', actor='Telegram Bot')
+            elif act == 'disarm_all':
+                STATE['safeMode'] = True
+                audit('Telegram Komutu', 'Güvenli Mod / Susturma etkinleştirildi (/sustur)', actor='Telegram Bot')
+            elif act == 'bind_phone' and isinstance(arg, dict):
+                cur = STATE.setdefault('telegram', {})
+                p = iot_automation.normalize_phone(arg.get('phone', ''))
+                cid = str(arg.get('chatId', '')).strip()
+                if p and cid:
+                    cur['phone'] = p
+                    cur['phoneDisplay'] = iot_automation.format_phone_display(p)
+                    cur['chatId'] = cid
+                    cur['enabled'] = True
+                    cur.setdefault('phoneDirectory', {})[p] = cid
+                    audit('Telegram Numara Doğrulandı', f"{cur['phoneDisplay']} → Chat {cid}", actor='Telegram Bot')
             save()
 
     ctx = {
@@ -579,10 +597,23 @@ def execute_telegram_command_context(text):
         'events': events,
         'model': model_name,
         'diskFreeGB': disk_free,
-        'get_snapshot': _get_snapshot,
-        'set_armed': _set_armed,
+        'safeMode': safe_mode,
+        'telegramPhone': tg_phone,
     }
-    res = iot_automation.process_bot_command(text, ctx)
+    res = iot_automation.process_bot_command(text, ctx, action_callback=_on_action)
+    photo_bytes = None
+    if res.get('cameraId'):
+        cid = res['cameraId']
+        worker = WORKERS.get(cid)
+        if worker and worker.frame:
+            photo_bytes = worker.frame
+        else:
+            cam_obj = next((c for c in cams if c['id'] == cid), None)
+            if cam_obj:
+                try: photo_bytes = snapshot(cam_obj)
+                except Exception: photo_bytes = None
+    res['photo'] = photo_bytes
+    res['action'] = res.get('command', '/komut')
     with LOCK:
         log = STATE.setdefault('telegramBotLog', [])
         log.insert(0, {'time': time.time(), 'command': text[:120], 'action': res.get('action', 'unknown'), 'reply': res.get('reply', '')[:400]})
@@ -590,37 +621,64 @@ def execute_telegram_command_context(text):
     return res
 
 def telegram_bot_loop(stop):
-    """Background long-poller for interactive 2-way Telegram commands (/durum, /anlik, /kameralar, /olaylar, /koru, /sustur)."""
+    """Background long-poller for interactive 2-way Telegram commands and phone-number pairing."""
     while not stop.is_set():
         try:
             with LOCK:
                 tg = dict(STATE.get('telegram', {}))
-            token = str(tg.get('botToken', '')).strip()
+                cams = [{**c, 'status': WORKERS[c['id']].status if c['id'] in WORKERS else 'Durduruldu', 'analysis': WORKERS[c['id']].analysis if c['id'] in WORKERS else 'Bekliyor'} for c in STATE['cameras']]
+                rules = [dict(r) for r in STATE['rules']]
+                events = [dict(e) for e in STATE['events'][:10]]
+                lic = dict(STATE.get('license', forensics.default_license()))
+                safe_mode = bool(STATE.get('safeMode', False))
+                model_name = STATE.get('model', 'gemma3:4b')
+            token = str(tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN).strip()
             allowed_chat = str(tg.get('chatId', '')).strip()
-            if token and tg.get('enabled'):
-                updates = iot_automation.poll_telegram_updates(token, offset=int(tg.get('lastUpdateId', 0)) + 1, timeout=2)
-                for upd in updates:
-                    uid = int(upd.get('update_id', 0))
+            last_id = int(tg.get('lastUpdateId', 0))
+            if token and tg.get('enabled', True):
+                ctx = {
+                    'version': VERSION,
+                    'license': lic,
+                    'cameras': cams,
+                    'rules': rules,
+                    'events': events,
+                    'model': model_name,
+                    'diskFreeGB': round(shutil.disk_usage(DATA).free / 1024**3, 1),
+                    'safeMode': safe_mode,
+                    'telegramPhone': tg.get('phone', ''),
+                }
+                def _bot_action(act, arg):
                     with LOCK:
-                        if uid > int(STATE.get('telegram', {}).get('lastUpdateId', 0)):
-                            STATE['telegram']['lastUpdateId'] = uid
-                    msg = upd.get('message') or upd.get('edited_message') or {}
-                    chat_id = str((msg.get('chat') or {}).get('id', '')).strip()
-                    text = str(msg.get('text', '')).strip()
-                    if not text or not text.startswith('/'):
-                        continue
-                    if allowed_chat and chat_id != allowed_chat:
-                        continue
-                    res = execute_telegram_command_context(text)
-                    target_chat = chat_id or allowed_chat
-                    if target_chat:
-                        if res.get('photo'):
-                            iot_automation.send_telegram_photo(token, target_chat, res['photo'], res['reply'])
-                        else:
-                            iot_automation.send_telegram_message(token, target_chat, res['reply'])
+                        if act == 'arm_all':
+                            STATE['safeMode'] = False
+                            for r in STATE['rules']: r['enabled'] = True
+                        elif act == 'disarm_all':
+                            STATE['safeMode'] = True
+                        elif act == 'bind_phone' and isinstance(arg, dict):
+                            cur = STATE.setdefault('telegram', {})
+                            p = iot_automation.normalize_phone(arg.get('phone', ''))
+                            cid = str(arg.get('chatId', '')).strip()
+                            if p and cid:
+                                cur['phone'] = p
+                                cur['phoneDisplay'] = iot_automation.format_phone_display(p)
+                                cur['chatId'] = cid
+                                cur['enabled'] = True
+                                cur.setdefault('phoneDirectory', {})[p] = cid
+                        save()
+                def _frame_provider(cam_id):
+                    w = WORKERS.get(cam_id)
+                    return w.frame if (w and w.frame) else None
+                new_offset = iot_automation.poll_telegram_updates(
+                    token, allowed_chat, last_id, ctx,
+                    action_callback=_bot_action, frame_provider=_frame_provider
+                )
+                if new_offset > last_id:
+                    with LOCK:
+                        STATE.setdefault('telegram', {})['lastUpdateId'] = new_offset
+                        save()
         except Exception:
             pass
-        stop.wait(4)
+        stop.wait(3)
 
 def maintenance(stop):
     last_cleanup=0
@@ -666,10 +724,13 @@ def public_state():
             'webhookConfigured':bool(STATE['webhook']),
             'webhookSigned':bool(STATE.get('webhookSecret')),
             'telegram':{
-                'enabled':bool(tg.get('enabled')),
-                'configured':bool(tg.get('botToken') and tg.get('chatId')),
-                'chatId':tg.get('chatId',''),
-                'botUsername':tg.get('botUsername',''),
+                'enabled':bool(tg.get('enabled',True)),
+                'configured':bool((tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN) and (tg.get('chatId') or tg.get('phone'))),
+                'phone':tg.get('phone',''),
+                'phoneDisplay':tg.get('phoneDisplay') or iot_automation.format_phone_display(tg.get('phone','')),
+                'chatId':tg.get('chatId') or iot_automation.DEFAULT_ADMIN_CHAT_ID,
+                'botUsername':tg.get('botUsername') or iot_automation.OFFICIAL_BOT_USERNAME,
+                'botLink':iot_automation.OFFICIAL_BOT_LINK,
                 'spec':iot_automation.BOT_SPECIFICATION,
             },
             'telegramBotLog':STATE.get('telegramBotLog',[])[:20],
@@ -1053,41 +1114,80 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     audit('KVKK Gizlilik Maskesi', f"{cam['name']}: {len(masks)} maske bölgesi kaydedildi")
                     save()
                 return self.send(200,{'ok':True,'masks':masks})
-            if path=='/api/telegram-settings':
-                token_val=str(d.get('botToken','')).strip()
-                chat_val=str(d.get('chatId','')).strip()
-                enabled=bool(d.get('enabled',False))
-                bot_username=''
-                if token_val:
+            if path in ('/api/telegram-bind-phone', '/api/telegram-settings'):
+                with LOCK: tg=dict(STATE.get('telegram',{}))
+                phone_raw=str(d.get('phone') or tg.get('phone','')).strip()
+                token_val=str(d.get('botToken') or tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN).strip()
+                chat_val=str(d.get('chatId') or tg.get('chatId') or iot_automation.DEFAULT_ADMIN_CHAT_ID).strip()
+                enabled=bool(d.get('enabled',True))
+                open_desktop=bool(d.get('openDesktop',False))
+                bot_username=iot_automation.OFFICIAL_BOT_USERNAME
+                bound=None
+                if phone_raw:
                     try:
-                        info=iot_automation.verify_telegram_bot(token_val, register_commands=True)
-                        bot_username=info.get('username','')
+                        bound=iot_automation.bind_telegram_phone(
+                            phone_raw,
+                            bot_token=token_val,
+                            existing_directory=tg.get('phoneDirectory',{}),
+                            fallback_chat_id=chat_val,
+                            open_desktop_link=open_desktop,
+                            send_welcome=bool(d.get('sendWelcome',True)),
+                        )
+                        chat_val=bound['chatId'] or chat_val
+                        bot_username=bound.get('botUsername') or bot_username
+                    except ValueError as e:
+                        raise InputError(str(e)) from None
+                elif token_val:
+                    try:
+                        info=iot_automation.verify_telegram_bot(token_val)
+                        bot_username=info.get('username','') or bot_username
                     except Exception:
                         pass
                 with LOCK:
-                    cur=STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False,'botUsername':'','lastUpdateId':0})
-                    if token_val: cur['botToken']=token_val
-                    if chat_val: cur['chatId']=chat_val
-                    if bot_username: cur['botUsername']=bot_username
+                    cur=STATE.setdefault('telegram',{'botToken':iot_automation.OFFICIAL_BOT_TOKEN,'chatId':iot_automation.DEFAULT_ADMIN_CHAT_ID,'phone':'','phoneDisplay':'','phoneDirectory':{},'enabled':True,'botUsername':iot_automation.OFFICIAL_BOT_USERNAME,'lastUpdateId':0})
+                    cur['botToken']=token_val
+                    cur['chatId']=chat_val
+                    cur['botUsername']=bot_username
                     cur['enabled']=enabled
-                    audit('Telegram Ayarları Güncellendi', f"Durum: {'Etkin' if enabled else 'Kapalı'}{(' · @'+bot_username) if bot_username else ''}")
+                    if bound:
+                        cur['phone']=bound['phone']
+                        cur['phoneDisplay']=bound['phoneDisplay']
+                        cur['phoneDirectory']=bound['directory']
+                    audit('Telegram Numara Eşleştirildi', f"Numara: {cur.get('phoneDisplay') or 'Varsayılan'} · @{bot_username} · Durum: {'Etkin' if enabled else 'Kapalı'}")
                     save()
-                return self.send(200,{'ok':True,'botUsername':bot_username,'message':'Telegram Bot ve iki yönlü komut ayarları kaydedildi.'})
+                msg_text = (
+                    f"📱 {cur.get('phoneDisplay')} numaranız @{bot_username} botuna bağlandı ve onay mesajı gönderildi!"
+                    if bound else 'Telegram Bot ve iki yönlü komut ayarları kaydedildi.'
+                )
+                return self.send(200,{
+                    'ok':True,
+                    'phone':cur.get('phone',''),
+                    'phoneDisplay':cur.get('phoneDisplay',''),
+                    'chatId':chat_val,
+                    'botUsername':bot_username,
+                    'botLink':iot_automation.OFFICIAL_BOT_LINK,
+                    'deepLink':bound['deepLink'] if bound else iot_automation.OFFICIAL_BOT_LINK,
+                    'notified':bound['notified'] if bound else False,
+                    'message':msg_text,
+                })
             if path=='/api/telegram-discover-chat':
                 with LOCK: tg=dict(STATE.get('telegram',{}))
-                token_val=str(d.get('botToken') or tg.get('botToken','')).strip()
+                token_val=str(d.get('botToken') or tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN).strip()
                 try:
                     found=iot_automation.discover_telegram_chat(token_val)
-                    bot_info=iot_automation.verify_telegram_bot(token_val, register_commands=True)
+                    bot_info=iot_automation.verify_telegram_bot(token_val)
                     with LOCK:
-                        cur=STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False,'botUsername':'','lastUpdateId':0})
+                        cur=STATE.setdefault('telegram',{'botToken':iot_automation.OFFICIAL_BOT_TOKEN,'chatId':iot_automation.DEFAULT_ADMIN_CHAT_ID,'phone':'','phoneDisplay':'','phoneDirectory':{},'enabled':True,'botUsername':iot_automation.OFFICIAL_BOT_USERNAME,'lastUpdateId':0})
                         cur['botToken']=token_val
                         cur['chatId']=found['chatId']
-                        cur['botUsername']=bot_info.get('username','')
+                        if found.get('phone'):
+                            cur['phone']=found['phone']
+                            cur['phoneDisplay']=iot_automation.format_phone_display(found['phone'])
+                        cur['botUsername']=bot_info.get('username',iot_automation.OFFICIAL_BOT_USERNAME)
                         save()
-                    return self.send(200,{'ok':True,'chatId':found['chatId'],'title':found['title'],'botUsername':bot_info.get('username',''),'message':f"Chat ID otomatik bulundu: {found['chatId']} ({found['title']})"})
+                    return self.send(200,{'ok':True,'chatId':found['chatId'],'phone':cur.get('phoneDisplay',''),'title':found['title'],'botUsername':bot_info.get('username',''),'message':f"Telegram hesabı otomatik eşleştirildi: {found['title']} (ID: {found['chatId']})"})
                 except ValueError as e: raise InputError(str(e)) from None
-                except Exception: raise InputError('Telegram API bağlantısı kurulamadı. Bot Token değerini kontrol edin.') from None
+                except Exception: raise InputError('Telegram API bağlantısı kurulamadı.') from None
             if path=='/api/telegram-simulate':
                 cmd=str(d.get('command','/durum')).strip()
                 res=execute_telegram_command_context(cmd)
@@ -1095,13 +1195,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.send(200,{'ok':True,'command':cmd,'reply':res['reply'],'action':res['action'],'hasPhoto':bool(res.get('photo'))})
             if path=='/api/telegram-test':
                 with LOCK: tg=dict(STATE.get('telegram',{}))
-                token_val=str(d.get('botToken') or tg.get('botToken','')).strip()
-                chat_val=str(d.get('chatId') or tg.get('chatId','')).strip()
+                token_val=str(d.get('botToken') or tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN).strip()
+                chat_val=str(d.get('chatId') or tg.get('chatId') or iot_automation.DEFAULT_ADMIN_CHAT_ID).strip()
+                phone_val=str(d.get('phone') or tg.get('phone','')).strip()
                 try:
-                    iot_automation.send_telegram_alert(token_val,chat_val,{'camera':'Cortex Test','rule':'Telegram Bağlantı Testi','reason':'IPScans Cortex 2.0 Pro mobil bildirim ve iki yönlü komuta hattı başarıyla doğrulandı.'})
-                    return self.send(200,{'ok':True,'message':'Telegram test mesajı cep telefonunuza gönderildi.'})
+                    iot_automation.send_telegram_alert(token_val,chat_val,{'camera':'Cortex Test','rule':'Telegram Bağlantı Testi','reason':'IPScans Cortex 2.0 Pro mobil bildirim ve iki yönlü komuta hattı başarıyla doğrulandı.'},phone_number=phone_val)
+                    return self.send(200,{'ok':True,'message':f"Telegram test bildirimi {iot_automation.format_phone_display(phone_val) if phone_val else 'hesabınıza'} (@intelligentcortexbot) gönderildi."})
                 except ValueError as e: raise InputError(str(e)) from None
-                except Exception: raise InputError('Telegram API bağlantısı kurulamadı. Bot Token, Chat ID ve internet erişimini kontrol edin.') from None
+                except Exception: raise InputError('Telegram API bağlantısı kurulamadı. İnternet erişimini kontrol edin.') from None
             if path=='/api/license-activate':
                 try: info=forensics.verify_commercial_key(d.get('key',''))
                 except ValueError as e: raise InputError(str(e)) from None

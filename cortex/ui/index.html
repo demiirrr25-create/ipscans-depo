@@ -544,36 +544,49 @@
           <form id="telegramForm" class="card">
             <div class="sectiontitle" style="margin-bottom:8px">
               <div>
-                <span class="eyebrow">İKİ YÖNLÜ MOBİL KOMUTA &amp; ALARM BOTU</span>
-                <h2>📲 Cortex Telegram Botu (@IPScansCortex_Bot)</h2>
+                <span class="eyebrow">TELEFON NUMARASI İLE OTOMATİK TELEGRAM ENTEGRASYONU</span>
+                <h2>📲 Cortex Resmi Telegram Botu (@intelligentcortexbot)</h2>
               </div>
-              <span class="tag ok" id="tgBotBadge">Long-Polling Aktif</span>
+              <span class="tag ok" id="tgBotBadge">@intelligentcortexbot Aktif</span>
             </div>
-            <p class="fine">Olay anında kamera fotoğrafını saniyesinde cep telefonunuza gönderir; ayrıca Telegram'dan <code>/durum</code>, <code>/kameralar</code>, <code>/anlik</code>, <code>/olaylar</code>, <code>/koru</code> ve <code>/sustur</code> komutlarıyla Cortex'i uzaktan yönetmenizi sağlar.</p>
-            <label>Telegram Bot Token (@BotFather üzerinden alınan token)
-              <input name="botToken" id="tgBotToken" type="password" placeholder="123456789:ABCdefGHIjklMNO..." autocomplete="new-password">
-            </label>
+            <p class="fine">Herhangi bir Bot Token veya teknik ayar girmenize gerek yoktur! Sadece <strong>cep telefonu numaranızı</strong> yazıp kaydedin; tüm güvenlik ihlalleri ve olay anı fotoğrafları <strong>@intelligentcortexbot</strong> üzerinden doğrudan numaraya bağlı Telegram hesabınıza gönderilir.</p>
             <div class="grid">
-              <label>Chat ID (Kullanıcı veya Grup ID)
-                <input name="chatId" id="tgChatId" placeholder="-100123456789 veya 987654321">
+              <label>📱 Cep Telefonu Numaranız (Sadece Numaranızı Girin)
+                <input name="phone" id="tgPhone" type="tel" placeholder="Örn: 0532 123 45 67 veya +90 5XX XXX XX XX" autocomplete="tel">
               </label>
               <div style="display:flex;align-items:flex-end;padding-bottom:2px">
-                <button type="button" id="discoverTelegramChatBtn" style="width:100%">🔍 Chat ID Otomatik Bul</button>
+                <button type="button" id="openTelegramDesktopBtn" style="width:100%">📲 Telegram'da @intelligentcortexbot'u Aç ↗</button>
               </div>
             </div>
             <label class="check">
-              <input name="enabled" id="tgEnabled" type="checkbox">
-              <span>Telegram anlık fotoğraflı bildirimleri ve iki yönlü komutları etkinleştir</span>
+              <input name="enabled" id="tgEnabled" type="checkbox" checked>
+              <span>Girilen telefon numarasına anlık fotoğraflı alarm ve iki yönlü komutları etkinleştir</span>
             </label>
             <p id="telegramStatus" class="fine" role="status"></p>
             <div class="actions">
-              <button type="submit" class="primary">Telegram ayarlarını kaydet</button>
-              <button type="button" id="testTelegramBtn">Test mesajı gönder ↗</button>
+              <button type="submit" class="primary">📱 Numaramı Bağla &amp; Bildirimleri Başlat</button>
+              <button type="button" id="testTelegramBtn">📤 Numarama Canlı Test Alarmı Gönder</button>
             </div>
 
-            <details open style="margin-top:16px">
-              <summary>🤖 Canlı Telegram Bot Komut Simülatörü &amp; @BotFather Kurulum Bilgileri</summary>
-              <p class="fine">Telegram uygulamasında <strong>@BotFather</strong> açıp <code>/newbot</code> yazarak kendi botunuzu oluşturabilir veya aşağıdaki komutlarla botun verdiği gerçek yanıtları hemen test edebilirsiniz:</p>
+            <details style="margin-top:12px">
+              <summary>⚙️ Gelişmiş: Özel Bot Token &amp; Chat ID Ayarları (İsteğe Bağlı — Varsayılan: @intelligentcortexbot)</summary>
+              <p class="fine">Varsayılan olarak resmi <code>@intelligentcortexbot</code> gömülüdür. Yalnızca kendi özel kurumsal botunuzu kullanmak isterseniz aşağıdaki alanları doldurun:</p>
+              <label>Telegram Bot Token
+                <input name="botToken" id="tgBotToken" type="password" placeholder="Varsayılan: @intelligentcortexbot (Hazır Gömülü)" autocomplete="new-password">
+              </label>
+              <div class="grid">
+                <label>Chat ID (Otomatik Eşleşir)
+                  <input name="chatId" id="tgChatId" placeholder="Otomatik algılanır">
+                </label>
+                <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+                  <button type="button" id="discoverTelegramChatBtn" style="width:100%">🔍 Hesabı Otomatik Bul</button>
+                </div>
+              </div>
+            </details>
+
+            <details open style="margin-top:14px">
+              <summary>🤖 Canlı Telegram Bot Komut Simülatörü (@intelligentcortexbot)</summary>
+              <p class="fine">Telegram'dan <strong>t.me/intelligentcortexbot</strong> botuna gönderebileceğiniz canlı komutları aşağıdan hemen test edebilirsiniz:</p>
               <div class="studio-preset-group" style="margin:8px 0">
                 <button type="button" class="studio-preset-btn" data-tg-sim="/durum">/durum</button>
                 <button type="button" class="studio-preset-btn" data-tg-sim="/kameralar">/kameralar</button>
