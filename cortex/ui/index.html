@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex 2.1 · Kurumsal Kamera Zekâsı, Görsel AI &amp; Komuta Merkezi</title>
+  <title>IPScans Cortex 2.1.1 · Kurumsal Kamera Zekâsı, Görsel AI &amp; Komuta Merkezi</title>
   <link rel="icon" href="logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600;700&family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap" rel="stylesheet">
   <script>
     (function() {
       try {
@@ -20,42 +23,116 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="style.css?v=2.1.1">
+  <link rel="stylesheet" href="refinements.css?v=2.1.1">
 </head>
 <body>
-  <a class="skip-link" href="#overview">İçeriğe geç</a>
+  <div id="cortexLoginGate" class="cortex-login-gate">
+    <div class="login-stage">
+      <canvas id="loginSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
+      <div class="login-stage-top">
+        <div class="login-stage-brand">
+          <img src="logo.svg" alt="IPScans Cortex" width="34" height="34">
+          <span>IPScans Cortex</span>
+        </div>
+      </div>
+      <div class="login-stage-center">
+        <h2 class="login-stage-headline">Gören kameralar.<br><em>Anlayan sistem.</em></h2>
+      </div>
+      <div class="login-stage-foot" hidden></div>
+    </div>
+    <div class="login-panel">
+      <div class="cortex-login-card">
+        <div class="cortex-login-brand">
+          <img src="logo.svg" alt="IPScans Cortex 2.1.1" width="40" height="40">
+          <div>
+            <h1>Oturum açın</h1>
+          </div>
+        </div>
+        <form id="cortexLoginForm">
+          <label>Kullanıcı Adı
+            <input id="cortexLoginUser" name="username" placeholder="Kullanıcı Adı" required autocomplete="username">
+          </label>
+          <label>Parola
+            <input id="cortexLoginPass" name="password" type="password" placeholder="Parola" required autocomplete="current-password">
+          </label>
+          <p id="cortexLoginError" class="fine cortex-login-error" role="alert"></p>
+          <button type="submit" id="cortexLoginBtn" class="primary login-submit-btn" style="width:100%">
+            <span id="cortexLoginBtnLabel">Giriş Yap</span>
+            <svg class="btn-arrow" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3.5 8h9M8.5 4l4 4-4 4"></path>
+            </svg>
+          </button>
+        </form>
+        <div class="cortex-login-footer">
+          <a href="http://127.0.0.1:8766" target="_blank" rel="noopener" class="login-admin-link">Yönetim Merkezi ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <aside>
     <a class="brand" href="#">
-      <img src="logo.svg" alt="" width="40" height="40">
-      <span>Cortex<small>by IPScans · 2.1</small></span>
+      <img src="logo.svg" alt="" width="38" height="38">
+      <span>Cortex<small>by IPScans · 2.1.1</small></span>
     </a>
-    <span class="eyebrow" data-i18n="aside.eyebrow">KONTROL MERKEZİ</span>
     <nav aria-label="Ana menü">
-      <button type="button" data-tab="overview" class="active"><span class="nav-glyph">◈</span> <span data-i18n="nav.overview">Genel bakış</span></button>
-      <button type="button" data-tab="cameras"><span class="nav-glyph">▦</span> <span data-i18n="nav.cameras">Kameralar</span></button>
-      <button type="button" data-tab="rules"><span class="nav-glyph">⌘</span> <span data-i18n="nav.rules">Olay kuralları</span></button>
-      <button type="button" data-tab="events"><span class="nav-glyph">◷</span> <span data-i18n="nav.events">Olay arşivi</span></button>
-      <button type="button" data-tab="settings"><span class="nav-glyph">⚙</span> <span data-i18n="nav.settings">Ayarlar &amp; Lisans</span></button>
-      <button type="button" data-tab="plans"><span class="nav-glyph">◇</span> <span>Paketler</span></button>
-      <button type="button" data-tab="admin"><span class="nav-glyph">🛡️</span> <span data-i18n="nav.admin">Yönetim Paneli</span></button>
-    </nav>
-    <div class="asidefoot">
-      <div class="aside-status"><span class="dot"></span> <span data-i18n="aside.workspace">Yerel çalışma alanı</span></div>
-      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Hibrit Görsel AI + Akıllı Takip + Telegram Bot</span><span id="version" data-version="2.1.0" hidden>2.1.0</span></small>
+      <button type="button" data-tab="overview" class="active">
+        <span class="nav-glyph" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        </span>
+        <span data-i18n="nav.overview">Genel bakış</span>
+      </button>
+      <button type="button" data-tab="cameras">
+        <span class="nav-glyph" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3.5" width="9.5" height="9" rx="1.5"/><path d="M11 6.5l3.5-2v7L11 9.5z"/></svg>
+        </span>
+        <span data-i18n="nav.cameras">Kameralar</span>
+      </button>
+      <button type="button" data-tab="rules">
+        <span class="nav-glyph" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5V3a1 1 0 0 1 1-1h2M11 2h2a1 1 0 0 1 1 1v2M14 11v2a1 1 0 0 1-1 1h-2M5 14H3a1 1 0 0 1-1-1v-2"/><rect x="5" y="5" width="6" height="6" rx="1"/></svg>
+        </span>
+        <span data-i18n="nav.rules">Olay kuralları</span>
+      </button>
+      <button type="button" data-tab="events">
+        <span class="nav-glyph" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>
+        </span>
+        <span data-i18n="nav.events">Olay arşivi</span>
+      </button>
+      <button type="button" data-tab="settings">
+        <span class="nav-glyph" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="5" cy="4" r="1.5" fill="var(--bg)"/><circle cx="11" cy="8" r="1.5" fill="var(--bg)"/><circle cx="7" cy="12" r="1.5" fill="var(--bg)"/></svg>
+        </span>
+        <span data-i18n="nav.settings">Ayarlar &amp; Lisans</span>
+      </button>
+    <button type="button" data-tab="plans"><span class="nav-glyph">◇</span><span>Paketler</span></button></nav>
+    <div class="asidefoot" hidden>
+      <div class="aside-status" hidden><span class="dot"></span> <span data-i18n="aside.workspace">Yerel Motor Aktif</span></div>
+      <span id="version" data-version="2.1.1" hidden>2.1.1</span>
     </div>
   </aside>
 
   <main>
+    <aside id="ultraUpgradeBanner" class="ultra-upgrade-banner" role="region" aria-label="Cortex ULTRA Paket Yükseltme Üst Bildirimi" hidden></aside>
+
     <header>
       <div class="header-crumb">
-        <span>IPScans</span>
-        <span class="crumb-sep">/</span>
-        <b id="crumb">Cortex</b>
+        <b id="crumb">Genel bakış</b>
+        <span id="pageTitle" hidden>Genel bakış</span>
       </div>
       <div class="header-actions">
-        <button type="button" id="openMatrixWall" class="wall-trigger-btn" title="Tam Ekran Güvenlik Duvarı (Matrix Wall)">⊞ Kamera Duvarı</button>
-        <span class="badge" id="licenseBadge"><span data-i18n="header.badge">LOCAL FIRST</span> <i class="dot"></i></span>
+        <button type="button" id="openMatrixWall" class="wall-trigger-btn" title="Tam Ekran NVR Kayıt Cihazı Duvarı (Matrix Wall)">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
+          <span>NVR Kamera Duvarı</span>
+        </button>
+        <button type="button" id="headerTelegramBtn" class="sector-mini-btn tg-header-pill" title="Ayarlar > Tek Tıkla Telegram Bot Bağlantısı">
+          <span class="dot"></span>
+          <span id="headerTelegramLabel">Telegram Bot: Numara Ekle</span>
+        </button>
+        <span class="badge user-active-badge" id="activeUserBadge" title="Aktif Müşteri Hesabı ve Paket Seviyesi">Kurumsal (ULTRA)</span>
+        <span class="badge" id="licenseBadge" hidden><span data-i18n="header.badge">LOCAL FIRST</span> <i class="dot"></i></span>
         <div class="lang-switch" role="group" aria-label="Dil seçimi">
           <button type="button" class="lang-btn active" data-lang="tr" id="lang-tr">TR</button>
           <button type="button" class="lang-btn" data-lang="en" id="lang-en">EN</button>
@@ -69,93 +146,112 @@
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
+        <button type="button" id="logoutCortexBtn" class="sector-mini-btn logout-header-btn" title="Oturumu Kapat ve Cortex'i Kilitle">Çıkış</button>
       </div>
     </header>
 
     <div id="message" class="conn-banner" role="status" hidden></div>
 
     <section id="plans" class="view" hidden><div id="planCenter"></div></section>
-
-    <section id="overview" class="view" tabindex="-1">
-      <div class="hero">
-        <div>
+<section id="overview" class="view">
+      <div class="hero hero-compact" hidden>
+        <div class="hero-compact-copy">
           <span class="eyebrow" data-i18n="overview.eyebrow">GÖREN KAMERALAR. ANLAYAN SİSTEM.</span>
-          <h1 data-i18n-html="overview.title">Her kameraya<br>bir <em>beyin.</em></h1>
-          <p data-i18n-html="overview.lead">Neyi takip edeceğini sen söyle.<br>Cortex gözlemlesin, olayı kanıtlarıyla kaydetsin, anında sana bildirsin.</p>
-          <div class="actions">
-            <button type="button" class="primary" data-tab="cameras" data-i18n="overview.cta">İlk kameranı bağla ↗</button>
-            <button type="button" data-tab="rules" data-i18n="overview.studioBtn">Bölge (ROI) &amp; Kural Stüdyosu ⌘</button>
-            <button type="button" data-tab="admin">🛡️ Yönetim &amp; Lisans Paneli</button>
+          <div class="hero-compact-HeadlineRow">
+            <h1 data-i18n-html="overview.title">Her kameraya bir <em>beyin.</em></h1>
+            <p data-i18n-html="overview.lead">Neyi takip edeceğini sen söyle. Cortex gözlemlesin, olayı kanıtlarıyla kaydetsin, anında sana bildirsin.</p>
           </div>
         </div>
-        <div class="orb">
+        <div class="actions hero-compact-actions">
+          <button type="button" class="primary" data-tab="cameras" data-i18n="overview.cta">İlk kameranı bağla ↗</button>
+          <button type="button" data-tab="rules" data-i18n="overview.studioBtn">Bölge (ROI) &amp; Kural Stüdyosu</button>
+          <button type="button" data-tab="settings">Paket &amp; Lisans</button>
+        </div>
+        <div class="orb" hidden>
           <img src="logo.svg" alt="Cortex geometrik göz logosu">
           <span data-i18n="overview.orb">GÖR · ANLA · BİLDİR</span>
         </div>
       </div>
 
-      <section id="planSpotlight" aria-label="Paket avantajları" hidden></section>
-
-      <div id="stats" class="stats">
+      <section id="planSpotlight" aria-label="Paket avantajları" hidden></section><div id="stats" class="stats">
         <div class="stat"><span data-i18n="stats.cameras">KAMERALAR</span><strong>00</strong></div>
         <div class="stat"><span data-i18n="stats.rules">ETKİN KURALLAR</span><strong>00</strong></div>
         <div class="stat"><span data-i18n="stats.events">İNCELEME BEKLEYEN</span><strong>00</strong></div>
       </div>
 
-      <section class="card pro-banner-card" style="margin-bottom:28px">
-        <div class="sector-toolbar">
-          <div>
-            <span class="eyebrow" data-i18n="sector.eyebrow">KURUMSAL SAHA PAKETLERİ · 8 SEKTÖR · PRO / PLUS / ULTRA</span>
-            <h2 data-i18n="sector.title">Tek tıkla sektörel kurulum paketleri</h2>
-            <p class="fine" data-i18n="sector.desc">Site/Rezidans, Havuz, Fabrika/İSG, Depo/Lojistik, Perakende/AVM, Ofis/Plaza, Okul/Kampüs ve Hastane/Klinik için kalibre edilmiş bölge (ROI), zaman çizelgesi ve akıllı takip kurallarını seçip tek tuşla devreye alın.</p>
+      <section class="nvr-recorder-console" style="margin-bottom:24px">
+        <div class="nvr-console-head" hidden></div>
+        <div class="nvr-deck-bar">
+          <div class="nvr-status-group">
+            <span id="nvrRecIndicator" class="nvr-rec-badge" hidden><span class="nvr-rec-dot">● CANLI</span> · NVR KOMUTA MERKEZİ</span>
+            <span id="nvrLiveClock" class="nvr-clock mono">24.10.2026 | 15:42:08</span>
+            <span id="nvrChannelSummary" class="nvr-channel-summary mono">0 / 32 Kanal</span>
           </div>
-          <div class="sector-controls">
-            <label style="margin:0;min-width:210px"><span data-i18n="sector.targetCamera">Hedef kamera</span>
-              <select id="sectorCameraSelect"><option value="">Önce kamera ekleyin</option></select>
-            </label>
-            <label style="margin:0;min-width:210px"><span data-i18n="sector.deployMode">Kurulum modu</span>
-              <select id="sectorDeployMode">
-                <option value="merge">Mevcut kurallarla birleştir / güncelle</option>
-                <option value="replace">Kameradaki kuralları paketle değiştir</option>
-              </select>
-            </label>
+          <div id="nvrLayoutBar" class="nvr-grid-controls" role="toolbar" aria-label="NVR Kamera Duvarı Düzeni">
+            <button type="button" class="nvr-grid-btn" data-nvr-grid="grid-1x1">1×1 Odak</button>
+            <button type="button" class="nvr-grid-btn active" data-nvr-grid="grid-2x2">2×2 Dörtlü</button>
+            <button type="button" class="nvr-grid-btn" data-nvr-grid="grid-1plus5">1+5 VIP</button>
+            <button type="button" class="nvr-grid-btn" data-nvr-grid="grid-3x3">3×3 Dokuzlu</button>
+            <button type="button" class="nvr-grid-btn" data-nvr-grid="grid-4x4">4×4 Onaltılı</button>
+            <button type="button" id="nvrAutoTourBtn" class="nvr-grid-btn">Otomatik Tur</button>
+            <button type="button" id="openMatrixWallBtn" class="nvr-grid-btn nvr-fullscreen-btn">Tam Ekran NVR</button>
           </div>
         </div>
-        <div id="sectorPackGrid" class="sector-grid"></div>
+
+        <div id="overviewCameras" class="nvr-wall-shell">
+          <div id="cameraWall" class="nvr-wall-grid grid-2x2"></div>
+        </div>
+
+        <div id="nvrEventTicker" class="nvr-event-ticker" aria-live="polite">
+          <span class="nvr-ticker-label">SON OLAYLAR</span>
+          <div class="nvr-ticker-items"><span class="nvr-ticker-empty">Henüz kayıtlı olay yok.</span></div>
+        </div>
       </section>
 
-      <section class="card" id="analyticsCard" style="margin-bottom:28px">
+      <details class="card pro-banner-card sector-drawer" style="margin-bottom:24px">
+        <summary class="sector-drawer-summary">
+          <div class="sector-drawer-title">
+            <span class="eyebrow" data-i18n="sector.eyebrow">KURUMSAL SAHA PAKETLERİ · 8 SEKTÖR · PRO / PLUS / ULTRA</span>
+            <h2 data-i18n="sector.title">Hazır Sektörel Kurulum Paketleri (8 Sektör · Tek Tıkla Kurulum)</h2>
+          </div>
+          <span class="tag">8 Sektör · Kalibre ROI</span>
+        </summary>
+        <div class="sector-drawer-body">
+          <div class="sector-toolbar">
+            <p class="fine" style="margin:0;max-width:540px">Site, Havuz, Fabrika/İSG, Depo, Perakende, Ofis, Kampüs ve Klinik için kalibre edilmiş bölge (ROI) ve zaman çizelgesi kurallarını seçip tek tuşla devreye alın.</p>
+            <div class="sector-controls">
+              <label style="margin:0;min-width:210px"><span data-i18n="sector.targetCamera">Hedef kamera</span>
+                <select id="sectorCameraSelect"><option value="">Önce kamera ekleyin</option></select>
+              </label>
+              <label style="margin:0;min-width:210px"><span data-i18n="sector.deployMode">Kurulum modu</span>
+                <select id="sectorDeployMode">
+                  <option value="merge">Mevcut kurallarla birleştir / güncelle</option>
+                  <option value="replace">Kameradaki kuralları paketle değiştir</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div id="sectorPackGrid" class="sector-grid"></div>
+        </div>
+      </details>
+
+      <section class="card" id="analyticsCard" style="margin-bottom:24px">
         <div class="sectiontitle" style="margin-bottom:12px">
           <div>
-            <span class="eyebrow">CANLI SAHA TELEMETRİSİ</span>
             <h2>Son 24 saat olay yoğunluğu ve kategori dağılımı</h2>
           </div>
-          <span id="avgLatencyBadge" class="tag ok">Yerel gerçek zamanlı motor aktif</span>
+          <span id="avgLatencyBadge" class="tag ok" hidden></span>
         </div>
         <div id="hourlyChart" class="hourly-chart" aria-label="24 saatlik olay grafiği"></div>
         <div id="categoryBreakdown" class="actions" style="margin-top:14px"></div>
       </section>
-
-      <div class="sectiontitle">
-        <h2 data-i18n="overview.workspace">Çalışma alanın</h2>
-        <span data-i18n="overview.liveStatus">Gerçek bağlantı durumu · Canlı termal ısı haritası, İki Yönlü Telegram Bot ve KVKK maskeleme destekli</span>
-      </div>
-      <div id="overviewCameras" class="grid">
-        <div class="empty">
-          <span class="symbol" aria-hidden="true">◈</span>
-          <h2 data-i18n="empty.camerasTitle">Henüz kamera eklenmedi.</h2>
-          <p data-i18n="empty.camerasDesc">IP adresi ve giriş bilgileriyle ilk kameranı bağla.</p>
-        </div>
-      </div>
-      <div class="hint" data-i18n="overview.hint">Başlamak için kamera ekle, olay kuralını tanımla veya yukarıdan 8 kurumsal saha paketinden birini tek tıkla uygula. 22 yerel piksel kuralı, 6 Cortex Pro akıllı takip kuralı (Loitering, Kapasite, Tailgating, Yasak Bölge, Düşme Takibi, Eşya Bırakma), 3 geçiş kontrol kuralı ve 42 görsel AI şablonu hazır gelir.</div>
     </section>
 
     <section id="cameras" class="view" hidden>
       <div class="sectiontitle">
         <div>
-          <span class="eyebrow" data-i18n="cameras.eyebrow">01 / GÖR &amp; BAĞLAN</span>
           <h1 data-i18n="cameras.title">Kameraların.</h1>
-          <p data-i18n="cameras.subtitle">Aynı ağdaki ONVIF cihazları keşfet, NVR kanallarını topluca içe aktar veya RTSP ile doğrudan bağlan.</p>
+          <p data-i18n="cameras.subtitle" hidden></p>
         </div>
         <button type="button" id="discover" class="primary" data-i18n="cameras.discover">Ağda keşfet ↗</button>
       </div>
@@ -168,7 +264,6 @@
           </div>
           <span class="tag">ONVIF Soap / UTC</span>
         </div>
-        <p>NVR/DVR üzerindeki tüm kamera kanallarını tek seferde keşfedip içe aktarın ve cihaz saatlerini bilgisayarınızın UTC saatiyle senkronize tutun.</p>
         <form id="deviceForm">
           <div class="grid">
             <label>Cihaz adı<input name="name" required maxlength="100" placeholder="Örn: Ana Bina NVR"></label>
@@ -180,7 +275,6 @@
           </div>
           <label class="check"><input name="https" type="checkbox"> HTTPS ONVIF bağlantısı kullan</label>
           <label class="check"><input name="sync" type="checkbox" checked> Cihaz tarih ve saatini otomatik eşitle</label>
-          <p class="fine">Bilgisayarın UTC saati referanstır; mevcut saat dilimi korunur. Saat sapması varsa cihaz manuel saat moduna alınır.</p>
           <div class="actions">
             <button class="primary">Kanalları keşfet ↗</button>
             <button type="button" id="saveClockDevice">Yalnızca saat yönetimine ekle</button>
@@ -222,7 +316,6 @@
               <option value="udp">UDP (düşük gecikme)</option>
             </select>
           </label>
-          <p class="fine" data-i18n="cameras.credHint">Tam adres kullanıcı adı ve parola içeriyorsa aşağıdaki alanları boş bırakabilirsin. Ayrı alanlar doldurulursa bu bilgiler kullanılır.</p>
           <div class="grid">
             <label><span data-i18n="cameras.userLabel">Kullanıcı adı</span>
               <input name="username" autocomplete="off">
@@ -231,7 +324,6 @@
               <input name="password" type="password" autocomplete="new-password">
             </label>
           </div>
-          <p class="fine" data-i18n="cameras.vaultHint">Kimlik bilgileri yerel Fernet AES-128 şifreli kasada saklanır.</p>
           <div id="cameraResult" role="status" class="fine"></div>
           <div class="actions">
             <button type="button" id="testCamera" data-i18n="cameras.testBtn">Bağlantıyı test et</button>
@@ -240,7 +332,7 @@
         </form>
         <div id="cameraList" class="stack">
           <div class="empty">
-            <span class="symbol" aria-hidden="true">▦</span>
+            <span class="symbol" aria-hidden="true">RTSP</span>
             <h2 data-i18n="empty.camerasTitle">Henüz kamera eklenmedi.</h2>
             <p data-i18n="empty.camerasDesc">IP adresi ve giriş bilgileriyle ilk kameranı bağla.</p>
           </div>
@@ -249,13 +341,11 @@
     </section>
 
     <section id="rules" class="view" hidden>
-      <span class="eyebrow" data-i18n="rules.eyebrow">02 / ANLA &amp; TASARLA</span>
       <h1 data-i18n-html="rules.title">Sen söyle.<br>Cortex takip etsin.</h1>
       <div class="twocol">
         <form id="ruleForm" class="card">
           <div class="sectiontitle" style="margin-bottom:8px">
             <div>
-              <span class="eyebrow">KURAL &amp; BÖLGE YAPILANDIRICISI · 73 HAZIR ŞABLON</span>
               <h2 data-i18n="rules.formTitle" style="margin-top:4px">Yeni olay kuralı</h2>
             </div>
             <span class="tag ok" id="ruleEngineBadge">Hibrit Motor</span>
@@ -276,13 +366,12 @@
           </div>
 
           <details open class="studio-details">
-            <summary data-i18n="rules.roiSummary">🎯 Profesyonel Bölge (ROI) &amp; Geçiş Hattı Çizim Stüdyosu</summary>
-            <p class="fine" data-i18n="rules.roiHint">Sahne üzerinde yeni bölge çizebilir, mevcut bölgeyi ortasından tutup taşıyabilir, 8 kenar/köşe tutamacından boyutlandırabilir veya hazır bölge şablonlarını seçebilirsiniz.</p>
+            <summary data-i18n="rules.roiSummary">Profesyonel Bölge (ROI) &amp; Geçiş Hattı Çizim Stüdyosu</summary>
 
             <div class="studio-toolbar">
               <div class="studio-mode-group">
-                <button type="button" id="drawModeRoi" class="studio-btn active">⬚ Bölge (ROI) Çiz &amp; Düzenle</button>
-                <button type="button" id="drawModeLine" class="studio-btn">📏 Geçiş Çizgisi (Tripwire) Taşı</button>
+                <button type="button" id="drawModeRoi" class="studio-btn active">Bölge (ROI) Çiz &amp; Düzenle</button>
+                <button type="button" id="drawModeLine" class="studio-btn">Geçiş Çizgisi (Tripwire) Taşı</button>
               </div>
               <div class="studio-preset-group" aria-label="Hazır bölge şablonları">
                 <button type="button" class="studio-preset-btn" data-roi-preset="0,0,100,100" id="roiFullBtn">Tam Ekran</button>
@@ -324,7 +413,7 @@
             <textarea name="prompt" rows="3" required>Bir kişi asansör zeminine çöp veya poşet bırakıp ayrıldığında ve nesne yerde kalmaya devam ettiğinde bildir.</textarea>
           </label>
           <div class="actions" style="margin-top:6px;margin-bottom:10px">
-            <button type="button" id="testAiRuleBtn">🔬 Bu Kuralı Ollama Görsel AI ile Canlı Test Et</button>
+            <button type="button" id="testAiRuleBtn">Bu Kuralı Ollama Görsel AI ile Canlı Test Et</button>
             <span id="aiRuleTestResult" class="fine mono"></span>
           </div>
           <div id="localSettings">
@@ -366,7 +455,7 @@
           </div>
 
           <details open>
-            <summary>🕒 Çalışma Takvimi &amp; Gün Seçimi</summary>
+            <summary>Çalışma Takvimi &amp; Gün Seçimi</summary>
             <div class="schedule-box" style="margin-top:4px;border-top:0;padding-top:0">
               <div class="sectiontitle" style="margin-bottom:8px">
                 <span class="eyebrow">HIZLI TAKVİM ŞABLONLARI</span>
@@ -395,7 +484,6 @@
                   <option value="6" selected>Pazar</option>
                 </select>
               </label>
-              <p class="fine" data-i18n="rules.scheduleHint">Bilgisayarın yerel saati kullanılır. Başlangıç ve bitiş aynıysa tüm gün (7/24) izlenir.</p>
             </div>
           </details>
           <div class="grid">
@@ -406,7 +494,6 @@
               <input name="cooldown" type="number" min="30" max="86400" value="120">
             </label>
           </div>
-          <p class="fine" id="modelNotice" data-i18n="rules.modelNotice">Model skoru doğruluk yüzdesi değildir. Tespitler insan incelemesi gerektirir. Güncel kareler birlikte değerlendirilir. AI süresi kamera kartında görünür; 15 saniyeden eski yanıtlar alarm üretmez.</p>
           <div class="actions">
             <button type="submit" class="primary" id="saveRule" data-i18n="rules.saveBtn">Kuralı etkinleştir ↗</button>
             <button type="button" id="resetRule" data-i18n="rules.resetBtn">Yeni kural</button>
@@ -414,7 +501,7 @@
         </form>
         <div id="ruleList" class="stack">
           <div class="empty">
-            <span class="symbol" aria-hidden="true">⌘</span>
+            <span class="symbol" aria-hidden="true">ROI</span>
             <h2 data-i18n="empty.rulesTitle">Kütüphaneden bir konfigürasyon seç.</h2>
             <p data-i18n="empty.rulesDesc">Aydınlatma, hareket, loitering, kapasite, sınır güvenliği, İSG ve görsel AI kuralları hazır.</p>
           </div>
@@ -423,11 +510,10 @@
     </section>
 
     <section id="events" class="view" hidden>
-      <span class="eyebrow" data-i18n="events.eyebrow">03 / BİLDİR &amp; SORGULA</span>
       <div class="sectiontitle">
         <div>
           <h1 data-i18n="events.title">Olay arşivi.</h1>
-          <p data-i18n="events.subtitle">Doğal dilde ara, kanıt klibini incele, SHA-256 imzalı adli kanıt paketini indir.</p>
+          <p data-i18n="events.subtitle" hidden></p>
         </div>
         <div class="actions" style="margin:0">
           <button type="button" id="exportCsvBtn">CSV Rapor İndir ↓</button>
@@ -437,7 +523,7 @@
 
       <section class="card copilot-bar" style="margin-bottom:20px">
         <div class="copilot-grid">
-          <label style="margin:0;flex:2">🔍 Cortex Copilot Doğal Dil Arama
+          <label style="margin:0;flex:2">Cortex Copilot Doğal Dil Arama
             <input type="search" id="copilotQuery" placeholder="Örn: dün gece havuzda insan, bugün incelenmemiş, tailgating, bekleme, baret, duman…">
           </label>
           <label style="margin:0">Kategori
@@ -469,7 +555,7 @@
 
       <div id="eventList" class="stack">
         <div class="empty">
-          <span class="symbol" aria-hidden="true">◷</span>
+          <span class="symbol" aria-hidden="true">SHA</span>
           <h2 data-i18n="empty.eventsTitle">Henüz olay yok.</h2>
           <p data-i18n="empty.eventsDesc">Tespit edilen olayların açıklamaları ve yerel klipleri burada görünür. Örnek veya sahte olay gösterilmez.</p>
         </div>
@@ -477,11 +563,262 @@
     </section>
 
     <section id="settings" class="view" hidden>
-      <span class="eyebrow" data-i18n="settings.eyebrow">04 / ÇALIŞMA ALANI, OLLAMA VLM &amp; MÜŞTERİ LİSANSI</span>
-      <h1 data-i18n="settings.title">Kontrol sende.</h1>
-      <div class="twocol">
-        <form id="settingsForm" class="card">
-          <h2 data-i18n="settings.engineTitle">Yerel Ollama Görsel AI Motoru</h2>
+      <div class="sectiontitle settings-page-header">
+        <div>
+          <span class="eyebrow">HESAP, LİSANS, TELEGRAM KOMUTA &amp; YEREL AI MOTORU</span>
+          <h1 data-i18n="settings.title">Ayarlar &amp; Üyelik Merkezi</h1>
+        </div>
+        <span class="tag mono" id="membershipTierHeaderTag">AKTİF PAKET: CORTEX PRO</span>
+      </div>
+
+      <!-- ZONE 1: Full-Width Executive Membership & Quota Bento Card -->
+      <section class="card membership-overview-card" id="accountMembershipCard">
+        <div class="membership-bento-split">
+          <div class="membership-bento-left">
+            <div class="bento-col-head">
+              <div>
+                <span class="eyebrow">KURUMSAL HESAP &amp; LİSANS KİMLİĞİ</span>
+                <h2>Müşteri Hesabı &amp; Aktif Lisans</h2>
+              </div>
+              <span class="tag mono">Port 8766</span>
+            </div>
+
+            <div id="licenseDetails" class="license-identity-panel"></div>
+
+            <form id="licenseActivateForm" class="license-activate-inline">
+              <div class="license-inline-head">
+                <span class="eyebrow">LİSANS ANAHTARI İLE PAKET ETKİNLEŞTİR / YÜKSELT</span>
+              </div>
+              <div class="license-inline-bar">
+                <label class="license-inline-field">
+                  <span>Kurum / Müşteri Adı</span>
+                  <input name="organization" placeholder="Örn: Marmara Park Sitesi" required>
+                </label>
+                <label class="license-inline-field license-key-field">
+                  <span>Lisans Anahtarı (Yönetim Merkezi)</span>
+                  <input name="key" id="licenseKeyInput" placeholder="IPS-PRO-... / IPS-PLUS-... / IPS-ULTRA-..." required>
+                </label>
+                <button type="submit" class="primary license-inline-submit">Paketi Etkinleştir ↗</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="membership-bento-right">
+            <div class="bento-col-head">
+              <div>
+                <span class="eyebrow">CANLI KAPASİTE &amp; KOTA KULLANIMI</span>
+                <h2>Saha Kaynakları &amp; Paket Limitleri</h2>
+              </div>
+              <span class="tag mono" id="quotaTierBadge">CANLI TELEMETRİ</span>
+            </div>
+
+            <div id="quotaOverviewBox" class="quota-overview-panel"></div>
+            <div id="upgradeAnalysisBox" class="upgrade-analysis-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 2: Full-Width 3-Column Cortex Plans Comparison Matrix -->
+      <section class="card plans-showcase-card" id="cortexPlansHub">
+        <div class="sectiontitle plans-showcase-header">
+          <div>
+            <span class="eyebrow">CORTEX PAKETLERİ KARŞILAŞTIRMA MATRİSİ</span>
+            <h2>Saha Ölçeğinize Uygun Cortex Paketini Seçin</h2>
+            <p class="fine" style="margin:4px 0 0">Kamera kanal kapasitesini, eşzamanlı AI kural limitlerini, hazır sektör paketlerini ve adli arşiv sürelerini karşılaştırın.</p>
+          </div>
+        </div>
+
+        <div id="tierComparisonGrid" class="tier-comparison-grid">
+          <article class="tier-box" data-tier-card="PRO">
+            <div class="tier-box-head">
+              <div class="tier-box-toprow">
+                <span class="tag mono">CORTEX PRO</span>
+                <span class="tier-status-slot"></span>
+              </div>
+              <h3 class="tier-name">Standart Saha Paketi</h3>
+              <span class="tier-ideal-for">Başlangıç &amp; Küçük İşletme</span>
+            </div>
+
+            <div class="tier-capacity-strip">
+              <div class="tier-stat-cell">
+                <strong class="mono">4</strong>
+                <span>KAMERA</span>
+              </div>
+              <div class="tier-stat-cell">
+                <strong class="mono">8</strong>
+                <span>AI KURALI</span>
+              </div>
+              <div class="tier-stat-cell">
+                <strong class="mono">2</strong>
+                <span>TELEGRAM</span>
+              </div>
+            </div>
+
+            <ul class="tier-feature-list">
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>4 RTSP / ONVIF Kamera Kanalı</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>8 Eşzamanlı Görsel AI &amp; Yerel Kural</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>2 Telegram Bildirim &amp; Komut Alıcısı</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>2 Hazır Sektör Paketi (Site &amp; Ofis)</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>7 Gün Yerel Kanıt &amp; MP4 Klip Saklama</span></li>
+            </ul>
+          </article>
+
+          <article class="tier-box" data-tier-card="PLUS">
+            <div class="tier-box-head">
+              <div class="tier-box-toprow">
+                <span class="tag ok mono">CORTEX PLUS</span>
+                <span class="tier-status-slot"></span>
+              </div>
+              <h3 class="tier-name">Gelişmiş Tesis Paketi</h3>
+              <span class="tier-ideal-for">Orta Ölçekli Tesis &amp; Kampüs</span>
+            </div>
+
+            <div class="tier-capacity-strip">
+              <div class="tier-stat-cell">
+                <strong class="mono">12</strong>
+                <span>KAMERA</span>
+              </div>
+              <div class="tier-stat-cell">
+                <strong class="mono">32</strong>
+                <span>AI KURALI</span>
+              </div>
+              <div class="tier-stat-cell">
+                <strong class="mono">5</strong>
+                <span>TELEGRAM</span>
+              </div>
+            </div>
+
+            <ul class="tier-feature-list">
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>12 RTSP / ONVIF Kamera Kanalı</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>32 Eşzamanlı AI &amp; Pro Takip Kuralı</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>5 Telegram Bildirim Numarası (Vardiya Ekibi)</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>5 Hazır Sektör Paketi + Kalibre ROI Stüdyosu</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>15 Gün Yerel Kanıt Saklama + Toplu Dağıtım</span></li>
+            </ul>
+          </article>
+
+          <article class="tier-box tier-box-ultra" data-tier-card="ULTRA">
+            <div class="tier-box-head">
+              <div class="tier-box-toprow">
+                <span class="tag warn mono">CORTEX ULTRA</span>
+                <span class="tier-ultra-ribbon">TAM KAPASİTE</span>
+              </div>
+              <h3 class="tier-name">Kurumsal Komuta &amp; Filo</h3>
+              <span class="tier-ideal-for">Kurumsal Saha, Fabrika &amp; Filo</span>
+            </div>
+
+            <div class="tier-capacity-strip">
+              <div class="tier-stat-cell">
+                <strong class="mono">32</strong>
+                <span>KAMERA</span>
+              </div>
+              <div class="tier-stat-cell">
+                <strong class="mono">128</strong>
+                <span>AI KURALI</span>
+              </div>
+              <div class="tier-stat-cell">
+                <strong class="mono">10</strong>
+                <span>TELEGRAM</span>
+              </div>
+            </div>
+
+            <ul class="tier-feature-list">
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>32 Kamera Kanalı &amp; Tam Ekran NVR Duvarı</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>128 AI Kuralı (Tüm VLM + Pro + Geçiş Kontrol)</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>10 Telegram Numarası (Çoklu Alıcı Operasyon)</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>Tüm 8 Sektör Paketi &amp; Tek Tıkla Filo Kurulum</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span>30 Gün Kanıt + SHA-256 Adli Denetim &amp; Copilot</span></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ZONE 3: Balanced 2-Column Operational Configuration (Telegram & Ollama VLM) -->
+      <div class="twocol settings-ops-grid">
+        <form id="telegramForm" class="card tg-hero-card">
+          <div class="sectiontitle" style="margin-bottom:10px">
+            <div>
+              <span class="eyebrow">ÇİFT YÖNLÜ MOBİL ALARM &amp; KOMUTA</span>
+              <h2 style="font-size:18px;margin-top:3px">Telegram Bildirim Hattı (@intelligentcortexbot)</h2>
+            </div>
+            <div class="actions" style="margin:0;gap:6px">
+              <span class="tag ok" id="tgEmbeddedEngineBadge" hidden><span class="tg-live-dot"></span> Gömülü Bot Motoru Aktif</span>
+              <span class="tag ok" id="tgPhoneQuotaBadge">Kayıtlı Numaralar: 0 / 2 (PRO)</span>
+              <span class="tag warn" id="tgBotBadge">@intelligentcortexbot · Numara Bekleniyor</span>
+            </div>
+          </div>
+
+          <div class="tg-oneclick-bar">
+            <div id="tgPhoneInput" class="tg-phone-field">
+              <span class="tg-phone-icon mono" aria-hidden="true">TEL</span>
+              <input name="phone" id="tgPhone" type="tel" value="" placeholder="+90 5XX XXX XX XX" autocomplete="tel" aria-label="Cep Telefonu Numaranız">
+            </div>
+            <button type="submit" id="tgOneClickBtn" class="primary tg-connect-btn">Numarayı Ekle &amp; Başlat</button>
+          </div>
+
+          <div id="telegramStatus" class="tg-status-banner" role="status">
+            Resmi Bot (<strong>@intelligentcortexbot</strong>) hazır · Bildirim almak için numaranızı ekleyin.
+          </div>
+
+          <div class="tg-phones-panel">
+            <div class="tg-phones-header">
+              <span>KAYITLI BİLDİRİM NUMARALARI (ÇOKLU ALICI)</span>
+            </div>
+            <div id="tgPhonesList" class="tg-phones-list"></div>
+          </div>
+
+          <div class="tg-quick-strip">
+            <label class="check" style="margin:0">
+              <input name="enabled" id="tgEnabled" type="checkbox" checked>
+              <span>Anlık alarm bildirimleri aktif</span>
+            </label>
+            <div class="tg-quick-actions">
+              <button type="button" id="testTelegramBtn" class="sector-mini-btn">Tüm Numaralara Test Gönder</button>
+              <button type="button" id="openTelegramDesktopBtn" class="sector-mini-btn">Telegram'da Aç ↗</button>
+            </div>
+          </div>
+
+          <div class="tg-details-stack">
+            <details style="margin:10px 0 0">
+              <summary>Çift Yönlü Bot Komut Simülatörü (@intelligentcortexbot)</summary>
+              <div class="studio-preset-group" style="margin:8px 0">
+                <button type="button" class="studio-preset-btn" data-tg-sim="/durum">/durum</button>
+                <button type="button" class="studio-preset-btn" data-tg-sim="/kameralar">/kameralar</button>
+                <button type="button" class="studio-preset-btn" data-tg-sim="/anlik">/anlik</button>
+                <button type="button" class="studio-preset-btn" data-tg-sim="/olaylar">/olaylar</button>
+                <button type="button" class="studio-preset-btn" data-tg-sim="/koru">/koru</button>
+                <button type="button" class="studio-preset-btn" data-tg-sim="/sustur">/sustur</button>
+                <button type="button" class="studio-preset-btn" data-tg-sim="/yardim">/yardim</button>
+              </div>
+              <pre id="telegramSimOutput" class="hint mono" style="white-space:pre-wrap;font-size:12px;margin-top:8px">Komut simülasyonu için yukarıdaki butonlardan birine tıklayın (örn. /durum veya /kameralar).</pre>
+            </details>
+
+            <details style="margin:8px 0 0">
+              <summary>Gelişmiş Bot Ayarları (İsteğe Bağlı Token &amp; Chat ID)</summary>
+              <label>Telegram Bot Token
+                <input name="botToken" id="tgBotToken" type="password" placeholder="Varsayılan: @intelligentcortexbot (Hazır Gömülü)" autocomplete="new-password">
+              </label>
+              <div class="grid">
+                <label>Chat ID (Otomatik Eşleşir)
+                  <input name="chatId" id="tgChatId" value="" placeholder="Otomatik eşleşir">
+                </label>
+                <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+                  <button type="button" id="discoverTelegramChatBtn" style="width:100%">Hesabı Otomatik Bul</button>
+                </div>
+              </div>
+            </details>
+          </div>
+        </form>
+
+        <form id="settingsForm" class="card settings-engine-card">
+          <div class="sectiontitle" style="margin-bottom:10px">
+            <div>
+              <span class="eyebrow">YEREL GÖRSEL ZEKÂ &amp; DEPOLAMA</span>
+              <h2 data-i18n="settings.engineTitle" style="font-size:18px;margin-top:3px">Yerel Ollama Görsel AI Motoru</h2>
+            </div>
+            <span class="tag mono">127.0.0.1:11434</span>
+          </div>
+
           <label>Önerilen Çoklu Görsel AI Model Kütüphanesi
             <select id="recommendedModelSelect">
               <option value="gemma3:4b">Gemma 3 · 4B (Varsayılan Dengeli · ~3.3 GB VRAM)</option>
@@ -492,11 +829,9 @@
               <option value="llava-phi3:latest">LLaVA-Phi3 · 3.8B (Ultra Hafif CPU/GPU · ~2.2 GB VRAM)</option>
             </select>
           </label>
-          <p id="recommendedModelDesc" class="fine">Hızlı Türkçe yanıt, SigLIP görsel kodlayıcı ve genel saha/güvenlik analizi için en dengeli model.</p>
           <label><span data-i18n="settings.modelLabel">Aktif Ollama görsel model adı</span>
             <input name="model" id="model" value="gemma3:4b" required>
           </label>
-          <p class="fine">Ollama motoru ve seçtiğiniz görsel model tek tuşla indirilir ve doğrulanır. Tüm görsel çıkarımlar %100 yerel donanımınızda çalışır.</p>
           <div class="model-setup">
             <div class="actions">
               <button type="button" id="installModel" class="primary" data-i18n="settings.installBtn">Seçili modeli kur ve bağla</button>
@@ -508,17 +843,19 @@
           </div>
           <p id="modelResult" role="status"></p>
 
-          <label>AI Değerlendirme Aralığı (Saniye)
-            <select name="aiInterval" id="aiInterval">
-              <option value="1">1 saniye (En yüksek hız · Önerilen GPU)</option>
-              <option value="3">3 saniye (Dengeli çoklu kamera)</option>
-              <option value="10">10 saniye (Düşük güç tüketimi / CPU modu)</option>
-            </select>
-          </label>
-          <label><span data-i18n="settings.retentionLabel">Kayıt saklama süresi (gün)</span>
-            <input id="retention" name="retention" type="number" min="1" max="30" value="7">
-          </label>
-          <p class="fine" data-i18n="settings.retentionHint">Süreyi azaltmak, süresi dolan olay kayıtlarını ve kliplerini siler.</p>
+          <div class="grid" style="margin-top:4px">
+            <label>AI Değerlendirme Aralığı
+              <select name="aiInterval" id="aiInterval">
+                <option value="1">1 sn (En yüksek hız · GPU)</option>
+                <option value="3">3 sn (Dengeli çoklu kamera)</option>
+                <option value="10">10 sn (Düşük güç / CPU)</option>
+              </select>
+            </label>
+            <label><span data-i18n="settings.retentionLabel">Kayıt saklama süresi (gün)</span>
+              <input id="retention" name="retention" type="number" min="1" max="30" value="7">
+            </label>
+          </div>
+
           <label class="check">
             <input name="autostart" id="autostart" type="checkbox">
             <span data-i18n="settings.autostart">Cortex açıldığında kayıtlı kameraları otomatik başlat</span>
@@ -532,262 +869,49 @@
             <span>Hibrit 3-Katmanlı Akıllı AI (Hareket/değişim yoksa GPU/CPU koru)</span>
           </label>
           <p id="diskStatus" class="fine"></p>
-          <h2 data-i18n="settings.webhookTitle">Kurumsal Webhook Kanalı (Slack / Discord / SIEM)</h2>
-          <label><span data-i18n="settings.webhookLabel">HTTPS webhook URL</span>
-            <input name="webhook" type="url" placeholder="https://..." autocomplete="off">
-          </label>
-          <label>HMAC-SHA256 İmza Anahtarı (İsteğe bağlı kurumsal doğrulama sırrı)
-            <input name="webhookSecret" type="password" placeholder="X-Cortex-Signature-256 için gizli anahtar" autocomplete="new-password">
-          </label>
-          <label class="check">
-            <input name="replaceWebhook" type="checkbox">
-            <span data-i18n="settings.replaceWebhook">Webhook ayarını değiştir (boş bırakılırsa kapatılır)</span>
-          </label>
-          <p class="fine" data-i18n="settings.webhookHint">Slack ve Discord webhook adresleri otomatik tanınır. HMAC sırrı girilirse her bildirim X-Cortex-Signature-256 başlığıyla kriptografik olarak imzalanır.</p>
-          <button type="submit" class="primary" data-i18n="settings.saveBtn">Ayarları kaydet</button>
+
+          <button type="submit" class="primary" data-i18n="settings.saveBtn" style="margin-top:auto">Ayarları kaydet</button>
         </form>
-
-        <div class="stack">
-          <form id="telegramForm" class="card">
-            <div class="sectiontitle" style="margin-bottom:8px">
-              <div>
-                <span class="eyebrow">TELEFON NUMARASI İLE OTOMATİK TELEGRAM ENTEGRASYONU</span>
-                <h2>📲 Cortex Resmi Telegram Botu (@intelligentcortexbot)</h2>
-              </div>
-              <span class="tag ok" id="tgBotBadge">@intelligentcortexbot Aktif</span>
-            </div>
-            <p class="fine">Herhangi bir Bot Token veya teknik ayar girmenize gerek yoktur! Sadece <strong>cep telefonu numaranızı</strong> yazıp kaydedin; tüm güvenlik ihlalleri ve olay anı fotoğrafları <strong>@intelligentcortexbot</strong> üzerinden doğrudan numaraya bağlı Telegram hesabınıza gönderilir.</p>
-            <div class="grid">
-              <label>📱 Cep Telefonu Numaranız (Sadece Numaranızı Girin)
-                <input name="phone" id="tgPhone" type="tel" value="+90 (541) 513 05 25" placeholder="Örn: 0541 513 05 25 veya +90 5XX XXX XX XX" autocomplete="tel">
-              </label>
-              <div style="display:flex;align-items:flex-end;padding-bottom:2px">
-                <button type="button" id="openTelegramDesktopBtn" style="width:100%">📲 Telegram'da @intelligentcortexbot'u Aç ↗</button>
-              </div>
-            </div>
-            <label class="check">
-              <input name="enabled" id="tgEnabled" type="checkbox" checked>
-              <span>Girilen telefon numarasına anlık fotoğraflı alarm ve iki yönlü komutları etkinleştir</span>
-            </label>
-            <p id="telegramStatus" class="fine" role="status"></p>
-            <div class="actions">
-              <button type="submit" class="primary">📱 Numaramı Bağla &amp; Bildirimleri Başlat</button>
-              <button type="button" id="testTelegramBtn">📤 Numarama Canlı Test Alarmı Gönder</button>
-            </div>
-
-            <details style="margin-top:12px">
-              <summary>⚙️ Gelişmiş: Özel Bot Token &amp; Chat ID Ayarları (İsteğe Bağlı — Varsayılan: @intelligentcortexbot)</summary>
-              <p class="fine">Varsayılan olarak resmi <code>@intelligentcortexbot</code> gömülüdür. Yalnızca kendi özel kurumsal botunuzu kullanmak isterseniz aşağıdaki alanları doldurun:</p>
-              <label>Telegram Bot Token
-                <input name="botToken" id="tgBotToken" type="password" placeholder="Varsayılan: @intelligentcortexbot (Hazır Gömülü)" autocomplete="new-password">
-              </label>
-              <div class="grid">
-                <label>Chat ID (Otomatik Eşleşir)
-                  <input name="chatId" id="tgChatId" placeholder="Otomatik algılanır">
-                </label>
-                <div style="display:flex;align-items:flex-end;padding-bottom:2px">
-                  <button type="button" id="discoverTelegramChatBtn" style="width:100%">🔍 Hesabı Otomatik Bul</button>
-                </div>
-              </div>
-            </details>
-
-            <details open style="margin-top:14px">
-              <summary>🤖 Canlı Telegram Bot Komut Simülatörü (@intelligentcortexbot)</summary>
-              <p class="fine">Telegram'dan <strong>t.me/intelligentcortexbot</strong> botuna gönderebileceğiniz canlı komutları aşağıdan hemen test edebilirsiniz:</p>
-              <div class="studio-preset-group" style="margin:8px 0">
-                <button type="button" class="studio-preset-btn" data-tg-sim="/durum">/durum</button>
-                <button type="button" class="studio-preset-btn" data-tg-sim="/kameralar">/kameralar</button>
-                <button type="button" class="studio-preset-btn" data-tg-sim="/anlik">/anlik</button>
-                <button type="button" class="studio-preset-btn" data-tg-sim="/olaylar">/olaylar</button>
-                <button type="button" class="studio-preset-btn" data-tg-sim="/koru">/koru</button>
-                <button type="button" class="studio-preset-btn" data-tg-sim="/sustur">/sustur</button>
-                <button type="button" class="studio-preset-btn" data-tg-sim="/yardim">/yardim</button>
-              </div>
-              <pre id="telegramSimOutput" class="hint mono" style="white-space:pre-wrap;font-size:12px;margin-top:8px">Komut simülasyonu için yukarıdaki butonlardan birine tıklayın (örn. /durum veya /kameralar).</pre>
-            </details>
-          </form>
-
-          <section class="card">
-            <div class="sectiontitle" style="margin-bottom:8px">
-              <div>
-                <span class="eyebrow">MÜŞTERİ LİSANS ETKİNLEŞTİRME · PRO / PLUS / ULTRA</span>
-                <h2>💼 Ticari Lisans &amp; Paket Durumu</h2>
-              </div>
-              <button type="button" data-tab="admin" class="sector-mini-btn">🛡️ Yönetim Paneli (Anahtar Üret) ↗</button>
-            </div>
-            <div id="licenseDetails" class="hint" style="margin-top:10px"></div><div class="actions"><button type="button" data-tab="plans">Paketleri ve kullanımımı karşılaştır ↗</button></div>
-
-            <div class="tier-comparison-grid" style="margin-top:14px">
-              <div class="tier-box">
-                <span class="tag">PRO PAKET</span>
-                <strong>4 Kamera · 8 Kural</strong>
-                <p class="fine">7 gün arşiv · 22 yerel kural · Geçiş kontrolü · ROI Stüdyosu · Telegram alarm · Site &amp; Perakende paketi.</p>
-              </div>
-              <div class="tier-box">
-                <span class="tag ok">PLUS PAKET</span>
-                <strong>12 Kamera · 32 Kural</strong>
-                <p class="fine">15 gün arşiv · Cortex Pro akıllı takip · Ollama Görsel AI · İki yönlü Telegram Bot · Adli ZIP · 7 sektör paketi.</p>
-              </div>
-              <div class="tier-box">
-                <span class="tag warn">ULTRA PAKET</span>
-                <strong>32 Kamera · 128 Kural</strong>
-                <p class="fine">30 gün arşiv · 8 sektör paketi + Tüm kameralara dağıtım · Copilot arama · KVKK maske · NVR filo · Uzaktan yönetim.</p>
-              </div>
-            </div>
-
-            <form id="licenseActivateForm" style="margin-top:14px">
-              <div class="grid">
-                <label>Kurum / Müşteri Adı
-                  <input name="organization" placeholder="Örn: Marmara Park Sitesi" required>
-                </label>
-                <label>Lisans Anahtarı (Yönetim Panelinden Alınan)
-                  <input name="key" id="licenseKeyInput" placeholder="IPS-PRO-... / IPS-PLUS-... / IPS-ULTRA-..." required>
-                </label>
-              </div>
-              <p class="fine">Lisans anahtarları yalnızca yetkili <strong>Cortex Yönetim Panelinde</strong> üretilebilir. Yönetici panelinden aldığınız anahtarı buraya girdiğinizde paketiniz anında aktif olur.</p>
-              <div class="actions">
-                <button type="submit" class="primary">Lisansı etkinleştir ✓</button>
-                <button type="button" data-tab="admin">🔑 Yönetici Olarak Lisans Üret ↗</button>
-              </div>
-            </form>
-          </section>
-
-          <section class="card">
-            <h2>🛡️ Kurumsal Denetim İzi (SHA-256 Audit Log)</h2>
-            <p class="fine">Yapılandırma, kural, saha paketi ve izin işlemleri değiştirilemez SHA-256 zinciriyle kaydedilir.</p>
-            <div id="auditList" class="audit-list"></div>
-          </section>
-        </div>
-      </div>
-    </section>
-
-    <section id="admin" class="view" hidden>
-      <span class="eyebrow">05 / MERKEZİ YÖNETİM, MÜŞTERİ TAKİBİ &amp; LİSANS OTORİTESİ</span>
-      <div class="sectiontitle">
-        <div>
-          <h1>Cortex Yönetim Paneli.</h1>
-          <p>Kayıtlı kullanıcıları ve saha istasyonlarını izleyin, bir aksaklık olduğunda tek tıkla müdahale edin ve <strong>PRO / PLUS / ULTRA</strong> lisans anahtarlarını üretin.</p>
-        </div>
-        <button type="button" id="adminLogoutBtn" hidden>Oturumu Kapat</button>
       </div>
 
-      <section id="adminLoginCard" class="card" style="max-width:520px;margin:24px auto">
-        <span class="eyebrow">YETKİLİ YÖNETİCİ GİRİŞİ</span>
-        <h2 style="margin-top:6px">🔒 Yönetim Paneli Kimlik Doğrulama</h2>
-        <p class="fine">Lisans token üretimi ve müşteri istasyonlarına uzaktan müdahale işlemleri yalnızca sistem yöneticisine açıktır.</p>
-        <form id="adminLoginForm">
-          <label>Yönetici Kullanıcı Adı
-            <input name="username" id="adminUsername" placeholder="admin" required autocomplete="username">
-          </label>
-          <label>Yönetici Parolası
-            <input name="password" id="adminPassword" type="password" placeholder="••••••••••••••••" required autocomplete="current-password">
-          </label>
-          <p id="adminLoginError" class="fine" style="color:#dc2626" role="status"></p>
-          <div class="actions">
-            <button type="submit" class="primary">Yönetim Paneline Giriş Yap ↗</button>
+      <!-- ZONE 4: Full-Width Collapsible Corporate Audit Trail -->
+      <details class="card audit-drawer" open>
+        <summary class="audit-drawer-summary">
+          <div>
+            <span class="eyebrow">ADLİ BÜTÜNLÜK &amp; İŞLEM KAYITLARI</span>
+            <h2>Kurumsal Denetim İzi (SHA-256 Audit Log)</h2>
           </div>
-        </form>
-      </section>
-
-      <div id="adminDashboard" hidden>
-        <div id="adminStats" class="stats" style="margin-bottom:24px">
-          <div class="stat"><span>KAYITLI MÜŞTERİ / SAHA</span><strong id="admStatCustomers">00</strong></div>
-          <div class="stat"><span>ÜRETİLEN LİSANS TOKEN</span><strong id="admStatLicenses">00</strong></div>
-          <div class="stat"><span>AKTİF YAYIN / DİSK</span><strong id="admStatHealth">OK</strong></div>
-        </div>
-
-        <div class="twocol" style="margin-bottom:28px">
-          <section class="card">
-            <span class="eyebrow">YALNIZCA YÖNETİCİ YETKİSİYLE</span>
-            <h2>🔑 PRO / PLUS / ULTRA Lisans Token Üretici</h2>
-            <p class="fine">Ürettiğiniz lisans anahtarını müşterinin Cortex uygulamasındaki <strong>Ayarlar &amp; Lisans</strong> ekranına yazdığınızda ilgili paket ve kapasite sınırları anında aktif olur.</p>
-            <form id="adminLicenseForm">
-              <div class="grid">
-                <label>Müşteri / Kurum / Saha Adı
-                  <input name="organization" id="admGenOrg" placeholder="Örn: Akasya Rezidans Yönetim" required>
-                </label>
-                <label>İletişim / Not (E-posta veya Tel)
-                  <input name="contact" id="admGenContact" placeholder="Örn: guvenlik@akasya.com">
-                </label>
-              </div>
-              <div class="grid">
-                <label>Ticari Paket Seviyesi
-                  <select name="plan" id="admGenPlan">
-                    <option value="PRO">Cortex PRO (Max 4 Kamera · 8 Kural · 7 Gün Arşiv)</option>
-                    <option value="PLUS">Cortex PLUS (Max 12 Kamera · 32 Kural · 15 Gün · AI + Pro Takip)</option>
-                    <option value="ULTRA" selected>Cortex ULTRA (Max 32 Kamera · 128 Kural · 30 Gün · Tam Kurumsal)</option>
-                  </select>
-                </label>
-                <label>Geçerlilik Süresi (Gün)
-                  <input name="days" id="admGenDays" type="number" min="7" max="3650" value="365" required>
-                </label>
-              </div>
-              <div class="actions">
-                <button type="submit" class="primary">İmzalı Lisans Anahtarı Üret 🔑</button>
-                <button type="button" id="admCopyKeyBtn" hidden>📋 Anahtarı Kopyala</button>
-                <button type="button" id="admApplyLocalBtn" hidden>⚡ Bu Cihaza Doğrudan Uygula</button>
-              </div>
-            </form>
-            <div id="admGeneratedKeyBox" class="hint mono" style="margin-top:14px" hidden></div>
-          </section>
-
-          <section class="card">
-            <span class="eyebrow">HIZLI TEKNİK MÜDAHALE MERKEZİ</span>
-            <h2>🛠️ Yerel İstasyon &amp; Servis Müdahale Araçları</h2>
-            <p class="fine">Bir aksaklık olduğunda kamera akışlarını, AI kuyruğunu, Telegram bot bağlantısını veya güvenli modu tek tıkla sıfırlayın ve donanım tanılaması çalıştırın.</p>
-            <div class="actions" style="margin-top:14px">
-              <button type="button" class="primary" data-admin-action="run_diagnostics" data-customer="node-local-primary">🩺 Tam Sistem Tanılaması Çalıştır</button>
-              <button type="button" data-admin-action="reset_streams" data-customer="node-local-primary">🔄 Tüm RTSP Akışlarını Sıfırla</button>
-              <button type="button" data-admin-action="clear_queues" data-customer="node-local-primary">🧹 AI &amp; Kanıt Kuyruğunu Temizle</button>
-              <button type="button" data-admin-action="restart_telegram" data-customer="node-local-primary">🤖 Telegram Bot Motorunu Yenile</button>
-              <button type="button" data-admin-action="toggle_safe_mode" data-customer="node-local-primary">🛡️ Güvenli Mod (Duraklat / Aç)</button>
-            </div>
-            <pre id="admActionOutput" class="hint mono" style="margin-top:14px;white-space:pre-wrap;font-size:12px">Sistem hazır. Müdahale veya tanılama sonucu burada görüntülenir.</pre>
-          </section>
-        </div>
-
-        <section class="card" style="margin-bottom:28px">
-          <div class="sectiontitle" style="margin-bottom:12px">
-            <div>
-              <span class="eyebrow">CANLI MÜŞTERİ &amp; SAHA ENVANTERİ</span>
-              <h2>📡 Kayıtlı Kullanıcılar, Paket Kullanımı ve Uzaktan Müdahale</h2>
-            </div>
-            <button type="button" id="admRefreshBtn">Yenile ↻</button>
-          </div>
-          <div id="adminCustomersList" class="stack"></div>
-        </section>
-
-        <section class="card">
-          <span class="eyebrow">LİSANS KAYIT DEFTERİ</span>
-          <h2>📜 Üretilen Lisans Anahtarları Geçmişi</h2>
-          <div id="adminIssuedLicenses" class="audit-list" style="margin-top:10px"></div>
-        </section>
-      </div>
+          <span class="tag mono">SHA-256 ZİNCİRİ</span>
+        </summary>
+        <div id="auditList" class="audit-list"></div>
+      </details>
     </section>
 
     <div id="matrixWallModal" class="wall-modal" hidden>
-      <div class="wall-header">
-        <div>
-          <span class="eyebrow">CANLI İZLEME MERKEZİ</span>
-          <strong style="margin-left:12px;color:#fff">IPScans Cortex · Matrix Kamera Duvarı</strong>
+      <div class="wall-header nvr-deck-bar" style="margin-bottom:14px">
+        <div class="nvr-status-group">
+          <strong style="color:#F5F7FA;font-size:14px">IPScans Cortex · NVR Kamera Duvarı</strong>
+          <span id="matrixLiveClock" class="nvr-clock mono">24.10.2026 | 15:42:08</span>
         </div>
-        <div class="actions" style="margin:0">
-          <button type="button" class="wall-layout-btn active" data-cols="2">2×2</button>
-          <button type="button" class="wall-layout-btn" data-cols="3">3×3</button>
-          <button type="button" class="wall-layout-btn" data-cols="4">4×4</button>
-          <button type="button" id="wallHeatmapToggle">🔥 Isı Haritası Katmanı</button>
+        <div class="nvr-grid-controls actions" style="margin:0">
+          <button type="button" class="nvr-grid-btn wall-layout-btn" data-nvr-grid="grid-1x1" data-cols="1">1×1 Odak</button>
+          <button type="button" class="nvr-grid-btn wall-layout-btn active" data-nvr-grid="grid-2x2" data-cols="2">2×2 Dörtlü</button>
+          <button type="button" class="nvr-grid-btn wall-layout-btn" data-nvr-grid="grid-1plus5" data-cols="3">1+5 VIP</button>
+          <button type="button" class="nvr-grid-btn wall-layout-btn" data-nvr-grid="grid-3x3" data-cols="3">3×3 Dokuzlu</button>
+          <button type="button" class="nvr-grid-btn wall-layout-btn" data-nvr-grid="grid-4x4" data-cols="4">4×4 Onaltılı</button>
+          <button type="button" id="wallHeatmapToggle" class="nvr-grid-btn">ISI HARİTASI</button>
           <button type="button" id="closeMatrixWall" class="primary">Kapat ✕</button>
         </div>
       </div>
-      <div id="matrixWallGrid" class="wall-grid cols-2"></div>
+      <div id="matrixWallGrid" class="nvr-wall-grid wall-grid grid-2x2 cols-2"></div>
     </div>
 
     <footer>
-      <span>IPScans Cortex 2.1</span>
+      <span>IPScans Cortex 2.1.1</span>
       <span data-i18n="footer.tagline">Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.</span>
     </footer>
   </main>
-  <script src="plans.js"></script>
-  <script src="app.js"></script>
+  <script src="plans.js?v=2.1.1"></script>
+  <script src="app.js?v=2.1.1"></script>
 </body>
 </html>
