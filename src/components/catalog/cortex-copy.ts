@@ -2,31 +2,31 @@ import type { Locale } from "@/i18n/config";
 import type { EnterpriseProductCopy } from "./lpr-copy";
 
 export const cortexRelease = {
-  version: "2.2.0",
+  version: "2.3.0",
   platform: "Windows 10/11 · x64",
-  fileName: "IPScans-Cortex-Setup-2.2.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v2.2.0/IPScans-Cortex-Setup-2.2.0.exe",
-  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v2.2.0/Cortex-2.2.0-Kullanim.md",
+  fileName: "IPScans-Cortex-Setup-2.3.0.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v2.3.0/IPScans-Cortex-Setup-2.3.0.exe",
+  guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v2.3.0/Cortex-2.3.0-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "049a648f513e02826da437acbc407dc21d45644e3f5a309b0ec328b69df5d464",
-  bytes: 109694447,
+  sha256: "80ecb19156d19c91e054b54444204f85f21cd346d938e4719b18488c42500384",
+  bytes: 109679071,
 } as const;
 
 export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   en: {
-    metaTitle: "IPScans Cortex 2.2 — Local Camera Vision AI, 8 Sector Packs & ROI Studio",
+    metaTitle: "IPScans Cortex 2.3 — Local Camera Vision AI, Spatial Bento Command Center & 8 Sector Packs",
     metaDescription:
-      "Turn RTSP and ONVIF cameras into a private operations center with 8 One-Click Sector Deployment Packages, an 8-Handle ROI & Tripwire Studio, 31 model-free + smart tracking rules, 42 multi-model Ollama vision AI templates, a 2-way Telegram Command Bot, PRO/PLUS/ULTRA commercial tiers, and SHA-256 forensic ZIP bundles.",
+      "Turn RTSP and ONVIF cameras into a private operations center with 8 One-Click Sector Deployment Packages, an 8-Handle ROI & Tripwire Studio, Interactive Live Pipeline Schematic, Multi-Page Command Palette (Ctrl+K), 31 model-free + smart tracking rules, 42 multi-model Ollama vision AI templates, a 2-way Telegram Command Bot, PRO/PLUS/ULTRA commercial tiers, and SHA-256 forensic ZIP bundles.",
     backToApps: "All applications",
-    eyebrow: "Cortex 2.2 · Local Camera Intelligence, Sector Suite & Commercial Control",
-    name: "IPScans Cortex 2.2",
+    eyebrow: "Cortex 2.3 · Local Camera Intelligence, Spatial Bento Command Center & Commercial Control",
+    name: "IPScans Cortex 2.3",
     headline: "Commercial intelligence for every camera.",
     lead:
-      "Deploy 8 One-Click Sector Packages (Residential, Pool, Factory, Warehouse, Retail, Office, Campus, Clinic) with pre-calibrated zones, calibrate cameras in the daylight-ready 8-Handle ROI & Tripwire Studio, run 31 model-free and smart tracking rules alongside 42 multi-model Ollama vision AI templates (Gemma 3, Qwen 2.5 VL, MiniCPM-V), control your station via a 2-way Telegram Bot, and manage PRO / PLUS / ULTRA commercial licenses from a centralized Admin Panel.",
+      "Deploy 8 One-Click Sector Packages (Residential, Pool, Factory, Warehouse, Retail, Office, Campus, Clinic) with pre-calibrated zones, monitor real-time telemetry on the Interactive SVG Pipeline Schematic, navigate at lightning speed via the Multi-Page Command Palette (Ctrl+K & G-chords), calibrate cameras in the 8-Handle ROI & Tripwire Studio, run 31 model-free and smart tracking rules alongside 42 multi-model Ollama vision AI templates (Gemma 3, Qwen 2.5 VL, MiniCPM-V), control your station via a 2-way Telegram Bot, and manage PRO / PLUS / ULTRA commercial licenses from the redesigned Admin Control Center v2.3.",
     primaryCta: "Download for Windows",
     secondaryCta: "User guide",
-    screenshotAlt: "IPScans Cortex 2.2 Control Center (Light Theme) and 8 One-Click Sector Deployment Packages",
-    screenshotCaption: "IPScans Cortex 2.2 Control Center in Light Theme with live KPIs, Matrix Camera Wall, and 8 One-Click Sector Deployment Packages.",
+    screenshotAlt: "IPScans Cortex 2.3 Spatial Bento Control Center and 8 One-Click Sector Deployment Packages",
+    screenshotCaption: "IPScans Cortex 2.3 Control Center with Perceptual OKLCH Bento Surfaces, Interactive Pipeline Schematic, Matrix Camera Wall, and 8 One-Click Sector Deployment Packages.",
     capabilities: {
       eyebrow: "Core capabilities",
       title: "Visual analytics, 8 sector packages, 2-way Telegram bot, and forensic evidence without cloud uploads.",
@@ -121,26 +121,26 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
     },
     closing: {
       title: "Give your cameras a commercial local rule engine.",
-      lead: "Download IPScans Cortex 2.2 and start capturing rule-driven video evidence on your own hardware.",
+      lead: "Download IPScans Cortex 2.3 and start capturing rule-driven video evidence on your own hardware.",
       primaryCta: "Download IPScans Cortex",
       secondaryCta: "All applications",
       note: "Standalone executable for Windows. Verify file integrity with SHA-256.",
     },
   },
   tr: {
-    metaTitle: "IPScans Cortex 2.2 — Kurumsal Kamera Zekâsı, 8 Sektörel Paket, Telegram Botu ve Yönetim Paneli",
+    metaTitle: "IPScans Cortex 2.3 — Kurumsal Kamera Zekâsı, Canlı Veri Yolu Şeması, 8 Sektörel Paket ve Yönetim Merkezi",
     metaDescription:
-      "RTSP/ONVIF kameralarınızı 8 Tek Tıkla Sektörel Kurulum Paketi, 8-Tutamaçlı Bölge (ROI) & Geçiş Hattı Stüdyosu, 31 yerel + akıllı takip kuralı, 42 çoklu model (Gemma 3, Qwen 2.5 VL, MiniCPM-V) görsel AI şablonu, İki Yönlü Telegram Botu ve PRO/PLUS/ULTRA Yönetim Paneliyle tam donanımlı güvenlik merkezine dönüştürün.",
+      "RTSP/ONVIF kameralarınızı Canlı SVG Veri Yolu Şeması, Çok Sayfalı Komut Paleti (Ctrl+K), 8 Tek Tıkla Sektörel Kurulum Paketi, 8-Tutamaçlı Bölge (ROI) & Geçiş Hattı Stüdyosu, 31 yerel + akıllı takip kuralı, 42 çoklu model (Gemma 3, Qwen 2.5 VL, MiniCPM-V) görsel AI şablonu, İki Yönlü Telegram Botu ve PRO/PLUS/ULTRA Yönetim Merkezi v2.3 ile tam donanımlı güvenlik üssüne dönüştürün.",
     backToApps: "Tüm uygulamalar",
-    eyebrow: "Cortex 2.2 · Kurumsal Kamera Zekâsı, Sektörel Saha Paketi ve Merkezi Lisans Yönetimi",
-    name: "IPScans Cortex 2.2",
+    eyebrow: "Cortex 2.3 · Kurumsal Kamera Zekâsı, Uzamsal Bento Komuta Merkezi ve Merkezi Lisans Yönetimi",
+    name: "IPScans Cortex 2.3",
     headline: "Her kameraya kurumsal görsel zekâ ve tam saha otomasyonu.",
     lead:
-      "8 Tek Tıkla Sektörel Kurulum Paketi (Site & Rezidans, Havuz & Sosyal Tesis, Fabrika & Saha, Depo & Lojistik, Perakende & Mağaza, Ofis & Plaza, Kampüs & Okul, Klinik & Yaşlı Bakım), Açık Tema destekli 8-Tutamaçlı Profesyonel Bölge (ROI) & Geçiş Hattı Stüdyosu, 31 model gerektirmeyen yerel ve akıllı takip kuralı, 42 çoklu Ollama görsel AI şablonu (Gemma 3, Qwen 2.5 VL, MiniCPM-V), İki Yönlü Telegram Komuta Botu ve PRO / PLUS / ULTRA Merkezi Yönetim Paneliyle tam yerel kontrol.",
+      "8 Tek Tıkla Sektörel Kurulum Paketi (Site & Rezidans, Havuz & Sosyal Tesis, Fabrika & Saha, Depo & Lojistik, Perakende & Mağaza, Ofis & Plaza, Kampüs & Okul, Klinik & Yaşlı Bakım), Etkileşimli Canlı Veri Yolu Şeması, Çok Sayfalı Komut Paleti (Ctrl+K & G Kısayol Akorları), 8-Tutamaçlı Profesyonel Bölge (ROI) & Geçiş Hattı Stüdyosu, 31 model gerektirmeyen yerel ve akıllı takip kuralı, 42 çoklu Ollama görsel AI şablonu (Gemma 3, Qwen 2.5 VL, MiniCPM-V), İki Yönlü Telegram Komuta Botu ve PRO / PLUS / ULTRA Merkezi Yönetim Merkezi v2.3 ile tam yerel kontrol.",
     primaryCta: "Windows İçin İndir",
     secondaryCta: "Kullanım kılavuzu",
-    screenshotAlt: "IPScans Cortex 2.2 Açık Tema Kontrol Merkezi ve 8 Tek Tıkla Sektörel Kurulum Paketi",
-    screenshotCaption: "Açık Tema (Light Mode) görünümüyle canlı KPI göstergeleri, Matrix Kamera Duvarı ve 8 Tek Tıkla Sektörel Kurulum Paketi sunan IPScans Cortex 2.2 Kontrol Merkezi.",
+    screenshotAlt: "IPScans Cortex 2.3 Uzamsal Bento Kontrol Merkezi ve 8 Tek Tıkla Sektörel Kurulum Paketi",
+    screenshotCaption: "OKLCH Uzamsal Bento yüzeyleri, Canlı Veri Yolu Şeması, Matrix Kamera Duvarı ve 8 Tek Tıkla Sektörel Kurulum Paketi sunan IPScans Cortex 2.3 Kontrol Merkezi.",
     capabilities: {
       eyebrow: "Temel yetenekler",
       title: "Buluta görüntü yüklemeden 8 sektörel paket, iki yönlü Telegram botu ve çoklu görsel AI.",
@@ -235,7 +235,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
     },
     closing: {
       title: "Kameralarınıza kurumsal bir kural ve yapay zekâ motoru kazandırın.",
-      lead: "IPScans Cortex 2.2 sürümünü indirin ve olay bazlı video kanıtlarını kendi donanımınızda arşivlemeye başlayın.",
+      lead: "IPScans Cortex 2.3 sürümünü indirin ve olay bazlı video kanıtlarını kendi donanımınızda arşivlemeye başlayın.",
       primaryCta: "IPScans Cortex'i İndir",
       secondaryCta: "Tüm uygulamalar",
       note: "Bağımsız Windows uygulaması. Dosya bütünlüğünü SHA-256 ile doğrulayabilirsiniz.",

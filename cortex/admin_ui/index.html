@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex — Yönetim Merkezi (Port 8766)</title>
+  <title>IPScans Cortex 2.3.0 — Yönetim Merkezi (Port 8766)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600;700&family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap" rel="stylesheet">
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=2.3.0">
 </head>
 <body>
   <!-- Toast Notification -->
@@ -23,7 +23,7 @@
       <div class="login-stage-top">
         <div class="stage-brand-lockup">
           <img src="/logo.svg" alt="IPScans Cortex" class="stage-logo">
-          <span class="stage-brand-name">IPScans Cortex</span>
+          <span class="stage-brand-name">IPScans Cortex · v2.3.0</span>
         </div>
       </div>
 
@@ -86,18 +86,28 @@
         <div class="topbar-title-row">
           <h1>IPScans Cortex</h1>
           <span class="topbar-divider" aria-hidden="true"></span>
-          <span class="topbar-subtle-label">Yönetim</span>
+          <span class="topbar-subtle-label">Yönetim Merkezi · v2.3.0</span>
         </div>
       </div>
       <div class="topbar-right">
-        <button type="button" id="runDiagBtn" class="btn-secondary btn-sm" hidden>
-          <span>Tanılama</span>
+        <button type="button" id="adminCmdkBtn" class="btn-secondary btn-sm admin-cmdk-trigger" title="Hızlı Komut ve Müşteri Arama Merkezi (Ctrl+K)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <span>Komut &amp; Ara</span>
+          <kbd class="admin-kbd-pill">Ctrl K</kbd>
+        </button>
+        <button type="button" id="runDiagBtn" class="btn-secondary btn-sm" title="Şifreli Kasa, Veritabanı ve Disk Tanılamasını Çalıştır">
+          <span>⚡ Tanılama</span>
         </button>
         <button type="button" id="refreshStateBtn" class="btn-secondary btn-sm">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>
           </svg>
           <span>Yenile</span>
+        </button>
+        <button type="button" id="adminSoundToggleBtn" class="btn-secondary btn-sm" title="Dokunsal Arayüz Sesleri (Aç/Kapat)">
+          <span id="adminSoundIcon">🔊</span>
         </button>
         <button type="button" id="themeToggleBtn" class="btn-secondary btn-sm">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -114,42 +124,88 @@
     </header>
 
     <div id="workspace" class="workspace">
-      <!-- Sleek 3-Stat KPI Bar -->
+      <!-- Sleek 4-Card Bento KPI Bar -->
       <section class="telemetry-ribbon" aria-label="Lisans Özeti">
-        <article class="metric-card">
-          <span class="metric-label">Toplam Müşteri</span>
-          <strong id="metricTotalCustomers" class="metric-value">0</strong>
+        <article class="metric-card" data-bento-card>
+          <div class="metric-card-top">
+            <span class="metric-label">Toplam Müşteri &amp; Hesap</span>
+            <span class="metric-pill-tag">PBKDF2 · 600K</span>
+          </div>
+          <div class="metric-card-main">
+            <strong id="metricTotalCustomers" class="metric-value">0</strong>
+            <svg class="metric-spark-svg" viewBox="0 0 76 24" aria-hidden="true">
+              <polyline fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="2,18 16,15 30,16 44,10 58,11 74,4"/>
+            </svg>
+          </div>
+          <span id="metricCustomerSub" class="metric-sub">Çoklu kiracı (Multi-Tenant) izole</span>
         </article>
-        <article class="metric-card">
-          <span class="metric-label">Aktif Lisans</span>
-          <strong id="metricActiveLicenses" class="metric-value">0</strong>
+        <article class="metric-card" data-bento-card>
+          <div class="metric-card-top">
+            <span class="metric-label">Aktif Ticari Lisans</span>
+            <span class="metric-pill-tag is-ok">HMAC-SHA256</span>
+          </div>
+          <div class="metric-card-main">
+            <strong id="metricActiveLicenses" class="metric-value">0</strong>
+            <span id="metricTierDistText" class="metric-sub-mono">PRO / PLUS / ULTRA</span>
+          </div>
+          <div id="metricTierDistBar" class="metric-tier-bar" aria-hidden="true"></div>
         </article>
-        <article class="metric-card">
-          <span class="metric-label">Seçili İstasyon</span>
+        <article class="metric-card" data-bento-card>
+          <div class="metric-card-top">
+            <span class="metric-label">Seçili Yerel İstasyon (8765)</span>
+            <span class="metric-pill-tag" id="metricLocalPlanTag">ULTRA</span>
+          </div>
           <strong id="metricLocalOrg" class="metric-value">—</strong>
-          <span id="metricLocalUserPlan" class="metric-sub" hidden></span>
+          <span id="metricLocalUserPlan" class="metric-sub"></span>
+        </article>
+        <article class="metric-card" data-bento-card>
+          <div class="metric-card-top">
+            <span class="metric-label">Kasa &amp; Bot Telemetrisi</span>
+            <span class="metric-pill-tag is-ok" id="metricVaultBadge">AES-256-GCM</span>
+          </div>
+          <strong id="metricTelegramQuota" class="metric-value" style="font-size:1.15rem">0 / 10 Numara</strong>
+          <span id="metricDiskFree" class="metric-sub">@intelligentcortexbot · Disk Hazır</span>
         </article>
         <div hidden>
           <strong id="metricLocalQuotas"></strong>
-          <span id="metricLocalUsage"></span>
-          <strong id="metricTelegramQuota"></strong>
+          <span id="metricLocalUsage"></strong>
           <span id="metricTelegramPhone"></span>
           <strong id="metricEngineStatus"></strong>
-          <span id="metricDiskFree"></span>
         </div>
       </section>
 
-      <!-- Hidden Tier Showcase (Preserved for DOM compatibility) -->
-      <section class="tier-showcase" aria-label="Ticari Paket Şablonları" hidden>
-        <div class="tier-card" data-select-plan="PRO"></div>
-        <div class="tier-card" data-select-plan="PLUS"></div>
-        <div class="tier-card" data-select-plan="ULTRA"></div>
+      <!-- Interactive 3-Tier Commercial Architecture Selector (PRO / PLUS / ULTRA) -->
+      <section class="tier-showcase" aria-label="Ticari Paket Şablonları">
+        <div class="tier-card" data-select-plan="PRO" data-bento-card tabindex="0" role="button" aria-label="Cortex PRO paketini seç">
+          <div class="tier-card-head">
+            <span class="tier-badge tier-pro">CORTEX PRO</span>
+            <span class="tier-SelectHint">Seçmek için tıkla →</span>
+          </div>
+          <strong>4 Kamera · 8 Kural · 2 Telegram</strong>
+          <span class="tier-card-sub">7 Gün Arşiv · Site &amp; Perakende Paketleri · Yerel ROI Motoru</span>
+        </div>
+        <div class="tier-card" data-select-plan="PLUS" data-bento-card tabindex="0" role="button" aria-label="Cortex PLUS paketini seç">
+          <div class="tier-card-head">
+            <span class="tier-badge tier-plus">CORTEX PLUS</span>
+            <span class="tier-SelectHint">Seçmek için tıkla →</span>
+          </div>
+          <strong>12 Kamera · 32 Kural · 5 Telegram</strong>
+          <span class="tier-card-sub">15 Gün Arşiv · Görsel AI &amp; Akıllı Takip · 7 Sektör Paketi</span>
+        </div>
+        <div class="tier-card is-selected-tier" data-select-plan="ULTRA" data-bento-card tabindex="0" role="button" aria-label="Cortex ULTRA paketini seç">
+          <div class="tier-card-head">
+            <span class="tier-badge tier-ultra">CORTEX ULTRA</span>
+            <span class="tier-SelectHint">Kurumsal Tam Kapasite</span>
+          </div>
+          <strong>32 Kamera · 128 Kural · 10 Telegram</strong>
+          <span class="tier-card-sub">30 Gün Arşiv · 8 Sektör + Copilot + SHA-256 Kanıt + ONVIF Filo</span>
+        </div>
       </section>
 
       <!-- Main Two-Column Grid: Left = Customer Studio, Right = Customer Accounts -->
       <main class="main-grid">
         <!-- LEFT COLUMN: Müşteri Tanımla -->
-        <section class="panel studio-panel">
+        <section class="panel studio-panel" data-bento-card>
           <div class="panel-head">
             <div>
               <span id="formModeBadge" hidden></span>
@@ -256,7 +312,7 @@
         </section>
 
         <!-- RIGHT COLUMN: Müşteri Hesapları -->
-        <section class="panel registry-panel">
+        <section class="panel registry-panel" data-bento-card>
           <div class="panel-head">
             <div>
               <h2>Müşteri Hesapları</h2>
@@ -272,12 +328,22 @@
             </div>
           </div>
 
+          <div class="registry-quick-pills" role="toolbar" aria-label="Hızlı Müşteri Filtreleri">
+            <button type="button" class="quick-filter-pill active" data-quick-filter="ALL">Tümü</button>
+            <button type="button" class="quick-filter-pill" data-quick-filter="ACTIVE">Aktif</button>
+            <button type="button" class="quick-filter-pill" data-quick-filter="SUSPENDED">Askıda</button>
+            <button type="button" class="quick-filter-pill" data-quick-filter="LOCAL">Bu İstasyon (8765)</button>
+            <button type="button" class="quick-filter-pill" data-quick-filter="ULTRA">ULTRA</button>
+            <button type="button" class="quick-filter-pill" data-quick-filter="PLUS">PLUS</button>
+            <button type="button" class="quick-filter-pill" data-quick-filter="PRO">PRO</button>
+          </div>
+
           <div id="customerListContainer" class="customer-list"></div>
         </section>
       </main>
 
       <!-- Collapsible Drawer: Issued License History & Audit Trail -->
-      <details class="panel bottom-drawer">
+      <details class="panel bottom-drawer" open>
         <summary>Lisans Geçmişi &amp; Denetim Kayıtları</summary>
         <section class="bottom-grid">
           <div class="panel-sub">
@@ -314,6 +380,27 @@
     </div>
   </div>
 
-  <script src="/app.js"></script>
+  <!-- Admin Command Palette Modal (Ctrl+K) -->
+  <div id="adminCmdPaletteModal" class="admin-cmdk-overlay" role="dialog" aria-modal="true" aria-label="Yönetici Hızlı Komut Merkezi" hidden>
+    <div class="admin-cmdk-backdrop" data-close-admin-cmdk="1"></div>
+    <div class="admin-cmdk-dialog">
+      <div class="admin-cmdk-head">
+        <span class="admin-cmdk-crumb">Cortex Admin v2.3</span>
+        <span class="admin-cmdk-crumb">Komut &amp; Müşteri Arama Merkezi</span>
+      </div>
+      <div class="admin-cmdk-search">
+        <input id="adminCmdkInput" type="search" autocomplete="off" spellcheck="false" placeholder="Müşteri ara, paket seç, tanılama çalıştır veya komut yaz… (Ctrl+K)">
+        <kbd class="admin-kbd-pill" data-close-admin-cmdk="1">ESC</kbd>
+      </div>
+      <div id="adminCmdkList" class="admin-cmdk-list" role="listbox"></div>
+      <div class="admin-cmdk-foot">
+        <span><kbd>↑↓</kbd> Gezin</span>
+        <span><kbd>↵</kbd> Çalıştır</span>
+        <span><kbd>ESC</kbd> Kapat</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js?v=2.3.0"></script>
 </body>
 </html>

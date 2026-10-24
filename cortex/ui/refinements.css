@@ -1342,3 +1342,306 @@ button:disabled { cursor: not-allowed; opacity: .55; }
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================================
+   6. Cortex v2.3 — Perceptual OKLCH Bento Spotlight, Live Pipeline Schematic,
+      Synchronized Area Chart, Multi-Page Command Palette & Micro-Interactions
+   ========================================================================= */
+
+/* 6.1 Shared Mouse-Tracking Radial Spotlight (--mouse-x, --mouse-y) & Specular Top Edge */
+[data-bento-card],
+.stat,
+.sector-card,
+.tier-card,
+.rule-card,
+.nvr-cell {
+  position: relative;
+  --mouse-x: -999px;
+  --mouse-y: -999px;
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.14),
+    var(--shadow-sm);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-bento-card]::after,
+.stat::after,
+.sector-card::after,
+.tier-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    420px circle at var(--mouse-x) var(--mouse-y),
+    oklch(0.66 0.17 252 / 0.11),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+
+:root[data-theme="dark"] [data-bento-card]::after,
+:root[data-theme="dark"] .stat::after,
+:root[data-theme="dark"] .sector-card::after,
+:root[data-theme="dark"] .tier-card::after {
+  background: radial-gradient(
+    440px circle at var(--mouse-x) var(--mouse-y),
+    oklch(0.68 0.19 252 / 0.16),
+    transparent 65%
+  );
+}
+
+[data-bento-card]:hover::after,
+.stat:hover::after,
+.sector-card:hover::after,
+.tier-card:hover::after {
+  opacity: 1;
+}
+
+/* 6.2 KPI Stat Card Inline SVG Sparkline */
+.stat {
+  overflow: hidden;
+}
+.stat-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.stat-spark-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.stat-spark-svg {
+  width: 86px;
+  height: 28px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* 6.3 Interactive Live Architecture Pipeline Schematic (Stripe / Vercel / Linear Craft) */
+.pipeline-schematic-card {
+  overflow: hidden;
+}
+.pipeline-svg-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+}
+.pipeline-schematic-svg {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: auto;
+  color: var(--ink);
+  font-family: var(--sans);
+}
+.pipe-wire-track {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+.pipe-wire-pulse {
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 14 140;
+  animation: cortexPipePulse 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.pipe-wire-pulse.pulse-blue {
+  stroke: #3b82f6;
+}
+.pipe-wire-pulse.pulse-emerald {
+  stroke: #10b981;
+  animation-delay: -0.9s;
+}
+.pipe-wire-pulse.pulse-amber {
+  stroke: #f59e0b;
+  animation-delay: -1.8s;
+}
+@keyframes cortexPipePulse {
+  from { stroke-dashoffset: 154; }
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pipe-wire-pulse {
+    animation: none;
+    stroke-dasharray: none;
+    opacity: 0.45;
+  }
+}
+.pipeline-node {
+  cursor: pointer;
+  outline: none;
+}
+.pipe-node-box {
+  fill: var(--card);
+  stroke: var(--border-strong);
+  stroke-width: 1.25;
+  transition: stroke 180ms cubic-bezier(0.22, 1, 0.36, 1), fill 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pipeline-node:hover .pipe-node-box,
+.pipeline-node:focus-visible .pipe-node-box {
+  stroke: var(--signal);
+  stroke-width: 1.8;
+}
+.pipe-node-dot.is-blue { fill: #3b82f6; }
+.pipe-node-dot.is-emerald { fill: #10b981; }
+.pipe-node-dot.is-violet { fill: #8b5cf6; }
+.pipe-node-dot.is-amber { fill: #f59e0b; }
+.pipe-node-step {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  fill: var(--ink-3);
+}
+.pipe-node-title {
+  font-size: 13.5px;
+  font-weight: 750;
+  fill: var(--ink);
+}
+.pipe-node-sub {
+  font-size: 11px;
+  fill: var(--ink-2);
+}
+.pipe-node-pill {
+  fill: var(--surface-2);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.pipe-node-metric {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  fill: var(--signal);
+}
+
+/* 6.4 Synchronized 24h SVG Area Overlay & Hover Readout */
+.hourly-chart {
+  position: relative;
+}
+.hourly-area-backdrop-svg {
+  position: absolute;
+  inset: 6px 10px 24px 10px;
+  width: calc(100% - 20px);
+  height: calc(100% - 30px);
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+.hour-col {
+  position: relative;
+  z-index: 1;
+  cursor: crosshair;
+}
+.hour-col:hover .hour-bar {
+  filter: brightness(1.18);
+  box-shadow: 0 0 12px var(--signal-soft);
+}
+.analytics-hover-pill {
+  background: var(--signal-soft) !important;
+  color: var(--signal) !important;
+  border-color: var(--signal) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 6.5 Multi-Page Command Palette Breadcrumbs, Scale Bounce & Chord Pill */
+.cmdk-dialog {
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cmdk-dialog.is-bouncing {
+  transform: scale(0.985);
+}
+.cmdk-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 2px;
+  flex-wrap: wrap;
+}
+.cmdk-crumb-pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.cmdk-crumb-pill.active {
+  background: var(--signal-soft);
+  color: var(--signal);
+  border-color: rgba(23, 121, 90, 0.28);
+}
+.cmdk-highlight {
+  background: transparent;
+  color: var(--signal);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.chord-indicator-pill {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9500;
+  padding: 7px 14px;
+  border-radius: 99px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+/* 6.6 Tactile Press Feedback, Optimistic Button States & Blueprint Empty State */
+button:active:not(:disabled),
+.sector-mini-btn:active:not(:disabled),
+.nvr-grid-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+button.is-optimistic-success {
+  background: var(--ok) !important;
+  border-color: var(--ok) !important;
+  color: #fff !important;
+}
+button.is-optimistic-error {
+  animation: cortexBtnShake 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+@keyframes cortexBtnShake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+.sound-toggle-btn.is-muted {
+  opacity: 0.65;
+}
+.empty-blueprint-svg {
+  width: 84px;
+  height: 56px;
+  margin: 0 auto 8px;
+  display: block;
+  color: var(--signal);
+  opacity: 0.82;
+}

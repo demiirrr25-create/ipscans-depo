@@ -43,7 +43,7 @@ export default async function CortexPage({ params }: Props) {
   const copy = {...cortexCopy[locale],
     closing: {...cortexCopy[locale].closing, secondaryCta: locale === "tr" ? "Paketleri karşılaştır" : "Compare plans"},
     secondaryCta: locale === "tr" ? "Paketleri karşılaştır" : "Compare plans",
-    screenshotAlt: locale === "tr" ? "Cortex 2.2 PRO, PLUS ve ULTRA paket karşılaştırması" : "Cortex 2.2 PRO, PLUS and ULTRA plan comparison",
+    screenshotAlt: locale === "tr" ? "Cortex 2.3 PRO, PLUS ve ULTRA paket karşılaştırması" : "Cortex 2.3 PRO, PLUS and ULTRA plan comparison",
     screenshotCaption: locale === "tr" ? "Paket kapasitesi, kullanım göstergeleri ve Ultra ayrıcalıkları tek ekranda. Bulut çalışma henüz sunulmuyor." : "Plan capacity, usage and Ultra benefits in one view. Cloud processing is not available yet.",
   };
 

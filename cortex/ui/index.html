@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex 2.2.0 · Kurumsal Kamera Zekâsı, Görsel AI &amp; Komuta Merkezi</title>
+  <title>IPScans Cortex 2.3.0 · Kurumsal Kamera Zekâsı, Görsel AI &amp; Komuta Merkezi</title>
   <link rel="icon" href="logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,10 +23,23 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=2.2.0">
-  <link rel="stylesheet" href="refinements.css?v=2.2.0">
+  <link rel="stylesheet" href="style.css?v=2.3.0">
+  <link rel="stylesheet" href="refinements.css?v=2.3.0">
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="cortex-neon-glow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur1"/>
+        <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur2"/>
+        <feMerge>
+          <feMergeNode in="blur2"/>
+          <feMergeNode in="blur1"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
   <div id="cortexLoginGate" class="cortex-login-gate">
     <div class="login-stage">
       <canvas id="loginSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
@@ -60,7 +73,7 @@
       </div>
       <div class="cortex-login-card">
         <div class="cortex-login-brand">
-          <img src="logo.svg" alt="IPScans Cortex 2.2.0" width="40" height="40">
+          <img src="logo.svg" alt="IPScans Cortex 2.3.0" width="40" height="40">
           <div>
             <h1 data-i18n="login.title">Oturum açın</h1>
           </div>
@@ -90,7 +103,7 @@
   <aside>
     <a class="brand" href="#">
       <img src="logo.svg" alt="" width="38" height="38">
-      <span>Cortex<small>by IPScans · 2.2.0</small></span>
+      <span>Cortex<small>by IPScans · 2.3.0</small></span>
     </a>
     <nav aria-label="Ana menü" data-i18n-aria="nav.ariaLabel">
       <button type="button" data-tab="overview" class="active">
@@ -127,7 +140,7 @@
     </nav>
     <div class="asidefoot" hidden>
       <div class="aside-status" hidden><span class="dot"></span> <span data-i18n="aside.workspace">Yerel Motor Aktif</span></div>
-      <span id="version" data-version="2.2.0" hidden>2.2.0</span>
+      <span id="version" data-version="2.3.0" hidden>2.3.0</span>
     </div>
   </aside>
 
@@ -160,6 +173,18 @@
           <button type="button" class="lang-btn active" data-lang="tr" id="lang-tr">TR</button>
           <button type="button" class="lang-btn" data-lang="en" id="lang-en">EN</button>
         </div>
+        <button type="button" id="uiSoundToggleBtn" class="theme-toggle sound-toggle-btn" aria-label="Arayüz ses geri bildirimini aç/kapat" title="Dokunsal Arayüz Sesleri (Web Audio)">
+          <svg class="icon-sound-on" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg class="icon-sound-off" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
         <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Temayı değiştir" title="Açık / Koyu Tema">
           <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="4"></circle>
@@ -264,13 +289,93 @@
         </div>
       </details>
 
-      <section class="card" id="analyticsCard" style="margin-bottom:24px">
+      <section class="card pipeline-schematic-card" id="livePipelineSchematicCard" data-bento-card style="margin-bottom:24px">
+        <div class="sectiontitle pipeline-card-head" style="margin-bottom:10px">
+          <div>
+            <span class="eyebrow" data-i18n="pipeline.eyebrow">HİBRİT GÖRSEL ZEKÂ · CANLI VERİ YOLU MİMARİSİ (v2.3)</span>
+            <h2 style="margin-top:3px" data-i18n="pipeline.title">RTSP Akışından SHA-256 Adli Kanıt Kasasına Canlı İşleme Hattı</h2>
+          </div>
+          <div class="actions" style="margin:0;gap:6px">
+            <span id="pipeCascadeBadge" class="tag ok mono">3-KATMANLI HİBRİT AKTİF</span>
+            <span id="pipeThroughputBadge" class="tag mono">YEREL 127.0.0.1</span>
+          </div>
+        </div>
+        <div class="pipeline-svg-wrap">
+          <svg id="livePipelineSvg" class="pipeline-schematic-svg" viewBox="0 0 980 176" role="img" aria-label="IPScans Cortex v2.3 Canlı Görsel Zekâ ve Adli Kanıt Akış Şeması">
+            <title>IPScans Cortex v2.3 Hibrit İşleme Hattı</title>
+            <desc>RTSP Kamera Akışı, 3-Katmanlı Yerel ve Pro Takip Motoru, Ollama Görsel AI Modeli ve SHA-256 Adli Kanıt Kasası ile Telegram Bot bağlantısını gösteren etkileşimli teknik diyagram.</desc>
+            <defs>
+              <pattern id="pipeSubGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-opacity="0.06" stroke-width="1" shape-rendering="crispEdges"/>
+              </pattern>
+            </defs>
+            <rect x="0.5" y="0.5" width="979" height="175" rx="12" fill="url(#pipeSubGrid)" stroke="currentColor" stroke-opacity="0.08"/>
+
+            <!-- Connection Wires (Base Track + Animated Data Packet Pulses) -->
+            <path class="pipe-wire-track" d="M 218 88 C 245 88, 252 88, 276 88" />
+            <path class="pipe-wire-pulse pulse-blue" d="M 218 88 C 245 88, 252 88, 276 88" filter="url(#cortex-neon-glow)" />
+
+            <path class="pipe-wire-track" d="M 476 88 C 503 88, 510 88, 534 88" />
+            <path class="pipe-wire-pulse pulse-emerald" d="M 476 88 C 503 88, 510 88, 534 88" filter="url(#cortex-neon-glow)" />
+
+            <path class="pipe-wire-track" d="M 734 88 C 761 88, 768 88, 792 88" />
+            <path class="pipe-wire-pulse pulse-amber" d="M 734 88 C 761 88, 768 88, 792 88" filter="url(#cortex-neon-glow)" />
+
+            <!-- NODE 01: RTSP / ONVIF Camera Pool -->
+            <g class="pipeline-node" data-pipe-target="cameras" tabindex="0" role="button" aria-label="Kameralar sekmesine git">
+              <rect class="pipe-node-box" x="18.5" y="24.5" width="200" height="127" rx="12"/>
+              <circle class="pipe-node-dot is-blue" cx="38" cy="46" r="4.5"/>
+              <text class="pipe-node-step" x="50" y="50">KATMAN 01 · GİRİŞ</text>
+              <text class="pipe-node-title" x="34" y="76">RTSP &amp; ONVIF Havuzu</text>
+              <text class="pipe-node-sub" id="pipeNodeCamsSub" x="34" y="98">TCP Kesintisiz Akış</text>
+              <rect class="pipe-node-pill" x="32" y="112" width="172" height="24" rx="6"/>
+              <text class="pipe-node-metric" id="pipeNodeCamsMetric" x="42" y="128">0 / 32 Kanal Hazır</text>
+            </g>
+
+            <!-- NODE 02: Local Pixel & Pro Smart Tracker -->
+            <g class="pipeline-node" data-pipe-target="rules" tabindex="0" role="button" aria-label="Olay kuralları ve ROI stüdyosuna git">
+              <rect class="pipe-node-box" x="276.5" y="24.5" width="200" height="127" rx="12"/>
+              <circle class="pipe-node-dot is-emerald" cx="296" cy="46" r="4.5"/>
+              <text class="pipe-node-step" x="308" y="50">KATMAN 02 · ÖN FİLTRE</text>
+              <text class="pipe-node-title" x="292" y="76">Yerel &amp; Pro ROI Motoru</text>
+              <text class="pipe-node-sub" id="pipeNodeRulesSub" x="292" y="98">73 Şablon · 8-Kol ROI</text>
+              <rect class="pipe-node-pill" x="290" y="112" width="172" height="24" rx="6"/>
+              <text class="pipe-node-metric" id="pipeNodeRulesMetric" x="300" y="128">0 Etkin Kural</text>
+            </g>
+
+            <!-- NODE 03: Local Ollama VLM Reasoning -->
+            <g class="pipeline-node" data-pipe-target="settings" tabindex="0" role="button" aria-label="Görsel AI motor ayarlarına git">
+              <rect class="pipe-node-box" x="534.5" y="24.5" width="200" height="127" rx="12"/>
+              <circle class="pipe-node-dot is-violet" cx="554" cy="46" r="4.5"/>
+              <text class="pipe-node-step" x="566" y="50">KATMAN 03 · MUHAKEME</text>
+              <text class="pipe-node-title" x="550" y="76">Ollama Görsel Zekâ</text>
+              <text class="pipe-node-sub" id="pipeNodeVlmSub" x="550" y="98">Çoklu Kare VLM Analizi</text>
+              <rect class="pipe-node-pill" x="548" y="112" width="172" height="24" rx="6"/>
+              <text class="pipe-node-metric" id="pipeNodeVlmMetric" x="558" y="128">gemma3:4b · Hazır</text>
+            </g>
+
+            <!-- NODE 04: SHA-256 Forensic Vault & 2-Way Telegram Bot -->
+            <g class="pipeline-node" data-pipe-target="events" tabindex="0" role="button" aria-label="Adli olay arşivine git">
+              <rect class="pipe-node-box" x="792.5" y="24.5" width="169" height="127" rx="12"/>
+              <circle class="pipe-node-dot is-amber" cx="812" cy="46" r="4.5"/>
+              <text class="pipe-node-step" x="824" y="50">KATMAN 04 · KANIT</text>
+              <text class="pipe-node-title" x="808" y="76">SHA-256 Kasa &amp; Bot</text>
+              <text class="pipe-node-sub" id="pipeNodeVaultSub" x="808" y="98">@intelligentcortexbot</text>
+              <rect class="pipe-node-pill" x="806" y="112" width="142" height="24" rx="6"/>
+              <text class="pipe-node-metric" id="pipeNodeVaultMetric" x="816" y="128">0 Adli Kanıt</text>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <section class="card" id="analyticsCard" data-bento-card style="margin-bottom:24px">
         <div class="sectiontitle analytics-card-head" style="margin-bottom:12px">
           <div>
             <span class="eyebrow" data-i18n="analytics.eyebrow">TELEMETRİ &amp; OLAY YOĞUNLUĞU</span>
             <h2 style="margin-top:3px" data-i18n="analytics.title">Son 24 saat olay yoğunluğu ve kategori dağılımı</h2>
           </div>
           <div class="actions analytics-head-badges" style="margin:0;gap:6px">
+            <span id="analyticsHoverReadout" class="tag mono analytics-hover-pill" hidden></span>
             <span id="peakHourBadge" class="tag mono" hidden></span>
             <span id="total24hBadge" class="tag mono" hidden></span>
             <span id="avgLatencyBadge" class="tag ok mono" hidden></span>
@@ -1189,7 +1294,11 @@
     <!-- cmdk-Inspired Global Quick Command Palette (Ctrl+K / ⌘K) -->
     <div id="cmdPaletteModal" class="cmdk-overlay" role="dialog" aria-modal="true" aria-label="Hızlı Komut Merkezi" hidden>
       <div class="cmdk-backdrop" data-close-cmdk="1"></div>
-      <div class="cmdk-dialog">
+      <div class="cmdk-dialog" id="cmdkDialogBox">
+        <div id="cmdkBreadcrumbs" class="cmdk-breadcrumbs">
+          <span class="cmdk-crumb-pill active">Cortex v2.3</span>
+          <span class="cmdk-crumb-pill">Ana Komutlar</span>
+        </div>
         <div class="cmdk-search-bar">
           <svg class="cmdk-search-icon" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
           <input type="search" id="cmdkInput" autocomplete="off" spellcheck="false" placeholder="Komut çalıştır, sekme, kamera veya kural ara… (Ctrl+K)" data-i18n-placeholder="cmdk.placeholder">
@@ -1198,22 +1307,24 @@
         <div id="cmdkList" class="cmdk-list" role="listbox"></div>
         <div class="cmdk-footer">
           <span><kbd class="mono">↑↓</kbd> <span data-i18n="cmdk.nav">Gezin</span></span>
-          <span><kbd class="mono">↵</kbd> <span data-i18n="cmdk.run">Çalıştır</span></span>
-          <span><kbd class="mono">Alt+L</kbd> <span>TR / EN</span></span>
-          <span><kbd class="mono">/</kbd> <span>Copilot</span></span>
+          <span><kbd class="mono">↵</kbd> <span data-i18n="cmdk.run">Çalıştır / Alt Menü</span></span>
+          <span><kbd class="mono">⌫</kbd> <span>Üst Menü</span></span>
+          <span><kbd class="mono">G O/C/R/E</kbd> <span>Hızlı Sekme</span></span>
         </div>
       </div>
     </div>
+
+    <div id="chordIndicatorPill" class="chord-indicator-pill mono" aria-live="polite" hidden></div>
 
     <!-- Sonner-Inspired Stacked Toast Notification Center -->
     <ol id="cortexToaster" class="sonner-toaster" aria-live="polite"></ol>
 
     <footer>
-      <span>IPScans Cortex 2.2.0</span>
+      <span>IPScans Cortex 2.3.0</span>
       <span data-i18n="footer.tagline">Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.</span>
     </footer>
   </main>
-  <script src="plans.js?v=2.2.0"></script>
-  <script src="app.js?v=2.2.0"></script>
+  <script src="plans.js?v=2.3.0"></script>
+  <script src="app.js?v=2.3.0"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* IPScans Cortex 2.0.0-pro — Bağımsız Geliştirici & Müşteri Yönetim Merkezi (Port 8766) */
+/* IPScans Cortex 2.3.0 — Bağımsız Geliştirici & Müşteri Yönetim Merkezi (Port 8766) */
 (() => {
   'use strict';
 
@@ -24,9 +24,110 @@
   let lastSavedCustomer = null;
   let usernameTouchedManually = false;
   let signalFieldCtrl = null;
+  let quickFilterMode = 'ALL';
+  let adminCmdkOpen = false;
+  let adminCmdkItems = [];
+  let adminCmdkIdx = 0;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  /* ==========================================================================
+     Synthesized Web Audio Tactile Micro-Feedback Engine (adminSound)
+     ========================================================================== */
+  const adminSound = (() => {
+    let ctx = null;
+    let muted = false;
+    try {
+      muted = localStorage.getItem('cortex_admin_sound_muted') === '1';
+    } catch (_) {}
+
+    function getCtx() {
+      if (muted) return null;
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return null;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return null;
+      if (!ctx) ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      return ctx;
+    }
+
+    function syncBtn() {
+      const iconEl = $('#adminSoundIcon');
+      if (iconEl) iconEl.textContent = muted ? '🔇' : '🔊';
+    }
+
+    function trigger(type = 'click') {
+      const c = getCtx();
+      if (!c) return;
+      const now = c.currentTime;
+      try {
+        if (type === 'click') {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1400, now);
+          osc.frequency.exponentialRampToValueAtTime(190, now + 0.016);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(now);
+          osc.stop(now + 0.018);
+        } else if (type === 'pop') {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(360, now);
+          osc.frequency.exponentialRampToValueAtTime(680, now + 0.048);
+          gain.gain.setValueAtTime(0.045, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.052);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(now);
+          osc.stop(now + 0.055);
+        } else if (type === 'success') {
+          [523.25, 659.25].forEach((freq, i) => {
+            const osc = c.createOscillator();
+            const gain = c.createGain();
+            const t0 = now + i * 0.055;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t0);
+            gain.gain.setValueAtTime(0.04, t0);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+            osc.connect(gain);
+            gain.connect(c.destination);
+            osc.start(t0);
+            osc.stop(t0 + 0.15);
+          });
+        } else if (type === 'error') {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.12);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(now);
+          osc.stop(now + 0.14);
+        }
+      } catch (_) {}
+    }
+
+    function toggleMute() {
+      muted = !muted;
+      try {
+        localStorage.setItem('cortex_admin_sound_muted', muted ? '1' : '0');
+      } catch (_) {}
+      syncBtn();
+      if (!muted) trigger('pop');
+      return muted;
+    }
+
+    return { trigger, toggleMute, syncBtn };
+  })();
 
   function esc(val) {
     const div = document.createElement('div');
@@ -65,6 +166,7 @@
   function showToast(msg, isError = false) {
     const el = $('#toast');
     if (!el) return;
+    adminSound.trigger(isError ? 'error' : 'success');
     el.textContent = msg;
     el.className = 'toast ' + (isError ? 'toast-error' : 'toast-ok');
     el.hidden = false;
@@ -77,7 +179,7 @@
   async function copyText(text, label = 'Panoya kopyalandı') {
     try {
       await navigator.clipboard.writeText(String(text || ''));
-      showToast(`${label}: ${text}`);
+      showToast(`${label}`);
     } catch (_) {
       const ta = document.createElement('textarea');
       ta.value = String(text || '');
@@ -87,6 +189,20 @@
       ta.remove();
       showToast(label);
     }
+  }
+
+  function buildCustomerDeliveryPack(c) {
+    return [
+      `=== IPScans Cortex v2.3 · Kurumsal Hesap & Lisans Teslim Paketi ===`,
+      `Kurum / Müşteri: ${c.organization}`,
+      `Cortex Giriş Kullanıcı Adı: ${c.username}`,
+      `Cortex Giriş Parolası: ${c.passwordHint || 'Cortex2026!'}`,
+      `Ticari Paket: CORTEX ${c.plan}`,
+      `Lisans Anahtarı: ${c.key}`,
+      `Kapasite Kotaları: ${c.maxCameras} Kamera · ${c.maxRules} AI Kuralı · ${c.maxTelegramPhones} Telegram Numarası`,
+      `Resmi Telegram Botu: https://t.me/intelligentcortexbot`,
+      `Yerel Komuta Arayüzü: http://127.0.0.1:8765`,
+    ].join('\n');
   }
 
   function slugifyUsername(org) {
@@ -135,7 +251,26 @@
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('cortex_admin_theme', next);
+      adminSound.trigger('click');
     });
+  }
+
+  function initAdminBentoSpotlight() {
+    let rafId = 0;
+    let lastEv = null;
+    document.addEventListener('pointermove', (e) => {
+      lastEv = e;
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (!lastEv) return;
+        const card = lastEv.target?.closest?.('[data-bento-card], .customer-card');
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${Math.round(lastEv.clientX - rect.left)}px`);
+        card.style.setProperty('--mouse-y', `${Math.round(lastEv.clientY - rect.top)}px`);
+      });
+    }, { passive: true });
   }
 
   /* ==========================================================================
@@ -431,29 +566,58 @@
   function renderTelemetry() {
     const customers = appState.customers || [];
     const activeCount = customers.filter((c) => c.status !== 'suspended').length;
+    const suspendedCount = customers.length - activeCount;
     if ($('#metricTotalCustomers')) $('#metricTotalCustomers').textContent = String(customers.length);
     if ($('#metricActiveLicenses')) $('#metricActiveLicenses').textContent = String(activeCount);
+    if ($('#metricCustomerSub')) {
+      $('#metricCustomerSub').textContent = `${activeCount} Aktif · ${suspendedCount} Askıda · İzole Kasa`;
+    }
+
+    const proCnt = customers.filter((c) => c.plan === 'PRO').length;
+    const plusCnt = customers.filter((c) => c.plan === 'PLUS').length;
+    const ultraCnt = customers.filter((c) => c.plan === 'ULTRA').length;
+    const totalTiers = Math.max(1, customers.length);
+    if ($('#metricTierDistText')) {
+      $('#metricTierDistText').textContent = `${ultraCnt} ULTRA · ${plusCnt} PLUS · ${proCnt} PRO`;
+    }
+    const distBar = $('#metricTierDistBar');
+    if (distBar) {
+      const uPct = Math.max(8, Math.round((ultraCnt / totalTiers) * 100));
+      const plPct = Math.max(6, Math.round((plusCnt / totalTiers) * 100));
+      const prPct = Math.max(6, Math.round((proCnt / totalTiers) * 100));
+      distBar.innerHTML = `
+        <div class="metric-tier-seg" style="width:${uPct}%;background:#4C82FF" title="ULTRA: ${ultraCnt}"></div>
+        <div class="metric-tier-seg" style="width:${plPct}%;background:#22C55E" title="PLUS: ${plusCnt}"></div>
+        <div class="metric-tier-seg" style="width:${prPct}%;background:#94A3B8" title="PRO: ${proCnt}"></div>
+      `;
+    }
 
     const lic = appState.localLicense || {};
     const localOrg = lic.organization || 'Merkez Saha İstasyonu';
     const localUser = lic.username || 'merkez';
     const localPlan = lic.plan || 'ULTRA';
-    if ($('#metricLocalOrg')) $('#metricLocalOrg').textContent = `${localOrg} (${localPlan})`;
-    if ($('#metricLocalUserPlan')) $('#metricLocalUserPlan').textContent = `@${localUser} · ${localPlan}`;
+    if ($('#metricLocalOrg')) $('#metricLocalOrg').textContent = `${localOrg}`;
+    if ($('#metricLocalPlanTag')) $('#metricLocalPlanTag').textContent = `CORTEX ${localPlan}`;
 
     const maxCams = lic.maxCameras || 32;
     const maxRules = lic.maxRules || 128;
     const maxTg = lic.maxTelegramPhones || 10;
+    if ($('#metricLocalUserPlan')) {
+      $('#metricLocalUserPlan').hidden = false;
+      $('#metricLocalUserPlan').textContent = `@${localUser} · ${maxCams} Kamera / ${maxRules} Kural Kotası`;
+    }
     if ($('#metricLocalQuotas')) $('#metricLocalQuotas').textContent = `${maxCams} Kam / ${maxRules} Kural / ${maxTg} TG`;
     if ($('#metricLocalUsage')) $('#metricLocalUsage').textContent = `${appState.camerasCount || 0} Kamera · ${appState.rulesCount || 0} Kural`;
 
     const tg = appState.telegram || {};
     const boundCount = tg.boundPhonesCount || (tg.phone ? 1 : 0);
-    if ($('#metricTelegramQuota')) $('#metricTelegramQuota').textContent = `${boundCount} / ${maxTg}`;
+    if ($('#metricTelegramQuota')) $('#metricTelegramQuota').textContent = `${boundCount} / ${maxTg} TG Numara`;
     if ($('#metricTelegramPhone')) $('#metricTelegramPhone').textContent = tg.phoneDisplay || '—';
 
     if ($('#metricEngineStatus')) $('#metricEngineStatus').textContent = `${appState.adminPort || 8766}`;
-    if ($('#metricDiskFree')) $('#metricDiskFree').textContent = `${appState.diskFreeGB || 0} GB`;
+    if ($('#metricDiskFree')) {
+      $('#metricDiskFree').textContent = `@${tg.botUsername || 'intelligentcortexbot'} · ${appState.diskFreeGB || 0} GB Boş Disk`;
+    }
 
     const clientLink = $('#openClientCortexLink');
     if (clientLink && appState.cortexClientUrl) {
@@ -462,7 +626,9 @@
 
     const selectedPlan = $('#custPlan')?.value || 'ULTRA';
     $$('.tier-card').forEach((card) => {
-      card.classList.toggle('tier-card-selected', card.dataset.selectPlan === selectedPlan);
+      const isSel = card.dataset.selectPlan === selectedPlan;
+      card.classList.toggle('tier-card-selected', isSel);
+      card.classList.toggle('is-selected-tier', isSel);
     });
   }
 
@@ -510,6 +676,10 @@
 
     const filtered = (appState.customers || []).filter((c) => {
       if (planFilter !== 'ALL' && c.plan !== planFilter) return false;
+      if (quickFilterMode === 'ACTIVE' && c.status === 'suspended') return false;
+      if (quickFilterMode === 'SUSPENDED' && c.status !== 'suspended') return false;
+      if (quickFilterMode === 'LOCAL' && !(c.isLocalNode || c.id === localCustId)) return false;
+      if (['PRO', 'PLUS', 'ULTRA'].includes(quickFilterMode) && c.plan !== quickFilterMode) return false;
       if (!query) return true;
       const hay = `${c.organization} ${c.username} ${c.contact} ${c.key} ${c.plan}`.toLowerCase();
       return hay.includes(query);
@@ -518,6 +688,7 @@
     const fp = JSON.stringify({
       q: query,
       pf: planFilter,
+      qf: quickFilterMode,
       loc: localCustId,
       items: filtered.map((c) => [
         c.id,
@@ -543,7 +714,7 @@
     container.dataset.fingerprint = fp;
 
     if (!filtered.length) {
-      container.innerHTML = `<div class="empty-state">Arama kriterine uygun müşteri hesabı bulunamadı.</div>`;
+      container.innerHTML = `<div class="empty-state">Arama veya filtre kriterine uygun müşteri hesabı bulunamadı.</div>`;
       return;
     }
 
@@ -553,6 +724,7 @@
         const isLocal = Boolean(c.isLocalNode || c.id === localCustId);
         const planClass = c.plan === 'PRO' ? 'tier-pro' : c.plan === 'PLUS' ? 'tier-plus' : 'tier-ultra';
         const daysLeft = c.daysRemaining != null ? c.daysRemaining : Math.max(0, Math.round(((c.expiresAt || 0) - Date.now() / 1000) / 86400));
+        const expPct = Math.max(5, Math.min(100, Math.round((daysLeft / 365) * 100)));
         const pwText = c.passwordHint || 'Cortex2026!';
         const camUsed = c.camerasUsed || 0;
         const ruleUsed = c.rulesUsed || 0;
@@ -567,24 +739,35 @@
             <div class="customer-title-row">
               <h3>${esc(c.organization)}</h3>
               <span class="tier-badge ${planClass}">${esc(c.plan)}</span>
+              ${isLocal ? '<span class="status-pill status-pill-ok">Aktif İstasyon (8765)</span>' : ''}
               ${isSuspended ? '<span class="status-pill status-pill-bad">Askıda</span>' : ''}
             </div>
             <div class="customer-meta-pills">
               ${c.contact && c.contact !== 'Belirtilmedi' ? `<span class="days-pill">${esc(c.contact)}</span>` : ''}
-              <span class="days-pill">${daysLeft}g</span>
+              <span class="days-pill">${daysLeft} gün</span>
             </div>
           </div>
 
           <div class="customer-credentials-strip">
-            <button type="button" class="cred-chip" data-copy="${esc(c.username)}" data-label="Kullanıcı adı kopyalandı" title="Kopyalamak için tıklayın">
+            <button type="button" class="cred-chip" data-copy="${esc(c.username)}" data-label="Kullanıcı adı kopyalandı" title="Kullanıcı adını kopyala">
               <span class="cred-chip-text">@${esc(c.username)}</span>
             </button>
-            <button type="button" class="cred-chip" data-copy="${esc(pwText)}" data-label="Parola kopyalandı" title="Kopyalamak için tıklayın">
+            <button type="button" class="cred-chip" data-copy="${esc(pwText)}" data-label="Parola kopyalandı" title="Parolayı kopyala">
               <span class="cred-chip-text">${esc(pwText)}</span>
             </button>
-            <button type="button" class="cred-chip" data-copy="${esc(c.key)}" data-label="Lisans anahtarı kopyalandı" title="Kopyalamak için tıklayın">
+            <button type="button" class="cred-chip" data-copy="${esc(c.key)}" data-label="Lisans anahtarı kopyalandı" title="Tam lisans anahtarını kopyala">
               <span class="cred-chip-text">${esc(truncateKey(c.key))}</span>
             </button>
+          </div>
+
+          <div class="cust-expiry-strip">
+            <div class="cust-expiry-head">
+              <span>Lisans Geçerlilik Süresi</span>
+              <strong>${daysLeft} Gün Kaldı (%${expPct})</strong>
+            </div>
+            <div class="cust-expiry-track">
+              <div class="cust-expiry-fill ${daysLeft < 30 ? 'is-warn' : ''}" style="width:${expPct}%"></div>
+            </div>
           </div>
 
           <div class="customer-quotas-grid">
@@ -613,6 +796,8 @@
 
           <div class="customer-actions">
             <button type="button" class="btn-secondary btn-xs" data-edit-cust="${esc(c.id)}">Düzenle</button>
+            <button type="button" class="btn-secondary btn-xs" data-copy-delivery="${esc(c.id)}" title="Müşteri giriş bilgilerini ve lisans anahtarını tek metin olarak kopyala">📋 Teslim Paketi</button>
+            ${!isLocal ? `<button type="button" class="btn-secondary btn-xs" data-action="assign_to_local" data-cust="${esc(c.id)}" title="Bu müşteriyi yerel Cortex.exe (Port 8765) oturumuna ata">⚡ İstasyona Ata</button>` : ''}
             <div class="inline-plan-switch">
               <button type="button" class="btn-ghost btn-xs ${c.plan === 'PRO' ? 'active-plan-btn' : ''}" data-action="upgrade_plan" data-plan="PRO" data-cust="${esc(c.id)}">PRO</button>
               <button type="button" class="btn-ghost btn-xs ${c.plan === 'PLUS' ? 'active-plan-btn' : ''}" data-action="upgrade_plan" data-plan="PLUS" data-cust="${esc(c.id)}">PLUS</button>
@@ -773,7 +958,9 @@
     $('#custMaxRules').value = spec.maxRules;
     $('#custMaxTelegramPhones').value = spec.maxTelegramPhones;
     $$('.tier-card').forEach((card) => {
-      card.classList.toggle('tier-card-selected', card.dataset.selectPlan === plan);
+      const isSel = card.dataset.selectPlan === plan;
+      card.classList.toggle('tier-card-selected', isSel);
+      card.classList.toggle('is-selected-tier', isSel);
     });
   }
 
@@ -822,6 +1009,144 @@
     $('#saveCustomerBtn').textContent = 'Müşteri Hesabını ve Lisansı Kaydet';
   }
 
+  /* ==========================================================================
+     Admin Command Palette (Ctrl+K)
+     ========================================================================== */
+  function buildAdminCmdkItems() {
+    const items = [
+      {
+        group: 'Hızlı Yönetim Komutları',
+        icon: '➕',
+        title: 'Yeni Müşteri & Lisans Tanımlama Formunu Sıfırla',
+        sub: 'Formu temizle ve güçlü parola üret',
+        kbd: 'Form',
+        run: () => {
+          resetStudioForm();
+          $('#custOrganization')?.focus();
+        },
+      },
+      {
+        group: 'Hızlı Yönetim Komutları',
+        icon: '⚡',
+        title: 'Sistem ve Kasa Tanılamasını Çalıştır (Diagnostics)',
+        sub: 'AES-256-GCM kasa, SQLite FTS5 ve disk bütünlüğünü doğrula',
+        kbd: 'Diag',
+        run: () => $('#runDiagBtn')?.click(),
+      },
+      {
+        group: 'Hızlı Yönetim Komutları',
+        icon: '💎',
+        title: 'Cortex ULTRA (32 Kamera / 128 Kural / 10 TG) Şablonunu Seç',
+        sub: 'Kurumsal tam kapasite kotalarını forma aktar',
+        kbd: 'ULTRA',
+        run: () => applyPlanDefaultQuotas('ULTRA'),
+      },
+      {
+        group: 'Hızlı Yönetim Komutları',
+        icon: '🟢',
+        title: 'Cortex PLUS (12 Kamera / 32 Kural / 5 TG) Şablonunu Seç',
+        sub: 'Orta ölçekli tesis ve fabrika kotalarını forma aktar',
+        kbd: 'PLUS',
+        run: () => applyPlanDefaultQuotas('PLUS'),
+      },
+      {
+        group: 'Hızlı Yönetim Komutları',
+        icon: '🔵',
+        title: 'Cortex PRO (4 Kamera / 8 Kural / 2 TG) Şablonunu Seç',
+        sub: 'Başlangıç paketi kotalarını forma aktar',
+        kbd: 'PRO',
+        run: () => applyPlanDefaultQuotas('PRO'),
+      },
+      {
+        group: 'Hızlı Yönetim Komutları',
+        icon: '🤖',
+        title: 'Telegram Bot İletişim Motorunu Sıfırla',
+        sub: '@intelligentcortexbot long-polling döngüsünü yenile',
+        kbd: 'Bot',
+        run: () => $('#restartTelegramGlobalBtn')?.click(),
+      },
+      {
+        group: 'Hızlı Yönetim Komutları',
+        icon: '🌗',
+        title: 'Temayı Değiştir (Koyu ↔ Açık)',
+        sub: 'Yönetim merkezi görünümünü değiştir',
+        kbd: 'Tema',
+        run: () => $('#themeToggleBtn')?.click(),
+      },
+    ];
+
+    for (const c of appState.customers || []) {
+      items.push({
+        group: 'Kayıtlı Müşteri Hesapları',
+        icon: c.status === 'suspended' ? '⏸' : '👤',
+        title: `${c.organization} (@${c.username})`,
+        sub: `${c.plan} · ${c.maxCameras} Kam / ${c.maxRules} Kural / ${c.maxTelegramPhones} TG · ${c.key}`,
+        kbd: 'Düzenle',
+        run: () => loadCustomerIntoForm(c.id),
+      });
+    }
+    return items;
+  }
+
+  function renderAdminCmdk() {
+    const listEl = $('#adminCmdkList');
+    if (!listEl) return;
+    const q = ($('#adminCmdkInput')?.value || '').trim().toLowerCase();
+    const all = buildAdminCmdkItems();
+    adminCmdkItems = q
+      ? all.filter((it) => `${it.title} ${it.sub} ${it.group}`.toLowerCase().includes(q))
+      : all;
+    if (adminCmdkIdx >= adminCmdkItems.length) adminCmdkIdx = 0;
+
+    if (!adminCmdkItems.length) {
+      listEl.innerHTML = `<div class="empty-state">Eşleşen komut veya müşteri bulunamadı.</div>`;
+      return;
+    }
+
+    let html = '';
+    let lastGroup = '';
+    adminCmdkItems.forEach((it, idx) => {
+      if (it.group !== lastGroup) {
+        lastGroup = it.group;
+        html += `<div class="admin-cmdk-group">${esc(lastGroup)}</div>`;
+      }
+      html += `
+        <div class="admin-cmdk-item ${idx === adminCmdkIdx ? 'is-selected' : ''}" role="option" data-admin-cmd-idx="${idx}">
+          <div class="admin-cmdk-item-left">
+            <span>${it.icon}</span>
+            <div>
+              <span class="admin-cmdk-title">${esc(it.title)}</span>
+              <span class="admin-cmdk-sub">${esc(it.sub)}</span>
+            </div>
+          </div>
+          <kbd class="admin-kbd-pill">${esc(it.kbd)}</kbd>
+        </div>
+      `;
+    });
+    listEl.innerHTML = html;
+  }
+
+  function openAdminCmdk() {
+    const modal = $('#adminCmdPaletteModal');
+    if (!modal) return;
+    adminCmdkOpen = true;
+    adminCmdkIdx = 0;
+    modal.hidden = false;
+    adminSound.trigger('pop');
+    const inp = $('#adminCmdkInput');
+    if (inp) {
+      inp.value = '';
+      setTimeout(() => inp.focus(), 20);
+    }
+    renderAdminCmdk();
+  }
+
+  function closeAdminCmdk() {
+    adminCmdkOpen = false;
+    const modal = $('#adminCmdPaletteModal');
+    if (modal) modal.hidden = true;
+  }
+
   function getLoginInputs() {
     const u = $('#adminUsername') || $('#loginUsername');
     const p = $('#adminPassword') || $('#loginPassword');
@@ -829,6 +1154,81 @@
   }
 
   function bindEvents() {
+    // Sound toggle
+    $('#adminSoundToggleBtn')?.addEventListener('click', () => {
+      const isMuted = adminSound.toggleMute();
+      showToast(isMuted ? 'Dokunsal arayüz sesleri kapatıldı.' : 'Dokunsal arayüz sesleri açıldı.');
+    });
+
+    // Admin Command Palette (Ctrl+K)
+    $('#adminCmdkBtn')?.addEventListener('click', openAdminCmdk);
+    $('#adminCmdPaletteModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'adminCmdPaletteModal' || e.target.dataset.closeAdminCmdk) {
+        closeAdminCmdk();
+        return;
+      }
+      const itemEl = e.target.closest('[data-admin-cmd-idx]');
+      if (itemEl) {
+        const it = adminCmdkItems[Number(itemEl.dataset.adminCmdIdx)];
+        closeAdminCmdk();
+        if (it) it.run();
+      }
+    });
+    $('#adminCmdkInput')?.addEventListener('input', () => {
+      adminCmdkIdx = 0;
+      renderAdminCmdk();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (adminCmdkOpen) closeAdminCmdk();
+        else openAdminCmdk();
+        return;
+      }
+      if (adminCmdkOpen) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeAdminCmdk();
+          return;
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (adminCmdkItems.length) {
+            adminCmdkIdx = (adminCmdkIdx + 1) % adminCmdkItems.length;
+            adminSound.trigger('click');
+            renderAdminCmdk();
+          }
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (adminCmdkItems.length) {
+            adminCmdkIdx = (adminCmdkIdx - 1 + adminCmdkItems.length) % adminCmdkItems.length;
+            adminSound.trigger('click');
+            renderAdminCmdk();
+          }
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const it = adminCmdkItems[adminCmdkIdx];
+          closeAdminCmdk();
+          if (it) it.run();
+        }
+      }
+    });
+
+    // Quick status filter pills
+    $$('[data-quick-filter]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        quickFilterMode = btn.dataset.quickFilter || 'ALL';
+        $$('[data-quick-filter]').forEach((b) => b.classList.toggle('active', b === btn));
+        adminSound.trigger('click');
+        renderCustomers();
+      });
+    });
+
     // Login form
     $('#loginForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -847,6 +1247,7 @@
         } catch (err) {
           errEl.textContent = err.message;
           errEl.hidden = false;
+          adminSound.trigger('error');
         }
       });
     });
@@ -939,11 +1340,13 @@
     $('#genRandomPwBtn')?.addEventListener('click', () => {
       const org = $('#custOrganization').value || 'Cortex';
       $('#custPassword').value = generateStrongPassword(org);
+      adminSound.trigger('pop');
     });
 
     // Plan dropdown change -> auto-fill default limits
     $('#custPlan')?.addEventListener('change', (e) => {
       applyPlanDefaultQuotas(e.target.value);
+      adminSound.trigger('click');
     });
 
     // Clicking top tier showcase cards selects that tier
@@ -953,11 +1356,20 @@
         applyPlanDefaultQuotas(plan);
         showToast(`${plan} paketi varsayılan kotaları forma aktarıldı.`);
       });
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const plan = card.dataset.selectPlan;
+          applyPlanDefaultQuotas(plan);
+          showToast(`${plan} paketi varsayılan kotaları forma aktarıldı.`);
+        }
+      });
     });
 
     // Reset studio form
     $('#resetFormBtn')?.addEventListener('click', () => {
       resetStudioForm();
+      adminSound.trigger('click');
     });
 
     // Submit Customer Studio Form
@@ -1001,20 +1413,7 @@
 
     $('#copyCustomerSummaryBtn')?.addEventListener('click', () => {
       if (!lastSavedCustomer) return;
-      const c = lastSavedCustomer;
-      const summary = [
-        `=== IPScans Cortex 2.0 Pro Müşteri Hesap & Lisans Bilgileri ===`,
-        `Kurum / Müşteri: ${c.organization}`,
-        `Cortex Giriş Kullanıcı Adı: ${c.username}`,
-        `Cortex Giriş Şifresi: ${c.passwordHint}`,
-        `Paket: CORTEX ${c.plan}`,
-        `Lisans Anahtarı: ${c.key}`,
-        `Kamera Kotası: ${c.maxCameras} Kamera`,
-        `Kural Kotası: ${c.maxRules} Kural`,
-        `Telegram Bot Numara Kotası: ${c.maxTelegramPhones} Telefon Numarası`,
-        `Cortex Arayüz Adresi: http://127.0.0.1:8765`,
-      ].join('\n');
-      copyText(summary, 'Müşteri teslim özeti panoya kopyalandı');
+      copyText(buildCustomerDeliveryPack(lastSavedCustomer), 'Müşteri teslim özeti panoya kopyalandı');
     });
 
     // Search and filter inputs
@@ -1026,6 +1425,16 @@
       const copyBtn = e.target.closest('[data-copy]');
       if (copyBtn) {
         copyText(copyBtn.dataset.copy, copyBtn.dataset.label || 'Kopyalandı');
+        return;
+      }
+
+      const delivBtn = e.target.closest('[data-copy-delivery]');
+      if (delivBtn) {
+        const cid = delivBtn.dataset.copyDelivery;
+        const cust = (appState.customers || []).find((c) => c.id === cid);
+        if (cust) {
+          copyText(buildCustomerDeliveryPack(cust), `${cust.organization} teslim paketi kopyalandı`);
+        }
         return;
       }
 
@@ -1077,6 +1486,8 @@
 
   async function bootstrap() {
     initTheme();
+    adminSound.syncBtn();
+    initAdminBentoSpotlight();
     signalFieldCtrl = initSignalField();
     bindEvents();
     resetStudioForm();

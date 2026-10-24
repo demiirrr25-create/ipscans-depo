@@ -11,7 +11,7 @@ import traceback
 import urllib.request
 import webbrowser
 
-VERSION = '2.2.0'
+VERSION = '2.3.0'
 
 def data_directory():
     return Path(os.environ.get('CORTEX_DATA', str(Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'IPScansCortex')))
@@ -32,6 +32,12 @@ def existing_instance(port):
         return False
 
 def main():
+    if os.name == 'nt':
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('ipscans.cortex.desktop.2.3')
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        except Exception:
+            pass
     # Installation must work even if an existing configuration cannot be read.
     if '--install-only' in sys.argv:
         import desktop_setup

@@ -892,7 +892,196 @@ function message(txt, forcedType) {
   }, 4300);
 }
 
+/* ==========================================================================
+   Cortex v2.3 — Synthesized Web Audio Tactile Micro-Feedback Engine (uiSound)
+   ========================================================================== */
+const uiSound = (() => {
+  let ctx = null;
+  let muted = false;
+  try {
+    muted = localStorage.getItem('cortex-ui-sound-muted') === '1';
+  } catch (e) {}
+
+  function getCtx() {
+    if (muted) return null;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return null;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!ctx) ctx = new AudioCtx();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  }
+
+  function syncBtn() {
+    const btn = $('#uiSoundToggleBtn');
+    if (!btn) return;
+    btn.classList.toggle('is-muted', muted);
+    const onIcon = btn.querySelector('.icon-sound-on');
+    const offIcon = btn.querySelector('.icon-sound-off');
+    if (onIcon) onIcon.style.display = muted ? 'none' : '';
+    if (offIcon) offIcon.style.display = muted ? '' : 'none';
+    btn.title = muted
+      ? t('Dokunsal Arayüz Sesleri: Kapalı (Açmak için tıklayın)', 'Tactile UI Sounds: Muted (Click to unmute)')
+      : t('Dokunsal Arayüz Sesleri: Açık (Sessize almak için tıklayın)', 'Tactile UI Sounds: Active (Click to mute)');
+  }
+
+  function trigger(type = 'click') {
+    const c = getCtx();
+    if (!c) return;
+    const now = c.currentTime;
+    try {
+      if (type === 'click') {
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1450, now);
+        osc.frequency.exponentialRampToValueAtTime(190, now + 0.016);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(now);
+        osc.stop(now + 0.018);
+      } else if (type === 'pop') {
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(640, now + 0.048);
+        gain.gain.setValueAtTime(0.045, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.052);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(now);
+        osc.stop(now + 0.055);
+      } else if (type === 'success') {
+        [523.25, 659.25].forEach((freq, i) => {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          const t0 = now + i * 0.055;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t0);
+          gain.gain.setValueAtTime(0.04, t0);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(t0);
+          osc.stop(t0 + 0.15);
+        });
+      } else if (type === 'error') {
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(165, now);
+        osc.frequency.linearRampToValueAtTime(115, now + 0.12);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+    } catch (e) {}
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    try {
+      localStorage.setItem('cortex-ui-sound-muted', muted ? '1' : '0');
+    } catch (e) {}
+    syncBtn();
+    if (!muted) trigger('pop');
+    return muted;
+  }
+
+  return { trigger, toggleMute, syncBtn, isMuted: () => muted };
+})();
+
+$('#uiSoundToggleBtn')?.addEventListener('click', () => {
+  const isMuted = uiSound.toggleMute();
+  message(isMuted
+    ? t('Dokunsal arayüz sesleri sessize alındı.', 'Tactile UI micro-sounds muted.')
+    : t('Dokunsal arayüz sesleri etkinleştirildi.', 'Tactile UI micro-sounds enabled.'));
+});
+
+/* ==========================================================================
+   Cortex v2.3 — Multi-Page Command Palette (Ctrl+K) & Chord Shortcuts
+   ========================================================================== */
+let cmdPageStack = ['root'];
+let activeChordPrefix = null;
+let activeChordTimer = null;
+
+function bounceCmdkDialog() {
+  const box = $('#cmdkDialogBox') || document.querySelector('.cmdk-dialog');
+  if (!box) return;
+  box.classList.remove('is-bouncing');
+  void box.offsetWidth;
+  box.classList.add('is-bouncing');
+  setTimeout(() => box.classList.remove('is-bouncing'), 160);
+}
+
+function highlightCmdMatch(text, query) {
+  const safeText = esc(text || '');
+  if (!query) return safeText;
+  const idx = (text || '').toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return safeText;
+  const before = esc(text.slice(0, idx));
+  const match = esc(text.slice(idx, idx + query.length));
+  const after = esc(text.slice(idx + query.length));
+  return `${before}<mark class="cmdk-highlight">${match}</mark>${after}`;
+}
+
 function buildCommandItems() {
+  const currentPage = cmdPageStack[cmdPageStack.length - 1] || 'root';
+
+  if (currentPage === 'sectors') {
+    const packs = state?.sectorPacks || [];
+    return packs.map(p => ({
+      group: t('Hazır Sektör Paketleri (Tek Tıkla Kurulum)', 'Ready Sector Packs (One-Click Deploy)'),
+      icon: '📦',
+      title: `${p.name} (${p.rules?.length || 0} ${t('Kural', 'Rules')})`,
+      sub: p.summary || '',
+      kbd: p.tier || 'PLUS',
+      run: async () => {
+        tab('overview');
+        const drawer = document.querySelector('.sector-drawer');
+        if (drawer) drawer.open = true;
+        const btn = document.querySelector(`[data-sector-pack="${CSS.escape(p.id)}"]`);
+        if (btn) btn.click();
+        else message(`${p.name} ${t('seçildi.', 'selected.')}`);
+      }
+    }));
+  }
+
+  if (currentPage === 'appearance') {
+    return [
+      {
+        group: t('Görünüm & Ses Tercihleri', 'Appearance & Audio Preferences'),
+        icon: '☀️',
+        title: t('Açık Temaya Geç (Studio Daylight)', 'Switch to Light Theme (Studio Daylight)'),
+        sub: t('Yüksek kontrastlı gündüz komuta görünümü', 'High-contrast daylight command view'),
+        kbd: 'Light',
+        run: () => applyTheme('light', true)
+      },
+      {
+        group: t('Görünüm & Ses Tercihleri', 'Appearance & Audio Preferences'),
+        icon: '🌙',
+        title: t('Koyu Temaya Geç (Carbon Obsidian)', 'Switch to Dark Theme (Carbon Obsidian)'),
+        sub: t('Gece vardiyası ve NVR izleme görünümü', 'Night shift & NVR monitoring view'),
+        kbd: 'Dark',
+        run: () => applyTheme('dark', true)
+      },
+      {
+        group: t('Görünüm & Ses Tercihleri', 'Appearance & Audio Preferences'),
+        icon: '🔊',
+        title: t('Dokunsal Arayüz Seslerini Aç / Kapat', 'Toggle Tactile UI Micro-Sounds'),
+        sub: t('Web Audio API mekanik anahtar ve onay sesleri', 'Web Audio API mechanical switch & confirmation sounds'),
+        kbd: 'Audio',
+        run: () => uiSound.toggleMute()
+      }
+    ];
+  }
+
   const items = [
     {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
@@ -943,23 +1132,46 @@ function buildCommandItems() {
       run: () => tab('settings')
     },
     {
+      group: t('Alt Menüler & Hızlı Dağıtım', 'Sub-Menus & Rapid Deployment'),
+      icon: '📦',
+      title: t('Sektör Paketi Dağıt (8 Sektör)…', 'Deploy Sector Pack (8 Sectors)…'),
+      sub: t('Site, Havuz, Fabrika, Depo, Perakende, Ofis, Kampüs, Klinik', 'Residential, Pool, Factory, Warehouse, Retail, Office, Campus, Clinic'),
+      kbd: '→ Alt Menü',
+      keepOpen: true,
+      run: () => {
+        cmdPageStack.push('sectors');
+        const inp = $('#cmdkInput') || $('#cmdPaletteInput');
+        if (inp) inp.value = '';
+        cmdSelectedIndex = 0;
+        bounceCmdkDialog();
+        uiSound.trigger('pop');
+        renderCommandPalette();
+      }
+    },
+    {
+      group: t('Alt Menüler & Hızlı Dağıtım', 'Sub-Menus & Rapid Deployment'),
+      icon: '🎨',
+      title: t('Görünüm, Tema & Dokunsal Ses Ayarları…', 'Theme, Appearance & Tactile Sound Settings…'),
+      sub: t('Açık/Koyu tema ve Web Audio mikro ses kontrolü', 'Light/Dark theme & Web Audio micro-sound control'),
+      kbd: '→ Alt Menü',
+      keepOpen: true,
+      run: () => {
+        cmdPageStack.push('appearance');
+        const inp = $('#cmdkInput') || $('#cmdPaletteInput');
+        if (inp) inp.value = '';
+        cmdSelectedIndex = 0;
+        bounceCmdkDialog();
+        uiSound.trigger('pop');
+        renderCommandPalette();
+      }
+    },
+    {
       group: t('Hızlı İşlemler', 'Quick Actions'),
       icon: '🌐',
       title: t('Dili Değiştir (Türkçe ↔ English)', 'Switch Language (Turkish ↔ English)'),
       sub: t(`Aktif dil: ${currentLang.toUpperCase()}`, `Current language: ${currentLang.toUpperCase()}`),
       kbd: 'Alt+L',
       run: () => applyLanguage(currentLang === 'tr' ? 'en' : 'tr', true)
-    },
-    {
-      group: t('Hızlı İşlemler', 'Quick Actions'),
-      icon: '🌗',
-      title: t('Temayı Değiştir (Açık ↔ Koyu)', 'Toggle Theme (Light ↔ Dark)'),
-      sub: t('Arayüz görünümünü değiştir', 'Switch interface appearance'),
-      kbd: 'Theme',
-      run: () => {
-        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        applyTheme(next, true);
-      }
     },
     {
       group: t('Hızlı İşlemler', 'Quick Actions'),
@@ -1005,12 +1217,28 @@ function buildCommandItems() {
 }
 
 function renderCommandPalette() {
-  const listEl = $('#cmdPaletteList');
+  const listEl = $('#cmdkList') || $('#cmdPaletteList');
   if (!listEl) return;
-  const q = ($('#cmdPaletteInput')?.value || '').trim().toLowerCase();
+  const inp = $('#cmdkInput') || $('#cmdPaletteInput');
+  const q = (inp?.value || '').trim();
+  const qLower = q.toLowerCase();
+
+  const crumbsEl = $('#cmdkBreadcrumbs');
+  if (crumbsEl) {
+    const pageLabels = {
+      root: t('Ana Komutlar', 'Main Commands'),
+      sectors: t('Sektör Paketleri', 'Sector Packs'),
+      appearance: t('Tema & Ses', 'Theme & Sound')
+    };
+    crumbsEl.innerHTML = cmdPageStack.map((p, idx) => {
+      const isLast = idx === cmdPageStack.length - 1;
+      return `<button type="button" class="cmdk-crumb-pill ${isLast ? 'active' : ''}" data-cmd-crumb-idx="${idx}">${esc(idx === 0 ? 'Cortex v2.3' : (pageLabels[p] || p))}</button>`;
+    }).join('<span class="fine" style="opacity:0.5">/</span>');
+  }
+
   const all = buildCommandItems();
-  cmdFilteredItems = q
-    ? all.filter(it => `${it.title} ${it.sub} ${it.group}`.toLowerCase().includes(q))
+  cmdFilteredItems = qLower
+    ? all.filter(it => `${it.title} ${it.sub} ${it.group}`.toLowerCase().includes(qLower))
     : all;
   if (cmdSelectedIndex >= cmdFilteredItems.length) cmdSelectedIndex = 0;
 
@@ -1027,12 +1255,12 @@ function renderCommandPalette() {
       html += `<div class="cmdk-group-title">${esc(lastGroup)}</div>`;
     }
     html += `
-      <div class="cmdk-item ${idx === cmdSelectedIndex ? 'is-selected' : ''}" role="option" data-cmd-idx="${idx}">
+      <div class="cmdk-item ${idx === cmdSelectedIndex ? 'is-selected' : ''}" role="option" aria-selected="${idx === cmdSelectedIndex}" data-cmd-idx="${idx}">
         <div class="cmdk-item-left">
           <span class="cmdk-item-icon">${it.icon}</span>
           <div style="min-width:0">
-            <span class="cmdk-item-title">${esc(it.title)}</span>
-            <span class="cmdk-item-sub">${esc(it.sub)}</span>
+            <span class="cmdk-item-title">${highlightCmdMatch(it.title, q)}</span>
+            <span class="cmdk-item-sub">${highlightCmdMatch(it.sub, q)}</span>
           </div>
         </div>
         <span class="cmdk-item-right">${esc(it.kbd)}</span>
@@ -1045,9 +1273,11 @@ function openCommandPalette() {
   const modal = $('#cmdPaletteModal');
   if (!modal) return;
   cmdPaletteOpen = true;
+  cmdPageStack = ['root'];
   cmdSelectedIndex = 0;
   modal.hidden = false;
-  const inp = $('#cmdPaletteInput');
+  uiSound.trigger('pop');
+  const inp = $('#cmdkInput') || $('#cmdPaletteInput');
   if (inp) {
     inp.value = '';
     setTimeout(() => inp.focus(), 20);
@@ -1064,18 +1294,34 @@ function closeCommandPalette() {
 function executeCommandItem(idx) {
   const item = cmdFilteredItems[idx];
   if (!item) return;
-  closeCommandPalette();
+  if (!item.keepOpen) {
+    uiSound.trigger('click');
+    closeCommandPalette();
+  }
   item.run();
 }
 
 $('#openCmdPaletteBtn')?.addEventListener('click', openCommandPalette);
 $('#closeCmdPaletteBtn')?.addEventListener('click', closeCommandPalette);
 $('#cmdPaletteModal')?.addEventListener('click', e => {
-  if (e.target.id === 'cmdPaletteModal') closeCommandPalette();
+  if (e.target.id === 'cmdPaletteModal' || e.target.dataset.closeCmdk) {
+    closeCommandPalette();
+    return;
+  }
+  const crumbBtn = e.target.closest('[data-cmd-crumb-idx]');
+  if (crumbBtn) {
+    const cIdx = Number(crumbBtn.dataset.cmdCrumbIdx);
+    cmdPageStack = cmdPageStack.slice(0, cIdx + 1);
+    cmdSelectedIndex = 0;
+    bounceCmdkDialog();
+    uiSound.trigger('click');
+    renderCommandPalette();
+    return;
+  }
   const itemEl = e.target.closest('[data-cmd-idx]');
   if (itemEl) executeCommandItem(Number(itemEl.dataset.cmdIdx));
 });
-$('#cmdPaletteInput')?.addEventListener('input', () => {
+($('#cmdkInput') || $('#cmdPaletteInput'))?.addEventListener('input', () => {
   cmdSelectedIndex = 0;
   renderCommandPalette();
 });
@@ -1094,7 +1340,13 @@ async function api(path, data) {
 }
 
 function empty(title, description, icon = 'CORTEX') {
-  return `<div class="empty"><span class="symbol" aria-hidden="true">${esc(icon)}</span><h2>${title}</h2><p>${description}</p></div>`;
+  const blueprintSvg = `<svg class="empty-blueprint-svg" viewBox="0 0 120 76" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="8" y="8" width="104" height="60" rx="8" stroke-dasharray="4 4" stroke-opacity="0.45"/>
+    <rect x="22" y="18" width="76" height="40" rx="5" fill="currentColor" fill-opacity="0.06"/>
+    <circle cx="60" cy="38" r="10"/>
+    <path d="M60 23v5M60 48v5M45 38h5M70 38h5"/>
+  </svg>`;
+  return `<div class="empty">${blueprintSvg}<span class="symbol" aria-hidden="true">${esc(icon)}</span><h2>${title}</h2><p>${description}</p></div>`;
 }
 
 function updateCrumb(name) {
@@ -1117,6 +1369,7 @@ function tab(name) {
   if (!document.getElementById(name)?.classList.contains('view')) return;
   window.scrollTo({top:0,behavior:'instant'});
   if (matrixOpen) closeMatrixWallModal();
+  if (currentTab !== name) uiSound.trigger('click');
   currentTab = name;
   document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== name);
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -1125,6 +1378,17 @@ function tab(name) {
   if (name === 'overview') renderNvrWall();
   if (name === 'rules') updateROI();
   if (name === 'admin') refreshAdminPanel();
+}
+
+function showChordIndicator(text) {
+  const pill = $('#chordIndicatorPill');
+  if (!pill) return;
+  if (!text) {
+    pill.hidden = true;
+    return;
+  }
+  pill.textContent = text;
+  pill.hidden = false;
 }
 
 document.addEventListener('keydown', e => {
@@ -1141,15 +1405,33 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (cmdPaletteOpen) {
+    const inp = $('#cmdkInput') || $('#cmdPaletteInput');
+    if (e.key === 'Backspace' && (!inp || !inp.value) && cmdPageStack.length > 1) {
+      e.preventDefault();
+      cmdPageStack.pop();
+      cmdSelectedIndex = 0;
+      bounceCmdkDialog();
+      uiSound.trigger('click');
+      renderCommandPalette();
+      return;
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
-      closeCommandPalette();
+      if (cmdPageStack.length > 1) {
+        cmdPageStack.pop();
+        cmdSelectedIndex = 0;
+        bounceCmdkDialog();
+        renderCommandPalette();
+      } else {
+        closeCommandPalette();
+      }
       return;
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (cmdFilteredItems.length) {
         cmdSelectedIndex = (cmdSelectedIndex + 1) % cmdFilteredItems.length;
+        uiSound.trigger('click');
         renderCommandPalette();
       }
       return;
@@ -1158,6 +1440,7 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       if (cmdFilteredItems.length) {
         cmdSelectedIndex = (cmdSelectedIndex - 1 + cmdFilteredItems.length) % cmdFilteredItems.length;
+        uiSound.trigger('click');
         renderCommandPalette();
       }
       return;
@@ -1186,7 +1469,31 @@ document.addEventListener('keydown', e => {
     closeMatrixWallModal();
     return;
   }
-  if (e.key === '/' && currentTab === 'events' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+  const inEditable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
+  if (!inEditable && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const keyUpper = e.key.toUpperCase();
+    if (activeChordPrefix === 'G') {
+      clearTimeout(activeChordTimer);
+      activeChordPrefix = null;
+      showChordIndicator('');
+      const chordMap = { O: 'overview', C: 'cameras', R: 'rules', E: 'events', P: 'plans', S: 'settings' };
+      if (chordMap[keyUpper]) {
+        e.preventDefault();
+        tab(chordMap[keyUpper]);
+        return;
+      }
+    } else if (keyUpper === 'G') {
+      activeChordPrefix = 'G';
+      showChordIndicator(t('Kısayol: G → [O] Genel · [C] Kamera · [R] Kural · [E] Olay · [P] Paket · [S] Ayar', 'Chord: G → [O] Overview · [C] Cameras · [R] Rules · [E] Events · [P] Plans · [S] Settings'));
+      clearTimeout(activeChordTimer);
+      activeChordTimer = setTimeout(() => {
+        activeChordPrefix = null;
+        showChordIndicator('');
+      }, 1100);
+      return;
+    }
+  }
+  if (e.key === '/' && currentTab === 'events' && !inEditable) {
     e.preventDefault();
     $('#copilotQuery')?.focus();
   }
@@ -1877,7 +2184,88 @@ function renderSystemTelemetryAndStats() {
     `;
     setHtmlIfChanged(statsEl, statsHtml, JSON.stringify([currentLang, camsTotal, camsOnline, maxCams, rulesEnabled, maxRules, pendingEvents, totalEvents, hourly]));
   }
+  renderLivePipelineSchematic();
 }
+
+function renderLivePipelineSchematic() {
+  if (!state) return;
+  const lic = state.license || {};
+  const plan = (lic.plan || 'PRO').toUpperCase();
+  const camsTotal = (state.cameras || []).length;
+  const camsOnline = (state.cameras || []).filter(c => c.status === 'Bağlı').length;
+  const maxCams = lic.maxCameras || (plan === 'ULTRA' ? 32 : plan === 'PLUS' ? 12 : 4);
+  const rulesEnabled = (state.rules || []).filter(r => r.enabled).length;
+  const totalRules = (state.rules || []).length;
+  const modelName = state.model || 'gemma3:4b';
+  const modelConnected = state.modelHealth?.phase === 'connected';
+  const avgLatMs = Number(state.analytics?.avgLatencyMs || 0);
+  const totalEvents = (state.events || []).length;
+  const phonesCount = normalizeTelegramPhones(state.telegram).length;
+
+  const camsMetric = $('#pipeNodeCamsMetric');
+  if (camsMetric) camsMetric.textContent = `${camsOnline} / ${maxCams} ${t('Kanal Aktif', 'Active Ch')}`;
+  const camsSub = $('#pipeNodeCamsSub');
+  if (camsSub) camsSub.textContent = `${camsTotal} ${t('Kayıtlı Kamera · TCP', 'Cameras · TCP')}`;
+
+  const rulesMetric = $('#pipeNodeRulesMetric');
+  if (rulesMetric) rulesMetric.textContent = `${rulesEnabled} ${t('Etkin Kural', 'Active Rules')}`;
+  const rulesSub = $('#pipeNodeRulesSub');
+  if (rulesSub) rulesSub.textContent = `${totalRules} ${t('Tanımlı · 73 Şablon', 'Configured · 73 Tpl')}`;
+
+  const vlmMetric = $('#pipeNodeVlmMetric');
+  if (vlmMetric) {
+    vlmMetric.textContent = `${modelName} · ${modelConnected ? t('Bağlı', 'Online') : t('Hazır', 'Standby')}`;
+  }
+  const vlmSub = $('#pipeNodeVlmSub');
+  if (vlmSub) {
+    vlmSub.textContent = avgLatMs
+      ? `${t('Ort. Yanıt', 'Avg Latency')}: ${(avgLatMs / 1000).toFixed(1)}s`
+      : t('Çoklu Kare VLM Analizi', 'Multi-Frame VLM Reasoning');
+  }
+
+  const vaultMetric = $('#pipeNodeVaultMetric');
+  if (vaultMetric) vaultMetric.textContent = `${totalEvents} ${t('Adli Kanıt', 'Evidence')}`;
+  const vaultSub = $('#pipeNodeVaultSub');
+  if (vaultSub) {
+    vaultSub.textContent = phonesCount > 0
+      ? `@intelligentcortexbot (${phonesCount} TEL)`
+      : '@intelligentcortexbot';
+  }
+
+  const cascadeBadge = $('#pipeCascadeBadge');
+  if (cascadeBadge) {
+    const cascadeOn = state.smartCascade !== false;
+    cascadeBadge.className = `tag mono ${cascadeOn ? 'ok' : 'warn'}`;
+    cascadeBadge.textContent = cascadeOn
+      ? t('3-KATMANLI HİBRİT AKTİF', '3-TIER CASCADE ACTIVE')
+      : t('DOĞRUDAN VLM MODU', 'DIRECT VLM MODE');
+  }
+  const tpBadge = $('#pipeThroughputBadge');
+  if (tpBadge) {
+    tpBadge.textContent = `CORTEX ${plan} · ${state.diskFreeGB || 0} GB ${t('BOŞ', 'FREE')}`;
+  }
+}
+
+$('#livePipelineSvg')?.addEventListener('click', e => {
+  const node = e.target.closest('.pipeline-node[data-pipe-target]');
+  if (!node) return;
+  const target = node.dataset.pipeTarget;
+  if (target) {
+    uiSound.trigger('pop');
+    tab(target);
+  }
+});
+$('#livePipelineSvg')?.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const node = e.target.closest('.pipeline-node[data-pipe-target]');
+  if (!node) return;
+  e.preventDefault();
+  const target = node.dataset.pipeTarget;
+  if (target) {
+    uiSound.trigger('pop');
+    tab(target);
+  }
+});
 
 function renderAnalytics() {
   const a = state?.analytics;
@@ -1918,18 +2306,35 @@ function renderAnalytics() {
   if (chart && hourly.length) {
     const maxVal = Math.max(1, ...hourly);
     const nowHour = new Date().getHours();
-    const chartHtml = hourly.map((val, idx) => {
+    const areaPts = hourly.map((val, idx) => {
+      const x = Math.round((idx / Math.max(1, hourly.length - 1)) * 240);
+      const y = Math.round(96 - (val / maxVal) * 84);
+      return `${x},${y}`;
+    });
+    const areaPoly = `0,100 ${areaPts.join(' ')} 240,100`;
+    const areaSvgHtml = `<svg class="hourly-area-backdrop-svg" viewBox="0 0 240 100" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="cortexHourlyAreaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--signal)" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="var(--signal)" stop-opacity="0.0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${areaPoly}" fill="url(#cortexHourlyAreaGrad)"/>
+      <polyline points="${areaPts.join(' ')}" fill="none" stroke="var(--signal)" stroke-width="1.6" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+    const barsHtml = hourly.map((val, idx) => {
       const pct = Math.max(6, Math.round((val / maxVal) * 100));
       const hoursAgo = 23 - idx;
       const clockHr = String((nowHour - hoursAgo + 24) % 24).padStart(2, '0') + ':00';
       const hourLabel = `${hoursAgo}s`;
-      return `<div class="bar-col chart-col" title="${clockHr} (${hourLabel}): ${val}">
-        <span class="bar-tooltip">${clockHr} · ${val} ${t('olay', 'events')}</span>
+      const sharePct = total24h > 0 ? Math.round((val / total24h) * 100) : 0;
+      return `<div class="bar-col chart-col hour-col" data-hour-clock="${clockHr}" data-hour-val="${val}" data-hour-share="${sharePct}" title="${clockHr} (${hourLabel}): ${val}">
+        <span class="bar-tooltip">${clockHr} · ${val} ${t('olay', 'events')} (${sharePct}%)</span>
         <div class="bar-fill ${val > 0 ? 'has-val' : ''}" style="height:${pct}%"></div>
         <span class="bar-lbl">${idx % 4 === 0 ? hourLabel : ''}</span>
       </div>`;
     }).join('');
-    setHtmlIfChanged(chart, chartHtml, JSON.stringify([currentLang, hourly]));
+    setHtmlIfChanged(chart, areaSvgHtml + barsHtml, JSON.stringify([currentLang, hourly]));
   }
 
   const catColors = ['#17795a', '#2563eb', '#d97706', '#9333ea', '#e11d48', '#0891b2'];
@@ -4697,9 +5102,47 @@ $('#logoutCortexBtn')?.addEventListener('click', async () => {
   message('Oturum kapatıldı. Cortex güvenlik kilidi devrede.');
 });
 
+/* --- Cortex v2.3 Shared Bento Spotlight & 24h Chart Hover Readout --- */
+function initBentoSpotlight() {
+  let rafId = 0;
+  let lastEvent = null;
+  document.addEventListener('pointermove', e => {
+    lastEvent = e;
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      if (!lastEvent) return;
+      const card = lastEvent.target?.closest?.('[data-bento-card], .stat, .sector-card, .tier-card');
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--mouse-x', `${Math.round(lastEvent.clientX - rect.left)}px`);
+      card.style.setProperty('--mouse-y', `${Math.round(lastEvent.clientY - rect.top)}px`);
+    });
+  }, { passive: true });
+
+  const hourlyBox = $('#hourlyChart');
+  const hoverPill = $('#analyticsHoverReadout');
+  if (hourlyBox && hoverPill) {
+    hourlyBox.addEventListener('pointerover', e => {
+      const col = e.target.closest('.hour-col');
+      if (!col) return;
+      const clk = col.dataset.hourClock || '';
+      const val = col.dataset.hourVal || '0';
+      const sh = col.dataset.hourShare || '0';
+      hoverPill.hidden = false;
+      hoverPill.textContent = `${clk} · ${val} ${t('olay', 'events')} (%${sh})`;
+    });
+    hourlyBox.addEventListener('pointerleave', () => {
+      hoverPill.hidden = true;
+    });
+  }
+}
+
 /* Initialize Theme, Language, SignalField, Login Gate, Interactive Studio & Polling */
 initTheme();
 initLanguage();
+uiSound.syncBtn();
+initBentoSpotlight();
 initSignalField();
 syncLoginGate();
 updateNvrClocks();
