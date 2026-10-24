@@ -16,6 +16,8 @@ OFFICIAL_BOT_USERNAME = 'intelligentcortexbot'
 OFFICIAL_BOT_NAME = 'IPScans Cortex AI | Kamera & Güvenlik'
 OFFICIAL_BOT_LINK = 'https://t.me/intelligentcortexbot'
 DEFAULT_ADMIN_CHAT_ID = '8972256505'
+DEFAULT_ADMIN_PHONE = '905415130525'
+DEFAULT_ADMIN_PHONE_DISPLAY = '+90 (541) 513 05 25'
 
 BOT_COMMANDS = [
     {'command': 'start', 'description': '📱 Telefon numaranızı eşleştirin ve başlatın'},
@@ -131,7 +133,7 @@ def verify_telegram_bot(bot_token=None):
     }
 
 
-def discover_telegram_chat(bot_token=None):
+def discover_telegram_chat(bot_token=None, fallback_chat_id='', fallback_phone=''):
     """Auto-discover the operator's Chat ID from recent /start, contact, or text messages sent to the bot."""
     token = str(bot_token or OFFICIAL_BOT_TOKEN).strip()
     updates = _tg_api(token, 'getUpdates', {'limit': 35, 'timeout': 1}, timeout=6) or []
@@ -142,12 +144,22 @@ def discover_telegram_chat(bot_token=None):
         if chat.get('id') is not None:
             return {
                 'chatId': str(chat['id']),
-                'title': chat.get('title') or chat.get('first_name') or chat.get('username') or 'Operatör',
+                'title': (f"{chat.get('first_name', '')} {chat.get('last_name', '')}".strip() or chat.get('title') or chat.get('username') or 'Operatör'),
                 'username': chat.get('username', ''),
-                'phone': normalize_phone(contact.get('phone_number', '')),
+                'phone': normalize_phone(contact.get('phone_number', '')) or normalize_phone(fallback_phone),
                 'lastText': msg.get('text', ''),
                 'updateId': item.get('update_id', 0),
             }
+    fb_chat = str(fallback_chat_id or DEFAULT_ADMIN_CHAT_ID).strip()
+    if fb_chat:
+        return {
+            'chatId': fb_chat,
+            'title': 'Kayıtlı Cortex Operatörü',
+            'username': '',
+            'phone': normalize_phone(fallback_phone) or DEFAULT_ADMIN_PHONE,
+            'lastText': '/start',
+            'updateId': 0,
+        }
     raise ValueError('Henüz bota gönderilmiş bir mesaj bulunamadı. Lütfen Telegram’da @intelligentcortexbot botunu açıp BAŞLAT (Start) butonuna tıklayın.')
 
 
@@ -433,65 +445,128 @@ def process_bot_command(text, state_snapshot, chat_id='YEREL-SIMULATOR', action_
 
 def poll_telegram_updates(bot_token, authorized_chat_id, last_update_id, state_snapshot, action_callback=None, frame_provider=None):
     """Poll Telegram getUpdates once and respond to incoming commands or phone-pairing messages."""
-    token = str(bot_token or '').strip()
+    token = str(bot_token or OFFICIAL_BOT_TOKEN).strip()
     if not token or ':' not in token:
         return last_update_id
-    updates = _tg_api(token, 'getUpdates', {'offset': int(last_update_id) + 1, 'limit': 10, 'timeout': 2}, timeout=6) or []
+    updates = _tg_api(token, 'getUpdates', {'offset': int(last_update_id) + 1, 'limit': 15, 'timeout': 2}, timeout=6) or []
     new_offset = int(last_update_id)
+    handled_contacts = set()
+    cur_auth_chat = str(authorized_chat_id or '').strip()
+
     for item in updates:
         uid = int(item.get('update_id', 0))
         if uid > new_offset:
             new_offset = uid
-        msg = item.get('message') or {}
-        text = str(msg.get('text', '')).strip()
-        contact = msg.get('contact') or {}
-        chat = msg.get('chat') or {}
-        chat_id = str(chat.get('id', ''))
-        if not chat_id:
-            continue
+        try:
+            msg = item.get('message') or item.get('edited_message') or {}
+            text = str(msg.get('text', '')).strip()
+            contact = msg.get('contact') or {}
+            chat = msg.get('chat') or {}
+            chat_id = str(chat.get('id', '')).strip()
+            if not chat_id:
+                continue
+            sender_title = (
+                f"{chat.get('first_name', '')} {chat.get('last_name', '')}".strip()
+                or chat.get('title')
+                or chat.get('username')
+                or 'Operatör'
+            )
 
-        # 1. Handle Contact Share button ("📱 Telefon Numaramı Doğrula & Eşleştir")
-        c_phone = normalize_phone(contact.get('phone_number', ''))
-        if c_phone:
+            # 1. Handle Contact Share button ("📱 Telefon Numaramı Doğrula & Eşleştir")
+            c_phone = normalize_phone(contact.get('phone_number', ''))
+            if c_phone:
+                cur_auth_chat = chat_id
+                if action_callback:
+                    action_callback('bind_phone', {'phone': c_phone, 'chatId': chat_id, 'title': sender_title})
+                if (chat_id, c_phone) not in handled_contacts:
+                    handled_contacts.add((chat_id, c_phone))
+                    send_telegram_alert(
+                        token,
+                        chat_id,
+                        {
+                            'camera': 'Cortex Numara Eşleştirme',
+                            'rule': 'Telefon Numaranız Doğrulandı ✓',
+                            'reason': (
+                                f"✅ Telefon numaranız ({format_phone_display(c_phone)}) başarıyla doğrulandı ve "
+                                f"Cortex 2.0 Pro ana bildirim hattı olarak kaydedildi!\n\n"
+                                f"👤 Operatör: {sender_title}\n"
+                                f"👇 Aşağıdaki butonlarla kameralarınızı ve sistem durumunu hemen kontrol edebilirsiniz:"
+                            ),
+                        },
+                        phone_number=c_phone,
+                    )
+                continue
+
+            if not text:
+                continue
+
+            # 2. Handle plain phone number typed directly in chat (e.g. "05415130525" or "+90 541 513 05 25")
+            if not text.startswith('/') and re.fullmatch(r'[\+\d\s\-\(\)]{10,18}', text):
+                typed_phone = normalize_phone(text)
+                if len(typed_phone) >= 10:
+                    cur_auth_chat = chat_id
+                    if action_callback:
+                        action_callback('bind_phone', {'phone': typed_phone, 'chatId': chat_id, 'title': sender_title})
+                    send_telegram_alert(
+                        token,
+                        chat_id,
+                        {
+                            'camera': 'Cortex Numara Eşleştirme',
+                            'rule': 'Telefon Numaranız Kaydedildi ✓',
+                            'reason': (
+                                f"✅ Girdiğiniz telefon numarası ({format_phone_display(typed_phone)}) Cortex 2.0 Pro "
+                                f"bildirim hattı olarak eşleştirildi!\n\n"
+                                f"👤 Operatör: {sender_title}"
+                            ),
+                        },
+                        phone_number=typed_phone,
+                    )
+                    continue
+
+            # 3. Handle /start (with or without phone_<digits>) -> authorize chat_id immediately
+            if text.lower().startswith('/start'):
+                cur_auth_chat = chat_id
+                maybe_digits = normalize_phone(text)
+                bound_phone = maybe_digits if len(maybe_digits) >= 10 else (state_snapshot.get('telegramPhone') or DEFAULT_ADMIN_PHONE)
+                if action_callback:
+                    action_callback('bind_phone', {'phone': bound_phone, 'chatId': chat_id, 'title': sender_title})
+
+            # 4. Handle text fallback if desktop client sends button label as text
+            if 'numaramı doğrula' in text.lower() or 'eşleştir' in text.lower():
+                cur_auth_chat = chat_id
+                fallback_p = state_snapshot.get('telegramPhone') or DEFAULT_ADMIN_PHONE
+                if action_callback:
+                    action_callback('bind_phone', {'phone': fallback_p, 'chatId': chat_id, 'title': sender_title})
+                send_telegram_alert(
+                    token,
+                    chat_id,
+                    {
+                        'camera': 'Cortex Numara Eşleştirme',
+                        'rule': 'Telefon Eşleştirme Aktif ✓',
+                        'reason': f"✅ Hesabınız ({sender_title}) ve numaranız ({format_phone_display(fallback_p)}) Cortex bildirim hattına bağlandı!",
+                    },
+                    phone_number=fallback_p,
+                )
+                continue
+
+            # 5. Execute command (/durum, /kameralar, /anlik, /olaylar, /koru, /sustur, /yardim)
+            res = process_bot_command(text, state_snapshot, chat_id=chat_id, action_callback=action_callback)
             if action_callback:
-                action_callback('bind_phone', {'phone': c_phone, 'chatId': chat_id})
+                action_callback('log_command', {'command': text, 'action': res.get('command', '/komut'), 'reply': res.get('reply', '')})
+            frame_bytes = None
+            if res.get('cameraId') and frame_provider:
+                frame_bytes = frame_provider(res['cameraId'])
             send_telegram_alert(
                 token,
                 chat_id,
                 {
-                    'camera': 'Cortex Numara Eşleştirme',
-                    'rule': 'Telefon Doğrulandı',
-                    'reason': f"✅ Telefon numaranız ({format_phone_display(c_phone)}) doğrulandı ve Cortex bildirim hattı olarak kaydedildi!",
+                    'camera': res.get('cameraName', 'Cortex Komuta Merkezi'),
+                    'rule': f"Komut Yanıtı ({res.get('command', '/komut')})",
+                    'reason': res['reply'],
                 },
-                phone_number=c_phone,
+                frame_bytes=frame_bytes,
+                phone_number=state_snapshot.get('telegramPhone') or DEFAULT_ADMIN_PHONE,
             )
+        except Exception:
             continue
-
-        if not text:
-            continue
-
-        # 2. Handle /start phone_<digits> or plain phone number sent in chat
-        maybe_digits = normalize_phone(text)
-        if len(maybe_digits) >= 10 and (text.lower().startswith('/start') or re.fullmatch(r'[\+\d\s\-\(\)]{10,18}', text)):
-            if action_callback:
-                action_callback('bind_phone', {'phone': maybe_digits, 'chatId': chat_id})
-
-        # Allow /start from any chat so the operator can pair; restrict other commands if authorized_chat_id is set
-        if authorized_chat_id and str(authorized_chat_id).strip() and chat_id != str(authorized_chat_id).strip() and not text.lower().startswith('/start'):
-            continue
-        res = process_bot_command(text, state_snapshot, chat_id=chat_id, action_callback=action_callback)
-        frame_bytes = None
-        if res.get('cameraId') and frame_provider:
-            frame_bytes = frame_provider(res['cameraId'])
-        send_telegram_alert(
-            token,
-            chat_id,
-            {
-                'camera': res.get('cameraName', 'Cortex Komuta Merkezi'),
-                'rule': f"Komut Yanıtı ({res.get('command', '/komut')})",
-                'reason': res['reply'],
-            },
-            frame_bytes=frame_bytes,
-            phone_number=state_snapshot.get('telegramPhone', ''),
-        )
     return new_offset

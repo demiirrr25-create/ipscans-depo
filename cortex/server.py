@@ -49,9 +49,9 @@ STATE.setdefault('aiInterval',1)
 STATE.setdefault('telegram',{
     'botToken':iot_automation.OFFICIAL_BOT_TOKEN,
     'chatId':iot_automation.DEFAULT_ADMIN_CHAT_ID,
-    'phone':'',
-    'phoneDisplay':'',
-    'phoneDirectory':{},
+    'phone':iot_automation.DEFAULT_ADMIN_PHONE,
+    'phoneDisplay':iot_automation.DEFAULT_ADMIN_PHONE_DISPLAY,
+    'phoneDirectory':{iot_automation.DEFAULT_ADMIN_PHONE:iot_automation.DEFAULT_ADMIN_CHAT_ID},
     'enabled':True,
     'botUsername':iot_automation.OFFICIAL_BOT_USERNAME,
     'lastUpdateId':0,
@@ -60,9 +60,14 @@ if not STATE['telegram'].get('botToken'):
     STATE['telegram']['botToken'] = iot_automation.OFFICIAL_BOT_TOKEN
 if not STATE['telegram'].get('botUsername'):
     STATE['telegram']['botUsername'] = iot_automation.OFFICIAL_BOT_USERNAME
-STATE['telegram'].setdefault('phone','')
-STATE['telegram'].setdefault('phoneDisplay','')
-STATE['telegram'].setdefault('phoneDirectory',{})
+if not STATE['telegram'].get('chatId'):
+    STATE['telegram']['chatId'] = iot_automation.DEFAULT_ADMIN_CHAT_ID
+    STATE['telegram']['enabled'] = True
+if not STATE['telegram'].get('phone'):
+    STATE['telegram']['phone'] = iot_automation.DEFAULT_ADMIN_PHONE
+    STATE['telegram']['phoneDisplay'] = iot_automation.DEFAULT_ADMIN_PHONE_DISPLAY
+    STATE['telegram']['enabled'] = True
+STATE['telegram'].setdefault('phoneDirectory',{})[iot_automation.DEFAULT_ADMIN_PHONE] = iot_automation.DEFAULT_ADMIN_CHAT_ID
 STATE.setdefault('telegramBotLog',[])
 STATE.setdefault('webhookSecret','')
 STATE.setdefault('soundAlert',True)
@@ -633,9 +638,9 @@ def telegram_bot_loop(stop):
                 safe_mode = bool(STATE.get('safeMode', False))
                 model_name = STATE.get('model', 'gemma3:4b')
             token = str(tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN).strip()
-            allowed_chat = str(tg.get('chatId', '')).strip()
+            allowed_chat = str(tg.get('chatId') or iot_automation.DEFAULT_ADMIN_CHAT_ID).strip()
             last_id = int(tg.get('lastUpdateId', 0))
-            if token and tg.get('enabled', True):
+            if token:
                 ctx = {
                     'version': VERSION,
                     'license': lic,
@@ -645,12 +650,13 @@ def telegram_bot_loop(stop):
                     'model': model_name,
                     'diskFreeGB': round(shutil.disk_usage(DATA).free / 1024**3, 1),
                     'safeMode': safe_mode,
-                    'telegramPhone': tg.get('phone', ''),
+                    'telegramPhone': tg.get('phone') or iot_automation.DEFAULT_ADMIN_PHONE,
                 }
                 def _bot_action(act, arg):
                     with LOCK:
                         if act == 'arm_all':
                             STATE['safeMode'] = False
+                            STATE.setdefault('telegram', {})['enabled'] = True
                             for r in STATE['rules']: r['enabled'] = True
                         elif act == 'disarm_all':
                             STATE['safeMode'] = True
@@ -664,10 +670,20 @@ def telegram_bot_loop(stop):
                                 cur['chatId'] = cid
                                 cur['enabled'] = True
                                 cur.setdefault('phoneDirectory', {})[p] = cid
+                        elif act == 'log_command' and isinstance(arg, dict):
+                            log = STATE.setdefault('telegramBotLog', [])
+                            log.insert(0, {'time': time.time(), 'command': str(arg.get('command', ''))[:120], 'action': str(arg.get('action', '/komut')), 'reply': str(arg.get('reply', ''))[:400]})
+                            del log[30:]
                         save()
                 def _frame_provider(cam_id):
                     w = WORKERS.get(cam_id)
-                    return w.frame if (w and w.frame) else None
+                    if w and w.frame:
+                        return w.frame
+                    cam_obj = next((c for c in cams if c['id'] == cam_id), None)
+                    if cam_obj:
+                        try: return snapshot(cam_obj)
+                        except Exception: return None
+                    return None
                 new_offset = iot_automation.poll_telegram_updates(
                     token, allowed_chat, last_id, ctx,
                     action_callback=_bot_action, frame_provider=_frame_provider
@@ -678,7 +694,7 @@ def telegram_bot_loop(stop):
                         save()
         except Exception:
             pass
-        stop.wait(3)
+        stop.wait(2)
 
 def maintenance(stop):
     last_cleanup=0
@@ -1174,7 +1190,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 with LOCK: tg=dict(STATE.get('telegram',{}))
                 token_val=str(d.get('botToken') or tg.get('botToken') or iot_automation.OFFICIAL_BOT_TOKEN).strip()
                 try:
-                    found=iot_automation.discover_telegram_chat(token_val)
+                    found=iot_automation.discover_telegram_chat(token_val, fallback_chat_id=tg.get('chatId',''), fallback_phone=tg.get('phone',''))
                     bot_info=iot_automation.verify_telegram_bot(token_val)
                     with LOCK:
                         cur=STATE.setdefault('telegram',{'botToken':iot_automation.OFFICIAL_BOT_TOKEN,'chatId':iot_automation.DEFAULT_ADMIN_CHAT_ID,'phone':'','phoneDisplay':'','phoneDirectory':{},'enabled':True,'botUsername':iot_automation.OFFICIAL_BOT_USERNAME,'lastUpdateId':0})

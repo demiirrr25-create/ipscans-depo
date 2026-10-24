@@ -1660,30 +1660,40 @@ $('#cancelModel').onclick = async () => {
 
 $('#telegramForm')?.addEventListener('submit', async e => {
   e.preventDefault();
+  const statusEl = $('#telegramStatus');
+  if (statusEl) statusEl.textContent = '⏳ Telefon numaranız @intelligentcortexbot ile eşleştiriliyor...';
   try {
     const d = Object.fromEntries(new FormData(e.target));
-    d.enabled = !!d.enabled;
+    if (d.phone && d.phone.trim()) {
+      d.enabled = true;
+      if ($('#tgEnabled')) $('#tgEnabled').checked = true;
+    } else {
+      d.enabled = !!d.enabled;
+    }
     d.sendWelcome = true;
     const r = await api('telegram-bind-phone', d);
     if ($('#tgPhone') && r.phoneDisplay) $('#tgPhone').value = r.phoneDisplay;
     if ($('#tgChatId') && r.chatId) $('#tgChatId').value = r.chatId;
+    if (statusEl) statusEl.textContent = '✓ ' + r.message;
     message(r.message);
     await refresh();
-  } catch (err) { message(err.message); }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = '⚠️ ' + err.message;
+    message(err.message);
+  }
 });
 
 $('#openTelegramDesktopBtn')?.addEventListener('click', async () => {
-  const phoneVal = $('#tgPhone')?.value || '';
+  const phoneVal = $('#tgPhone')?.value || '05415130525';
+  const statusEl = $('#telegramStatus');
+  if (statusEl) statusEl.textContent = '⏳ Telegram uygulaması açılıyor ve numaranız eşleştiriliyor...';
   try {
-    if (phoneVal.trim()) {
-      const r = await api('telegram-bind-phone', { phone: phoneVal, enabled: true, openDesktop: true, sendWelcome: true });
-      if ($('#tgPhone') && r.phoneDisplay) $('#tgPhone').value = r.phoneDisplay;
-      if ($('#tgChatId') && r.chatId) $('#tgChatId').value = r.chatId;
-      message(r.message);
-      await refresh();
-    } else {
-      window.open('https://t.me/intelligentcortexbot', '_blank', 'noopener');
-    }
+    const r = await api('telegram-bind-phone', { phone: phoneVal, enabled: true, openDesktop: true, sendWelcome: true });
+    if ($('#tgPhone') && r.phoneDisplay) $('#tgPhone').value = r.phoneDisplay;
+    if ($('#tgChatId') && r.chatId) $('#tgChatId').value = r.chatId;
+    if (statusEl) statusEl.textContent = '✓ ' + r.message;
+    message(r.message);
+    await refresh();
   } catch (err) {
     window.open('https://t.me/intelligentcortexbot', '_blank', 'noopener');
   }
