@@ -11,7 +11,7 @@ import traceback
 import urllib.request
 import webbrowser
 
-VERSION = '2.1.1'
+VERSION = '2.2.0'
 
 def data_directory():
     return Path(os.environ.get('CORTEX_DATA', str(Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'IPScansCortex')))

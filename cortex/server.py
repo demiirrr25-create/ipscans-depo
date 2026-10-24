@@ -15,7 +15,7 @@ import forensics
 from models import Installer, Health, VISION_TEMPLATES, RECOMMENDED_MODELS
 from stream import Stream
 
-VERSION = "2.1.1"
+VERSION = "2.2.0"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()

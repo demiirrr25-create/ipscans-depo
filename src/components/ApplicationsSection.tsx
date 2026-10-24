@@ -9,6 +9,7 @@ import type { PublicDictionary } from "@/i18n/dictionaries";
 import { applications, platformCopy } from "@/content/applications";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
 import { lprRelease } from "@/content/lpr-release";
+import { cortexRelease } from "@/components/catalog/copy";
 
 export function ApplicationsSection({
   locale,
@@ -36,15 +37,15 @@ export function ApplicationsSection({
   const results = [
     {
       id: "cortex",
-      name: "IPScans Cortex 2.0 Pro",
-      description: locale === "tr" ? "6 sektörel tek tıkla kurulum paketi, 8-tutamaçlı interaktif bölge (ROI) & geçiş hattı stüdyosu, canlı ısı haritası, akıllı takip (Loitering, Kapasite, Tailgating), Copilot arama ve SHA-256 adli kanıt paketleyici." : "6 one-click sector deployment packs, 8-handle interactive ROI & tripwire studio, live thermal heatmap, smart tracking (Loitering, Occupancy, Tailgating), Copilot search, and SHA-256 forensic bundler.",
+      name: "IPScans Cortex",
+      description: locale === "tr" ? "8 sektörel tek tıkla kurulum paketi, 8-tutamaçlı interaktif bölge (ROI) & geçiş hattı stüdyosu, canlı ısı haritası, akıllı takip (Loitering, Kapasite, Tailgating), Copilot arama ve SHA-256 adli kanıt paketleyici." : "8 one-click sector deployment packs, 8-handle interactive ROI & tripwire studio, live thermal heatmap, smart tracking (Loitering, Occupancy, Tailgating), Copilot search, and SHA-256 forensic bundler.",
       href: `/${locale}/cortex`,
       category: "desktop",
       icon: "/cortex-mark.svg",
       preview: "/cortex-preview.png",
-      version: "2.0.0 Pro",
-      platform: "Windows 10/11 · x64",
-      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0-rc.2/IPScans-Cortex-1.0.0-rc.2.exe",
+      version: cortexRelease.version,
+      platform: cortexRelease.platform,
+      download: cortexRelease.url,
     },
     {
       id: "lpr-pro",
