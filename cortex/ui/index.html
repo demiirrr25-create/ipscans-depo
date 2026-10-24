@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex 2.0 Pro · Kurumsal Kamera Zekâsı, Görsel AI &amp; Komuta Merkezi</title>
+  <title>IPScans Cortex 2.1 · Kurumsal Kamera Zekâsı, Görsel AI &amp; Komuta Merkezi</title>
   <link rel="icon" href="logo.svg">
   <script>
     (function() {
@@ -21,12 +21,14 @@
     })();
   </script>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="refinements.css">
 </head>
 <body>
+  <a class="skip-link" href="#overview">İçeriğe geç</a>
   <aside>
     <a class="brand" href="#">
       <img src="logo.svg" alt="" width="40" height="40">
-      <span>Cortex<small>by IPScans · 2.0 Pro</small></span>
+      <span>Cortex<small>by IPScans · 2.1</small></span>
     </a>
     <span class="eyebrow" data-i18n="aside.eyebrow">KONTROL MERKEZİ</span>
     <nav aria-label="Ana menü">
@@ -35,11 +37,12 @@
       <button type="button" data-tab="rules"><span class="nav-glyph">⌘</span> <span data-i18n="nav.rules">Olay kuralları</span></button>
       <button type="button" data-tab="events"><span class="nav-glyph">◷</span> <span data-i18n="nav.events">Olay arşivi</span></button>
       <button type="button" data-tab="settings"><span class="nav-glyph">⚙</span> <span data-i18n="nav.settings">Ayarlar &amp; Lisans</span></button>
+      <button type="button" data-tab="plans"><span class="nav-glyph">◇</span> <span>Paketler</span></button>
       <button type="button" data-tab="admin"><span class="nav-glyph">🛡️</span> <span data-i18n="nav.admin">Yönetim Paneli</span></button>
     </nav>
     <div class="asidefoot">
       <div class="aside-status"><span class="dot"></span> <span data-i18n="aside.workspace">Yerel çalışma alanı</span></div>
-      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Hibrit Görsel AI + Akıllı Takip + Telegram Bot</span><span id="version" data-version="2.0.0-pro" hidden>2.0.0-pro</span></small>
+      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Hibrit Görsel AI + Akıllı Takip + Telegram Bot</span><span id="version" data-version="2.1.0" hidden>2.1.0</span></small>
     </div>
   </aside>
 
@@ -71,7 +74,9 @@
 
     <div id="message" class="conn-banner" role="status" hidden></div>
 
-    <section id="overview" class="view">
+    <section id="plans" class="view" hidden><div id="planCenter"></div></section>
+
+    <section id="overview" class="view" tabindex="-1">
       <div class="hero">
         <div>
           <span class="eyebrow" data-i18n="overview.eyebrow">GÖREN KAMERALAR. ANLAYAN SİSTEM.</span>
@@ -88,6 +93,8 @@
           <span data-i18n="overview.orb">GÖR · ANLA · BİLDİR</span>
         </div>
       </div>
+
+      <section id="planSpotlight" aria-label="Paket avantajları" hidden></section>
 
       <div id="stats" class="stats">
         <div class="stat"><span data-i18n="stats.cameras">KAMERALAR</span><strong>00</strong></div>
@@ -608,7 +615,7 @@
               </div>
               <button type="button" data-tab="admin" class="sector-mini-btn">🛡️ Yönetim Paneli (Anahtar Üret) ↗</button>
             </div>
-            <div id="licenseDetails" class="hint" style="margin-top:10px"></div>
+            <div id="licenseDetails" class="hint" style="margin-top:10px"></div><div class="actions"><button type="button" data-tab="plans">Paketleri ve kullanımımı karşılaştır ↗</button></div>
 
             <div class="tier-comparison-grid" style="margin-top:14px">
               <div class="tier-box">
@@ -776,10 +783,11 @@
     </div>
 
     <footer>
-      <span>IPScans Cortex 2.0 Pro</span>
+      <span>IPScans Cortex 2.1</span>
       <span data-i18n="footer.tagline">Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.</span>
     </footer>
   </main>
+  <script src="plans.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

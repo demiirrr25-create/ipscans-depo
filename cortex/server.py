@@ -15,7 +15,7 @@ import forensics
 from models import Installer, Health, VISION_TEMPLATES, RECOMMENDED_MODELS
 from stream import Stream
 
-VERSION = "2.0.0-pro"
+VERSION = "2.1.0"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()
@@ -726,7 +726,8 @@ def public_state():
         if tier=='STARTER': tier='PRO'
         elif tier=='ENTERPRISE': tier='ULTRA'
         plan_spec=forensics.LICENSE_PLANS.get(tier,forensics.LICENSE_PLANS['ULTRA'])
-        lic_merged={**plan_spec,**lic,'plan':tier,'tier':tier}
+        lic_merged={**lic,**plan_spec,'plan':tier,'tier':tier}
+        lic_merged.pop('fullKey',None)
         analytics=forensics.compute_analytics(STATE['events'],STATE['cameras'],STATE['rules'])
         return {
             'devices':devices,
@@ -819,8 +820,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if len(parts)!=5 or not any(e['id']==parts[3] for e in STATE['events']) or parts[4] not in ('clip.mp4','before.mp4','00.jpg'): return self.send(404,{})
             file=DATA/'events'/parts[3]/parts[4]
             return self.send(200,file.read_bytes(),'video/mp4' if file.suffix=='.mp4' else 'image/jpeg') if file.exists() else self.send(404,{})
-        assets={'/':'index.html','/app.js':'app.js','/style.css':'style.css','/logo.svg':'logo.svg'}
-        if path in assets: return self.send(200,(ROOT/'ui'/assets[path]).read_bytes(), {'/':'text/html; charset=utf-8','/app.js':'text/javascript; charset=utf-8','/style.css':'text/css; charset=utf-8','/logo.svg':'image/svg+xml'}[path])
+        assets={'/':'index.html','/app.js':'app.js','/plans.js':'plans.js','/style.css':'style.css','/refinements.css':'refinements.css','/logo.svg':'logo.svg'}
+        if path in assets:
+            mime = 'text/javascript; charset=utf-8' if path.endswith('.js') else 'text/css; charset=utf-8' if path.endswith('.css') else 'image/svg+xml' if path.endswith('.svg') else 'text/html; charset=utf-8'
+            return self.send(200,(ROOT/'ui'/assets[path]).read_bytes(),mime)
         self.send(404,{})
     def do_POST(self):
         if not self.allowed() or not self.auth() or self.headers.get('Origin') not in (f'http://127.0.0.1:{PORT}',f'http://localhost:{PORT}'): return self.send(403,{'error':'Oturum veya kaynak geçersiz'})
@@ -1362,6 +1365,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             elif path=='/api/settings':
                 retention=int(d['retention']); model=str(d['model']).strip(); webhook=str(d.get('webhook','')).strip()
                 if not 1<=retention<=30 or not model: raise ValueError('Saklama 1–30 gün ve model adı gerekli')
+                lic=STATE.get('license',{})
+                plan=forensics.LICENSE_PLANS[forensics.normalize_plan(lic.get('plan'))]
+                if retention>plan['maxRetentionDays']:
+                    raise InputError(f"Paketiniz en fazla {plan['maxRetentionDays']} gün olay arşivi sunar.")
                 if webhook and urllib.parse.urlsplit(webhook).scheme!='https': raise ValueError('Webhook HTTPS olmalı')
                 interval=int(d.get('aiInterval',STATE.get('aiInterval',1)))
                 if interval not in (1,3,10): raise InputError('AI aralığı 1, 3 veya 10 saniye olmalı.')
