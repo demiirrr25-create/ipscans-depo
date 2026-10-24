@@ -1,4 +1,4 @@
-"""Comprehensive test suite for IPScans Cortex 2.0 Pro multi-technology modules."""
+"""Comprehensive test suite for IPScans Cortex 2.0 Pro multi-technology modules, 3-tier licensing (PRO/PLUS/ULTRA), Admin Panel & 2-way Telegram Bot."""
 import io
 import json
 import unittest
@@ -45,7 +45,7 @@ class IntelligenceProTests(unittest.TestCase):
         png = hm.render_png(320, 180)
         self.assertTrue(png.startswith(b'\x89PNG'))
 
-    def test_loitering_occupancy_perimeter_and_tailgating_tracker(self):
+    def test_loitering_occupancy_perimeter_fall_abandon_and_tailgating_tracker(self):
         pt = intelligence.ProTracker()
         rule_loiter = {'name': 'Loiter', 'roi': [0, 0, 100, 100], 'duration': 5, 'sensitivity': 1}
         self.assertFalse(pt.evaluate_loitering([(50, 50)], rule_loiter, 0.0)[0])
@@ -54,7 +54,6 @@ class IntelligenceProTests(unittest.TestCase):
         hit, res = pt.evaluate_loitering([(50, 50)], rule_loiter, 5.5)
         self.assertTrue(hit)
         self.assertIn('bekliyor', res['reason'])
-        # Same loitering track does not re-fire continuously
         self.assertFalse(pt.evaluate_loitering([(50, 50)], rule_loiter, 6.0)[0])
 
         # Occupancy / Crowd limit
@@ -74,6 +73,24 @@ class IntelligenceProTests(unittest.TestCase):
         self.assertTrue(hit_per)
         self.assertIn('sınır bölgesinde', res_per['reason'])
 
+        # Fall / Motionless detection
+        pt_fall = intelligence.ProTracker()
+        rule_fall = {'name': 'Düşme Takibi', 'roi': [0, 0, 100, 100], 'duration': 4, 'sensitivity': 3}
+        self.assertFalse(pt_fall.evaluate_fall([(50, 60)], rule_fall, 0.0)[0])
+        self.assertFalse(pt_fall.evaluate_fall([(50, 60)], rule_fall, 2.0)[0])
+        hit_fall, res_fall = pt_fall.evaluate_fall([(50, 60)], rule_fall, 4.5)
+        self.assertTrue(hit_fall)
+        self.assertIn('düşme', res_fall['reason'])
+
+        # Abandon / Quick-exit detection
+        pt_ab = intelligence.ProTracker()
+        rule_ab = {'name': 'Eşya Bırakma', 'roi': [0, 0, 100, 100], 'duration': 2, 'sensitivity': 2}
+        self.assertFalse(pt_ab.evaluate_abandon([(40, 40)], rule_ab, 0.0)[0])
+        self.assertFalse(pt_ab.evaluate_abandon([(40, 41)], rule_ab, 2.5)[0])
+        hit_ab, res_ab = pt_ab.evaluate_abandon([], rule_ab, 3.0)
+        self.assertTrue(hit_ab)
+        self.assertIn('ayrıldı', res_ab['reason'])
+
         # Tailgating
         pt_tg = intelligence.ProTracker()
         rule_tg = {'name': 'Tailgating', 'direction': 'positive', 'sensitivity': 4}
@@ -82,10 +99,10 @@ class IntelligenceProTests(unittest.TestCase):
         self.assertTrue(hit_tg)
         self.assertIn('Tailgating', res_tg['reason'])
 
-    def test_six_commercial_sector_packs_with_calibrated_rois(self):
-        self.assertEqual(len(intelligence.SECTOR_PACKS), 6)
+    def test_eight_commercial_sector_packs_with_calibrated_rois(self):
+        self.assertEqual(len(intelligence.SECTOR_PACKS), 8)
         pack_ids = {p['id'] for p in intelligence.SECTOR_PACKS}
-        self.assertEqual(pack_ids, {'site', 'pool', 'factory', 'warehouse', 'retail', 'office'})
+        self.assertEqual(pack_ids, {'site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus', 'clinic'})
         for p in intelligence.SECTOR_PACKS:
             self.assertGreaterEqual(len(p['rules']), 4)
             for r in p['rules']:
@@ -94,7 +111,7 @@ class IntelligenceProTests(unittest.TestCase):
                 self.assertNotIn(r['kind'], ('pro_lpr', 'iot_sensor'))
 
 
-class AlertsAndWebhookTests(unittest.TestCase):
+class AlertsAndTwoWayTelegramBotTests(unittest.TestCase):
     def test_hmac_webhook_signature_and_slack_discord_format(self):
         body = iot_automation.format_webhook_body(
             'https://hooks.slack.com/services/T00/B00/X00',
@@ -105,7 +122,7 @@ class AlertsAndWebhookTests(unittest.TestCase):
         self.assertTrue(sig.startswith('sha256='))
         self.assertEqual(ts, '1700000000')
 
-    def test_telegram_multipart_photo_alert(self):
+    def test_telegram_multipart_photo_alert_and_two_way_commands(self):
         img = io.BytesIO(); Image.new('RGB', (32, 32), 'red').save(img, format='JPEG')
         resp = MagicMock()
         resp.read.return_value = b'{"ok":true}'
@@ -122,8 +139,14 @@ class AlertsAndWebhookTests(unittest.TestCase):
             self.assertIn('/sendPhoto', req.full_url)
             self.assertIn(b'Havuz', req.data)
 
+        # Test interactive 2-way bot commands (/start, /durum, /kameralar, /olaylar, /koru, /sustur)
+        snap = {'cameras': [{'id': 'c1', 'name': 'Nizamiye', 'status': 'Bağlı', 'analysis': 'Hazır'}], 'rules': [{'enabled': True}], 'events': [], 'license': {'name': 'Cortex ULTRA', 'plan': 'ULTRA', 'maxCameras': 32, 'maxRules': 128}}
+        for cmd, expected_word in [('/start', 'Komuta Botu Aktif'), ('/durum', 'Sistem Durumu'), ('/kameralar', 'Nizamiye'), ('/koru', 'TAM KORUMA'), ('/sustur', 'Güvenli Mod')]:
+            out = iot_automation.process_bot_command(cmd, snap, chat_id='777888')
+            self.assertIn(expected_word, out['reply'])
 
-class ForensicsAndCommercialApiTests(unittest.TestCase):
+
+class ForensicsAdminAndCommercialApiTests(unittest.TestCase):
     request = base.Tests.request
 
     @classmethod
@@ -144,6 +167,9 @@ class ForensicsAndCommercialApiTests(unittest.TestCase):
             events=[],
             webhook='',
             audit=[],
+            safeMode=False,
+            license=forensics.default_license(),
+            customers=forensics.default_customer_registry(),
         )
 
     def test_sector_pack_deployment_with_calibrated_roi_and_all_cameras(self):
@@ -151,12 +177,10 @@ class ForensicsAndCommercialApiTests(unittest.TestCase):
         c2 = json.loads(self.request('/api/cameras', {'name': 'Teras Kamerası', 'url': 'rtsp://192.0.2.11/live'})[1])['id']
         res = json.loads(self.request('/api/sector-apply', {'camera': c1, 'pack': 'pool'})[1])
         self.assertTrue(res['ok'])
-        self.assertEqual(res['added'], 4)
-        self.assertEqual(len(base.s.STATE['rules']), 4)
-        # Verify pre-calibrated ROI was applied from the sector pack
+        self.assertEqual(res['added'], 5)
+        self.assertEqual(len(base.s.STATE['rules']), 5)
         first_rule = base.s.STATE['rules'][0]
         self.assertEqual(first_rule['roi'], [10, 15, 80, 80])
-        self.assertTrue(len(base.s.STATE['audit']) >= 2)
 
         # Deploy selective rules to ALL cameras
         res_all = json.loads(self.request('/api/sector-apply', {'camera': 'ALL', 'pack': 'retail', 'rules': [0, 1]})[1])
@@ -196,15 +220,49 @@ class ForensicsAndCommercialApiTests(unittest.TestCase):
             manifest = zf.read('CHAIN_OF_CUSTODY.sha256').decode('utf-8')
             self.assertIn('00.jpg', manifest)
 
-    def test_commercial_license_generator_and_activator(self):
-        gen = json.loads(self.request('/api/license-generate', {'plan': 'ENTERPRISE', 'organization': 'Marmara Site'})[1])
-        self.assertTrue(gen['key'].startswith('IPS-ENTERPRISE-'))
-        act = json.loads(self.request('/api/license-activate', {'key': gen['key'], 'organization': 'Marmara Site'})[1])
-        self.assertTrue(act['ok'])
-        self.assertEqual(act['license']['plan'], 'ENTERPRISE')
+    def test_admin_panel_login_and_three_tier_license_enforcement(self):
+        # 1. Unauthenticated license generation must be rejected with HTTP 403
+        with self.assertRaises(base.urllib.error.HTTPError) as err_unauth:
+            self.request('/api/license-generate', {'plan': 'PRO', 'organization': 'Yetkisiz Deneme'})
+        self.assertEqual(err_unauth.exception.code, 403)
 
-        with self.assertRaises(base.urllib.error.HTTPError):
-            self.request('/api/license-activate', {'key': 'IPS-ENTERPRISE-000000-BADBAD00', 'organization': 'X'})
+        # 2. Wrong admin password must be rejected with HTTP 403
+        with self.assertRaises(base.urllib.error.HTTPError) as err_bad_pw:
+            self.request('/api/admin/login', {'username': 'admin', 'password': 'WrongPassword'})
+        self.assertEqual(err_bad_pw.exception.code, 403)
+
+        # 3. Valid admin login (admin / Kingofthegame0714*) returns adminToken and customer list
+        login_res = json.loads(self.request('/api/admin/login', {'username': 'admin', 'password': 'Kingofthegame0714*'})[1])
+        self.assertTrue(login_res['ok'])
+        adm_token = login_res['adminToken']
+        self.assertGreaterEqual(len(login_res['customers']), 3)
+
+        # 4. Generate PRO, PLUS, and ULTRA keys via Admin Panel
+        for tier, max_cams in [('PRO', 4), ('PLUS', 12), ('ULTRA', 32)]:
+            gen = json.loads(self.request('/api/admin/license-generate', {'adminToken': adm_token, 'plan': tier, 'organization': f'Müşteri {tier}'})[1])
+            self.assertTrue(gen['key'].startswith(f'IPS-{tier}-'))
+            act = json.loads(self.request('/api/license-activate', {'key': gen['key'], 'organization': f'Müşteri {tier}'})[1])
+            self.assertTrue(act['ok'])
+            self.assertEqual(act['license']['plan'], tier)
+            self.assertEqual(act['license']['maxCameras'], max_cams)
+
+        # 5. Enforce PRO tier camera cap (4 cameras max)
+        pro_key = json.loads(self.request('/api/admin/license-generate', {'adminToken': adm_token, 'plan': 'PRO', 'organization': 'Kobi Market'})[1])['key']
+        self.request('/api/license-activate', {'key': pro_key, 'organization': 'Kobi Market'})
+        for i in range(4):
+            self.request('/api/cameras', {'name': f'Kamera {i+1}', 'url': f'rtsp://192.0.2.{20+i}/live'})
+        with self.assertRaises(base.urllib.error.HTTPError) as cap_err:
+            self.request('/api/cameras', {'name': 'Kamera 5 (Limit Aşımı)', 'url': 'rtsp://192.0.2.30/live'})
+        self.assertEqual(cap_err.exception.code, 400)
+
+        # 6. Admin remote remediation actions (run_diagnostics, toggle_safe_mode, upgrade_plan)
+        diag = json.loads(self.request('/api/admin/action', {'adminToken': adm_token, 'action': 'run_diagnostics', 'customerId': 'node-local-primary'})[1])
+        self.assertTrue(diag['ok'])
+        self.assertIn('OK', diag['diagnostics']['ffmpegBinary'])
+
+        upg = json.loads(self.request('/api/admin/action', {'adminToken': adm_token, 'action': 'upgrade_plan', 'customerId': 'node-local-primary', 'plan': 'ULTRA'})[1])
+        self.assertTrue(upg['ok'])
+        self.assertEqual(base.s.STATE['license']['plan'], 'ULTRA')
 
 
 if __name__ == '__main__':

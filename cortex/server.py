@@ -1,4 +1,4 @@
-"""IPScans Cortex 2.0.0-pro — Multi-technology local camera intelligence, smart tracking, forensics & sector packs."""
+"""IPScans Cortex 2.0.0-pro — Multi-technology local camera intelligence, smart tracking, forensics, 2-way Telegram bot & 3-tier admin control center."""
 import base64, collections, concurrent.futures, http.server, json, os, pathlib, secrets
 import shutil, socket, subprocess, sys, threading, time, urllib.parse, urllib.request, uuid, webbrowser
 import xml.etree.ElementTree as ET
@@ -12,7 +12,7 @@ import access
 import intelligence
 import iot_automation
 import forensics
-from models import Installer, Health, VISION_TEMPLATES
+from models import Installer, Health, VISION_TEMPLATES, RECOMMENDED_MODELS
 from stream import Stream
 
 VERSION = "2.0.0-pro"
@@ -46,11 +46,15 @@ if (DATA / 'config.enc').exists(): STATE.update(json.loads(VAULT.decrypt((DATA /
 STATE['rules']=[local_rules.repair_light_rule(r) for r in STATE['rules']]
 STATE.setdefault('devices',[])
 STATE.setdefault('aiInterval',1)
-STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False})
+STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False,'botUsername':'','lastUpdateId':0})
+STATE.setdefault('telegramBotLog',[])
 STATE.setdefault('webhookSecret','')
 STATE.setdefault('soundAlert',True)
 STATE.setdefault('smartCascade',True)
+STATE.setdefault('safeMode',False)
 STATE.setdefault('license',forensics.default_license())
+STATE.setdefault('customers',forensics.default_customer_registry())
+STATE.setdefault('issuedLicenses',[])
 STATE.setdefault('audit',[])
 STATE.setdefault('accessWebhookToken',secrets.token_urlsafe(18))
 DEVICE_STATUS={}
@@ -61,6 +65,43 @@ FORENSIC_INDEX.sync(STATE['events'])
 def audit(action, detail, actor='Operatör'):
     with LOCK:
         forensics.append_audit_entry(STATE.setdefault('audit',[]), action, detail, actor)
+
+def sync_local_customer_node():
+    """Keep the primary local station entry in the Admin Panel synchronized with live state."""
+    with LOCK:
+        lic = STATE.get('license', forensics.default_license())
+        tier = str(lic.get('plan', 'ULTRA')).upper()
+        if tier == 'STARTER': tier = 'PRO'
+        elif tier == 'ENTERPRISE': tier = 'ULTRA'
+        plan_spec = forensics.LICENSE_PLANS.get(tier, forensics.LICENSE_PLANS['ULTRA'])
+        customers = STATE.setdefault('customers', forensics.default_customer_registry())
+        local_node = next((c for c in customers if c.get('id') == 'node-local-primary'), None)
+        if not local_node:
+            local_node = {
+                'id': 'node-local-primary',
+                'organization': lic.get('organization', 'Merkez Saha İstasyonu (Bu Bilgisayar)'),
+                'contact': 'admin@ipscans.com',
+                'plan': tier,
+                'licenseKey': lic.get('key', 'SAHA-KURULUM-AKTİF'),
+                'status': 'suspended' if STATE.get('safeMode') else 'active',
+                'createdAt': time.time() - 86400,
+                'expiresAt': lic.get('expiresAt', time.time() + 365 * 86400),
+            }
+            customers.insert(0, local_node)
+        local_node.update({
+            'organization': lic.get('organization', local_node.get('organization', 'Merkez Saha İstasyonu')),
+            'plan': tier,
+            'licenseKey': lic.get('key', local_node.get('licenseKey', 'SAHA-KURULUM-AKTİF')),
+            'camerasUsed': len(STATE.get('cameras', [])),
+            'maxCameras': plan_spec['maxCameras'],
+            'rulesUsed': len(STATE.get('rules', [])),
+            'maxRules': plan_spec['maxRules'],
+            'lastSeen': time.time(),
+            'version': VERSION,
+            'model': STATE.get('model', 'gemma3:4b'),
+            'telegramActive': bool(STATE.get('telegram', {}).get('enabled')),
+            'health': 'Güvenli Mod (Askıda)' if STATE.get('safeMode') else f"Çevrimiçi · {len(WORKERS)} aktif yayın · Disk {round(shutil.disk_usage(DATA).free/1024**3,1)} GB boş",
+        })
 
 def clock_loop(stop):
     due={}
@@ -92,6 +133,7 @@ INSTALLER = Installer(model_ready)
 
 def active_rule(rule):
     with LOCK:
+        if STATE.get('safeMode'): return False
         return any(r==rule and r['enabled'] and local_rules.scheduled(r) for r in STATE['rules'])
 
 def enqueue_evidence(worker, rule, result, frames):
@@ -179,7 +221,7 @@ class LightTransition:
         return False
 
 def discover():
-    probe = f'<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing"><s:Header><a:MessageID>uuid:{uuid.uuid4()}</a:MessageID><a:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</a:To><a:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</a:Action></s:Header><s:Body><d:Probe xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:dn="http://www.onvif.org/ver10/network/wsdl"><d:Types>dn:NetworkVideoTransmitter</d:Types></d:Probe></s:Body></s:Envelope>'
+    probe = f'<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing"><s:Header><a:MessageID>uuid:{uuid.uuid4()}</a:MessageID><s:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</s:To><a:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</a:Action></s:Header><s:Body><d:Probe xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:dn="http://www.onvif.org/ver10/network/wsdl"><d:Types>dn:NetworkVideoTransmitter</d:Types></d:Probe></s:Body></s:Envelope>'
     found = {}
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.settimeout(.4); s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
@@ -344,7 +386,7 @@ class Camera:
         except Exception:self.analysis='Geçiş dedektörü kullanılamıyor; motor kurulumunu kontrol edin.'
 
     def check_pro(self):
-        """Evaluate Cortex 2.0 Pro rules (Loitering, Occupancy/Crowd, Perimeter, Tailgating)."""
+        """Evaluate Cortex 2.0 Pro rules (Loitering, Occupancy/Crowd, Perimeter, Tailgating, Fall, Abandon)."""
         now=time.monotonic()
         with LOCK:
             rules=[dict(r) for r in STATE['rules'] if r['camera']==self.c['id'] and r['enabled'] and r.get('kind') in intelligence.PRO_KINDS and local_rules.scheduled(r)]
@@ -377,6 +419,14 @@ class Camera:
                     hit,res=pt.evaluate_tailgating(crossings,r,now)
                     if hit:
                         self.event(r,res,list(self.frames))
+                elif kind=='pro_fall':
+                    hit,res=pt.evaluate_fall(points,r,now)
+                    if hit and time.time()-self.last.get(r['id'],0)>=r.get('cooldown',30):
+                        self.last[r['id']]=time.time(); self.event(r,res,list(self.frames))
+                elif kind=='pro_abandon':
+                    hit,res=pt.evaluate_abandon(points,r,now)
+                    if hit and time.time()-self.last.get(r['id'],0)>=r.get('cooldown',30):
+                        self.last[r['id']]=time.time(); self.event(r,res,list(self.frames))
             self.analysis='Cortex Pro akıllı takip etkin'
         except Exception: pass
 
@@ -451,6 +501,7 @@ class Camera:
 
 def deliver_notifications():
     with LOCK:
+        if STATE.get('safeMode'): return
         webhook=STATE['webhook']
         secret=STATE.get('webhookSecret','')
         tg=dict(STATE.get('telegram',{}))
@@ -485,11 +536,98 @@ def deliver_notifications():
             with LOCK:
                 event['telegramAttempts']=event.get('telegramAttempts',0)+1; save()
 
+def execute_telegram_command_context(text):
+    """Build runtime context and execute a two-way Telegram bot command."""
+    with LOCK:
+        cams = [{**c, 'status': WORKERS[c['id']].status if c['id'] in WORKERS else 'Durduruldu', 'analysis': WORKERS[c['id']].analysis if c['id'] in WORKERS else 'Bekliyor', 'brightness': WORKERS[c['id']].brightness if c['id'] in WORKERS else None} for c in STATE['cameras']]
+        rules = [dict(r) for r in STATE['rules']]
+        events = [dict(e) for e in STATE['events'][:10]]
+        lic = dict(STATE.get('license', forensics.default_license()))
+        model_name = STATE.get('model', 'gemma3:4b')
+        disk_free = round(shutil.disk_usage(DATA).free / 1024**3, 1)
+
+    def _get_snapshot(cam_query):
+        target = None
+        if cam_query:
+            q = cam_query.lower()
+            target = next((c for c in cams if q in c['name'].lower() or q == c['id'].lower()), None)
+        if not target and cams:
+            target = cams[0]
+        if not target:
+            return None, None
+        worker = WORKERS.get(target['id'])
+        if worker and worker.frame:
+            return target['name'], worker.frame
+        try:
+            return target['name'], snapshot(target)
+        except Exception:
+            return target['name'], None
+
+    def _set_armed(arm_state):
+        with LOCK:
+            STATE['safeMode'] = not bool(arm_state)
+            if 'telegram' in STATE:
+                STATE['telegram']['enabled'] = bool(arm_state)
+            audit('Telegram Komutu', 'Koruma Aktif (/koru)' if arm_state else 'Bildirimler Susturuldu (/sustur)', actor='Telegram Bot')
+            save()
+
+    ctx = {
+        'version': VERSION,
+        'license': lic,
+        'cameras': cams,
+        'rules': rules,
+        'events': events,
+        'model': model_name,
+        'diskFreeGB': disk_free,
+        'get_snapshot': _get_snapshot,
+        'set_armed': _set_armed,
+    }
+    res = iot_automation.process_bot_command(text, ctx)
+    with LOCK:
+        log = STATE.setdefault('telegramBotLog', [])
+        log.insert(0, {'time': time.time(), 'command': text[:120], 'action': res.get('action', 'unknown'), 'reply': res.get('reply', '')[:400]})
+        del log[30:]
+    return res
+
+def telegram_bot_loop(stop):
+    """Background long-poller for interactive 2-way Telegram commands (/durum, /anlik, /kameralar, /olaylar, /koru, /sustur)."""
+    while not stop.is_set():
+        try:
+            with LOCK:
+                tg = dict(STATE.get('telegram', {}))
+            token = str(tg.get('botToken', '')).strip()
+            allowed_chat = str(tg.get('chatId', '')).strip()
+            if token and tg.get('enabled'):
+                updates = iot_automation.poll_telegram_updates(token, offset=int(tg.get('lastUpdateId', 0)) + 1, timeout=2)
+                for upd in updates:
+                    uid = int(upd.get('update_id', 0))
+                    with LOCK:
+                        if uid > int(STATE.get('telegram', {}).get('lastUpdateId', 0)):
+                            STATE['telegram']['lastUpdateId'] = uid
+                    msg = upd.get('message') or upd.get('edited_message') or {}
+                    chat_id = str((msg.get('chat') or {}).get('id', '')).strip()
+                    text = str(msg.get('text', '')).strip()
+                    if not text or not text.startswith('/'):
+                        continue
+                    if allowed_chat and chat_id != allowed_chat:
+                        continue
+                    res = execute_telegram_command_context(text)
+                    target_chat = chat_id or allowed_chat
+                    if target_chat:
+                        if res.get('photo'):
+                            iot_automation.send_telegram_photo(token, target_chat, res['photo'], res['reply'])
+                        else:
+                            iot_automation.send_telegram_message(token, target_chat, res['reply'])
+        except Exception:
+            pass
+        stop.wait(4)
+
 def maintenance(stop):
     last_cleanup=0
     while not stop.is_set():
         try:
             deliver_notifications()
+            sync_local_customer_node()
             if time.monotonic()-last_cleanup>300: cleanup(); last_cleanup=time.monotonic()
         except Exception: pass
         stop.wait(5)
@@ -505,9 +643,16 @@ def cleanup():
 
 def public_state():
     with LOCK:
+        sync_local_customer_node()
         cams = [{k:v for k,v in c.items() if k not in ('password','username','url')} | {'status':WORKERS[c['id']].status if c['id'] in WORKERS else 'Durduruldu','analysis':WORKERS[c['id']].analysis if c['id'] in WORKERS else 'Bekliyor','brightness':WORKERS[c['id']].brightness if c['id'] in WORKERS else None,'inferenceMs':WORKERS[c['id']].inference_ms if c['id'] in WORKERS else None,'frameAge':round(time.monotonic()-WORKERS[c['id']].received,1) if c['id'] in WORKERS else None,'activePoints':getattr(WORKERS[c['id']],'active_points',[]) if c['id'] in WORKERS else []} for c in STATE['cameras']]
         devices=[{k:v for k,v in d.items() if k not in ('username','password')} | {'clock':DEVICE_STATUS.get(d['id'],{'phase':'waiting','message':'Eşitleme bekleniyor.' if d['sync'] else 'Otomatik saat eşitleme kapalı.'})} for d in STATE.get('devices',[])]
         tg=STATE.get('telegram',{})
+        lic=STATE.get('license',forensics.default_license())
+        tier=str(lic.get('plan','ULTRA')).upper()
+        if tier=='STARTER': tier='PRO'
+        elif tier=='ENTERPRISE': tier='ULTRA'
+        plan_spec=forensics.LICENSE_PLANS.get(tier,forensics.LICENSE_PLANS['ULTRA'])
+        lic_merged={**plan_spec,**lic,'plan':tier,'tier':tier}
         analytics=forensics.compute_analytics(STATE['events'],STATE['cameras'],STATE['rules'])
         return {
             'devices':devices,
@@ -515,14 +660,24 @@ def public_state():
             'rules':STATE['rules'],
             'events':STATE['events'],
             'model':STATE['model'],
+            'recommendedModels':RECOMMENDED_MODELS,
             'retention':STATE['retention'],
             'aiInterval':STATE.get('aiInterval',1),
             'webhookConfigured':bool(STATE['webhook']),
             'webhookSigned':bool(STATE.get('webhookSecret')),
-            'telegram':{'enabled':bool(tg.get('enabled')),'configured':bool(tg.get('botToken') and tg.get('chatId')),'chatId':tg.get('chatId','')},
+            'telegram':{
+                'enabled':bool(tg.get('enabled')),
+                'configured':bool(tg.get('botToken') and tg.get('chatId')),
+                'chatId':tg.get('chatId',''),
+                'botUsername':tg.get('botUsername',''),
+                'spec':iot_automation.BOT_SPECIFICATION,
+            },
+            'telegramBotLog':STATE.get('telegramBotLog',[])[:20],
             'soundAlert':bool(STATE.get('soundAlert',True)),
             'smartCascade':bool(STATE.get('smartCascade',True)),
-            'license':STATE.get('license',forensics.default_license()),
+            'safeMode':bool(STATE.get('safeMode',False)),
+            'license':lic_merged,
+            'licensePlans':{k:v for k,v in forensics.LICENSE_PLANS.items() if k in ('PRO','PLUS','ULTRA')},
             'audit':STATE.get('audit',[])[:40],
             'analytics':analytics,
             'version':VERSION,
@@ -548,6 +703,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def allowed(self):
         return self.headers.get('Host') in (f'127.0.0.1:{PORT}',f'localhost:{PORT}')
     def auth(self): return ('cortex='+TOKEN) in self.headers.get('Cookie','').split('; ')
+    def admin_auth(self, d=None):
+        hdr = self.headers.get('X-Admin-Token', '')
+        body_tok = d.get('adminToken', '') if isinstance(d, dict) else ''
+        return forensics.verify_admin_session(hdr or body_tok)
     def do_GET(self):
         if not self.allowed(): return self.send(403,{'error':'Host reddedildi'})
         u=urllib.parse.urlsplit(self.path); path=u.path
@@ -593,10 +752,190 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not 0 < length < 65536: raise ValueError('İstek çok büyük')
             d=json.loads(self.rfile.read(length)); path=self.path
             if not isinstance(d,dict): raise ValueError()
+
+            # --- ADMIN CONTROL PANEL ENDPOINTS (admin / Kingofthegame0714*) ---
+            if path=='/api/admin/login':
+                username=str(d.get('username','')).strip()
+                password=str(d.get('password',''))
+                if not forensics.verify_admin_credentials(username,password):
+                    audit('Yönetici Girişi Reddedildi', f"Kullanıcı: {username}", actor='Güvenlik')
+                    save()
+                    return self.send(403,{'error':'Yönetici kullanıcı adı veya parolası hatalı.'})
+                adm_token=forensics.create_admin_session(username)
+                with LOCK:
+                    sync_local_customer_node()
+                    customers=list(STATE.get('customers',[]))
+                    issued=list(STATE.get('issuedLicenses',[]))[:50]
+                audit('Yönetici Oturumu Açıldı', 'Cortex Yönetim Paneli (Admin)', actor='admin')
+                save()
+                return self.send(200,{'ok':True,'adminToken':adm_token,'username':'admin','customers':customers,'issuedLicenses':issued,'plans':{k:v for k,v in forensics.LICENSE_PLANS.items() if k in ('PRO','PLUS','ULTRA')},'message':'Cortex Yönetim Paneline hoş geldiniz.'})
+
+            if path=='/api/admin/state':
+                if not self.admin_auth(d): return self.send(403,{'error':'Yönetici oturumu gerekli. Lütfen admin hesabıyla giriş yapın.'})
+                with LOCK:
+                    sync_local_customer_node()
+                    customers=list(STATE.get('customers',[]))
+                    issued=list(STATE.get('issuedLicenses',[]))[:50]
+                    lic=STATE.get('license',forensics.default_license())
+                return self.send(200,{
+                    'ok':True,
+                    'customers':customers,
+                    'issuedLicenses':issued,
+                    'plans':{k:v for k,v in forensics.LICENSE_PLANS.items() if k in ('PRO','PLUS','ULTRA')},
+                    'localLicense':lic,
+                    'safeMode':bool(STATE.get('safeMode',False)),
+                    'activeStreams':len(WORKERS),
+                    'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1),
+                    'telegramSpec':iot_automation.BOT_SPECIFICATION,
+                })
+
+            if path in ('/api/admin/license-generate', '/api/license-generate'):
+                if not self.admin_auth(d):
+                    return self.send(403,{'error':'Lisans anahtarı yalnızca Cortex Yönetim Panelinde (admin yetkisiyle) üretilebilir.'})
+                plan=str(d.get('plan','PRO')).upper().strip()
+                org=str(d.get('organization','Kurumsal Müşteri')).strip()[:80] or 'Kurumsal Müşteri'
+                contact=str(d.get('contact','')).strip()[:80]
+                days=int(d.get('days',365) or 365)
+                key=forensics.generate_commercial_key(plan,org)
+                info=forensics.verify_commercial_key(key)
+                record={
+                    'id':uuid.uuid4().hex[:12],
+                    'key':key,
+                    'plan':info['plan'],
+                    'planName':info['name'],
+                    'organization':org,
+                    'contact':contact,
+                    'maxCameras':info['maxCameras'],
+                    'maxRules':info['maxRules'],
+                    'createdAt':time.time(),
+                    'expiresAt':time.time()+days*86400,
+                    'status':'active',
+                }
+                with LOCK:
+                    STATE.setdefault('issuedLicenses',[]).insert(0,record)
+                    customers=STATE.setdefault('customers',forensics.default_customer_registry())
+                    existing=next((c for c in customers if c.get('organization','').lower()==org.lower() and c.get('id')!='node-local-primary'),None)
+                    if existing:
+                        existing.update({
+                            'plan':info['plan'],
+                            'licenseKey':key,
+                            'maxCameras':info['maxCameras'],
+                            'maxRules':info['maxRules'],
+                            'status':'active',
+                            'expiresAt':record['expiresAt'],
+                            'lastSeen':time.time(),
+                            'health':f"Yeni {info['plan']} lisansı atandı",
+                        })
+                    else:
+                        customers.append({
+                            'id':'cust-'+uuid.uuid4().hex[:8],
+                            'organization':org,
+                            'contact':contact or 'Belirtilmedi',
+                            'plan':info['plan'],
+                            'licenseKey':key,
+                            'status':'active',
+                            'camerasUsed':0,
+                            'maxCameras':info['maxCameras'],
+                            'rulesUsed':0,
+                            'maxRules':info['maxRules'],
+                            'lastSeen':time.time(),
+                            'version':VERSION,
+                            'model':STATE.get('model','gemma3:4b'),
+                            'telegramActive':False,
+                            'health':'Lisans üretildi · Müşteri aktivasyonu bekleniyor',
+                            'createdAt':time.time(),
+                            'expiresAt':record['expiresAt'],
+                        })
+                    audit('Yönetici Lisans Üretti', f"Paket: {info['plan']} · Müşteri: {org} · Anahtar: {key}", actor='admin')
+                    save()
+                return self.send(200,{'ok':True,'key':key,'plan':info['plan'],'organization':org,'record':record,'message':f"{org} için {info['name']} ({info['plan']}) lisansı üretildi."})
+
+            if path=='/api/admin/action':
+                if not self.admin_auth(d): return self.send(403,{'error':'Yönetici oturumu gerekli.'})
+                action=str(d.get('action','')).strip()
+                cust_id=str(d.get('customerId','node-local-primary')).strip()
+                if action=='run_diagnostics':
+                    buf=io.BytesIO(); Image.new('RGB',(320,180),'black').save(buf,format='JPEG')
+                    ped_ok=(access.Pedestrians().detect(buf.getvalue())==[])
+                    ff_ok=pathlib.Path(FFMPEG).is_file()
+                    with LOCK:
+                        disk_gb=round(shutil.disk_usage(DATA).free/1024**3,1)
+                        m_health=MODEL_HEALTH.status(STATE['model'])
+                        cust=next((c for c in STATE.setdefault('customers',forensics.default_customer_registry()) if c['id']==cust_id),None)
+                        msg=f"Tanılama Başarılı: FFmpeg={'OK' if ff_ok else 'HATA'}, Yaya Motoru={'OK' if ped_ok else 'HATA'}, Disk={disk_gb} GB, Model={m_health.get('phase')}"
+                        if cust: cust['health']=msg; cust['lastSeen']=time.time()
+                        audit('Yönetici Müdahalesi', f"{cust['organization'] if cust else cust_id} -> {msg}", actor='admin')
+                        save()
+                    return self.send(200,{'ok':True,'message':msg,'diagnostics':{'ffmpeg':ff_ok,'ffmpegBinary':'OK' if ff_ok else 'HATA','pedestrian':ped_ok,'pedestrianEngine':'OK' if ped_ok else 'HATA','diskFreeGB':disk_gb,'modelHealth':m_health}})
+
+                with LOCK:
+                    customers=STATE.setdefault('customers',forensics.default_customer_registry())
+                    cust=next((c for c in customers if c['id']==cust_id),None)
+                    if not cust: raise InputError('Müşteri kaydı bulunamadı.')
+                    msg='Müdahale tamamlandı.'
+                    if action=='reset_streams':
+                        if cust_id=='node-local-primary':
+                            for cid_k,w in list(WORKERS.items()):
+                                w.stop.set()
+                            WORKERS.clear()
+                            for cam in STATE['cameras']:
+                                WORKERS[cam['id']]=Camera(cam)
+                        cust['lastSeen']=time.time()
+                        cust['health']='Tüm RTSP akışları yönetici tarafından yeniden başlatıldı · Çevrimiçi'
+                        msg=f"{cust['organization']}: RTSP kamera akışları ve analiz işçileri sıfırlandı."
+                    elif action=='clear_queues':
+                        for e in STATE['events']:
+                            if e.get('recording')=='pending': e['recording']='Yönetici tarafından kuyruk temizlendi.'
+                        cust['health']='AI ve kanıt kuyrukları temizlendi · Optimum'
+                        msg=f"{cust['organization']}: Bekleyen AI ve video kanıt kuyrukları temizlendi."
+                    elif action=='toggle_safe_mode':
+                        if cust_id=='node-local-primary':
+                            STATE['safeMode']=not bool(STATE.get('safeMode',False))
+                            cust['status']='suspended' if STATE['safeMode'] else 'active'
+                            cust['health']='Güvenli Mod (Askıda)' if STATE['safeMode'] else 'Çevrimiçi · Normal Çalışma'
+                            msg=f"Yerel istasyon {'Güvenli Moda alındı (kurallar duraklatıldı)' if STATE['safeMode'] else 'Normal çalışma moduna döndürüldü'}."
+                        else:
+                            cust['status']='active' if cust.get('status')=='suspended' else 'suspended'
+                            cust['health']='Yönetici tarafından askıya alındı' if cust['status']=='suspended' else 'Çevrimiçi · Lisans Aktif'
+                            msg=f"{cust['organization']} durumu '{cust['status']}' olarak güncellendi."
+                    elif action=='restart_telegram':
+                        if 'telegram' in STATE:
+                            STATE['telegram']['lastUpdateId']=0
+                        cust['telegramActive']=True
+                        cust['health']='Telegram Bot long-polling bağlantısı yenilendi'
+                        msg=f"{cust['organization']}: Telegram Bot iletişim motoru sıfırlandı."
+                    elif action=='upgrade_plan':
+                        new_plan=str(d.get('plan','ULTRA')).upper()
+                        if new_plan not in ('PRO','PLUS','ULTRA'): raise InputError('Geçerli paket seçin (PRO, PLUS, ULTRA).')
+                        new_key=forensics.generate_commercial_key(new_plan,cust['organization'])
+                        info=forensics.verify_commercial_key(new_key)
+                        cust.update({'plan':new_plan,'licenseKey':new_key,'maxCameras':info['maxCameras'],'maxRules':info['maxRules'],'status':'active','health':f"{new_plan} paketine yükseltildi"})
+                        if cust_id=='node-local-primary':
+                            info['organization']=cust['organization']
+                            STATE['license']=info
+                        msg=f"{cust['organization']} paketi {new_plan} ({info['maxCameras']} Kamera / {info['maxRules']} Kural) seviyesine yükseltildi. Yeni Anahtar: {new_key}"
+                    elif action=='extend_license':
+                        cust['expiresAt']=max(cust.get('expiresAt',time.time()),time.time())+30*86400
+                        cust['status']='active'
+                        cust['health']='Lisans süresi +30 gün uzatıldı · Aktif'
+                        msg=f"{cust['organization']} lisans süresi +30 gün uzatıldı."
+                    elif action=='toggle_suspend':
+                        cust['status']='active' if cust.get('status')=='suspended' else 'suspended'
+                        if cust_id=='node-local-primary':
+                            STATE['safeMode']=(cust['status']=='suspended')
+                        cust['health']='Lisans askıya alındı' if cust['status']=='suspended' else 'Lisans aktif · Çevrimiçi'
+                        msg=f"{cust['organization']} lisansı {'askıya alındı' if cust['status']=='suspended' else 'tekrar aktifleştirildi'}."
+                    else:
+                        raise InputError('Geçersiz yönetici aksiyonu.')
+                    audit('Yönetici Müdahalesi', f"{cust['organization']} ({action}) -> {msg}", actor='admin')
+                    save()
+                return self.send(200,{'ok':True,'message':msg,'customer':cust})
+
             if path=='/api/access-permit':
-                if not any(c['id']==d.get('id') for c in STATE['cameras']):raise InputError('Kamera bulunamadı.')
-                access.PERMITS.grant(d['id'])
-                audit('Geçiş İzni Verildi', f"Kamera ID: {d['id'][:8]} (15 sn)")
+                cid=d.get('id') or d.get('camera')
+                if not any(c['id']==cid for c in STATE['cameras']):raise InputError('Kamera bulunamadı.')
+                access.PERMITS.grant(cid)
+                audit('Geçiş İzni Verildi', f"Kamera ID: {str(cid)[:8]} (15 sn)")
                 return self.send(200,{'ok':True,'message':'15 saniye için tek geçiş izni verildi.'})
             if path=='/api/events-search':
                 with LOCK:
@@ -608,6 +947,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         d.get('reviewed',''),
                     )
                 return self.send(200,{'events':matched,'count':len(matched)})
+            if path=='/api/ai-test':
+                prompt_txt=str(d.get('prompt','')).strip()
+                if not prompt_txt: raise InputError('Test edilecek görsel AI kural açıklamasını (prompt) girin.')
+                cid=str(d.get('camera','')).strip()
+                with LOCK:
+                    model_name=str(d.get('model') or STATE.get('model','gemma3:4b')).strip()
+                    cam=next((c for c in STATE['cameras'] if c['id']==cid), None) or (STATE['cameras'][0] if STATE['cameras'] else None)
+                frame_bytes=None
+                if cam:
+                    w=WORKERS.get(cam['id'])
+                    if w and w.frame: frame_bytes=w.frame
+                if not frame_bytes:
+                    buf=io.BytesIO()
+                    img=Image.new('RGB',(640,360),(28,36,48))
+                    img.save(buf,format='JPEG')
+                    frame_bytes=buf.getvalue()
+                started=time.monotonic()
+                try:
+                    res=analyze({'prompt':prompt_txt,'roi':d.get('roi',[0,0,100,100])},[frame_bytes],model_name)
+                    ms=round((time.monotonic()-started)*1000)
+                    return self.send(200,{'ok':True,'result':res,'latencyMs':ms,'model':model_name})
+                except Exception:
+                    raise InputError(f"Ollama ({model_name}) yanıt vermedi. Ollama servisinin açık ve modelin kurulu olduğunu kontrol edin.") from None
             if path=='/api/sector-apply':
                 cid=str(d.get('camera','')).strip()
                 pack_id=str(d.get('pack','')).strip()
@@ -616,6 +978,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 pack=next((p for p in intelligence.SECTOR_PACKS if p['id']==pack_id),None)
                 if not pack: raise InputError('Geçerli bir kurumsal saha paketi seçin.')
                 with LOCK:
+                    lic=STATE.get('license',forensics.default_license())
+                    try: forensics.check_tier_allowance(lic,'deploy_pack',pack_id=pack_id,target_camera=cid)
+                    except ValueError as e: raise InputError(str(e)) from None
                     if not STATE['cameras']: raise InputError('Önce en az bir kamera ekleyin.')
                     target_cams=list(STATE['cameras']) if cid=='ALL' else [c for c in STATE['cameras'] if c['id']==cid]
                     if not target_cams: raise InputError('Önce paketin uygulanacağı kamerayı seçin.')
@@ -627,6 +992,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     target_ids={c['id'] for c in target_cams}
                     if mode=='replace':
                         STATE['rules']=[r for r in STATE['rules'] if r['camera'] not in target_ids]
+                    tier=str(lic.get('plan','ULTRA')).upper()
+                    if tier=='STARTER': tier='PRO'
+                    elif tier=='ENTERPRISE': tier='ULTRA'
+                    max_rules=forensics.LICENSE_PLANS.get(tier,forensics.LICENSE_PLANS['ULTRA'])['maxRules']
                     added=0
                     updated=0
                     for cam in target_cams:
@@ -664,7 +1033,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                             if existing_idx is not None:
                                 STATE['rules'][existing_idx]=new_rule
                                 updated+=1
-                            elif len(STATE['rules'])<512:
+                            elif len(STATE['rules'])<max_rules:
                                 STATE['rules'].append(new_rule)
                                 added+=1
                     cam_label=f"{len(target_cams)} kamera" if len(target_cams)>1 else target_cams[0]['name']
@@ -688,20 +1057,48 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 token_val=str(d.get('botToken','')).strip()
                 chat_val=str(d.get('chatId','')).strip()
                 enabled=bool(d.get('enabled',False))
+                bot_username=''
+                if token_val:
+                    try:
+                        info=iot_automation.verify_telegram_bot(token_val, register_commands=True)
+                        bot_username=info.get('username','')
+                    except Exception:
+                        pass
                 with LOCK:
-                    cur=STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False})
+                    cur=STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False,'botUsername':'','lastUpdateId':0})
                     if token_val: cur['botToken']=token_val
                     if chat_val: cur['chatId']=chat_val
+                    if bot_username: cur['botUsername']=bot_username
                     cur['enabled']=enabled
-                    audit('Telegram Ayarları Güncellendi', f"Durum: {'Etkin' if enabled else 'Kapalı'}")
+                    audit('Telegram Ayarları Güncellendi', f"Durum: {'Etkin' if enabled else 'Kapalı'}{(' · @'+bot_username) if bot_username else ''}")
                     save()
-                return self.send(200,{'ok':True,'message':'Telegram bildirim ayarları kaydedildi.'})
+                return self.send(200,{'ok':True,'botUsername':bot_username,'message':'Telegram Bot ve iki yönlü komut ayarları kaydedildi.'})
+            if path=='/api/telegram-discover-chat':
+                with LOCK: tg=dict(STATE.get('telegram',{}))
+                token_val=str(d.get('botToken') or tg.get('botToken','')).strip()
+                try:
+                    found=iot_automation.discover_telegram_chat(token_val)
+                    bot_info=iot_automation.verify_telegram_bot(token_val, register_commands=True)
+                    with LOCK:
+                        cur=STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False,'botUsername':'','lastUpdateId':0})
+                        cur['botToken']=token_val
+                        cur['chatId']=found['chatId']
+                        cur['botUsername']=bot_info.get('username','')
+                        save()
+                    return self.send(200,{'ok':True,'chatId':found['chatId'],'title':found['title'],'botUsername':bot_info.get('username',''),'message':f"Chat ID otomatik bulundu: {found['chatId']} ({found['title']})"})
+                except ValueError as e: raise InputError(str(e)) from None
+                except Exception: raise InputError('Telegram API bağlantısı kurulamadı. Bot Token değerini kontrol edin.') from None
+            if path=='/api/telegram-simulate':
+                cmd=str(d.get('command','/durum')).strip()
+                res=execute_telegram_command_context(cmd)
+                save()
+                return self.send(200,{'ok':True,'command':cmd,'reply':res['reply'],'action':res['action'],'hasPhoto':bool(res.get('photo'))})
             if path=='/api/telegram-test':
                 with LOCK: tg=dict(STATE.get('telegram',{}))
                 token_val=str(d.get('botToken') or tg.get('botToken','')).strip()
                 chat_val=str(d.get('chatId') or tg.get('chatId','')).strip()
                 try:
-                    iot_automation.send_telegram_alert(token_val,chat_val,{'camera':'Cortex Test','rule':'Telegram Bağlantı Testi','reason':'IPScans Cortex 2.0 Pro mobil bildirim hattı başarıyla doğrulandı.'})
+                    iot_automation.send_telegram_alert(token_val,chat_val,{'camera':'Cortex Test','rule':'Telegram Bağlantı Testi','reason':'IPScans Cortex 2.0 Pro mobil bildirim ve iki yönlü komuta hattı başarıyla doğrulandı.'})
                     return self.send(200,{'ok':True,'message':'Telegram test mesajı cep telefonunuza gönderildi.'})
                 except ValueError as e: raise InputError(str(e)) from None
                 except Exception: raise InputError('Telegram API bağlantısı kurulamadı. Bot Token, Chat ID ve internet erişimini kontrol edin.') from None
@@ -711,16 +1108,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 info['organization']=str(d.get('organization','Kurumsal Müşteri')).strip()[:80] or 'Kurumsal Müşteri'
                 with LOCK:
                     STATE['license']=info
-                    audit('Ticari Lisans Etkinleştirildi', f"{info['plan']} ({info['organization']})")
+                    sync_local_customer_node()
+                    audit('Ticari Lisans Etkinleştirildi', f"{info['plan']} ({info['organization']}) · {info['maxCameras']} Kamera / {info['maxRules']} Kural")
                     save()
-                return self.send(200,{'ok':True,'license':info,'message':f"{info['name']} lisansı başarıyla etkinleştirildi."})
-            if path=='/api/license-generate':
-                plan=str(d.get('plan','ENTERPRISE')).upper()
-                org=str(d.get('organization','IPScans')).strip()
-                key=forensics.generate_commercial_key(plan,org)
-                audit('Müşteri Lisans Anahtarı Üretildi', f"Paket: {plan} · Kurum: {org}")
-                save()
-                return self.send(200,{'ok':True,'key':key,'plan':plan,'organization':org})
+                return self.send(200,{'ok':True,'license':info,'message':f"{info['name']} ({info['plan']}) lisansı başarıyla etkinleştirildi."})
             if path=='/api/recorder-discover':
                 device=fleet.settings(d)
                 channels=fleet.discover(device)
@@ -745,7 +1136,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         camera=normalize_camera({'name':(device['name']+' / '+ch['name'])[:100],'url':ch['url']})
                         if any(c['url']==camera['url'] for c in STATE['cameras']+new): duplicates+=1; continue
                         camera.update(id=uuid.uuid4().hex,device=device['id']); new.append(camera)
-                    if len(STATE['cameras'])+len(new)>32: raise InputError('Toplam kamera sınırı 32. Daha az kanal seçin.')
+                    lic=STATE.get('license',forensics.default_license())
+                    tier=str(lic.get('plan','ULTRA')).upper()
+                    if tier=='STARTER': tier='PRO'
+                    elif tier=='ENTERPRISE': tier='ULTRA'
+                    max_cams=forensics.LICENSE_PLANS.get(tier,forensics.LICENSE_PLANS['ULTRA'])['maxCameras']
+                    if len(STATE['cameras'])+len(new)>max_cams: raise InputError(f"Toplam kamera sınırı ({tier} paketi için {max_cams}) aşılıyor. Daha az kanal seçin veya paketinizi yükseltin.")
                     previous_cameras=list(STATE['cameras']); previous_devices=list(STATE['devices'])
                     try:
                         if new: STATE['devices'].append(device); STATE['cameras'].extend(new); save()
@@ -768,7 +1164,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 with LOCK: STATE['devices']=[v for v in STATE['devices'] if v['id']!=d['id']]; save()
                 return self.send(200,{'ok':True})
             if path=='/api/model-install':
-                return self.send(202,{'started':INSTALLER.start()})
+                model_req=str(d.get('model','')).strip()
+                return self.send(202,{'started':INSTALLER.start(model_req) if model_req else INSTALLER.start()})
             if path=='/api/model-cancel':
                 INSTALLER.cancel(); return self.send(200,{'ok':True})
             if path=='/api/discover': return self.send(200,discover())
@@ -779,7 +1176,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if path=='/api/cameras':
                 c = normalize_camera(d); c['id']=uuid.uuid4().hex
                 with LOCK:
-                    if len(STATE['cameras'])>=32: raise InputError('En fazla 32 kamera kaydedilebilir.')
+                    try: forensics.check_tier_allowance(STATE.get('license'), 'add_camera', current_cameras=len(STATE['cameras']))
+                    except ValueError as e: raise InputError(str(e)) from None
                     STATE['cameras'].append(c)
                     try:
                         audit('Kamera Eklendi', c['name'])
@@ -821,7 +1219,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         index=next(i for i,r in enumerate(STATE['rules']) if r['id']==d['id'])
                         rule['id']=d['id']; rule['enabled']=STATE['rules'][index]['enabled']; STATE['rules'][index]=rule
                     else:
-                        if len(STATE['rules'])>=512: raise InputError('En fazla 512 kural kaydedilebilir.')
+                        try: forensics.check_tier_allowance(STATE.get('license'), 'add_rule', current_rules=len(STATE['rules']), rule_kind=rule['kind'])
+                        except ValueError as e: raise InputError(str(e)) from None
                         STATE['rules'].append(rule)
                     worker=WORKERS.get(rule['camera'])
                     if worker: worker.detectors.pop(rule['id'],None); worker.light_detectors.pop(rule['id'],None)
@@ -904,6 +1303,7 @@ def main():
     maintenance_stop=threading.Event()
     threading.Thread(target=maintenance,args=(maintenance_stop,),daemon=True).start()
     threading.Thread(target=clock_loop,args=(maintenance_stop,),daemon=True).start()
+    threading.Thread(target=telegram_bot_loop,args=(maintenance_stop,),daemon=True).start()
     if '--no-browser' not in sys.argv and STATE['model']=='gemma3:4b': INSTALLER.start()
     if STATE.get('autostart'):
         for c in STATE['cameras']: WORKERS[c['id']]=Camera(c)

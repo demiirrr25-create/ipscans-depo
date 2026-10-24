@@ -5,6 +5,10 @@ import math
 from PIL import Image, ImageChops, ImageFilter, ImageStat
 
 CATALOG = [
+    ('camera_tamper', 'Görüntü sağlığı', 'Kamera sabotaj ve örtülme (Birleşik)', 'Kenar detayı çöküşü ile kontrast/parlaklık kaymasını birlikte izleyerek boyama, örtme veya odak bozulmasını yakalar.', 45, 6),
+    ('motion_burst', 'Hareket ve bölge', 'Ani hareket patlaması (Koşma / Arbede)', 'Bölgede ani ve yüksek genlikli piksel değişimi sıçramasını izler; koşma, arbede veya ani devrilme olabilir.', 20, 2),
+    ('static_object', 'Hareket ve bölge', 'Bölgede hareketsizleşen yeni nesne', 'İlk referans sahneye göre belirgin fark oluşmasını ve bu yeni nesnenin hareketsiz kalmasını izler (bırakılan eşya veya park eden araç).', 18, 20),
+    ('light_flicker', 'Aydınlatma', 'Aydınlatma titremesi / Flaşör', 'Ardışık örneklerde parlaklığın sürekli yukarı-aşağı salınmasını izler; arızalı lamba, el feneri veya acil durum flaşörü olabilir.', 12, 4),
     ('low_contrast', 'Görüntü sağlığı', 'Düşük kontrast', 'Gri ton dağılımının daralmasını izler; sis veya lens örtülmesi olabilir. Nedeni belirlemez.', 10, 20),
     ('black_pixels', 'Görüntü sağlığı', 'Siyah alan oranı', '20/255 altındaki piksellerin yüzde oranını izler.', 85, 15),
     ('white_pixels', 'Görüntü sağlığı', 'Beyaz alan oranı', '235/255 üzerindeki piksellerin yüzde oranını izler.', 85, 15),
@@ -97,6 +101,7 @@ class Detector:
         self.previous=None; self.reference=None; self.level=None; self.detail=None
         self.since=None; self.active=False; self.clear_since=None; self.disconnected=None
         self.was_offline=False; self.last_time=None; self.metrics={}; self.armed=False
+        self.prev_level=None; self.flicker_swings=0.0; self.last_delta_sign=0; self.avg_motion=0.0
 
     def gate(self, condition, now, duration):
         if condition:
@@ -130,7 +135,7 @@ class Detector:
         self.last_time=now
         img,level,detail,contrast,black,white=(prepared or FrameSamples(frame)).get(rule.get('roi',[0,0,100,100]))
         if self.previous is None:
-            self.previous=img; self.reference=img.copy(); self.level=level; self.detail=detail
+            self.previous=img; self.reference=img.copy(); self.level=level; self.detail=detail; self.prev_level=level
             if kind in ('darkness','overexposure'): self.since=now if (level<=threshold if kind=='darkness' else level>=threshold) else None
             return False
         difference=ImageChops.difference(img,self.previous)
@@ -138,10 +143,25 @@ class Detector:
         delta=ImageStat.Stat(difference).mean[0]
         scene=100*sum(ImageChops.difference(img,self.reference).histogram()[25:])/(96*72)
         self.previous=img
+        prev_lvl=self.prev_level if self.prev_level is not None else level
+        lvl_diff=level-prev_lvl
+        sign=1 if lvl_diff>=max(4,threshold) else (-1 if lvl_diff<=-max(4,threshold) else 0)
+        if sign!=0 and sign!=self.last_delta_sign:
+            self.flicker_swings=min(10.0,self.flicker_swings+1.0)
+            self.last_delta_sign=sign
+        else:
+            self.flicker_swings=max(0.0,self.flicker_swings-0.25)
+        self.prev_level=level
+        prev_avg_motion=self.avg_motion
+        self.avg_motion=self.avg_motion*0.85+motion*0.15
         self.metrics={'brightness':round(level,1),'motion':round(motion,2),'difference':round(delta,3),'scene':round(scene,2),'detail':round(detail,2),'contrast':round(contrast,2),'blackPct':round(black,1),'whitePct':round(white,1)}
         if kind=='scene_restored' and scene>=max(20,threshold+10): self.armed=True
         if kind=='motion_stopped' and motion>=max(5,threshold+2): self.armed=True
         conditions={
+            'camera_tamper': (self.detail>=3 and detail<=self.detail*(1-threshold/100)) or (scene>=35 and (contrast<=12 or black>=82 or white>=85)),
+            'motion_burst': motion>=threshold and motion>=max(12.0,prev_avg_motion*2.0) and delta>=8.0,
+            'static_object': scene>=threshold and motion<=1.8,
+            'light_flicker': self.flicker_swings>=2.0,
             'lights_off': self.level>=threshold+15 and level<=threshold and level<=self.level*rule.get('drop',.45),
             'lights_on': self.level<=threshold-20 and level>=threshold,
             'darkness':level<=threshold, 'overexposure':level>=threshold,

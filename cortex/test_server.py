@@ -7,6 +7,7 @@ spec=importlib.util.spec_from_file_location('cortex',pathlib.Path(__file__).with
 class Tests(unittest.TestCase):
  def setUp(self):
   s.STATE['cameras']=[];s.STATE['rules']=[];s.STATE['events']=[];s.STATE['webhook']=''
+  s.STATE['license']=s.forensics.default_license()
  @classmethod
  def setUpClass(cls):
   cls.http=s.http.server.ThreadingHTTPServer(('127.0.0.1',18765),s.Handler); threading.Thread(target=cls.http.serve_forever,daemon=True).start()
@@ -117,7 +118,7 @@ class Tests(unittest.TestCase):
    code,body=self.request('/api/model-install',{});self.assertEqual(code,202);start.assert_called_once()
   with patch.object(s.INSTALLER,'cancel') as cancel:
    self.request('/api/model-cancel',{});cancel.assert_called_once()
-  state=json.loads(self.request('/api/state')[1]);self.assertEqual(len(state['templates']),21);self.assertIn('phase',state['installer'])
+  state=json.loads(self.request('/api/state')[1]);self.assertEqual(len(state['templates']),25);self.assertIn('phase',state['installer'])
  def test_known_light_template_cannot_be_saved_as_vision(self):
   self.request('/api/cameras',{'name':'Test','url':'rtsp://192.0.2.1/stream'})
   self.request('/api/rules',{'camera':s.STATE['cameras'][0]['id'],'name':'Işık kapandı','prompt':'Önce aydınlık referans öğrenir; belirgin kararmayı doğrular.','kind':'vision','threshold':.8,'cooldown':120})

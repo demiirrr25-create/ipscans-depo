@@ -1,11 +1,11 @@
-"""Cortex 2.0 Pro — Hybrid 3-Tier Intelligence Engine, Spatial Heatmap, Privacy Masking & Sector Packs.
+"""Cortex 2.0 Pro — Hybrid 3-Tier Intelligence Engine, Spatial Heatmap, Privacy Masking & 8 Sector Packs.
 
 Combines:
 1. KVKK/GDPR Privacy Masking (pre-inference & pre-recording redaction/blur)
 2. Spatial Activity Heatmap (32x18 thermal grid with exponential decay & PNG rendering)
-3. Multi-Object Spatial Tracker (Loitering / Dwell-Time, Occupancy / Crowd Count, Tailgating, Perimeter Intrusion)
+3. Multi-Object Spatial Tracker (Loitering, Occupancy/Crowd, Tailgating, Perimeter, Fall/Motionless, Abandon/Quick-Exit)
 4. Smart Cascade Gate (saves 80%+ VLM GPU/CPU cycles when scene is static)
-5. Commercial Sector Deployment Packs (Site, Havuz, Fabrika, Depo, Perakende, Ofis & Plaza)
+5. Commercial Sector Deployment Packs (Site, Havuz, Fabrika, Depo, Perakende, Ofis, Okul/Kampüs, Hastane/Klinik)
 """
 import io
 import math
@@ -18,6 +18,8 @@ PRO_KINDS = {
     'pro_occupancy',
     'pro_tailgating',
     'pro_perimeter',
+    'pro_fall',
+    'pro_abandon',
 }
 
 PRO_TEMPLATES = [
@@ -53,6 +55,22 @@ PRO_TEMPLATES = [
         'sensitivity': 1,
         'duration': 2,
     },
+    {
+        'kind': 'pro_fall',
+        'category': 'Cortex Pro · İSG & Sağlık',
+        'name': 'Yerde hareketsiz kalma / düşme şüphesi takibi',
+        'description': 'Bölgeye giren bir hedefin hareket ettikten sonra zemin seviyesinde hareketsiz kalmasını (düşme/bayılma şüphesi) izler.',
+        'sensitivity': 3,
+        'duration': 8,
+    },
+    {
+        'kind': 'pro_abandon',
+        'category': 'Cortex Pro · Alan & Nesne',
+        'name': 'Bölgeye girip eşya bırakma / hızlı ayrılma',
+        'description': 'Bir kişinin bölgeye girip kısa süre durduktan sonra hızla ayrılmasını (paket/çöp/nesne bırakma davranışı) izler.',
+        'sensitivity': 2,
+        'duration': 3,
+    },
 ]
 
 SECTOR_PACKS = [
@@ -61,6 +79,7 @@ SECTOR_PACKS = [
         'name': 'Site & Rezidans Güvenlik Paketi',
         'icon': '🏢',
         'badge': 'Konut & Yaşam',
+        'tier': 'PRO',
         'recommended': 'Nizamiye, Blok Girişi, Çevre Duvarı, Asansör Holü',
         'summary': 'Nizamiye kaçak geçiş (tailgating), gece çevre hattı bekleme, acil çıkış engeli, ortak alan çöp bırakma ve kamera sabotaj koruması.',
         'rules': [
@@ -114,12 +133,12 @@ SECTOR_PACKS = [
             },
             {
                 'name': 'Kamera Sabotaj / Müdahale Koruması',
-                'kind': 'low_detail',
+                'kind': 'camera_tamper',
                 'categoryBadge': 'Sabotaj',
-                'prompt': 'İlk referansa göre kenar ayrıntısının azalmasını izler; netlik kaybı veya örtülme olabilir.',
+                'prompt': 'Kenar detayı çöküşü ile kontrast/parlaklık kaymasını birlikte izleyerek boyama, örtme veya odak bozulmasını yakalar.',
                 'roi': [0, 0, 100, 100],
-                'sensitivity': 50,
-                'duration': 10,
+                'sensitivity': 45,
+                'duration': 6,
                 'cooldown': 120,
                 'threshold': 0.8,
             },
@@ -130,8 +149,9 @@ SECTOR_PACKS = [
         'name': 'Havuz & Sosyal Tesis Paketi',
         'icon': '🏊',
         'badge': 'Tesis & Rekreasyon',
+        'tier': 'PLUS',
         'recommended': 'Açık/Kapalı Havuz, Teras, Turnike, Çocuk Oyun Alanı',
-        'summary': 'Kapalı saatlerde havuz güvenlik hattı ihlali, kulvar/teras kapasite aşımı, gece havuz kenarı bekleme ve aydınlatma kaybı izleme.',
+        'summary': 'Kapalı saatlerde havuz güvenlik hattı ihlali, kulvar/teras kapasite aşımı, gece havuz kenarı bekleme, kayma/düşme ve aydınlatma kaybı izleme.',
         'rules': [
             {
                 'name': 'Kapalı Saatte Havuz Alanına Giriş',
@@ -175,6 +195,16 @@ SECTOR_PACKS = [
                 'end': '07:00',
             },
             {
+                'name': 'Havuz Çevresi Kayma / Yerde Yatan İnsan',
+                'kind': 'vision',
+                'visionTemplate': 'fallen_person',
+                'categoryBadge': 'Acil Durum',
+                'prompt': 'Son karede zeminde yatay uzanmış, düşmüş veya hareketsiz yatan bir insan açıkça görülüyorsa bildir.',
+                'roi': [10, 20, 80, 75],
+                'threshold': 0.8,
+                'cooldown': 60,
+            },
+            {
                 'name': 'Havuz Aydınlatma Kaybı',
                 'kind': 'lights_off',
                 'categoryBadge': 'Aydınlatma',
@@ -195,8 +225,9 @@ SECTOR_PACKS = [
         'name': 'Fabrika & Endüstriyel Saha Paketi',
         'icon': '🏭',
         'badge': 'İSG & Üretim',
+        'tier': 'PLUS',
         'recommended': 'Üretim Bandı, Robotik Hücre, Yaya Yolu, Kazan Dairesi',
-        'summary': 'Tehlikeli makine bölgesi sınır ihlali, yasak üretim alanında insan varlığı, yaya koridorunda forklift, hat duruşu ve duman/yangın tespiti.',
+        'summary': 'Tehlikeli makine bölgesi sınır ihlali, baretsiz çalışan İSG denetimi, yasak hücrede insan varlığı, yaya koridorunda forklift, hat duruşu ve duman/yangın tespiti.',
         'rules': [
             {
                 'name': 'Tehlikeli Makine Bölgesine Giriş',
@@ -225,11 +256,21 @@ SECTOR_PACKS = [
                 'threshold': 0.8,
             },
             {
+                'name': 'Baretsiz Çalışan Tespiti (İSG İhlali)',
+                'kind': 'vision',
+                'visionTemplate': 'no_helmet',
+                'categoryBadge': 'İSG Denetimi',
+                'prompt': 'Seçili çalışma bölgesinin son karesinde açıkça bir insan varsa VE başında koruyucu iş bareti TAKMADIĞI net biçimde görülüyorsa bildir.',
+                'roi': [15, 15, 70, 80],
+                'threshold': 0.8,
+                'cooldown': 90,
+            },
+            {
                 'name': 'Yaya Koridorunda Araç / Forklift',
                 'kind': 'vision',
-                'visionTemplate': 'vehicle',
+                'visionTemplate': 'forklift',
                 'categoryBadge': 'Görsel AI',
-                'prompt': 'Seçili bölgenin son karesinde açıkça bir motorlu araç veya iş makinesi varsa bildir.',
+                'prompt': 'Seçili bölgede çatalları veya kaldırma mekanizması açıkça görünen forklift varsa bildir.',
                 'roi': [10, 25, 80, 70],
                 'threshold': 0.8,
                 'cooldown': 60,
@@ -250,7 +291,7 @@ SECTOR_PACKS = [
                 'kind': 'vision',
                 'visionTemplate': 'smoke',
                 'categoryBadge': 'Görsel AI',
-                'prompt': 'Son karede açıkça duman bulutu veya alev görülüyorsa bildir.',
+                'prompt': 'Son karede yükselen yoğun duman bulutu veya açık alev/ateş doğrudan görülüyorsa bildir.',
                 'roi': [0, 0, 100, 100],
                 'threshold': 0.8,
                 'cooldown': 60,
@@ -262,8 +303,9 @@ SECTOR_PACKS = [
         'name': 'Depo & Lojistik Merkezi Paketi',
         'icon': '📦',
         'badge': 'Stok & Lojistik',
+        'tier': 'PLUS',
         'recommended': 'Yükleme Rampası, Değerli Stok Koridoru, Sevkiyat Kapısı',
-        'summary': 'Değerli stok koridorunda şüpheli bekleme, yükleme rampası ters yön ihlali, mesai dışı ışık açılması ve kalıcı stok/sahne değişimi.',
+        'summary': 'Değerli stok koridorunda şüpheli bekleme, yükleme rampası ters yön ihlali, mesai dışı ışık açılması, geçişte palet engeli ve kalıcı sahne değişimi.',
         'rules': [
             {
                 'name': 'Stok Alanında Uzun Süre Bekleme',
@@ -292,6 +334,17 @@ SECTOR_PACKS = [
                 'threshold': 0.8,
             },
             {
+                'name': 'Geçiş Koridorunda Bırakılan Palet / Koli',
+                'kind': 'static_object',
+                'categoryBadge': 'Yeni Nesne',
+                'prompt': 'İlk referans sahneye göre belirgin fark oluşmasını ve bu yeni nesnenin hareketsiz kalmasını izler.',
+                'roi': [15, 25, 70, 70],
+                'sensitivity': 18,
+                'duration': 20,
+                'cooldown': 120,
+                'threshold': 0.8,
+            },
+            {
                 'name': 'Mesai Dışı Depo Işığı Açıldı',
                 'kind': 'lights_on',
                 'categoryBadge': 'Aydınlatma',
@@ -305,7 +358,7 @@ SECTOR_PACKS = [
                 'end': '07:00',
             },
             {
-                'name': 'Kalıcı Sahne / Palet Değişimi',
+                'name': 'Kalıcı Sahne / Stok Raf Değişimi',
                 'kind': 'scene_change',
                 'categoryBadge': 'Sahne Farkı',
                 'prompt': 'İlk referansa göre değişimi izler. Kamera yönü/nesne değişimi olabilir.',
@@ -322,8 +375,9 @@ SECTOR_PACKS = [
         'name': 'Perakende & Mağaza Analitik Paketi',
         'icon': '🛍️',
         'badge': 'Mağaza & AVM',
+        'tier': 'PRO',
         'recommended': 'Mağaza Girişi, Kasa Sırası, Kampanya Reyonu, Depo Kapısı',
-        'summary': 'Müşteri giriş geçiş takibi, kasa önü kuyruk ve kalabalık analizi, vitrin/reyon bekleme (ilgi süresi) ve kasa arkası yetkisiz geçiş.',
+        'summary': 'Müşteri giriş geçiş takibi, kasa önü kuyruk ve kalabalık analizi, vitrin/reyon bekleme (ilgi süresi), sahipsiz çanta ve kasa arkası yetkisiz geçiş.',
         'rules': [
             {
                 'name': 'Mağaza Giriş Kapısı Müşteri Geçişi',
@@ -377,6 +431,16 @@ SECTOR_PACKS = [
                 'cooldown': 30,
                 'threshold': 0.8,
             },
+            {
+                'name': 'Mağaza İçi Sahipsiz Çanta / Paket',
+                'kind': 'vision',
+                'visionTemplate': 'abandoned_bag',
+                'categoryBadge': 'Görsel AI',
+                'prompt': 'Seçili bölgenin son karesinde yerde veya bankta duran çanta, valiz, sırt çantası ya da koli varsa VE yakınında hiçbir insan bulunmuyorsa bildir.',
+                'roi': [15, 25, 70, 70],
+                'threshold': 0.8,
+                'cooldown': 120,
+            },
         ],
     },
     {
@@ -384,6 +448,7 @@ SECTOR_PACKS = [
         'name': 'Ofis, Plaza & Bina Yönetimi Paketi',
         'icon': '🏛️',
         'badge': 'Kurumsal Bina',
+        'tier': 'PLUS',
         'recommended': 'Turnike Lobisi, Sistem/Sunucu Odası, Kat Koridoru, Otopark Yaya Girişi',
         'summary': 'Turnike ve kartlı kapılarda tailgating tespiti, sunucu odası sınır güvenliği, lobi kapasite analizi ve mesai dışı kat hareketi.',
         'rules': [
@@ -436,6 +501,119 @@ SECTOR_PACKS = [
                 'threshold': 0.8,
                 'start': '21:00',
                 'end': '07:00',
+            },
+        ],
+    },
+    {
+        'id': 'campus',
+        'name': 'Okul, Kampüs & Eğitim Kurumu Paketi',
+        'icon': '🎓',
+        'badge': 'Eğitim & Kampüs',
+        'tier': 'PLUS',
+        'recommended': 'Okul Bahçesi, Çevre Duvarı, Ana Koridor, Yemekhane Girişi',
+        'summary': 'Çevre duvarı/çit tırmanma tespiti, koridor ve bahçede ani hareket/arbede patlaması, kalabalık toplanma ve çıkış kapısı ters yön kontrolü.',
+        'rules': [
+            {
+                'name': 'Çevre Duvarı / Çit Tırmanma Tespiti',
+                'kind': 'vision',
+                'visionTemplate': 'climb_fence',
+                'categoryBadge': 'Çevre Güvenliği',
+                'prompt': 'Son karede bir insanın çevre duvarına, çite, korkuluğa veya bariyere tırmandığı ya da üzerinden atladığı açıkça görülüyorsa bildir.',
+                'roi': [5, 10, 90, 80],
+                'threshold': 0.8,
+                'cooldown': 60,
+            },
+            {
+                'name': 'Koridor / Bahçe Ani Hareket Patlaması (Koşma / Arbede)',
+                'kind': 'motion_burst',
+                'categoryBadge': 'Arbede / Panik',
+                'prompt': 'Bölgede ani ve yüksek genlikli piksel değişimi sıçramasını izler; koşma, arbede veya ani devrilme olabilir.',
+                'roi': [10, 15, 80, 80],
+                'sensitivity': 20,
+                'duration': 2,
+                'cooldown': 45,
+                'threshold': 0.8,
+            },
+            {
+                'name': 'Kampüs Bahçesi Kalabalık Toplanma',
+                'kind': 'pro_occupancy',
+                'categoryBadge': 'Kalabalık',
+                'prompt': 'Seçili bahçe veya koridor bölgesinde aynı anda 5 veya daha fazla kişi toplandığında bildir.',
+                'roi': [10, 20, 80, 75],
+                'sensitivity': 5,
+                'duration': 8,
+                'cooldown': 90,
+                'threshold': 0.8,
+            },
+            {
+                'name': 'Çıkış Kapısından Ters Yönde Giriş',
+                'kind': 'access_reverse',
+                'categoryBadge': 'Ters Yön',
+                'prompt': 'Belirlenen çıkış yönünün tersine gerçekleşen girişi bildirir.',
+                'axis': 'y',
+                'direction': 'positive',
+                'line': 55,
+                'margin': 8,
+                'roi': [15, 15, 70, 80],
+                'sensitivity': 8,
+                'duration': 1,
+                'cooldown': 30,
+                'threshold': 0.8,
+            },
+        ],
+    },
+    {
+        'id': 'clinic',
+        'name': 'Hastane, Klinik & Yaşlı Bakım Paketi',
+        'icon': '🏥',
+        'badge': 'Sağlık & Bakım',
+        'tier': 'ULTRA',
+        'recommended': 'Hasta Koridoru, Yaşlı Bakım Katı, Acil Girişi, İlaç/Ecza Odası',
+        'summary': 'Yerde düşme ve hareketsiz hasta takibi, gece refakatsiz hasta koridor çıkışı, ecza/ilaç odası sınır koruması ve acil geçiş yolu engeli.',
+        'rules': [
+            {
+                'name': 'Yerde Hareketsiz Kalma / Düşme Şüphesi Takibi',
+                'kind': 'pro_fall',
+                'categoryBadge': 'Düşme Takibi',
+                'prompt': 'Bölgeye giren bir kişinin zemin seviyesinde hareketsiz kalmasını (düşme/bayılma şüphesi) izler.',
+                'roi': [10, 20, 80, 75],
+                'sensitivity': 3,
+                'duration': 8,
+                'cooldown': 45,
+                'threshold': 0.8,
+            },
+            {
+                'name': 'Gece Koridorda Refakatsiz Hasta / Yaşlı Çıkışı',
+                'kind': 'vision',
+                'visionTemplate': 'elderly_wander',
+                'categoryBadge': 'Hasta Güvenliği',
+                'prompt': 'Seçili koridor veya çıkış bölgesinin son karesinde yanında görevli olmadan tek başına yürüyen veya bekleyen bir insan açıkça görülüyorsa bildir.',
+                'roi': [15, 15, 70, 80],
+                'threshold': 0.8,
+                'cooldown': 60,
+                'start': '22:00',
+                'end': '06:30',
+            },
+            {
+                'name': 'İlaç / Ecza Deposu Yasak Bölge İhlali',
+                'kind': 'pro_perimeter',
+                'categoryBadge': 'Ecza Güvenliği',
+                'prompt': 'Kilitli ilaç/ecza dolabı bölgesinde insan varlığı doğrulandığında anında bildir.',
+                'roi': [20, 15, 60, 80],
+                'sensitivity': 1,
+                'duration': 2,
+                'cooldown': 30,
+                'threshold': 0.8,
+            },
+            {
+                'name': 'Acil Sedye Koridorunda Fiziksel Engel',
+                'kind': 'vision',
+                'visionTemplate': 'blocked_exit',
+                'categoryBadge': 'Acil Koridor',
+                'prompt': 'Seçili geçiş/kapı bölgesinin son karesinde yolu belirgin şekilde kapatan fiziksel bir nesne varsa bildir.',
+                'roi': [15, 20, 70, 75],
+                'threshold': 0.8,
+                'cooldown': 120,
             },
         ],
     },
@@ -499,60 +677,66 @@ class HeatmapAccumulator:
         self.decay = decay
         self.grid = [0.0] * (self.WIDTH * self.HEIGHT)
         self.previous = None
+        self.total_samples = 0
         self.lock = threading.Lock()
-        self.samples = 0
 
     def update(self, frame_bytes, points=None):
+        """Accumulate pixel motion & pedestrian detections into the 32x18 spatial grid."""
         if not frame_bytes:
             return
         try:
-            with Image.open(io.BytesIO(frame_bytes)) as src:
-                gray = src.convert('L').resize((self.WIDTH, self.HEIGHT))
+            with Image.open(io.BytesIO(frame_bytes)) as img:
+                small = img.convert('L').resize((self.WIDTH, self.HEIGHT))
+                raw = list(small.tobytes())
         except Exception:
             return
         with self.lock:
-            if self.previous is not None:
-                diff = ImageChops.difference(gray, self.previous)
-                raw = diff.tobytes()
-                for i, val in enumerate(raw):
-                    delta = 1.0 if val >= 18 else (val / 40.0 if val >= 8 else 0.0)
-                    self.grid[i] = min(100.0, self.grid[i] * self.decay + delta * 3.5)
+            self.total_samples += 1
+            for i in range(len(self.grid)):
+                self.grid[i] *= self.decay
+            if self.previous is not None and len(self.previous) == len(raw):
+                for i, (cur, prev) in enumerate(zip(raw, self.previous)):
+                    diff = abs(cur - prev)
+                    if diff >= 14:
+                        self.grid[i] = min(100.0, self.grid[i] + (diff / 255.0) * 6.5)
+            self.previous = raw
             if points:
                 for px, py in points:
-                    gx = max(0, min(self.WIDTH - 1, int(px / 100.0 * self.WIDTH)))
-                    gy = max(0, min(self.HEIGHT - 1, int(py / 100.0 * self.HEIGHT)))
-                    self.grid[gy * self.WIDTH + gx] = min(100.0, self.grid[gy * self.WIDTH + gx] + 8.0)
-            self.previous = gray
-            self.samples += 1
+                    gx = min(self.WIDTH - 1, max(0, int(px / 100.0 * self.WIDTH)))
+                    gy = min(self.HEIGHT - 1, max(0, int(py / 100.0 * self.HEIGHT)))
+                    idx = gy * self.WIDTH + gx
+                    self.grid[idx] = min(100.0, self.grid[idx] + 18.0)
 
     def snapshot_matrix(self):
         with self.lock:
             peak = max(self.grid) if self.grid else 0.0
-            norm = peak if peak > 1.0 else 1.0
-            rows = []
-            for y in range(self.HEIGHT):
-                row = [round(self.grid[y * self.WIDTH + x] / norm, 3) for x in range(self.WIDTH)]
-                rows.append(row)
-            return {'width': self.WIDTH, 'height': self.HEIGHT, 'samples': self.samples, 'peak': round(peak, 2), 'grid': rows}
+            norm = [round(v / peak, 3) if peak > 0.5 else 0.0 for v in self.grid]
+            return {
+                'width': self.WIDTH,
+                'height': self.HEIGHT,
+                'samples': self.total_samples,
+                'peak': round(peak, 2),
+                'cells': norm,
+            }
 
     def render_png(self, width=640, height=360):
-        """Render a transparent RGBA thermal overlay PNG for live camera superposition."""
-        matrix = self.snapshot_matrix()['grid']
+        """Render a smooth RGBA thermal overlay PNG for the live camera view."""
+        snap = self.snapshot_matrix()
+        cells = snap['cells']
         overlay = Image.new('RGBA', (self.WIDTH, self.HEIGHT), (0, 0, 0, 0))
         pixels = []
-        for row in matrix:
-            for val in row:
-                if val < 0.06:
-                    pixels.append((0, 0, 0, 0))
-                elif val < 0.35:
-                    t = (val - 0.06) / 0.29
-                    pixels.append((0, int(140 * t), 255, int(60 + 60 * t)))
-                elif val < 0.70:
-                    t = (val - 0.35) / 0.35
-                    pixels.append((int(255 * t), 220, int(255 * (1 - t)), int(120 + 50 * t)))
-                else:
-                    t = min(1.0, (val - 0.70) / 0.30)
-                    pixels.append((255, int(200 * (1 - t)), 0, int(170 + 55 * t)))
+        for val in cells:
+            if val < 0.06:
+                pixels.append((0, 0, 0, 0))
+            elif val < 0.35:
+                t = (val - 0.06) / 0.29
+                pixels.append((0, int(140 * t), 255, int(65 + 65 * t)))
+            elif val < 0.70:
+                t = (val - 0.35) / 0.35
+                pixels.append((int(255 * t), 220, int(255 * (1 - t)), int(120 + 50 * t)))
+            else:
+                t = min(1.0, (val - 0.70) / 0.30)
+                pixels.append((255, int(200 * (1 - t)), 0, int(170 + 55 * t)))
         overlay.putdata(pixels)
         scaled = overlay.resize((width, height), resample=Image.Resampling.BILINEAR)
         out = io.BytesIO()
@@ -561,7 +745,7 @@ class HeatmapAccumulator:
 
 
 class ProTracker:
-    """Spatial multi-object dwell-time (loitering), occupancy, perimeter intrusion, and tailgating tracker."""
+    """Spatial multi-object dwell-time (loitering), occupancy, perimeter, fall, abandon, and tailgating tracker."""
 
     def __init__(self):
         self.tracks = {}
@@ -572,6 +756,8 @@ class ProTracker:
         self.perimeter_active = False
         self.crossing_times = deque(maxlen=32)
         self.loiter_alerted = set()
+        self.fall_alerted = set()
+        self.abandon_alerted = set()
 
     def update_points(self, points, roi, now):
         """Associate detected normalized (x%, y%) points with persistent tracks and dwell durations."""
@@ -586,10 +772,17 @@ class ProTracker:
                 tid = candidates[0][1]
                 remaining.remove(tid)
                 tr = self.tracks[tid]
+                step_dist = math.dist(pt, tr['point'])
                 tr['point'] = pt
                 tr['last_seen'] = now
                 tr['hits'] += 1
                 tr['dwell'] = round(now - tr['first_seen'], 1)
+                tr['last_step'] = round(step_dist, 2)
+                if step_dist <= 2.5:
+                    if tr.get('still_since') is None:
+                        tr['still_since'] = now
+                else:
+                    tr['still_since'] = now
                 updated[tid] = tr
             else:
                 self.next_id += 1
@@ -597,15 +790,19 @@ class ProTracker:
                 tr = {
                     'id': tid,
                     'point': pt,
+                    'origin': pt,
                     'first_seen': now,
                     'last_seen': now,
+                    'still_since': now,
                     'hits': 1,
                     'dwell': 0.0,
+                    'last_step': 0.0,
                     'side': 0,
                 }
                 self.tracks[tid] = tr
                 updated[tid] = tr
         self.loiter_alerted = {tid for tid in self.loiter_alerted if tid in self.tracks}
+        self.fall_alerted = {tid for tid in self.fall_alerted if tid in self.tracks}
         return list(updated.values())
 
     def evaluate_loitering(self, points, rule, now):
@@ -666,6 +863,39 @@ class ProTracker:
         else:
             self.perimeter_since = None
             self.perimeter_active = False
+        return False, None
+
+    def evaluate_fall(self, points, rule, now):
+        """Detect a person/target becoming stationary on the floor plane for >= duration seconds."""
+        roi = rule.get('roi', [0, 0, 100, 100])
+        duration = float(rule.get('duration', 8))
+        active_tracks = self.update_points(points, roi, now)
+        for tr in active_tracks:
+            still_dur = now - tr.get('still_since', now)
+            if tr['hits'] >= 3 and still_dur >= duration and tr['id'] not in self.fall_alerted:
+                self.fall_alerted.add(tr['id'])
+                return True, {
+                    'confidence': 1.0,
+                    'reason': f"{rule['name']}: hedef ({tr['point'][0]:.0f}%, {tr['point'][1]:.0f}%) zemin bölgesinde {still_dur:.1f} saniyedir hareketsiz kaldı (düşme/bayılma şüphesi).",
+                    'tags': ['fall', 'düşme', 'hareketsiz_insan'],
+                }
+        return False, None
+
+    def evaluate_abandon(self, points, rule, now):
+        """Detect a target entering the ROI, dwelling briefly (>= duration), and then exiting."""
+        roi = rule.get('roi', [0, 0, 100, 100])
+        min_dwell = float(rule.get('duration', 3))
+        before_ids = {tid: dict(tr) for tid, tr in self.tracks.items() if tr['dwell'] >= min_dwell and tr['hits'] >= 2}
+        active_tracks = self.update_points(points, roi, now)
+        active_ids = {tr['id'] for tr in active_tracks}
+        for tid, old_tr in before_ids.items():
+            if tid not in active_ids and tid not in self.abandon_alerted:
+                self.abandon_alerted.add(tid)
+                return True, {
+                    'confidence': 1.0,
+                    'reason': f"{rule['name']}: hedef bölgede {old_tr['dwell']:.1f} saniye durduktan sonra hızla ayrıldı (eşya/nesne bırakma kontrolü).",
+                    'tags': ['abandon', 'eşya_bırakma', 'bölge_ayrılma'],
+                }
         return False, None
 
     def evaluate_tailgating(self, crossings, rule, now, permit_consumed=False):

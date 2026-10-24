@@ -5,6 +5,13 @@ let studioMode = 'roi';
 let isDrawing = false, dragAction = null, dragStart = null, initialRoi = null;
 let matrixOpen = false, matrixHeatmap = false;
 let sectorSelections = {}; // { [packId]: Set<number> }
+let adminToken = '';
+let lastGeneratedKey = '';
+let lastGeneratedOrg = '';
+
+try {
+  adminToken = sessionStorage.getItem('cortex-admin-token') || '';
+} catch (e) {}
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -37,7 +44,7 @@ function playOperatorAlert() {
 }
 
 /* ==========================================================================
-   IPScans v2 Theme System (Light / Dark + OS Preference + Persistence)
+   IPScans v2 Theme System (Light Default / Dark + OS Preference + Persistence)
    ========================================================================== */
 
 function getPreferredTheme() {
@@ -47,7 +54,7 @@ function getPreferredTheme() {
     const saved = localStorage.getItem("ipscans-theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch (e) {}
-  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  return "light";
 }
 
 function applyTheme(theme, persist = false) {
@@ -74,17 +81,6 @@ function initTheme() {
       applyTheme(next, true);
     });
   }
-  if (window.matchMedia) {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = e => {
-      try {
-        if (!localStorage.getItem("ipscans-theme")) {
-          applyTheme(e.matches ? "dark" : "light", false);
-        }
-      } catch (err) {}
-    };
-    if (mq.addEventListener) mq.addEventListener('change', listener);
-  }
 }
 
 /* ==========================================================================
@@ -99,9 +95,10 @@ const I18N = {
     'nav.rules': 'Olay kuralları',
     'nav.events': 'Olay arşivi',
     'nav.settings': 'Ayarlar & Lisans',
+    'nav.admin': 'Yönetim Paneli',
     'aside.workspace': 'Yerel çalışma alanı',
     'aside.privacy': 'Görüntüler bu bilgisayarda kalır.',
-    'aside.engine': 'Hibrit Görsel AI + Akıllı Takip Motoru',
+    'aside.engine': 'Hibrit Görsel AI + Akıllı Takip + Telegram Bot',
     'aside.rc': '2.0 Pro Ticari Sürüm',
     'header.badge': 'LOCAL FIRST',
     'overview.eyebrow': 'GÖREN KAMERALAR. ANLAYAN SİSTEM.',
@@ -111,11 +108,11 @@ const I18N = {
     'overview.studioBtn': 'Bölge (ROI) & Kural Stüdyosu ⌘',
     'overview.orb': 'GÖR · ANLA · BİLDİR',
     'overview.workspace': 'Çalışma alanın',
-    'overview.liveStatus': 'Gerçek bağlantı durumu · Canlı termal ısı haritası ve KVKK maskeleme destekli',
-    'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla veya yukarıdan 6 kurumsal saha paketinden birini tek tıkla uygula. 12 yerel piksel kuralı, 4 Cortex Pro akıllı takip kuralı (Loitering, Kapasite, Tailgating, Yasak Bölge), 3 geçiş kontrol kuralı ve 12 görsel AI şablonu hazır gelir.',
-    'sector.eyebrow': 'KURUMSAL SAHA PAKETLERİ · 6 SEKTÖR',
+    'overview.liveStatus': 'Gerçek bağlantı durumu · Canlı termal ısı haritası, İki Yönlü Telegram Bot ve KVKK maskeleme destekli',
+    'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla veya yukarıdan 8 kurumsal saha paketinden birini tek tıkla uygula. 22 yerel piksel kuralı, 6 Cortex Pro akıllı takip kuralı, 3 geçiş kontrol kuralı ve 42 görsel AI şablonu hazır gelir.',
+    'sector.eyebrow': 'KURUMSAL SAHA PAKETLERİ · 8 SEKTÖR · PRO / PLUS / ULTRA',
     'sector.title': 'Tek tıkla sektörel kurulum paketleri',
-    'sector.desc': 'Site, Havuz, Fabrika, Depo, Perakende veya Ofis/Plaza kurulumlarında önceden kalibre edilmiş bölge (ROI), zaman çizelgesi ve akıllı takip kurallarını seçip tek tuşla devreye alın.',
+    'sector.desc': 'Site/Rezidans, Havuz, Fabrika/İSG, Depo/Lojistik, Perakende/AVM, Ofis/Plaza, Okul/Kampüs ve Hastane/Klinik için kalibre edilmiş bölge (ROI), zaman çizelgesi ve akıllı takip kurallarını seçip tek tuşla devreye alın.',
     'sector.targetCamera': 'Hedef kamera',
     'sector.deployMode': 'Kurulum modu',
     'stats.cameras': 'KAMERALAR',
@@ -124,7 +121,7 @@ const I18N = {
     'empty.camerasTitle': 'Henüz kamera eklenmedi.',
     'empty.camerasDesc': 'IP adresi ve giriş bilgileriyle ilk kameranı bağla.',
     'empty.rulesTitle': 'Kütüphaneden bir konfigürasyon seç.',
-    'empty.rulesDesc': 'Aydınlatma, hareket, loitering, kapasite, sınır güvenliği ve görsel AI kuralları hazır.',
+    'empty.rulesDesc': 'Aydınlatma, hareket, loitering, kapasite, sınır güvenliği, İSG ve görsel AI kuralları hazır.',
     'empty.eventsTitle': 'Henüz olay yok.',
     'empty.eventsDesc': 'Tespit edilen olayların açıklamaları ve yerel klipleri burada görünür. Örnek veya sahte olay gösterilmez.',
     'cameras.eyebrow': '01 / GÖR & BAĞLAN',
@@ -147,7 +144,7 @@ const I18N = {
     'rules.eyebrow': '02 / ANLA & TASARLA',
     'rules.title': 'Sen söyle.<br>Cortex takip etsin.',
     'rules.formTitle': 'Yeni olay kuralı',
-    'rules.catalogLabel': 'Konfigürasyon kütüphanesi',
+    'rules.catalogLabel': 'Konfigürasyon kütüphanesi (22 Yerel + 6 Pro Takip + 3 Geçiş + 42 Görsel AI)',
     'rules.cameraLabel': 'Kamera',
     'rules.nameLabel': 'Kural adı',
     'rules.promptLabel': 'Ne olduğunda haber verelim?',
@@ -172,11 +169,11 @@ const I18N = {
     'events.title': 'Olay arşivi.',
     'events.subtitle': 'Doğal dilde ara, kanıt klibini incele, SHA-256 imzalı adli kanıt paketini indir.',
     'events.notifyBtn': 'Masaüstü bildirimi aç',
-    'settings.eyebrow': '04 / ÇALIŞMA ALANI & TİCARİ LİSANS',
+    'settings.eyebrow': '04 / ÇALIŞMA ALANI, OLLAMA VLM & MÜŞTERİ LİSANSI',
     'settings.title': 'Kontrol sende.',
-    'settings.engineTitle': 'Yerel analiz motoru',
-    'settings.modelLabel': 'Ollama görsel model adı',
-    'settings.installBtn': 'Gemma’yı kur ve bağla',
+    'settings.engineTitle': 'Yerel Ollama Görsel AI Motoru',
+    'settings.modelLabel': 'Aktif Ollama görsel model adı',
+    'settings.installBtn': 'Seçili modeli kur ve bağla',
     'settings.cancelBtn': 'İptal et',
     'settings.testModelBtn': 'Model bağlantısını kontrol et',
     'settings.retentionLabel': 'Kayıt saklama süresi (gün)',
@@ -196,9 +193,10 @@ const I18N = {
     'nav.rules': 'Event rules',
     'nav.events': 'Event archive',
     'nav.settings': 'Settings & License',
+    'nav.admin': 'Admin Panel',
     'aside.workspace': 'Local workspace',
     'aside.privacy': 'Video frames stay on this PC.',
-    'aside.engine': 'Hybrid Vision AI + Smart Tracking Engine',
+    'aside.engine': 'Hybrid Vision AI + Smart Tracking + Telegram Bot',
     'aside.rc': '2.0 Pro Commercial Edition',
     'header.badge': 'LOCAL FIRST',
     'overview.eyebrow': 'CAMERAS THAT SEE. SYSTEM THAT UNDERSTANDS.',
@@ -208,11 +206,11 @@ const I18N = {
     'overview.studioBtn': 'ROI & Rule Studio ⌘',
     'overview.orb': 'SEE · UNDERSTAND · ALERT',
     'overview.workspace': 'Your workspace',
-    'overview.liveStatus': 'Live connection status · Thermal heatmap & GDPR masking ready',
-    'overview.hint': 'Add a camera, design a custom zone in the ROI Studio, or deploy one of the 6 enterprise sector packs above.',
-    'sector.eyebrow': 'ENTERPRISE SECTOR PACKS · 6 VERTICALS',
+    'overview.liveStatus': 'Live connection status · Thermal heatmap, 2-Way Telegram Bot & GDPR masking ready',
+    'overview.hint': 'Add a camera, design a custom zone in the ROI Studio, or deploy one of the 8 enterprise sector packs above.',
+    'sector.eyebrow': 'ENTERPRISE SECTOR PACKS · 8 VERTICALS · PRO / PLUS / ULTRA',
     'sector.title': 'One-click sector deployment packages',
-    'sector.desc': 'Deploy pre-calibrated ROI zones, schedules, and smart tracking rules for Residence, Pool, Factory, Warehouse, Retail, or Office.',
+    'sector.desc': 'Deploy pre-calibrated ROI zones, schedules, and smart tracking rules for Residence, Pool, Factory, Warehouse, Retail, Office, Campus, or Clinic.',
     'sector.targetCamera': 'Target camera',
     'sector.deployMode': 'Deployment mode',
     'stats.cameras': 'CAMERAS',
@@ -221,7 +219,7 @@ const I18N = {
     'empty.camerasTitle': 'No cameras added yet.',
     'empty.camerasDesc': 'Connect your first camera with its IP address and RTSP credentials.',
     'empty.rulesTitle': 'Select a configuration from the library.',
-    'empty.rulesDesc': 'Lighting, motion, loitering, occupancy, perimeter, and Vision AI rules are ready.',
+    'empty.rulesDesc': 'Lighting, motion, loitering, occupancy, perimeter, HSE, and Vision AI rules are ready.',
     'empty.eventsTitle': 'No events recorded yet.',
     'empty.eventsDesc': 'Detected event descriptions and local evidence clips appear here.',
     'cameras.eyebrow': '01 / SEE & CONNECT',
@@ -244,7 +242,7 @@ const I18N = {
     'rules.eyebrow': '02 / UNDERSTAND & DESIGN',
     'rules.title': 'You describe it.<br>Cortex watches.',
     'rules.formTitle': 'New event rule',
-    'rules.catalogLabel': 'Configuration library',
+    'rules.catalogLabel': 'Configuration library (22 Local + 6 Pro Tracking + 3 Access + 42 Vision AI)',
     'rules.cameraLabel': 'Camera',
     'rules.nameLabel': 'Rule name',
     'rules.promptLabel': 'When should we alert you?',
@@ -269,11 +267,11 @@ const I18N = {
     'events.title': 'Event archive.',
     'events.subtitle': 'Search in natural language, inspect evidence clips, download SHA-256 forensic bundles.',
     'events.notifyBtn': 'Enable desktop notifications',
-    'settings.eyebrow': '04 / WORKSPACE & COMMERCIAL LICENSE',
+    'settings.eyebrow': '04 / WORKSPACE, OLLAMA VLM & CUSTOMER LICENSE',
     'settings.title': 'You are in control.',
-    'settings.engineTitle': 'Local analysis engine',
-    'settings.modelLabel': 'Ollama vision model name',
-    'settings.installBtn': 'Install & connect Gemma',
+    'settings.engineTitle': 'Local Ollama Vision AI Engine',
+    'settings.modelLabel': 'Active Ollama vision model name',
+    'settings.installBtn': 'Install & connect selected model',
     'settings.cancelBtn': 'Cancel',
     'settings.testModelBtn': 'Check model connection',
     'settings.retentionLabel': 'Evidence retention (days)',
@@ -331,9 +329,11 @@ function message(t) {
 }
 
 async function api(path, data) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (adminToken) headers['X-Admin-Token'] = adminToken;
   const r = await fetch('/api/' + path, data === undefined ? {} : {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data)
   });
   const j = await r.json();
@@ -347,8 +347,8 @@ function empty(title, description, icon = '◈') {
 
 function updateCrumb(name) {
   const labels = currentLang === 'en'
-    ? { overview: 'Cortex', cameras: 'Cameras', rules: 'Event rules', events: 'Event archive', settings: 'Settings & License' }
-    : { overview: 'Cortex', cameras: 'Kameralar', rules: 'Olay kuralları', events: 'Olay arşivi', settings: 'Ayarlar & Lisans' };
+    ? { overview: 'Cortex', cameras: 'Cameras', rules: 'Event rules', events: 'Event archive', settings: 'Settings & License', admin: 'Admin Control Panel' }
+    : { overview: 'Cortex', cameras: 'Kameralar', rules: 'Olay kuralları', events: 'Olay arşivi', settings: 'Ayarlar & Lisans', admin: 'Yönetim Paneli' };
   $('#crumb').textContent = labels[name] || 'Cortex';
 }
 
@@ -358,6 +358,7 @@ function tab(name) {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   updateCrumb(name);
   if (name === 'rules') updateROI();
+  if (name === 'admin') refreshAdminPanel();
 }
 
 document.addEventListener('click', async e => {
@@ -436,6 +437,54 @@ document.addEventListener('click', async e => {
       sectorSelections[packId] = new Set(pack.rules.map((_, i) => i));
     }
     renderSectorPacks(true);
+    return;
+  }
+  if (b.dataset.tgSim) {
+    const cmd = b.dataset.tgSim;
+    const out = $('#telegramSimOutput');
+    if (out) out.textContent = `Komut işleniyor: ${cmd} …`;
+    try {
+      const r = await api('telegram-simulate', { command: cmd });
+      if (out) {
+        out.textContent = `>>> KULLANICI KOMUTU: ${r.command}\n\n${r.reply}${r.hasPhoto ? '\n\n[📸 Anlık JPEG kamera karesi eklendi]' : ''}`;
+      }
+      await refresh();
+    } catch (err) {
+      if (out) out.textContent = err.message;
+    }
+    return;
+  }
+  if (b.dataset.adminAction) {
+    const action = b.dataset.adminAction;
+    const customerId = b.dataset.customer || 'node-local-primary';
+    const plan = b.dataset.plan || 'ULTRA';
+    b.disabled = true;
+    try {
+      const r = await api('admin/action', { adminToken, action, customerId, plan });
+      const out = $('#admActionOutput');
+      if (out) out.textContent = `[${new Date().toLocaleTimeString('tr-TR')}] ✓ ${r.message}`;
+      message(r.message);
+      await refreshAdminPanel();
+      await refresh();
+    } catch (err) {
+      message(err.message);
+    } finally {
+      b.disabled = false;
+    }
+    return;
+  }
+  if (b.dataset.copyLicense) {
+    const key = b.dataset.copyLicense;
+    const org = b.dataset.org || 'Kurumsal Müşteri';
+    try {
+      await navigator.clipboard.writeText(key);
+      message(`Lisans anahtarı kopyalandı: ${key}`);
+    } catch (err) {
+      message(`Anahtar: ${key}`);
+    }
+    if ($('#licenseKeyInput')) $('#licenseKeyInput').value = key;
+    const orgInput = $('#licenseActivateForm')?.elements?.organization;
+    if (orgInput) orgInput.value = org;
     return;
   }
   if (b.classList.contains('chip-query')) {
@@ -549,6 +598,7 @@ function renderSectorPacks(force = false) {
     }
     const selSet = sectorSelections[p.id];
     const deployedCount = p.rules.filter(r => activeNames.has(r.name)).length;
+    const tierBadge = p.tier || 'PLUS';
     return `
       <article class="sector-card ${deployedCount > 0 ? 'sector-active' : ''}">
         <div>
@@ -557,6 +607,7 @@ function renderSectorPacks(force = false) {
             <div class="sector-head-meta">
               <div class="sector-badges">
                 <span class="tag">${esc(p.badge || 'Saha Paketi')}</span>
+                <span class="tag ${tierBadge === 'PRO' ? '' : tierBadge === 'PLUS' ? 'ok' : 'warn'}">${esc(tierBadge)}</span>
                 ${deployedCount > 0
                   ? `<span class="tag ok">✓ ${deployedCount}/${p.rules.length} aktif</span>`
                   : `<span class="tag">${p.rules.length} hazır kural</span>`}
@@ -667,7 +718,7 @@ function renderLicenseAndAudit() {
   }
   const licDetails = $('#licenseDetails');
   if (licDetails) {
-    licDetails.innerHTML = `<strong>Aktif Paket:</strong> ${esc(lic.name || 'Cortex Enterprise')} · <strong>Kurum:</strong> ${esc(lic.organization || 'Kurumsal Saha')} · <strong>Kamera Kapasitesi:</strong> ${lic.maxCameras || 32} Kamera · <strong>Anahtar:</strong> <code>${esc(lic.key || 'AKTİF')}</code>`;
+    licDetails.innerHTML = `<strong>Aktif Paket:</strong> ${esc(lic.name || 'Cortex ULTRA')} (<code>${esc(lic.plan || 'ULTRA')}</code>) · <strong>Kurum:</strong> ${esc(lic.organization || 'Kurumsal Saha')} · <strong>Kamera Kapasitesi:</strong> ${(state.cameras || []).length} / ${lic.maxCameras || 32} Kamera · <strong>Kural Kapasitesi:</strong> ${(state.rules || []).length} / ${lic.maxRules || 128} Kural · <strong>Anahtar:</strong> <code>${esc(lic.key || 'AKTİF')}</code>`;
   }
   const auditBox = $('#auditList');
   if (auditBox) {
@@ -709,7 +760,7 @@ function filterEventsLocally(events) {
     if (rev === 'reviewed' && !e.reviewed) return false;
     const kind = e.kind || 'vision';
     if (cat === 'vision' && kind !== 'vision') return false;
-    if (cat === 'pro' && !['pro_loitering', 'pro_occupancy', 'pro_tailgating', 'pro_perimeter'].includes(kind)) return false;
+    if (cat === 'pro' && !kind.startsWith('pro_')) return false;
     if (cat === 'access' && !kind.startsWith('access_') && kind !== 'pro_tailgating') return false;
     if (cat === 'local' && (kind === 'vision' || kind.startsWith('access_') || kind.startsWith('pro_'))) return false;
 
@@ -843,6 +894,8 @@ async function refresh() {
 
     if (first) {
       $('#model').value = state.model;
+      if ($('#recommendedModelSelect')) $('#recommendedModelSelect').value = state.model;
+      if ($('#aiInterval') && state.aiInterval) $('#aiInterval').value = String(state.aiInterval);
       $('#retention').value = state.retention;
       $('#autostart').checked = state.autostart;
       if ($('#soundAlert')) $('#soundAlert').checked = state.soundAlert !== false;
@@ -852,7 +905,7 @@ async function refresh() {
     }
     if ($('#telegramStatus') && state.telegram) {
       $('#telegramStatus').textContent = state.telegram.configured
-        ? (state.telegram.enabled ? '✓ Telegram bildirimleri etkin (Chat: ' + state.telegram.chatId + ')' : 'Telegram yapılandırıldı ancak şu an kapalı.')
+        ? (state.telegram.enabled ? '✓ Telegram bildirimleri ve iki yönlü komutlar etkin (Chat: ' + state.telegram.chatId + ')' : 'Telegram yapılandırıldı ancak şu an kapalı.')
         : 'Telegram Bot Token henüz girilmedi.';
     }
     let newAlarm = false;
@@ -956,6 +1009,15 @@ $('#discover').onclick = async () => {
   }
 };
 
+$('#recommendedModelSelect')?.addEventListener('change', e => {
+  const val = e.target.value;
+  if ($('#model')) $('#model').value = val;
+  const found = state?.recommendedModels?.find(m => m.id === val);
+  if (found && $('#recommendedModelDesc')) {
+    $('#recommendedModelDesc').textContent = `${found.description} (${found.vram})`;
+  }
+});
+
 $('#modelTest').onclick = async () => {
   try {
     const d = await api('model', {});
@@ -965,6 +1027,27 @@ $('#modelTest').onclick = async () => {
     $('#modelResult').textContent = 'Ollama erişilemiyor. Ollama uygulamasını açın.';
   }
 };
+
+$('#testAiRuleBtn')?.addEventListener('click', async () => {
+  const f = $('#ruleForm');
+  const promptTxt = f?.elements?.prompt?.value || '';
+  const camId = f?.elements?.camera?.value || '';
+  const { x, y, width, height } = getRoiNumbers();
+  const out = $('#aiRuleTestResult');
+  const btn = $('#testAiRuleBtn');
+  if (out) out.textContent = 'Ollama VLM analiz ediyor…';
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('ai-test', { prompt: promptTxt, camera: camId, roi: [x, y, width, height] });
+    if (out) {
+      out.textContent = `${r.result.matched ? '✅ EŞLEŞTİ' : '⚪ EŞLEŞMEDİ'} (Skor: ${r.result.confidence} · ${r.latencyMs} ms) — ${r.result.reason}`;
+    }
+  } catch (err) {
+    if (out) out.textContent = `⚠️ ${err.message}`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
 
 $('#notify').onclick = async () => {
   if (!('Notification' in window)) return message('Tarayıcı masaüstü bildirimini desteklemiyor.');
@@ -1024,7 +1107,7 @@ function chooseTemplate() {
         ? 'Cortex Pro Akıllı Takip'
         : t
           ? 'Gerçek Zamanlı Yerel Motor'
-          : 'Gemma 3 Görsel AI';
+          : 'Ollama Görsel AI';
   }
   f.elements.name.value = t ? t.name : vision?.name || '';
   f.elements.prompt.value = t ? t.description : vision?.prompt || '';
@@ -1050,11 +1133,15 @@ function chooseTemplate() {
               ? 'Eşik: korunan yasak bölgede eşzamanlı minimum hedef sayısı. Süre: doğrulama saniyesi.'
               : t.kind === 'pro_tailgating'
                 ? 'Eşik: ardışık geçişlerin kaçak geçiş sayılacağı zaman penceresi (saniye).'
-                : t.kind === 'frozen'
-                  ? 'Eşik: ortalama piksel farkı (0–255 ölçeği). Durağan sahne de tetikleyebilir.'
-                  : t.kind === 'low_detail'
-                    ? 'Eşik: başlangıç referansına göre ayrıntı kaybı yüzdesi. İlk görüntü yeterli ayrıntı içermelidir.'
-                    : 'Eşik: değişen piksel yüzdesi. Hareket ölçümü insan, hayvan veya nesne sınıflandırmaz.';
+                : t.kind === 'pro_fall'
+                  ? 'Eşik: hareketsizlik toleransı (%). Süre: yerde hareketsiz kalma doğrulama süresi (sn).'
+                  : t.kind === 'pro_abandon'
+                    ? 'Eşik: maksimum giriş-çıkış süresi. Süre: bölgeden ayrıldıktan sonra doğrulama süresi (sn).'
+                    : t.kind === 'frozen'
+                      ? 'Eşik: ortalama piksel farkı (0–255 ölçeği). Durağan sahne de tetikleyebilir.'
+                      : t.kind === 'low_detail'
+                        ? 'Eşik: başlangıç referansına göre ayrıntı kaybı yüzdesi. İlk görüntü yeterli ayrıntı içermelidir.'
+                        : 'Eşik: değişen piksel yüzdesi. Hareket ölçümü insan, hayvan veya nesne sınıflandırmaz.';
   }
   drawRoiCanvas();
 }
@@ -1124,16 +1211,22 @@ function setRoiNumbers({ x, y, width, height }) {
 }
 
 function drawCalibrationBackdrop(ctx, w, h) {
-  // Architectural dark studio backdrop when no live camera frame is displayed
+  const isDark = document.documentElement.dataset.theme === 'dark';
   const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, '#090D16');
-  grad.addColorStop(0.55, '#0F1624');
-  grad.addColorStop(1, '#0B0F1A');
+  if (isDark) {
+    grad.addColorStop(0, '#090D16');
+    grad.addColorStop(0.55, '#0F1624');
+    grad.addColorStop(1, '#0B0F1A');
+  } else {
+    grad.addColorStop(0, '#F1F5FB');
+    grad.addColorStop(0.55, '#E6EEF8');
+    grad.addColorStop(1, '#DCE6F4');
+  }
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
 
   // Subtle 10% coordinate grid
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.10)';
+  ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.10)' : 'rgba(51, 65, 85, 0.12)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let i = 1; i < 10; i++) {
@@ -1147,8 +1240,8 @@ function drawCalibrationBackdrop(ctx, w, h) {
   ctx.stroke();
 
   // Perspective corridor / zone guide lines
-  ctx.strokeStyle = 'rgba(76, 130, 255, 0.16)';
-  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = isDark ? 'rgba(76, 130, 255, 0.18)' : 'rgba(37, 99, 235, 0.24)';
+  ctx.lineWidth = 1.3;
   ctx.beginPath();
   ctx.strokeRect(w * 0.24, h * 0.18, w * 0.52, h * 0.42);
   ctx.moveTo(w * 0.24, h * 0.18); ctx.lineTo(0, 0);
@@ -1158,7 +1251,7 @@ function drawCalibrationBackdrop(ctx, w, h) {
   ctx.stroke();
 
   // Center reticle
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+  ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(51, 65, 85, 0.28)';
   ctx.beginPath();
   ctx.arc(w / 2, h / 2, 16, 0, Math.PI * 2);
   ctx.moveTo(w / 2 - 24, h / 2); ctx.lineTo(w / 2 + 24, h / 2);
@@ -1190,17 +1283,17 @@ function drawRoiCanvas() {
   const rh = (pctH / 100) * h;
 
   const isDark = document.documentElement.dataset.theme === 'dark';
-  const signalColor = isDark ? '#4C82FF' : '#2F6BFF';
+  const signalColor = isDark ? '#4C82FF' : '#2563EB';
 
-  // Dim outside ROI region using 4 surrounding rectangles (preserves backdrop inside ROI)
-  ctx.fillStyle = 'rgba(5, 7, 12, 0.56)';
+  // Dim outside ROI region using 4 surrounding rectangles
+  ctx.fillStyle = isDark ? 'rgba(5, 7, 12, 0.56)' : 'rgba(15, 23, 42, 0.18)';
   ctx.fillRect(0, 0, w, ry); // top
   ctx.fillRect(0, ry + rh, w, h - (ry + rh)); // bottom
   ctx.fillRect(0, ry, rx, rh); // left
   ctx.fillRect(rx + rw, ry, w - (rx + rw), rh); // right
 
   // Rule-of-thirds grid inside ROI
-  ctx.strokeStyle = 'rgba(76, 130, 255, 0.32)';
+  ctx.strokeStyle = isDark ? 'rgba(76, 130, 255, 0.32)' : 'rgba(37, 99, 235, 0.35)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let i = 1; i <= 2; i++) {
@@ -1251,8 +1344,7 @@ function drawRoiCanvas() {
       ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
       ctx.fillRect(rx, ly - my, rw, my * 2);
 
-      // Dashed verification boundaries
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.65)';
       ctx.setLineDash([6, 4]);
       ctx.lineWidth = 1.2;
       ctx.beginPath();
@@ -1260,9 +1352,8 @@ function drawRoiCanvas() {
       ctx.moveTo(rx, ly + my); ctx.lineTo(rx + rw, ly + my);
       ctx.stroke();
 
-      // Solid primary tripwire
       ctx.setLineDash([]);
-      ctx.strokeStyle = '#F59E0B';
+      ctx.strokeStyle = '#D97706';
       ctx.lineWidth = 2.8;
       ctx.beginPath();
       ctx.moveTo(rx, ly);
@@ -1271,8 +1362,8 @@ function drawRoiCanvas() {
 
       const cx = rx + rw / 2;
       const arrowY = dir === 'positive' ? ly + 22 : ly - 14;
-      ctx.fillStyle = '#22C55E';
-      ctx.font = '600 13px sans-serif';
+      ctx.fillStyle = isDark ? '#22C55E' : '#15803D';
+      ctx.font = '700 13px sans-serif';
       ctx.fillText(dir === 'positive' ? '▼ GİRİŞ / İHLAL YÖNÜ (+)' : '▲ GİRİŞ / İHLAL YÖNÜ (-)', Math.max(rx + 8, cx - 78), arrowY);
     } else {
       const lx = linePct * w;
@@ -1280,7 +1371,7 @@ function drawRoiCanvas() {
       ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
       ctx.fillRect(lx - mx, ry, mx * 2, rh);
 
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.65)';
       ctx.setLineDash([6, 4]);
       ctx.lineWidth = 1.2;
       ctx.beginPath();
@@ -1289,7 +1380,7 @@ function drawRoiCanvas() {
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.strokeStyle = '#F59E0B';
+      ctx.strokeStyle = '#D97706';
       ctx.lineWidth = 2.8;
       ctx.beginPath();
       ctx.moveTo(lx, ry);
@@ -1298,8 +1389,8 @@ function drawRoiCanvas() {
 
       const cy = ry + rh / 2;
       const arrowX = dir === 'positive' ? lx + 12 : Math.max(rx + 6, lx - 140);
-      ctx.fillStyle = '#22C55E';
-      ctx.font = '600 13px sans-serif';
+      ctx.fillStyle = isDark ? '#22C55E' : '#15803D';
+      ctx.font = '700 13px sans-serif';
       ctx.fillText(dir === 'positive' ? '▶ GİRİŞ YÖNÜ (+)' : '◀ GİRİŞ YÖNÜ (-)', arrowX, cy);
     }
     ctx.restore();
@@ -1342,7 +1433,7 @@ function updateROI() {
   if (hudCam) {
     hudCam.textContent = live
       ? `CANLI · ${c.name}`
-      : (c ? `${c.name} · ÇEVRİMDIŞI KALİBRASYON SAHNESİ` : 'KALİBRASYON SAHNESİ · 16:9');
+      : (c ? `${c.name} · KALİBRASYON SAHNESİ` : 'KALİBRASYON SAHNESİ · 16:9');
   }
   syncRoiBoxFromInputs();
 }
@@ -1530,15 +1621,14 @@ function renderInstaller() {
   const m = state.installer, h = state.modelHealth;
   const busy = ['checking', 'runtime', 'pulling', 'verifying'].includes(m.phase);
   const connected = h.phase === 'connected';
-  const gemmaConnected = connected && h.model === 'gemma3:4b';
-  $('#installModel').disabled = busy || gemmaConnected;
+  const targetModel = ($('#model')?.value || state.model || 'gemma3:4b').trim();
+  const targetConnected = connected && h.model === targetModel;
+  $('#installModel').disabled = busy || targetConnected;
   $('#installModel').textContent = busy
-    ? 'Gemma hazırlanıyor…'
-    : gemmaConnected
-      ? 'Gemma bağlı ✓'
-      : connected
-        ? 'Gemma’ya geç'
-        : 'Gemma’yı kur ve bağla';
+    ? `${targetModel} hazırlanıyor…`
+    : targetConnected
+      ? `${targetModel} bağlı ✓`
+      : `Seçili modeli (${targetModel}) kur ve bağla`;
   $('#cancelModel').hidden = !busy;
   $('#installStatus').textContent = busy
     ? m.message + (m.total ? ' ' + (m.completed / 1024 ** 3).toFixed(2) + ' / ' + (m.total / 1024 ** 3).toFixed(2) + ' GB (katman)' : '')
@@ -1554,14 +1644,15 @@ function renderInstaller() {
 }
 
 $('#installModel').onclick = async () => {
-  try { await api('model-install', {}); await refresh(); } catch (e) { message(e.message); }
+  const modelVal = ($('#model')?.value || 'gemma3:4b').trim();
+  try { await api('model-install', modelVal ? { model: modelVal } : {}); await refresh(); } catch (e) { message(e.message); }
 };
 $('#cancelModel').onclick = async () => {
   try { await api('model-cancel', {}); await refresh(); } catch (e) { message(e.message); }
 };
 
 /* ==========================================================================
-   Cortex 2.0 Pro — Copilot Search, Telegram, License & Matrix Wall
+   Cortex 2.0 Pro — Copilot Search, Telegram 2-Way Bot, License & Admin Panel
    ========================================================================== */
 
 $('#telegramForm')?.addEventListener('submit', async e => {
@@ -1573,6 +1664,22 @@ $('#telegramForm')?.addEventListener('submit', async e => {
     message(r.message);
     await refresh();
   } catch (err) { message(err.message); }
+});
+
+$('#discoverTelegramChatBtn')?.addEventListener('click', async () => {
+  const tokenVal = $('#tgBotToken')?.value || '';
+  const btn = $('#discoverTelegramChatBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('telegram-discover-chat', { botToken: tokenVal });
+    if ($('#tgChatId')) $('#tgChatId').value = r.chatId;
+    message(r.message);
+    await refresh();
+  } catch (err) {
+    message(err.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 });
 
 $('#testTelegramBtn')?.addEventListener('click', async () => {
@@ -1594,15 +1701,163 @@ $('#licenseActivateForm')?.addEventListener('submit', async e => {
   } catch (err) { message(err.message); }
 });
 
-$('#generateKeyBtn')?.addEventListener('click', async () => {
-  const plan = $('#genPlan')?.value || 'ENTERPRISE';
-  const organization = $('#genOrg')?.value || 'IPScans';
+/* --- ADMIN CONTROL PANEL (admin / Kingofthegame0714*) --- */
+
+async function refreshAdminPanel() {
+  const loginCard = $('#adminLoginCard');
+  const dash = $('#adminDashboard');
+  const logoutBtn = $('#adminLogoutBtn');
+  if (!loginCard || !dash) return;
+
+  if (!adminToken) {
+    loginCard.hidden = false;
+    dash.hidden = true;
+    if (logoutBtn) logoutBtn.hidden = true;
+    return;
+  }
+
   try {
-    const r = await api('license-generate', { plan, organization });
-    $('#generatedKeyOutput').textContent = `Üretilen Anahtar (${r.plan}): ${r.key}`;
+    const data = await api('admin/state', { adminToken });
+    loginCard.hidden = true;
+    dash.hidden = false;
+    if (logoutBtn) logoutBtn.hidden = false;
+
+    const customers = data.customers || [];
+    const issued = data.issuedLicenses || [];
+    if ($('#admStatCustomers')) $('#admStatCustomers').textContent = String(customers.length).padStart(2, '0');
+    if ($('#admStatLicenses')) $('#admStatLicenses').textContent = String(issued.length).padStart(2, '0');
+    if ($('#admStatHealth')) $('#admStatHealth').textContent = data.safeMode ? 'GÜVENLİ MOD' : `${data.activeStreams || 0} YAYIN · ${data.diskFreeGB} GB`;
+
+    const custList = $('#adminCustomersList');
+    if (custList) {
+      custList.innerHTML = customers.map(c => {
+        const camPct = Math.min(100, Math.round(((c.camerasUsed || 0) / Math.max(1, c.maxCameras || 4)) * 100));
+        const rulePct = Math.min(100, Math.round(((c.rulesUsed || 0) / Math.max(1, c.maxRules || 8)) * 100));
+        const isSuspended = c.status === 'suspended';
+        const tierClass = c.plan === 'ULTRA' ? 'warn' : c.plan === 'PLUS' ? 'ok' : '';
+        return `<article class="admin-customer-card">
+          <div class="sectiontitle" style="margin-bottom:8px">
+            <div>
+              <div class="actions" style="margin:0 0 6px;gap:6px">
+                <span class="tag ${tierClass}">PAKET: ${esc(c.plan)}</span>
+                <span class="tag ${isSuspended ? 'warn' : 'ok'}">${isSuspended ? 'Askıda / Güvenli Mod' : 'Aktif İstasyon'}</span>
+                ${c.id === 'node-local-primary' ? '<span class="tag ok">Bu Bilgisayar (Merkez)</span>' : ''}
+              </div>
+              <h3>${esc(c.organization)}</h3>
+              <p class="fine">${esc(c.contact || '')} · Sürüm: ${esc(c.version || '2.0.0-pro')} · Model: <code>${esc(c.model || 'gemma3:4b')}</code> · Son sinyal: ${new Date((c.lastSeen || Date.now() / 1000) * 1000).toLocaleString('tr-TR')}</p>
+            </div>
+            <div class="actions" style="margin:0">
+              <button type="button" data-copy-license="${esc(c.licenseKey)}" data-org="${esc(c.organization)}">📋 Anahtarı Kopyala (${esc(c.licenseKey?.slice(0, 14))}…)</button>
+            </div>
+          </div>
+          <div class="grid" style="margin:10px 0">
+            <div>
+              <span class="fine">Kamera Kullanımı: <strong>${c.camerasUsed || 0} / ${c.maxCameras || 4}</strong></span>
+              <div class="usage-bar"><div class="usage-bar-fill" style="width:${camPct}%"></div></div>
+            </div>
+            <div>
+              <span class="fine">Olay Kuralı Kullanımı: <strong>${c.rulesUsed || 0} / ${c.maxRules || 8}</strong></span>
+              <div class="usage-bar"><div class="usage-bar-fill" style="width:${rulePct}%"></div></div>
+            </div>
+          </div>
+          <p class="fine"><strong>Canlı Durum:</strong> ${esc(c.health || 'Çevrimiçi')}</p>
+          <div class="actions" style="margin-top:10px">
+            <button type="button" data-admin-action="run_diagnostics" data-customer="${esc(c.id)}">🩺 Tanılama</button>
+            <button type="button" data-admin-action="reset_streams" data-customer="${esc(c.id)}">🔄 Akışları Sıfırla</button>
+            <button type="button" data-admin-action="clear_queues" data-customer="${esc(c.id)}">🧹 Kuyruğu Temizle</button>
+            <button type="button" data-admin-action="restart_telegram" data-customer="${esc(c.id)}">🤖 Telegram Yenile</button>
+            <button type="button" data-admin-action="upgrade_plan" data-customer="${esc(c.id)}" data-plan="PLUS">⬆️ PLUS'a Yükselt</button>
+            <button type="button" data-admin-action="upgrade_plan" data-customer="${esc(c.id)}" data-plan="ULTRA">⬆️ ULTRA'ya Yükselt</button>
+            <button type="button" data-admin-action="extend_license" data-customer="${esc(c.id)}">📅 +30 Gün Uzat</button>
+            <button type="button" data-admin-action="toggle_suspend" data-customer="${esc(c.id)}">${isSuspended ? '✓ Askıyı Kaldır' : '⛔ Askıya Al'}</button>
+          </div>
+        </article>`;
+      }).join('');
+    }
+
+    const issuedBox = $('#adminIssuedLicenses');
+    if (issuedBox) {
+      issuedBox.innerHTML = issued.length
+        ? `<table><thead><tr><th>Tarih</th><th>Müşteri</th><th>Paket</th><th>Kapasite</th><th>Lisans Anahtarı</th><th>İşlem</th></tr></thead><tbody>${issued.map(l => `<tr><td class="mono">${new Date(l.createdAt * 1000).toLocaleDateString('tr-TR')}</td><td><strong>${esc(l.organization)}</strong></td><td><span class="tag">${esc(l.plan)}</span></td><td>${l.maxCameras} Kam / ${l.maxRules} Kural</td><td><code>${esc(l.key)}</code></td><td><button type="button" class="sector-mini-btn" data-copy-license="${esc(l.key)}" data-org="${esc(l.organization)}">Kopyala</button></td></tr>`).join('')}</tbody></table>`
+        : '<p class="fine">Bu oturumda henüz yeni lisans anahtarı üretilmedi. Yukarıdaki formdan PRO, PLUS veya ULTRA anahtar üretebilirsiniz.</p>';
+    }
+  } catch (err) {
+    adminToken = '';
+    try { sessionStorage.removeItem('cortex-admin-token'); } catch (e) {}
+    loginCard.hidden = false;
+    dash.hidden = true;
+    if (logoutBtn) logoutBtn.hidden = true;
+  }
+}
+
+$('#adminLoginForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const errEl = $('#adminLoginError');
+  if (errEl) errEl.textContent = '';
+  try {
+    const d = Object.fromEntries(new FormData(e.target));
+    const r = await api('admin/login', d);
+    adminToken = r.adminToken;
+    try { sessionStorage.setItem('cortex-admin-token', adminToken); } catch (ex) {}
+    message(r.message);
+    await refreshAdminPanel();
+  } catch (err) {
+    if (errEl) errEl.textContent = err.message;
+  }
+});
+
+$('#adminLogoutBtn')?.addEventListener('click', () => {
+  adminToken = '';
+  try { sessionStorage.removeItem('cortex-admin-token'); } catch (e) {}
+  refreshAdminPanel();
+  message('Yönetici oturumu kapatıldı.');
+});
+
+$('#admRefreshBtn')?.addEventListener('click', () => refreshAdminPanel());
+
+$('#adminLicenseForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    const d = Object.fromEntries(new FormData(e.target));
+    d.adminToken = adminToken;
+    const r = await api('admin/license-generate', d);
+    lastGeneratedKey = r.key;
+    lastGeneratedOrg = r.organization;
+    const box = $('#admGeneratedKeyBox');
+    if (box) {
+      box.hidden = false;
+      box.innerHTML = `<strong>ÜRETİLEN ${esc(r.plan)} LİSANS ANAHTARI (${esc(r.organization)}):</strong><br><code style="font-size:15px;font-weight:700">${esc(r.key)}</code><br><small>Bu anahtarı müşterinin Cortex uygulamasındaki Ayarlar &amp; Lisans alanına girdiğinizde sistem anında aktif olur.</small>`;
+    }
+    if ($('#admCopyKeyBtn')) $('#admCopyKeyBtn').hidden = false;
+    if ($('#admApplyLocalBtn')) $('#admApplyLocalBtn').hidden = false;
     if ($('#licenseKeyInput')) $('#licenseKeyInput').value = r.key;
+    message(r.message);
+    await refreshAdminPanel();
+  } catch (err) {
+    message(err.message);
+  }
+});
+
+$('#admCopyKeyBtn')?.addEventListener('click', async () => {
+  if (!lastGeneratedKey) return;
+  try {
+    await navigator.clipboard.writeText(lastGeneratedKey);
+    message(`Lisans anahtarı panoya kopyalandı: ${lastGeneratedKey}`);
+  } catch (e) {
+    message(`Anahtar: ${lastGeneratedKey}`);
+  }
+});
+
+$('#admApplyLocalBtn')?.addEventListener('click', async () => {
+  if (!lastGeneratedKey) return;
+  try {
+    const r = await api('license-activate', { key: lastGeneratedKey, organization: lastGeneratedOrg || 'Kurumsal Müşteri' });
+    message(r.message);
     await refresh();
-  } catch (err) { message(err.message); }
+    await refreshAdminPanel();
+  } catch (err) {
+    message(err.message);
+  }
 });
 
 $('#copilotQuery')?.addEventListener('input', renderEventsList);
@@ -1648,7 +1903,7 @@ initLanguage();
 initInteractiveStudio();
 try {
   const qsTab = new URLSearchParams(window.location.search).get("tab");
-  if (qsTab && ["overview", "cameras", "rules", "events", "settings"].includes(qsTab)) {
+  if (qsTab && ["overview", "cameras", "rules", "events", "settings", "admin"].includes(qsTab)) {
     tab(qsTab);
   }
 } catch (e) {}

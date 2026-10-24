@@ -19,7 +19,7 @@ def rule(kind, **kw):
 
 class DetectorTests(unittest.TestCase):
     def test_all_templates_validate(self):
-        self.assertEqual(len(rules.TEMPLATES),18)
+        self.assertEqual(len(rules.TEMPLATES),22)
         for t in rules.TEMPLATES: self.assertEqual(rule(t['kind'])['kind'],t['kind'])
 
     def test_invalid_regions_times_and_nan(self):
