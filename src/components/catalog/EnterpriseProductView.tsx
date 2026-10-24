@@ -24,6 +24,13 @@ type EnterpriseProductViewProps = {
     width: number;
     height: number;
   };
+  secondaryScreenshot?: {
+    src: string;
+    width: number;
+    height: number;
+    alt: string;
+    caption?: string;
+  };
   downloadHref: string;
   secondaryHref: string;
   secondaryExternal?: boolean;
@@ -42,6 +49,7 @@ export function EnterpriseProductView({
   markSrc,
   markAlt,
   screenshot,
+  secondaryScreenshot,
   downloadHref,
   secondaryHref,
   secondaryExternal = true,
@@ -133,6 +141,17 @@ export function EnterpriseProductView({
               caption={copy.screenshotCaption}
             />
           </Reveal>
+          {secondaryScreenshot ? (
+            <Reveal delay={260} className="mt-8 sm:mt-10">
+              <ScreenshotFrame
+                src={secondaryScreenshot.src}
+                alt={secondaryScreenshot.alt}
+                width={secondaryScreenshot.width}
+                height={secondaryScreenshot.height}
+                caption={secondaryScreenshot.caption}
+              />
+            </Reveal>
+          ) : null}
         </div>
       </section>
 

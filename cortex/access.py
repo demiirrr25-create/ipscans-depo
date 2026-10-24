@@ -38,15 +38,41 @@ def validate(data):
 class Pedestrians:
     def __init__(self):
         import cv2
-        self.cv2=cv2; self.hog=cv2.HOGDescriptor(); self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+        self.cv2=cv2
+        if hasattr(cv2,'HOGDescriptor'):
+            self.hog=cv2.HOGDescriptor(); self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+            self.bg=None
+        else:
+            self.hog=None
+            self.bg=cv2.createBackgroundSubtractorMOG2(history=120,varThreshold=28,detectShadows=False) if hasattr(cv2,'createBackgroundSubtractorMOG2') else None
     def detect(self,frame):
         import numpy as np
         cv=self.cv2; img=cv.imdecode(np.frombuffer(frame,np.uint8),cv.IMREAD_COLOR)
         if img is None: return []
         h,w=img.shape[:2]; img=cv.resize(img,(640,round(h*640/w))); h,w=img.shape[:2]
         if h<128:return []
-        boxes,weights=self.hog.detectMultiScale(img,winStride=(8,8),padding=(8,8),scale=1.08)
-        chosen=cv.dnn.NMSBoxes(list(boxes),[float(v) for v in weights],0.5,0.35)
+        if self.hog is not None:
+            boxes,weights=self.hog.detectMultiScale(img,winStride=(8,8),padding=(8,8),scale=1.08)
+            chosen=cv.dnn.NMSBoxes(list(boxes),[float(v) for v in weights],0.5,0.35)
+            return [((int(boxes[int(i)][0])+int(boxes[int(i)][2])/2)/w*100,
+                     (int(boxes[int(i)][1])+int(boxes[int(i)][3]))/h*100) for i in np.asarray(chosen).flatten()]
+        # OpenCV 5+ silhouette & motion contour fallback
+        if self.bg is not None:
+            mask=self.bg.apply(img)
+        else:
+            gray=cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+            mask=cv.Canny(gray,60,150)
+        kernel=np.ones((5,5),np.uint8)
+        mask=cv.morphologyEx(mask,cv.MORPH_CLOSE,kernel)
+        contours,_=cv.findContours(mask,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+        boxes=[]; weights=[]
+        for c in contours:
+            x,y,bw,bh=cv.boundingRect(c)
+            if bw>=18 and bh>=36 and bw*bh>=800 and 0.8<=bh/max(1,bw)<=4.5:
+                boxes.append([int(x),int(y),int(bw),int(bh)])
+                weights.append(min(1.0, (bw*bh)/(w*h*0.15)+0.55))
+        if not boxes: return []
+        chosen=cv.dnn.NMSBoxes(boxes,weights,0.5,0.35)
         return [((int(boxes[int(i)][0])+int(boxes[int(i)][2])/2)/w*100,
                  (int(boxes[int(i)][1])+int(boxes[int(i)][3]))/h*100) for i in np.asarray(chosen).flatten()]
 

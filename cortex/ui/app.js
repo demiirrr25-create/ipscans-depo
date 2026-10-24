@@ -1,9 +1,40 @@
 const $ = s => document.querySelector(s);
 let state = null, seen = new Set(), first = true, refreshing = false, lastInstallPhase = null, currentTab = 'overview';
+let heatmapCameras = new Set();
+let studioMode = 'roi';
+let isDrawing = false, dragAction = null, dragStart = null, initialRoi = null;
+let matrixOpen = false, matrixHeatmap = false;
+let sectorSelections = {}; // { [packId]: Set<number> }
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[c]));
+
+/* ==========================================================================
+   Web Audio API — Zero-Dependency Operator Alarm Synthesizer
+   ========================================================================== */
+
+function playOperatorAlert() {
+  if (!state?.soundAlert) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    for (const [offset, freq] of [[0, 660], [0.16, 880]]) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + offset);
+      gain.gain.setValueAtTime(0.08, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.14);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.15);
+    }
+  } catch (e) {}
+}
 
 /* ==========================================================================
    IPScans v2 Theme System (Light / Dark + OS Preference + Persistence)
@@ -11,6 +42,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
 
 function getPreferredTheme() {
   try {
+    const qsTheme = new URLSearchParams(window.location.search).get("theme");
+    if (qsTheme === "light" || qsTheme === "dark") return qsTheme;
     const saved = localStorage.getItem("ipscans-theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch (e) {}
@@ -65,32 +98,38 @@ const I18N = {
     'nav.cameras': 'Kameralar',
     'nav.rules': 'Olay kuralları',
     'nav.events': 'Olay arşivi',
-    'nav.settings': 'Ayarlar',
+    'nav.settings': 'Ayarlar & Lisans',
     'aside.workspace': 'Yerel çalışma alanı',
     'aside.privacy': 'Görüntüler bu bilgisayarda kalır.',
-    'aside.engine': 'Yerel RTSP + Gemma 3 4B Motoru',
-    'aside.rc': 'V1 sürüm adayı',
+    'aside.engine': 'Hibrit Görsel AI + Akıllı Takip Motoru',
+    'aside.rc': '2.0 Pro Ticari Sürüm',
     'header.badge': 'LOCAL FIRST',
     'overview.eyebrow': 'GÖREN KAMERALAR. ANLAYAN SİSTEM.',
     'overview.title': 'Her kameraya<br>bir <em>beyin.</em>',
-    'overview.lead': 'Neyi takip edeceğini sen söyle.<br>Cortex gözlemlesin, olayı kaydetsin, sana bildirsin.',
+    'overview.lead': 'Neyi takip edeceğini sen söyle.<br>Cortex gözlemlesin, olayı kanıtlarıyla kaydetsin, anında sana bildirsin.',
     'overview.cta': 'İlk kameranı bağla ↗',
+    'overview.studioBtn': 'Bölge (ROI) & Kural Stüdyosu ⌘',
     'overview.orb': 'GÖR · ANLA · BİLDİR',
     'overview.workspace': 'Çalışma alanın',
-    'overview.liveStatus': 'Gerçek bağlantı durumu',
-    'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 18 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 32 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.',
+    'overview.liveStatus': 'Gerçek bağlantı durumu · Canlı termal ısı haritası ve KVKK maskeleme destekli',
+    'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla veya yukarıdan 6 kurumsal saha paketinden birini tek tıkla uygula. 12 yerel piksel kuralı, 4 Cortex Pro akıllı takip kuralı (Loitering, Kapasite, Tailgating, Yasak Bölge), 3 geçiş kontrol kuralı ve 12 görsel AI şablonu hazır gelir.',
+    'sector.eyebrow': 'KURUMSAL SAHA PAKETLERİ · 6 SEKTÖR',
+    'sector.title': 'Tek tıkla sektörel kurulum paketleri',
+    'sector.desc': 'Site, Havuz, Fabrika, Depo, Perakende veya Ofis/Plaza kurulumlarında önceden kalibre edilmiş bölge (ROI), zaman çizelgesi ve akıllı takip kurallarını seçip tek tuşla devreye alın.',
+    'sector.targetCamera': 'Hedef kamera',
+    'sector.deployMode': 'Kurulum modu',
     'stats.cameras': 'KAMERALAR',
     'stats.rules': 'ETKİN KURALLAR',
     'stats.events': 'İNCELEME BEKLEYEN',
     'empty.camerasTitle': 'Henüz kamera eklenmedi.',
     'empty.camerasDesc': 'IP adresi ve giriş bilgileriyle ilk kameranı bağla.',
     'empty.rulesTitle': 'Kütüphaneden bir konfigürasyon seç.',
-    'empty.rulesDesc': 'Aydınlatma, hareket ve bölge, görüntü sağlığı ve bağlantı kuralları model gerektirmez.',
+    'empty.rulesDesc': 'Aydınlatma, hareket, loitering, kapasite, sınır güvenliği ve görsel AI kuralları hazır.',
     'empty.eventsTitle': 'Henüz olay yok.',
     'empty.eventsDesc': 'Tespit edilen olayların açıklamaları ve yerel klipleri burada görünür. Örnek veya sahte olay gösterilmez.',
-    'cameras.eyebrow': '01 / GÖR',
+    'cameras.eyebrow': '01 / GÖR & BAĞLAN',
     'cameras.title': 'Kameraların.',
-    'cameras.subtitle': 'Aynı ağdaki cihazları keşfet veya RTSP ile bağlan.',
+    'cameras.subtitle': 'Aynı ağdaki ONVIF cihazları keşfet, NVR kanallarını topluca içe aktar veya RTSP ile doğrudan bağlan.',
     'cameras.discover': 'Ağda keşfet ↗',
     'cameras.addTitle': 'Kamera ekle',
     'cameras.nameLabel': 'Kamera adı',
@@ -102,10 +141,10 @@ const I18N = {
     'cameras.credHint': 'Tam adres kullanıcı adı ve parola içeriyorsa aşağıdaki alanları boş bırakabilirsin. Ayrı alanlar doldurulursa bu bilgiler kullanılır.',
     'cameras.userLabel': 'Kullanıcı adı',
     'cameras.passLabel': 'Parola',
-    'cameras.vaultHint': 'Kimlik bilgileri yerel şifreli kasada saklanır. Keşif ONVIF etkin ve aynı ağdaki cihazlarla sınırlıdır. Şablon model ve kanalınıza göre değişebilir.',
+    'cameras.vaultHint': 'Kimlik bilgileri yerel Fernet AES-128 şifreli kasada saklanır.',
     'cameras.testBtn': 'Bağlantıyı test et',
-    'cameras.saveBtn': 'Kaydet ve izlemeyi başlat',
-    'rules.eyebrow': '02 / ANLA',
+    'cameras.saveBtn': 'Kaydet ve izlemeyi başlat ↗',
+    'rules.eyebrow': '02 / ANLA & TASARLA',
     'rules.title': 'Sen söyle.<br>Cortex takip etsin.',
     'rules.formTitle': 'Yeni olay kuralı',
     'rules.catalogLabel': 'Konfigürasyon kütüphanesi',
@@ -114,42 +153,41 @@ const I18N = {
     'rules.promptLabel': 'Ne olduğunda haber verelim?',
     'rules.sensitivityLabel': 'Ölçüm eşiği',
     'rules.durationLabel': 'Doğrulama süresi (saniye)',
-    'rules.roiSummary': 'Bölge ve çalışma takvimi',
-    'rules.roiHint': 'Bölge koordinatları görüntünün yüzdesidir. Bağlantı kuralları kameranın tamamını izler. İlk kare referanstır; düzenleme referansı sıfırlar.',
-    'rules.left': 'Sol (%)',
-    'rules.top': 'Üst (%)',
-    'rules.width': 'Genişlik (%)',
-    'rules.height': 'Yükseklik (%)',
+    'rules.roiSummary': '🎯 Profesyonel Bölge (ROI) & Geçiş Hattı Çizim Stüdyosu',
+    'rules.roiHint': 'Sahne üzerinde yeni bölge çizebilir, mevcut bölgeyi ortasından tutup taşıyabilir, 8 kenar/köşe tutamacından boyutlandırabilir veya hazır bölge şablonlarını seçebilirsiniz.',
+    'rules.left': 'Sol X (%)',
+    'rules.top': 'Üst Y (%)',
+    'rules.width': 'Genişlik W (%)',
+    'rules.height': 'Yükseklik H (%)',
     'rules.startTime': 'Başlangıç',
     'rules.endTime': 'Bitiş',
-    'rules.days': 'Günler',
-    'rules.scheduleHint': 'Bilgisayarın yerel saati kullanılır. Başlangıç ve bitiş aynıysa tüm gün. Geceyi aşan aralık, başladığı güne aittir. Birden fazla gün için Ctrl/⌘ ile seçin.',
+    'rules.days': 'Aktif Günler',
+    'rules.scheduleHint': 'Bilgisayarın yerel saati kullanılır. Başlangıç ve bitiş aynıysa tüm gün (7/24) izlenir.',
     'rules.scoreLabel': 'Minimum model skoru',
     'rules.cooldownLabel': 'Tekrar bildirim aralığı (sn)',
-    'rules.modelNotice': 'Model skoru doğruluk yüzdesi değildir. Tespitler insan incelemesi gerektirir. Güncel kareler birlikte değerlendirilir. AI süresi kamera kartında görünür; 15 saniyeden eski yanıtlar alarm üretmez. Işık kapanması için yerel şablonu kullanın; AI yanıtını beklemez.',
+    'rules.modelNotice': 'Model skoru doğruluk yüzdesi değildir. Tespitler insan incelemesi gerektirir. Güncel kareler birlikte değerlendirilir. AI süresi kamera kartında görünür; 15 saniyeden eski yanıtlar alarm üretmez.',
     'rules.saveBtn': 'Kuralı etkinleştir ↗',
     'rules.resetBtn': 'Yeni kural',
-    'events.eyebrow': '03 / BİLDİR',
+    'events.eyebrow': '03 / BİLDİR & SORGULA',
     'events.title': 'Olay arşivi.',
-    'events.subtitle': 'Kanıtı görüntüle. Bağlamı kontrol et. İncelemeyi tamamla.',
+    'events.subtitle': 'Doğal dilde ara, kanıt klibini incele, SHA-256 imzalı adli kanıt paketini indir.',
     'events.notifyBtn': 'Masaüstü bildirimi aç',
-    'settings.eyebrow': 'ÇALIŞMA ALANI',
+    'settings.eyebrow': '04 / ÇALIŞMA ALANI & TİCARİ LİSANS',
     'settings.title': 'Kontrol sende.',
     'settings.engineTitle': 'Yerel analiz motoru',
     'settings.modelLabel': 'Ollama görsel model adı',
-    'settings.ollamaLead': 'Önce <a href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">Ollama’yı indirip açın ↗</a>. Ardından aşağıdaki düğme Gemma 3 4B’yi indirir, görsel yanıtını test eder ve Cortex’e bağlar. Model indirmesi birkaç GB internet ve disk alanı kullanır. Yeterli RAM/GPU gerekir; hazır durumu donanımda test yanıtı alınmadan gösterilmez.',
     'settings.installBtn': 'Gemma’yı kur ve bağla',
     'settings.cancelBtn': 'İptal et',
     'settings.testModelBtn': 'Model bağlantısını kontrol et',
     'settings.retentionLabel': 'Kayıt saklama süresi (gün)',
     'settings.retentionHint': 'Süreyi azaltmak, süresi dolan olay kayıtlarını ve kliplerini siler.',
     'settings.autostart': 'Cortex açıldığında kayıtlı kameraları otomatik başlat',
-    'settings.webhookTitle': 'Bildirim kanalı',
+    'settings.webhookTitle': 'Kurumsal Webhook Kanalı (Slack / Discord / SIEM)',
     'settings.webhookLabel': 'HTTPS webhook URL',
     'settings.replaceWebhook': 'Webhook ayarını değiştir (boş bırakılırsa kapatılır)',
-    'settings.webhookHint': 'Bu adrese kamera adı, olay açıklaması ve model skoru gönderilir. Video gönderilmez; klipler yerel panelden açılır. Webhook isteğe bağlıdır. Başarısız gönderimler en fazla üç kez denenir; alıcı olay kimliğiyle tekrarları ayıklayabilir.',
+    'settings.webhookHint': 'Slack ve Discord webhook adresleri otomatik tanınır. HMAC sırrı girilirse her bildirim X-Cortex-Signature-256 başlığıyla kriptografik olarak imzalanır.',
     'settings.saveBtn': 'Ayarları kaydet',
-    'footer.tagline': 'Yerel zekâ. Senin kontrolün.'
+    'footer.tagline': 'Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.'
   },
   en: {
     'aside.eyebrow': 'CONTROL CENTER',
@@ -157,32 +195,38 @@ const I18N = {
     'nav.cameras': 'Cameras',
     'nav.rules': 'Event rules',
     'nav.events': 'Event archive',
-    'nav.settings': 'Settings',
+    'nav.settings': 'Settings & License',
     'aside.workspace': 'Local workspace',
     'aside.privacy': 'Video frames stay on this PC.',
-    'aside.engine': 'Local AI Vision Engine',
-    'aside.rc': 'V1 release candidate',
+    'aside.engine': 'Hybrid Vision AI + Smart Tracking Engine',
+    'aside.rc': '2.0 Pro Commercial Edition',
     'header.badge': 'LOCAL FIRST',
     'overview.eyebrow': 'CAMERAS THAT SEE. SYSTEM THAT UNDERSTANDS.',
     'overview.title': 'A <em>brain</em> for<br>every camera.',
-    'overview.lead': 'Tell it what to watch for.<br>Cortex observes, records evidence, and alerts you locally.',
+    'overview.lead': 'Tell it what to watch for.<br>Cortex observes, records forensic evidence, and alerts you locally.',
     'overview.cta': 'Connect first camera ↗',
-    'overview.orb': 'SEE · UNDERSTAND · NOTIFY',
+    'overview.studioBtn': 'ROI & Rule Studio ⌘',
+    'overview.orb': 'SEE · UNDERSTAND · ALERT',
     'overview.workspace': 'Your workspace',
-    'overview.liveStatus': 'Live connection status',
-    'overview.hint': 'Add a camera, define an event rule, and start monitoring. Ollama is required for Vision AI rules. 18 deterministic local rule types run without an AI model. 32 Vision AI templates are included for animals, weather, and tampering.',
+    'overview.liveStatus': 'Live connection status · Thermal heatmap & GDPR masking ready',
+    'overview.hint': 'Add a camera, design a custom zone in the ROI Studio, or deploy one of the 6 enterprise sector packs above.',
+    'sector.eyebrow': 'ENTERPRISE SECTOR PACKS · 6 VERTICALS',
+    'sector.title': 'One-click sector deployment packages',
+    'sector.desc': 'Deploy pre-calibrated ROI zones, schedules, and smart tracking rules for Residence, Pool, Factory, Warehouse, Retail, or Office.',
+    'sector.targetCamera': 'Target camera',
+    'sector.deployMode': 'Deployment mode',
     'stats.cameras': 'CAMERAS',
     'stats.rules': 'ACTIVE RULES',
     'stats.events': 'PENDING REVIEW',
     'empty.camerasTitle': 'No cameras added yet.',
     'empty.camerasDesc': 'Connect your first camera with its IP address and RTSP credentials.',
     'empty.rulesTitle': 'Select a configuration from the library.',
-    'empty.rulesDesc': 'Lighting, motion & zone, image health, and connection rules run without an AI model.',
+    'empty.rulesDesc': 'Lighting, motion, loitering, occupancy, perimeter, and Vision AI rules are ready.',
     'empty.eventsTitle': 'No events recorded yet.',
-    'empty.eventsDesc': 'Detected event descriptions and local evidence clips appear here. No sample or fake events are shown.',
-    'cameras.eyebrow': '01 / SEE',
+    'empty.eventsDesc': 'Detected event descriptions and local evidence clips appear here.',
+    'cameras.eyebrow': '01 / SEE & CONNECT',
     'cameras.title': 'Your cameras.',
-    'cameras.subtitle': 'Discover ONVIF devices on your LAN or connect via RTSP.',
+    'cameras.subtitle': 'Discover ONVIF devices on your LAN, batch-import NVR channels, or connect via RTSP.',
     'cameras.discover': 'Discover on LAN ↗',
     'cameras.addTitle': 'Add camera',
     'cameras.nameLabel': 'Camera name',
@@ -194,10 +238,10 @@ const I18N = {
     'cameras.credHint': 'Leave username/password blank if already embedded in the RTSP URL.',
     'cameras.userLabel': 'Username',
     'cameras.passLabel': 'Password',
-    'cameras.vaultHint': 'Credentials are stored in the local encrypted vault. Discovery is limited to ONVIF devices on the same subnet.',
+    'cameras.vaultHint': 'Credentials are stored in the local encrypted Fernet vault.',
     'cameras.testBtn': 'Test connection',
-    'cameras.saveBtn': 'Save & start monitoring',
-    'rules.eyebrow': '02 / UNDERSTAND',
+    'cameras.saveBtn': 'Save & start monitoring ↗',
+    'rules.eyebrow': '02 / UNDERSTAND & DESIGN',
     'rules.title': 'You describe it.<br>Cortex watches.',
     'rules.formTitle': 'New event rule',
     'rules.catalogLabel': 'Configuration library',
@@ -206,42 +250,41 @@ const I18N = {
     'rules.promptLabel': 'When should we alert you?',
     'rules.sensitivityLabel': 'Measurement threshold',
     'rules.durationLabel': 'Verification duration (seconds)',
-    'rules.roiSummary': 'Region of interest & schedule',
-    'rules.roiHint': 'Region coordinates are percentages of the frame. Connection rules monitor the entire camera.',
-    'rules.left': 'Left (%)',
-    'rules.top': 'Top (%)',
-    'rules.width': 'Width (%)',
-    'rules.height': 'Height (%)',
+    'rules.roiSummary': '🎯 Professional ROI Zone & Tripwire Studio',
+    'rules.roiHint': 'Draw a new zone, drag inside to move, resize using the 8 handles, or apply one-click zone presets.',
+    'rules.left': 'Left X (%)',
+    'rules.top': 'Top Y (%)',
+    'rules.width': 'Width W (%)',
+    'rules.height': 'Height H (%)',
     'rules.startTime': 'Start',
     'rules.endTime': 'End',
-    'rules.days': 'Days',
-    'rules.scheduleHint': 'Uses local system clock. Equal start and end times monitor all day.',
+    'rules.days': 'Active Days',
+    'rules.scheduleHint': 'Uses local system clock. Equal start and end times monitor 24/7.',
     'rules.scoreLabel': 'Minimum model score',
     'rules.cooldownLabel': 'Cooldown interval (sec)',
-    'rules.modelNotice': 'Model score is not calibrated probability. Detections require human review. Responses older than 15s do not trigger alarms.',
+    'rules.modelNotice': 'Model score is not calibrated probability. Detections require human review.',
     'rules.saveBtn': 'Enable rule ↗',
     'rules.resetBtn': 'New rule',
-    'events.eyebrow': '03 / NOTIFY',
+    'events.eyebrow': '03 / NOTIFY & SEARCH',
     'events.title': 'Event archive.',
-    'events.subtitle': 'Inspect evidence. Verify context. Complete review.',
+    'events.subtitle': 'Search in natural language, inspect evidence clips, download SHA-256 forensic bundles.',
     'events.notifyBtn': 'Enable desktop notifications',
-    'settings.eyebrow': 'WORKSPACE',
+    'settings.eyebrow': '04 / WORKSPACE & COMMERCIAL LICENSE',
     'settings.title': 'You are in control.',
     'settings.engineTitle': 'Local analysis engine',
     'settings.modelLabel': 'Ollama vision model name',
-    'settings.ollamaLead': 'First <a href="https://ollama.com/download/windows" target="_blank" rel="noreferrer">download &amp; open Ollama ↗</a>. Then use the button below to pull the vision model, verify inference, and bind it to Cortex.',
     'settings.installBtn': 'Install & connect Gemma',
     'settings.cancelBtn': 'Cancel',
     'settings.testModelBtn': 'Check model connection',
     'settings.retentionLabel': 'Evidence retention (days)',
     'settings.retentionHint': 'Reducing retention deletes expired event records and video clips.',
     'settings.autostart': 'Automatically start saved cameras when Cortex launches',
-    'settings.webhookTitle': 'Notification channel',
+    'settings.webhookTitle': 'Enterprise Webhook Channel (Slack / Discord / SIEM)',
     'settings.webhookLabel': 'HTTPS webhook URL',
     'settings.replaceWebhook': 'Update webhook setting (leave empty to disable)',
-    'settings.webhookHint': 'Sends camera name, event summary, and score over HTTPS JSON. Video clips stay local.',
+    'settings.webhookHint': 'Sends event payload over HTTPS JSON with optional HMAC-SHA256 signature.',
     'settings.saveBtn': 'Save settings',
-    'footer.tagline': 'Local intelligence. Your control.'
+    'footer.tagline': 'Local visual intelligence. Professional field analytics. Your control.'
   }
 };
 
@@ -304,8 +347,8 @@ function empty(title, description, icon = '◈') {
 
 function updateCrumb(name) {
   const labels = currentLang === 'en'
-    ? { overview: 'Cortex', cameras: 'Cameras', rules: 'Event rules', events: 'Event archive', settings: 'Settings' }
-    : { overview: 'Cortex', cameras: 'Kameralar', rules: 'Olay kuralları', events: 'Olay arşivi', settings: 'Ayarlar' };
+    ? { overview: 'Cortex', cameras: 'Cameras', rules: 'Event rules', events: 'Event archive', settings: 'Settings & License' }
+    : { overview: 'Cortex', cameras: 'Kameralar', rules: 'Olay kuralları', events: 'Olay arşivi', settings: 'Ayarlar & Lisans' };
   $('#crumb').textContent = labels[name] || 'Cortex';
 }
 
@@ -322,18 +365,90 @@ document.addEventListener('click', async e => {
   if (!b) return;
   if (b.dataset.tab) return tab(b.dataset.tab);
   if (b.dataset.edit) { editRule(b.dataset.edit); return; }
-  if (b.dataset.duplicate) {
-    editRule(b.dataset.duplicate);
-    $('#ruleForm').elements.id.value = '';
-    $('#ruleForm').elements.name.value += ' · kopya';
-    $('#saveRule').textContent = 'Yeni kural olarak kaydet';
+  if (b.dataset.heatmapToggle) {
+    const cid = b.dataset.heatmapToggle;
+    if (heatmapCameras.has(cid)) heatmapCameras.delete(cid);
+    else heatmapCameras.add(cid);
+    refresh();
+    return;
+  }
+  if (b.dataset.privacyMask) {
+    const cid = b.dataset.privacyMask;
+    const cam = state?.cameras.find(c => c.id === cid);
+    if (!cam) return;
+    const existing = cam.privacyMasks || [];
+    if (existing.length) {
+      if (!confirm(`${cam.name} üzerindeki ${existing.length} KVKK gizlilik maskesi kaldırılsın mı?`)) return;
+      try {
+        await api('camera-privacy', { id: cid, masks: [] });
+        message('Gizlilik maskeleri kaldırıldı.');
+        await refresh();
+      } catch (err) { message(err.message); }
+    } else {
+      const coords = prompt('KVKK Gizlilik Maskesi (Sol%, Üst%, Genişlik%, Yükseklik%):', '0,0,25,25');
+      if (!coords) return;
+      const [x, y, width, height] = coords.split(',').map(v => Number(v.trim()));
+      try {
+        await api('camera-privacy', { id: cid, masks: [{ x, y, width, height, mode: 'blur' }] });
+        message('KVKK bulanıklaştırma maskesi eklendi.');
+        await refresh();
+      } catch (err) { message(err.message); }
+    }
+    return;
+  }
+  if (b.dataset.sectorPack) {
+    const packId = b.dataset.sectorPack;
+    const cid = $('#sectorCameraSelect')?.value || (state?.cameras.length > 1 ? 'ALL' : state?.cameras[0]?.id);
+    if (!cid) return message('Önce bir kamera ekleyin ve seçin.');
+    const mode = $('#sectorDeployMode')?.value || 'merge';
+    const selectedSet = sectorSelections[packId];
+    const rules = selectedSet ? Array.from(selectedSet) : undefined;
+    b.disabled = true;
+    try {
+      const res = await api('sector-apply', { camera: cid, pack: packId, mode, rules });
+      message(res.message);
+      await refresh();
+    } catch (err) {
+      message(err.message);
+    } finally {
+      b.disabled = false;
+    }
+    return;
+  }
+  if (b.dataset.sectorPreviewRule) {
+    const [packId, ruleIdxStr] = b.dataset.sectorPreviewRule.split(':');
+    const pack = state?.sectorPacks?.find(p => p.id === packId);
+    const tmpl = pack?.rules?.[Number(ruleIdxStr)];
+    if (!tmpl) return;
+    tab('rules');
+    loadSectorRuleIntoStudio(tmpl);
+    message(`"${tmpl.name}" kuralı ve kalibre edilmiş ROI bölgesi çizim stüdyosuna yüklendi.`);
+    return;
+  }
+  if (b.dataset.sectorSelectAll) {
+    const packId = b.dataset.sectorSelectAll;
+    const pack = state?.sectorPacks?.find(p => p.id === packId);
+    if (!pack) return;
+    const set = sectorSelections[packId] || new Set(pack.rules.map((_, i) => i));
+    if (set.size === pack.rules.length) {
+      sectorSelections[packId] = new Set([0]);
+    } else {
+      sectorSelections[packId] = new Set(pack.rules.map((_, i) => i));
+    }
+    renderSectorPacks(true);
+    return;
+  }
+  if (b.classList.contains('chip-query')) {
+    $('#copilotQuery').value = b.dataset.query || '';
+    renderEventsList();
     return;
   }
   if (b.dataset.action) {
     if (b.dataset.action.endsWith('-delete') && !confirm('Bu kaydı silmek istiyor musunuz? Kamera silinirse bağlı kurallar da silinir; olay arşivi korunur.')) return;
     b.disabled = true;
     try {
-      await api(b.dataset.action, { id: b.dataset.id });
+      const res = await api(b.dataset.action, { id: b.dataset.id });
+      if (res && res.message) message(res.message);
       await refresh();
     } catch (e) {
       message(e.message);
@@ -343,12 +458,318 @@ document.addEventListener('click', async e => {
   }
 });
 
+document.addEventListener('change', e => {
+  const cb = e.target.closest('input[data-sector-rule-check]');
+  if (!cb) return;
+  const [packId, idxStr] = cb.dataset.sectorRuleCheck.split(':');
+  const idx = Number(idxStr);
+  const pack = state?.sectorPacks?.find(p => p.id === packId);
+  if (!pack) return;
+  if (!sectorSelections[packId]) {
+    sectorSelections[packId] = new Set(pack.rules.map((_, i) => i));
+  }
+  if (cb.checked) sectorSelections[packId].add(idx);
+  else sectorSelections[packId].delete(idx);
+  const btn = document.querySelector(`button[data-sector-pack="${packId}"]`);
+  if (btn) {
+    const count = sectorSelections[packId].size;
+    btn.textContent = count ? `Seçili ${count} kuralı kur ↗` : 'En az 1 kural seçin';
+    btn.disabled = count === 0;
+  }
+});
+
 /* ==========================================================================
-   Camera, Rule & Event Rendering
+   Camera, Sector Packs, Analytics, Rules & Event Rendering
    ========================================================================== */
 
 function camera(c) {
-  return `<article class="card"><div class="sectiontitle"><h2>${esc(c.name)}</h2><span class="tag">RTSP</span></div><div class="status">${esc(c.status)}</div>${c.status === 'Bağlı' ? `<img class="cameraimg" src="/api/frame/${c.id}?t=${Date.now()}" alt="${esc(c.name)} güncel görüntüsü">` : `<div class="empty" style="margin-top:16px"><p>${c.status === 'Durduruldu' ? 'Canlı görüntü için izlemeyi başlatın.' : 'İlk görüntü bekleniyor; bağlantı durumu yukarıda gösterilir.'}</p></div>`}<p class="fine">${esc(c.analysis)}${c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn'}${c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn'}${c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255'}</p><div class="actions"><button data-action="toggle" data-id="${c.id}">${c.status === 'Durduruldu' ? 'İzlemeyi başlat' : 'İzlemeyi durdur'}</button> <button data-action="access-permit" data-id="${c.id}">Tek geçiş izni · 15 sn</button> <button data-action="camera-delete" data-id="${c.id}">Kamerayı sil</button></div></article>`;
+  const showHeat = heatmapCameras.has(c.id);
+  const masksCount = (c.privacyMasks || []).length;
+  const camRulesCount = (state?.rules || []).filter(r => r.camera === c.id && r.enabled).length;
+  const nowTs = Date.now();
+  const stageHtml = c.status === 'Bağlı'
+    ? `<div class="camera-stage">
+        <img class="cameraimg" src="/api/frame/${c.id}?t=${nowTs}" alt="${esc(c.name)} güncel görüntüsü">
+        ${showHeat ? `<img class="heatmap-overlay" src="/api/heatmap/${c.id}?t=${nowTs}" alt="Canlı ısı haritası">` : ''}
+      </div>`
+    : '<div class="empty" style="margin-top:16px"><p>Canlı görüntü için izlemeyi başlatın.</p></div>';
+  return `<article class="card camera-card">
+    <div class="sectiontitle">
+      <h2>${esc(c.name)}</h2>
+      <div class="actions" style="margin:0;gap:6px">
+        ${camRulesCount ? `<span class="tag ok">${camRulesCount} etkin kural</span>` : ''}
+        ${masksCount ? `<span class="tag ok">KVKK Maske (${masksCount})</span>` : ''}
+        <span class="tag">RTSP</span>
+      </div>
+    </div>
+    <div class="status"><span class="dot ${c.status === 'Bağlı' ? '' : 'offline'}"></span> ${esc(c.status)}</div>
+    ${stageHtml}
+    <p class="fine">${esc(c.analysis)}${c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn'}${c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn'}${c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255'}</p>
+    <div class="actions">
+      <button data-action="toggle" data-id="${c.id}" class="${c.status === 'Durduruldu' ? 'primary' : ''}">${c.status === 'Durduruldu' ? 'İzlemeyi başlat' : 'İzlemeyi durdur'}</button>
+      <button data-action="access-permit" data-id="${c.id}">Tek geçiş izni · 15 sn</button>
+      <button type="button" data-heatmap-toggle="${c.id}" class="${showHeat ? 'primary' : ''}">🔥 Isı haritası</button>
+      <button type="button" data-privacy-mask="${c.id}">🛡️ KVKK maskesi</button>
+      <button data-action="camera-delete" data-id="${c.id}">Kamerayı sil</button>
+    </div>
+  </article>`;
+}
+
+let lastSectorPackKey = '';
+function renderSectorPacks(force = false) {
+  const grid = $('#sectorPackGrid');
+  if (!grid || !state?.sectorPacks) return;
+  const sel = $('#sectorCameraSelect');
+  if (sel) {
+    const prev = sel.value;
+    const camOptions = state.cameras.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    const allOption = state.cameras.length > 1
+      ? `<option value="ALL">Tüm Kameralara Uygula (${state.cameras.length} Kamera)</option>`
+      : '';
+    sel.innerHTML = state.cameras.length
+      ? allOption + camOptions
+      : '<option value="">Önce kamera ekleyin</option>';
+    if (prev && (prev === 'ALL' || state.cameras.some(c => c.id === prev))) {
+      sel.value = prev;
+    }
+  }
+
+  const activeNames = new Set((state.rules || []).filter(r => r.enabled).map(r => r.name));
+  const renderKey = JSON.stringify([
+    state.sectorPacks.map(p => p.id),
+    Array.from(activeNames),
+    state.cameras.length
+  ]);
+  if (!force && lastSectorPackKey === renderKey) return;
+  lastSectorPackKey = renderKey;
+
+  grid.innerHTML = state.sectorPacks.map(p => {
+    if (!sectorSelections[p.id]) {
+      sectorSelections[p.id] = new Set(p.rules.map((_, i) => i));
+    }
+    const selSet = sectorSelections[p.id];
+    const deployedCount = p.rules.filter(r => activeNames.has(r.name)).length;
+    return `
+      <article class="sector-card ${deployedCount > 0 ? 'sector-active' : ''}">
+        <div>
+          <div class="sector-head">
+            <span class="sector-icon">${esc(p.icon)}</span>
+            <div class="sector-head-meta">
+              <div class="sector-badges">
+                <span class="tag">${esc(p.badge || 'Saha Paketi')}</span>
+                ${deployedCount > 0
+                  ? `<span class="tag ok">✓ ${deployedCount}/${p.rules.length} aktif</span>`
+                  : `<span class="tag">${p.rules.length} hazır kural</span>`}
+              </div>
+              <h3>${esc(p.name)}</h3>
+            </div>
+          </div>
+          <p class="fine sector-summary">${esc(p.summary)}</p>
+          ${p.recommended ? `<p class="sector-placement"><strong>Önerilen Kameralar:</strong> ${esc(p.recommended)}</p>` : ''}
+          <div class="sector-rules-list">
+            <div class="sector-rules-bar">
+              <span>Paketteki Kurallar &amp; Kalibreli Bölgeler</span>
+              <button type="button" class="sector-mini-btn" data-sector-select-all="${esc(p.id)}">Tümünü Seç/Bırak</button>
+            </div>
+            ${p.rules.map((r, idx) => {
+              const roi = r.roi || [0, 0, 100, 100];
+              const sched = (r.start && r.end && r.start !== r.end) ? `${r.start}–${r.end}` : '7/24';
+              const isDep = activeNames.has(r.name);
+              const checked = selSet.has(idx);
+              return `
+                <div class="sector-rule-item ${isDep ? 'is-deployed' : ''}">
+                  <label class="sector-rule-check">
+                    <input type="checkbox" data-sector-rule-check="${esc(p.id)}:${idx}" ${checked ? 'checked' : ''}>
+                    <span class="sector-rule-name">${esc(r.name)}</span>
+                  </label>
+                  <div class="sector-rule-pills">
+                    <span class="sector-pill">${esc(r.categoryBadge || r.kind)}</span>
+                    <span class="sector-pill mono">ROI ${roi[0]},${roi[1]}%</span>
+                    <span class="sector-pill mono">${esc(sched)}</span>
+                    <button type="button" class="sector-preview-btn" data-sector-preview-rule="${esc(p.id)}:${idx}" title="Bu kuralı ve bölgeyi çizim stüdyosunda aç">Stüdyo ↗</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+        <div class="sector-foot">
+          <button type="button" class="primary sector-apply-btn" data-sector-pack="${esc(p.id)}">Seçili ${selSet.size} kuralı kur ↗</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function loadSectorRuleIntoStudio(tmpl) {
+  const f = $('#ruleForm');
+  if (!f) return;
+  const tplValue = tmpl.kind === 'vision' ? (tmpl.visionTemplate || 'custom') : tmpl.kind;
+  if ($('#ruleTemplate')) {
+    $('#ruleTemplate').value = tplValue;
+    chooseTemplate();
+  }
+  f.elements.id.value = '';
+  f.elements.name.value = tmpl.name || '';
+  f.elements.prompt.value = tmpl.prompt || '';
+  if (tmpl.sensitivity !== undefined && f.elements.sensitivity) f.elements.sensitivity.value = tmpl.sensitivity;
+  if (tmpl.duration !== undefined && f.elements.duration) f.elements.duration.value = tmpl.duration;
+  if (tmpl.cooldown !== undefined && f.elements.cooldown) f.elements.cooldown.value = tmpl.cooldown;
+  if (tmpl.threshold !== undefined && f.elements.threshold) f.elements.threshold.value = tmpl.threshold;
+  if (tmpl.axis && f.elements.axis) f.elements.axis.value = tmpl.axis;
+  if (tmpl.direction && f.elements.direction) f.elements.direction.value = tmpl.direction;
+  if (tmpl.line !== undefined && f.elements.line) f.elements.line.value = tmpl.line;
+  if (tmpl.margin !== undefined && f.elements.margin) f.elements.margin.value = tmpl.margin;
+  const roi = tmpl.roi || [0, 0, 100, 100];
+  ['x', 'y', 'width', 'height'].forEach((k, i) => {
+    if (f.elements[k]) f.elements[k].value = roi[i];
+  });
+  f.elements.start.value = tmpl.start || '00:00';
+  f.elements.end.value = tmpl.end || '00:00';
+  if (!f.elements.camera.value && state?.cameras?.[0]) {
+    f.elements.camera.value = state.cameras[0].id;
+  }
+  updateROI();
+  f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderAnalytics() {
+  const a = state?.analytics;
+  if (!a) return;
+  const latBadge = $('#avgLatencyBadge');
+  if (latBadge) {
+    latBadge.textContent = a.avgLatencyMs ? `Ort. AI yanıtı: ${(a.avgLatencyMs / 1000).toFixed(1)} sn` : 'Yerel gerçek zamanlı motor aktif';
+  }
+  const chart = $('#hourlyChart');
+  if (chart && Array.isArray(a.hourly24h)) {
+    const maxVal = Math.max(1, ...a.hourly24h);
+    chart.innerHTML = a.hourly24h.map((val, idx) => {
+      const pct = Math.max(6, Math.round((val / maxVal) * 100));
+      const hourLabel = `${23 - idx}s`;
+      return `<div class="bar-col" title="${hourLabel} önce: ${val} olay">
+        <div class="bar-fill ${val > 0 ? 'has-val' : ''}" style="height:${pct}%"></div>
+        <span class="bar-lbl">${idx % 4 === 0 ? hourLabel : ''}</span>
+      </div>`;
+    }).join('');
+  }
+  const catBox = $('#categoryBreakdown');
+  if (catBox && a.byCategory) {
+    catBox.innerHTML = Object.entries(a.byCategory).map(([k, v]) => `<span class="tag">${esc(k)}: <strong>${v}</strong></span>`).join('');
+  }
+}
+
+function renderLicenseAndAudit() {
+  if (!state) return;
+  const lic = state.license || {};
+  const badge = $('#licenseBadge');
+  if (badge && lic.badge) {
+    badge.innerHTML = `<span>${esc(lic.badge)}</span> <i class="dot"></i>`;
+  }
+  const licDetails = $('#licenseDetails');
+  if (licDetails) {
+    licDetails.innerHTML = `<strong>Aktif Paket:</strong> ${esc(lic.name || 'Cortex Enterprise')} · <strong>Kurum:</strong> ${esc(lic.organization || 'Kurumsal Saha')} · <strong>Kamera Kapasitesi:</strong> ${lic.maxCameras || 32} Kamera · <strong>Anahtar:</strong> <code>${esc(lic.key || 'AKTİF')}</code>`;
+  }
+  const auditBox = $('#auditList');
+  if (auditBox) {
+    const items = state.audit || [];
+    auditBox.innerHTML = items.length
+      ? `<table><thead><tr><th>Zaman</th><th>İşlem</th><th>Detay</th><th>SHA-256 Zincir</th></tr></thead><tbody>${items.slice(0, 12).map(a => `<tr><td class="mono">${new Date(a.time * 1000).toLocaleTimeString('tr-TR')}</td><td><strong>${esc(a.action)}</strong></td><td>${esc(a.detail)}</td><td><code>${esc(a.id)}</code></td></tr>`).join('')}</tbody></table>`
+      : '<p class="fine">Henüz denetim kaydı oluşmadı.</p>';
+  }
+}
+
+function renderMatrixWall() {
+  if (!matrixOpen || !state) return;
+  const grid = $('#matrixWallGrid');
+  if (!grid) return;
+  const nowTs = Date.now();
+  grid.innerHTML = state.cameras.length
+    ? state.cameras.map(c => `
+      <div class="wall-cell">
+        <div class="wall-cell-bar">
+          <strong>${esc(c.name)}</strong>
+          <span class="tag ${c.status === 'Bağlı' ? 'ok' : 'warn'}">${esc(c.status)}</span>
+        </div>
+        ${c.status === 'Bağlı'
+          ? `<div class="camera-stage"><img class="cameraimg" src="/api/frame/${c.id}?t=${nowTs}" alt="${esc(c.name)}">${matrixHeatmap ? `<img class="heatmap-overlay" src="/api/heatmap/${c.id}?t=${nowTs}" alt="">` : ''}</div>`
+          : `<div class="wall-offline">Bağlantı bekleniyor…</div>`}
+      </div>
+    `).join('')
+    : '<div class="wall-offline">Kamera duvarı için önce kamera ekleyin.</div>';
+}
+
+function filterEventsLocally(events) {
+  const q = ($('#copilotQuery')?.value || '').trim().toLowerCase();
+  const cat = $('#eventCategoryFilter')?.value || '';
+  const rev = $('#eventReviewFilter')?.value || '';
+  const now = Date.now() / 1000;
+
+  return events.filter(e => {
+    if (rev === 'unreviewed' && e.reviewed) return false;
+    if (rev === 'reviewed' && !e.reviewed) return false;
+    const kind = e.kind || 'vision';
+    if (cat === 'vision' && kind !== 'vision') return false;
+    if (cat === 'pro' && !['pro_loitering', 'pro_occupancy', 'pro_tailgating', 'pro_perimeter'].includes(kind)) return false;
+    if (cat === 'access' && !kind.startsWith('access_') && kind !== 'pro_tailgating') return false;
+    if (cat === 'local' && (kind === 'vision' || kind.startsWith('access_') || kind.startsWith('pro_'))) return false;
+
+    if (!q) return true;
+    let rem = q;
+    const evTime = e.observedAt || e.time || 0;
+    if (rem.includes('bugün') || rem.includes('son 24 saat')) {
+      if (now - evTime > 86400) return false;
+      rem = rem.replace('bugün', '').replace('son 24 saat', '');
+    }
+    if (rem.includes('incelenmemiş') || rem.includes('bekleyen')) {
+      if (e.reviewed) return false;
+      rem = rem.replace('incelenmemiş', '').replace('bekleyen', '');
+    }
+    if (rem.includes('gece')) {
+      const hr = new Date(evTime * 1000).getHours();
+      if (!(hr >= 20 || hr < 6)) return false;
+      rem = rem.replace('gece', '');
+    }
+    const tokens = rem.trim().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return true;
+    const hay = `${e.camera || ''} ${e.rule || ''} ${e.reason || ''} ${e.kind || ''} ${(e.tags || []).join(' ')}`.toLowerCase();
+    return tokens.every(t => hay.includes(t));
+  });
+}
+
+function renderEventsList() {
+  if (!state) return;
+  const dict = I18N[currentLang] || I18N.tr;
+  const filtered = filterEventsLocally(state.events || []);
+  const countEl = $('#copilotCount');
+  if (countEl) {
+    countEl.textContent = `${filtered.length} / ${state.events.length} olay gösteriliyor`;
+  }
+  $('#eventList').innerHTML = filtered.map(e => `<article class="card">
+    <div class="sectiontitle" style="margin-bottom:8px">
+      <div class="actions" style="margin:0;gap:6px">
+        <span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span>
+        <span class="tag">${esc(ruleCategoryLabel(e.kind))}</span>
+      </div>
+      <span class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}</span>
+    </div>
+    <h2>${esc(e.rule)} · ${esc(e.camera)}</h2>
+    <p>${esc(e.reason)}</p>
+    <p class="fine">${e.latencyMs ? 'AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn · ' : ''}${e.kind && e.kind !== 'vision' ? 'Yerel / Pro motor' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>
+    ${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}
+    ${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}
+    <div class="actions">
+      ${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}
+      ${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : '<span>RTSP klibi alınamadı; örnek kareleri inceleyin.</span>'}
+      <a download href="/api/evidence-bundle/${e.id}.zip">🛡️ Adli Kanıt Paketi (SHA-256 ZIP) ↓</a>
+      ${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}
+    </div>
+  </article>`).join('') || empty(dict['empty.eventsTitle'], dict['empty.eventsDesc'], '◷');
+}
+
+function ruleCategoryLabel(kind) {
+  if (!state) return 'Görsel AI';
+  const all = [...(state.templates || []), ...(state.proTemplates || [])];
+  return all.find(t => t.kind === kind)?.category || 'Görsel AI';
 }
 
 async function refresh() {
@@ -359,6 +780,11 @@ async function refresh() {
     setupCatalog();
     renderInstaller();
     renderDevices();
+    renderSectorPacks();
+    renderAnalytics();
+    renderLicenseAndAudit();
+    renderMatrixWall();
+
     if ($('#version')) $('#version').textContent = state.version;
     $('#diskStatus').textContent = 'Olay diski boş alanı: ' + state.diskFreeGB + ' GB';
     const dict = I18N[currentLang] || I18N.tr;
@@ -368,61 +794,78 @@ async function refresh() {
       ['stats.events', dict['stats.events'], state.events.filter(e => !e.reviewed).length]
     ].map(([key, label, b]) => `<div class="stat"><span data-i18n="${key}">${label}</span><strong>${b.toString().padStart(2, '0')}</strong></div>`).join('');
 
-    for (const selector of ['#overviewCameras', '#cameraList']) {
-      const container = $(selector);
-      const structureKey = JSON.stringify([state.cameras.map(c => [c.id,c.name,c.status]),currentLang]);
-      if (container.dataset.key !== structureKey) {
-        container.dataset.key = structureKey;
-        container.innerHTML = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '◈');
-      } else {
-        container.querySelectorAll('article').forEach((card,index) => {
-          const c = state.cameras[index];
-          const image = card.querySelector('img');
-          if (image && image.complete && !document.hidden) image.src = '/api/frame/' + c.id + '?t=' + Date.now();
-          const details = card.querySelector('.fine');
-          if (details) details.textContent = c.analysis + (c.inferenceMs == null ? '' : ' · AI süresi ' + (c.inferenceMs / 1000).toFixed(1) + ' sn') + (c.frameAge == null ? '' : ' · Kare yaşı ' + c.frameAge + ' sn') + (c.brightness == null ? '' : ' · Parlaklık ' + c.brightness + '/255');
-        });
-      }
-    }
+    const cards = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '◈');
+    $('#overviewCameras').innerHTML = cards;
+    $('#cameraList').innerHTML = state.cameras.map(camera).join('') || empty(dict['empty.camerasTitle'], dict['empty.camerasDesc'], '▦');
 
-    const cameraKey = JSON.stringify(state.cameras.map(c => [c.id,c.name]));
-    if ($('#cameraSelect').dataset.key !== cameraKey) {
-      const selected = $('#cameraSelect').value;
-      $('#cameraSelect').innerHTML = '<option value="">Kamera seçin</option>' + state.cameras.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    const selected = $('#cameraSelect').value;
+    $('#cameraSelect').innerHTML = '<option value="">Kamera seçin</option>' + state.cameras.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    if (selected && state.cameras.some(c => c.id === selected)) {
       $('#cameraSelect').value = selected;
-      $('#cameraSelect').dataset.key = cameraKey;
+    } else if (!selected && state.cameras.length === 1) {
+      $('#cameraSelect').value = state.cameras[0].id;
     }
+    if (currentTab === 'rules') updateROI();
 
-    const rulesKey = JSON.stringify([state.rules,state.cameras.map(c => [c.id,c.name]),currentLang]);
-    if ($('#ruleList').dataset.key !== rulesKey) {
-    $('#ruleList').dataset.key = rulesKey;
-    $('#ruleList').innerHTML = state.rules.map(r => `<article class="card"><span class="tag">${esc(state.cameras.find(c => c.id === r.camera)?.name)} · ${esc(state.templates.find(t => t.kind === r.kind)?.category || 'Görsel AI')}</span><h2>${esc(r.name)}</h2><p>${esc(r.prompt)}</p><p class="fine">${r.kind === 'vision' || !r.kind ? 'Model eşiği ' + r.threshold : 'Yerel ölçüm · Eşik ' + (r.sensitivity ?? r.dark) + ' · ' + (r.duration ?? r.hold * 3) + ' sn doğrulama'} · Tekrar aralığı ${r.cooldown} sn<br>${esc(r.schedule?.start || '00:00')}–${esc(r.schedule?.end || '00:00')} · ${r.schedule?.days.length || 7} gün · Bölge ${(r.roi || [0, 0, 100, 100]).join(' / ')}%</p><div class="actions"><button data-action="rule-toggle" data-id="${r.id}">${r.enabled ? 'Duraklat' : 'Etkinleştir'}</button><button data-edit="${r.id}">Düzenle</button><button data-duplicate="${r.id}">Kopyala</button><button data-action="rule-delete" data-id="${r.id}">Sil</button></div></article>`).join('') || empty(dict['empty.rulesTitle'], dict['empty.rulesDesc'], '⌘');
+    $('#ruleList').innerHTML = state.rules.map(r => {
+      const roi = r.roi || [0, 0, 100, 100];
+      const hasLine = r.kind?.startsWith('access_') || r.kind === 'pro_tailgating';
+      return `<article class="card rule-card ${r.enabled ? '' : 'rule-paused'}">
+        <div class="sectiontitle" style="margin-bottom:8px">
+          <div class="actions" style="margin:0;gap:6px">
+            <span class="tag ${r.enabled ? 'ok' : 'warn'}">${r.enabled ? 'Etkin' : 'Duraklatıldı'}</span>
+            <span class="tag">${esc(state.cameras.find(c => c.id === r.camera)?.name || 'Kamera')}</span>
+            <span class="tag">${esc(ruleCategoryLabel(r.kind))}</span>
+          </div>
+          <span class="tag mono">ROI: ${roi[0]},${roi[1]}% (${roi[2]}×${roi[3]}%)</span>
+        </div>
+        <h2>${esc(r.name)}</h2>
+        <p>${esc(r.prompt)}</p>
+        <p class="fine">${r.kind === 'vision' || !r.kind ? 'Model eşiği ' + r.threshold : 'Yerel/Pro ölçüm · Eşik ' + (r.sensitivity ?? r.dark) + ' · ' + (r.duration ?? r.hold * 3) + ' sn doğrulama'}${hasLine ? ` · Hat: ${(r.axis || 'y').toUpperCase()}=${r.line || 50}% (±${r.margin || 8}%)` : ''} · Tekrar aralığı ${r.cooldown} sn<br>Takvim: ${esc(r.schedule?.start || '00:00')}–${esc(r.schedule?.end || '00:00')} · ${r.schedule?.days.length || 7} gün</p>
+        <div class="actions">
+          <button data-action="rule-toggle" data-id="${r.id}">${r.enabled ? 'Duraklat' : 'Etkinleştir'}</button>
+          <button data-edit="${r.id}" class="primary">Stüdyoda Düzenle ↗</button>
+          <button data-action="rule-delete" data-id="${r.id}">Sil</button>
+        </div>
+      </article>`;
+    }).join('') || empty(dict['empty.rulesTitle'], dict['empty.rulesDesc'], '⌘');
 
-    }
-    const query = $('#eventSearch').value.toLocaleLowerCase(currentLang).trim();
-    const filter = $('#eventFilter').value;
-    const visibleEvents = state.events.filter(e =>
-      (!query || [e.camera,e.rule,e.reason].join(' ').toLocaleLowerCase(currentLang).includes(query)) &&
-      (filter === 'all' || (filter === 'reviewed' ? e.reviewed : !e.reviewed)));
-    $('#eventCount').textContent = visibleEvents.length + ' / ' + state.events.length + ' olay';
-    const eventKey = JSON.stringify([visibleEvents,currentLang]);
-    if ($('#eventList').dataset.key !== eventKey) {
-      $('#eventList').dataset.key = eventKey;
-      $('#eventList').innerHTML = visibleEvents.map(e => `<article class="card"><span class="tag ${e.reviewed ? 'ok' : 'warn'}">${e.reviewed ? 'İncelendi' : 'İnceleme gerekli'}</span><h2>${esc(e.rule)} · ${esc(e.camera)}</h2><p>${esc(e.reason)}</p><p class="fine">${new Date((e.observedAt || e.time) * 1000).toLocaleString('tr-TR')}${e.latencyMs ? ' · AI yanıt gecikmesi ' + (e.latencyMs / 1000).toFixed(1) + ' sn' : ''} · ${e.kind && e.kind !== 'vision' ? 'Yerel ölçüm' : 'Model skoru ' + e.confidence} · ${esc(e.notification)} · ${esc(e.recording === 'pending' ? 'Kayıt hazırlanıyor…' : e.recording === 'complete' ? 'Kayıt hazır' : e.recording || '')}</p>${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">Olay karesini aç ↗</a>` : ''}${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}<div class="actions">${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">Olay öncesi örnek kareler ↗</a>` : ''}${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">Klibi indir ↓</a>` : `<span>${e.recording === 'pending' ? 'Video kanıtı hazırlanıyor…' : 'RTSP klibi alınamadı; örnek kareleri inceleyin.'}</span>`}${!e.reviewed ? `<button data-action="review" data-id="${e.id}">İncelendi olarak işaretle</button>` : ''}</div></article>`).join('') || empty(dict['empty.eventsTitle'], dict['empty.eventsDesc'], '◷');
+    const filterStateKey = JSON.stringify([
+      state.events,
+      $('#copilotQuery')?.value || '',
+      $('#eventCategoryFilter')?.value || '',
+      $('#eventReviewFilter')?.value || ''
+    ]);
+    if ($('#eventList').dataset.key !== filterStateKey) {
+      $('#eventList').dataset.key = filterStateKey;
+      renderEventsList();
     }
 
     if (first) {
       $('#model').value = state.model;
       $('#retention').value = state.retention;
-      $('#aiInterval').value = state.aiInterval || 1;
       $('#autostart').checked = state.autostart;
+      if ($('#soundAlert')) $('#soundAlert').checked = state.soundAlert !== false;
+      if ($('#smartCascade')) $('#smartCascade').checked = state.smartCascade !== false;
+      if ($('#tgChatId') && state.telegram?.chatId) $('#tgChatId').value = state.telegram.chatId;
+      if ($('#tgEnabled') && state.telegram) $('#tgEnabled').checked = !!state.telegram.enabled;
     }
+    if ($('#telegramStatus') && state.telegram) {
+      $('#telegramStatus').textContent = state.telegram.configured
+        ? (state.telegram.enabled ? '✓ Telegram bildirimleri etkin (Chat: ' + state.telegram.chatId + ')' : 'Telegram yapılandırıldı ancak şu an kapalı.')
+        : 'Telegram Bot Token henüz girilmedi.';
+    }
+    let newAlarm = false;
     for (const e of state.events) {
-      if (!first && !seen.has(e.id) && 'Notification' in window && Notification.permission === 'granted') {
-        new Notification('Cortex · ' + e.rule, { body: e.camera + ': ' + e.reason });
+      if (!first && !seen.has(e.id)) {
+        newAlarm = true;
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Cortex · ' + e.rule, { body: e.camera + ': ' + e.reason });
+        }
       }
       seen.add(e.id);
     }
+    if (newAlarm) playOperatorAlert();
     first = false;
   } catch (e) {
     message('Yerel servis bağlantısı kesildi. Cortex uygulamasını açın.');
@@ -440,7 +883,8 @@ for (const [id, path] of [['cameraForm', 'cameras'], ['ruleForm', 'rules'], ['se
       const d = Object.fromEntries(new FormData(e.target));
       if (path === 'rules') {
         const selectedTemplate = $('#ruleTemplate').value;
-        d.kind = state.templates.some(t => t.kind === selectedTemplate) ? selectedTemplate : 'vision';
+        const allLocalAndPro = [...(state.templates || []), ...(state.proTemplates || [])];
+        d.kind = allLocalAndPro.some(t => t.kind === selectedTemplate) ? selectedTemplate : 'vision';
         d.visionTemplate = d.kind === 'vision' ? selectedTemplate : '';
         d.days = Array.from($('#ruleDays').selectedOptions, o => Number(o.value));
         if (d.kind === 'lights_off') {
@@ -451,6 +895,8 @@ for (const [id, path] of [['cameraForm', 'cameras'], ['ruleForm', 'rules'], ['se
       }
       if (path === 'settings') {
         d.autostart = !!d.autostart;
+        d.soundAlert = !!d.soundAlert;
+        d.smartCascade = !!d.smartCascade;
         d.replaceWebhook = !!d.replaceWebhook;
         if (Number(d.retention) < state.retention && !confirm('Yeni saklama süresini aşan olaylar ve klipler silinecek. Kaydedilsin mi?')) return;
       }
@@ -549,24 +995,37 @@ let catalogReady = false;
 function setupCatalog() {
   if (catalogReady) return;
   catalogReady = true;
-  const groups = [...new Set(state.templates.map(t => t.category))];
+  const allLocal = [...(state.templates || []), ...(state.proTemplates || [])];
+  const groups = [...new Set(allLocal.map(t => t.category))];
   $('#ruleTemplate').innerHTML =
-    groups.map(g => `<optgroup label="${esc(g)} · AI gerekmez">${state.templates.filter(t => t.category === g).map(t => `<option value="${t.kind}">${esc(t.name)}</option>`).join('')}</optgroup>`).join('') +
+    groups.map(g => `<optgroup label="${esc(g)}">${allLocal.filter(t => t.category === g).map(t => `<option value="${t.kind}">${esc(t.name)}</option>`).join('')}</optgroup>`).join('') +
     [...new Set(state.visionTemplates.map(t => t.category))].map(g => `<optgroup label="${esc(g)} · Görsel AI">${state.visionTemplates.filter(t => t.category === g).map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</optgroup>`).join('') +
     '<optgroup label="Özel"><option value="custom">Kendi görsel kuralını yaz</option></optgroup>';
   chooseTemplate();
 }
 
 function chooseTemplate() {
-  $('#accessSettings').hidden=!$('#ruleTemplate').value.startsWith('access_');
   const value = $('#ruleTemplate').value;
-  const t = state.templates.find(t => t.kind === value);
-  const vision = state.visionTemplates.find(t => t.id === value);
+  const isCrossing = value.startsWith('access_') || value === 'pro_tailgating';
+  $('#accessSettings').hidden = !isCrossing;
+  const allLocal = [...(state?.templates || []), ...(state?.proTemplates || [])];
+  const t = allLocal.find(t => t.kind === value);
+  const vision = state?.visionTemplates?.find(t => t.id === value);
   const f = $('#ruleForm');
   f.elements.kind.value = t ? value : 'vision';
   $('#localSettings').hidden = !t || value.startsWith('access_');
   $('#scoreLabel').hidden = !!t;
   $('#modelNotice').hidden = !!t;
+  const engineBadge = $('#ruleEngineBadge');
+  if (engineBadge) {
+    engineBadge.textContent = isCrossing
+      ? 'Geçiş & İz Takip Motoru'
+      : value.startsWith('pro_')
+        ? 'Cortex Pro Akıllı Takip'
+        : t
+          ? 'Gerçek Zamanlı Yerel Motor'
+          : 'Gemma 3 Görsel AI';
+  }
   f.elements.name.value = t ? t.name : vision?.name || '';
   f.elements.prompt.value = t ? t.description : vision?.prompt || '';
   f.elements.prompt.readOnly = !!t;
@@ -576,27 +1035,28 @@ function chooseTemplate() {
   if (t) {
     f.elements.sensitivity.value = t.sensitivity;
     f.elements.duration.value = t.duration;
-    const light = ['lights_off','lights_on','darkness','overexposure'].includes(t.kind), link = t.category === 'Bağlantı';
+    const light = t.category === 'Aydınlatma', link = t.category === 'Bağlantı';
     $('#sensitivityLabel').hidden = link;
     f.elements.sensitivity.max = light ? 255 : 100;
-    const metricHelp = {
-      low_contrast: 'Eşik: gri ton standart sapması (0–100). Düşük değer daha düz bir görüntüyü gösterir.',
-      black_pixels: 'Eşik: 20/255 altındaki siyah piksellerin yüzdesi.',
-      white_pixels: 'Eşik: 235/255 üzerindeki beyaz piksellerin yüzdesi.',
-      brightness_shift: 'Eşik: ilk referanstan mutlak parlaklık sapması, 0–100%.',
-      scene_restored: 'Eşik: referanstan farklı kalan piksel yüzdesi. Önce belirgin sahne değişimi görülmelidir.',
-      motion_stopped: 'Eşik: hareketli piksel yüzdesi. Önce hareket görülmelidir.'
-    };
-    $('#thresholdHelp').textContent = metricHelp[t.kind] || (light
+    $('#thresholdHelp').textContent = light
       ? 'Eşik: gri parlaklık (0–255). IR/gece görüşü ve otomatik pozlama sonucu değiştirebilir.'
       : link
         ? 'Kesinti en az 15 saniye doğrulanır. Geri gelme kuralı ilk bağlantıda alarm vermez.'
-        : t.kind === 'frozen'
-          ? 'Eşik: ortalama piksel farkı (0–255 ölçeği). Durağan sahne de tetikleyebilir.'
-          : t.kind === 'low_detail'
-            ? 'Eşik: başlangıç referansına göre ayrıntı kaybı yüzdesi. İlk görüntü yeterli ayrıntı içermelidir.'
-            : 'Eşik: değişen piksel yüzdesi. Hareket ölçümü insan, hayvan veya nesne sınıflandırmaz.');
+        : t.kind === 'pro_loitering'
+          ? 'Eşik: bölgede bekleyen minimum kişi/hedef sayısı. Süre: bekleme (dwell time) saniyesi.'
+          : t.kind === 'pro_occupancy'
+            ? 'Eşik: bölgede aynı anda izin verilen maksimum kişi kapasitesi.'
+            : t.kind === 'pro_perimeter'
+              ? 'Eşik: korunan yasak bölgede eşzamanlı minimum hedef sayısı. Süre: doğrulama saniyesi.'
+              : t.kind === 'pro_tailgating'
+                ? 'Eşik: ardışık geçişlerin kaçak geçiş sayılacağı zaman penceresi (saniye).'
+                : t.kind === 'frozen'
+                  ? 'Eşik: ortalama piksel farkı (0–255 ölçeği). Durağan sahne de tetikleyebilir.'
+                  : t.kind === 'low_detail'
+                    ? 'Eşik: başlangıç referansına göre ayrıntı kaybı yüzdesi. İlk görüntü yeterli ayrıntı içermelidir.'
+                    : 'Eşik: değişen piksel yüzdesi. Hareket ölçümü insan, hayvan veya nesne sınıflandırmaz.';
   }
+  drawRoiCanvas();
 }
 
 function resetRule() {
@@ -608,7 +1068,7 @@ function resetRule() {
   updateROI();
 }
 
-function editRule(id) {
+function editRule(id, shouldScroll = true) {
   const r = state.rules.find(r => r.id === id);
   if (!r) return;
   tab('rules');
@@ -616,7 +1076,7 @@ function editRule(id) {
   chooseTemplate();
   const f = $('#ruleForm');
   for (const key of ['id', 'camera', 'name', 'prompt', 'threshold', 'cooldown', 'duration', 'sensitivity', 'axis', 'direction', 'line', 'margin']) {
-    if (r[key] !== undefined) f.elements[key].value = r[key];
+    if (r[key] !== undefined && f.elements[key]) f.elements[key].value = r[key];
   }
   if (r.kind === 'lights_off' && r.duration === undefined) {
     f.elements.sensitivity.value = r.dark;
@@ -632,12 +1092,79 @@ function editRule(id) {
   }
   $('#saveRule').textContent = 'Değişiklikleri kaydet';
   updateROI();
-  f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (shouldScroll) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ==========================================================================
-   Theme-Aware ROI Zone Overlay & Canvas Drawing
+   Professional 8-Handle ROI & Tripwire Drawing Studio (#roiCanvas)
    ========================================================================== */
+
+function getRoiNumbers() {
+  const f = $('#ruleForm');
+  if (!f) return { x: 0, y: 0, width: 100, height: 100 };
+  const x = Math.max(0, Math.min(95, Number(f.elements.x.value) || 0));
+  const y = Math.max(0, Math.min(95, Number(f.elements.y.value) || 0));
+  const width = Math.max(5, Math.min(100 - x, Number(f.elements.width.value) || 100));
+  const height = Math.max(5, Math.min(100 - y, Number(f.elements.height.value) || 100));
+  return { x, y, width, height };
+}
+
+function setRoiNumbers({ x, y, width, height }) {
+  const f = $('#ruleForm');
+  if (!f) return;
+  const rx = Math.round(Math.max(0, Math.min(95, x)));
+  const ry = Math.round(Math.max(0, Math.min(95, y)));
+  const rw = Math.round(Math.max(5, Math.min(100 - rx, width)));
+  const rh = Math.round(Math.max(5, Math.min(100 - ry, height)));
+  f.elements.x.value = rx;
+  f.elements.y.value = ry;
+  f.elements.width.value = rw;
+  f.elements.height.value = rh;
+  syncRoiBoxFromInputs();
+}
+
+function drawCalibrationBackdrop(ctx, w, h) {
+  // Architectural dark studio backdrop when no live camera frame is displayed
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#090D16');
+  grad.addColorStop(0.55, '#0F1624');
+  grad.addColorStop(1, '#0B0F1A');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle 10% coordinate grid
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i < 10; i++) {
+    const gx = (w * i) / 10;
+    const gy = (h * i) / 10;
+    ctx.moveTo(gx, 0);
+    ctx.lineTo(gx, h);
+    ctx.moveTo(0, gy);
+    ctx.lineTo(w, gy);
+  }
+  ctx.stroke();
+
+  // Perspective corridor / zone guide lines
+  ctx.strokeStyle = 'rgba(76, 130, 255, 0.16)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.strokeRect(w * 0.24, h * 0.18, w * 0.52, h * 0.42);
+  ctx.moveTo(w * 0.24, h * 0.18); ctx.lineTo(0, 0);
+  ctx.moveTo(w * 0.76, h * 0.18); ctx.lineTo(w, 0);
+  ctx.moveTo(w * 0.24, h * 0.60); ctx.lineTo(0, h);
+  ctx.moveTo(w * 0.76, h * 0.60); ctx.lineTo(w, h);
+  ctx.stroke();
+
+  // Center reticle
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+  ctx.beginPath();
+  ctx.arc(w / 2, h / 2, 16, 0, Math.PI * 2);
+  ctx.moveTo(w / 2 - 24, h / 2); ctx.lineTo(w / 2 + 24, h / 2);
+  ctx.moveTo(w / 2, h / 2 - 24); ctx.lineTo(w / 2, h / 2 + 24);
+  ctx.stroke();
+}
 
 function drawRoiCanvas() {
   const canvas = $('#roiCanvas');
@@ -650,21 +1177,30 @@ function drawRoiCanvas() {
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
-  const rx = Math.max(0, Math.min(95, Number(f.elements.x.value) || 0)) / 100 * w;
-  const ry = Math.max(0, Math.min(95, Number(f.elements.y.value) || 0)) / 100 * h;
-  const rw = Math.max(5, Math.min(100, Number(f.elements.width.value) || 100)) / 100 * w;
-  const rh = Math.max(5, Math.min(100, Number(f.elements.height.value) || 100)) / 100 * h;
+  const img = $('#roiImage');
+  const hasLiveFrame = img && !img.hidden && img.getAttribute('src');
+  if (!hasLiveFrame) {
+    drawCalibrationBackdrop(ctx, w, h);
+  }
+
+  const { x: pctX, y: pctY, width: pctW, height: pctH } = getRoiNumbers();
+  const rx = (pctX / 100) * w;
+  const ry = (pctY / 100) * h;
+  const rw = (pctW / 100) * w;
+  const rh = (pctH / 100) * h;
 
   const isDark = document.documentElement.dataset.theme === 'dark';
   const signalColor = isDark ? '#4C82FF' : '#2F6BFF';
 
-  // Dim outside region
-  ctx.fillStyle = 'rgba(7, 8, 11, 0.50)';
-  ctx.fillRect(0, 0, w, h);
-  ctx.clearRect(rx, ry, rw, rh);
+  // Dim outside ROI region using 4 surrounding rectangles (preserves backdrop inside ROI)
+  ctx.fillStyle = 'rgba(5, 7, 12, 0.56)';
+  ctx.fillRect(0, 0, w, ry); // top
+  ctx.fillRect(0, ry + rh, w, h - (ry + rh)); // bottom
+  ctx.fillRect(0, ry, rx, rh); // left
+  ctx.fillRect(rx + rw, ry, w - (rx + rw), rh); // right
 
-  // Subtle rule-of-thirds grid inside ROI
-  ctx.strokeStyle = isDark ? 'rgba(76, 130, 255, 0.28)' : 'rgba(47, 107, 255, 0.28)';
+  // Rule-of-thirds grid inside ROI
+  ctx.strokeStyle = 'rgba(76, 130, 255, 0.32)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let i = 1; i <= 2; i++) {
@@ -677,40 +1213,313 @@ function drawRoiCanvas() {
   }
   ctx.stroke();
 
-  // Corner handles
-  ctx.fillStyle = signalColor;
-  const handleSize = 6;
-  const corners = [
+  // 8-point resize handles (4 corners + 4 mid-edges)
+  const hs = 8;
+  const handles = [
     [rx, ry],
-    [rx + rw - handleSize, ry],
-    [rx, ry + rh - handleSize],
-    [rx + rw - handleSize, ry + rh - handleSize]
+    [rx + rw / 2 - hs / 2, ry],
+    [rx + rw - hs, ry],
+    [rx + rw - hs, ry + rh / 2 - hs / 2],
+    [rx + rw - hs, ry + rh - hs],
+    [rx + rw / 2 - hs / 2, ry + rh - hs],
+    [rx, ry + rh - hs],
+    [rx, ry + rh / 2 - hs / 2],
   ];
-  for (const [cx, cy] of corners) {
-    ctx.fillRect(cx, cy, handleSize, handleSize);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = signalColor;
+  ctx.lineWidth = 2;
+  for (const [hx, hy] of handles) {
+    ctx.fillRect(hx, hy, hs, hs);
+    ctx.strokeRect(hx, hy, hs, hs);
   }
+
+  // Draw Crossing Tripwire & Margin Band when access/tailgating rule is selected or studioMode==='line'
+  const val = $('#ruleTemplate')?.value || '';
+  const showLine = val.startsWith('access_') || val === 'pro_tailgating' || studioMode === 'line';
+  const axis = f.elements.axis?.value || 'y';
+  const dir = f.elements.direction?.value || 'positive';
+  const lineVal = Math.max(10, Math.min(90, Number(f.elements.line?.value) || 50));
+  const marginVal = Math.max(5, Math.min(20, Number(f.elements.margin?.value) || 8));
+
+  if (showLine) {
+    const linePct = lineVal / 100;
+    const marginPct = marginVal / 100;
+    ctx.save();
+    if (axis === 'y') {
+      const ly = linePct * h;
+      const my = marginPct * h;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      ctx.fillRect(rx, ly - my, rw, my * 2);
+
+      // Dashed verification boundaries
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(rx, ly - my); ctx.lineTo(rx + rw, ly - my);
+      ctx.moveTo(rx, ly + my); ctx.lineTo(rx + rw, ly + my);
+      ctx.stroke();
+
+      // Solid primary tripwire
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.moveTo(rx, ly);
+      ctx.lineTo(rx + rw, ly);
+      ctx.stroke();
+
+      const cx = rx + rw / 2;
+      const arrowY = dir === 'positive' ? ly + 22 : ly - 14;
+      ctx.fillStyle = '#22C55E';
+      ctx.font = '600 13px sans-serif';
+      ctx.fillText(dir === 'positive' ? '▼ GİRİŞ / İHLAL YÖNÜ (+)' : '▲ GİRİŞ / İHLAL YÖNÜ (-)', Math.max(rx + 8, cx - 78), arrowY);
+    } else {
+      const lx = linePct * w;
+      const mx = marginPct * w;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      ctx.fillRect(lx - mx, ry, mx * 2, rh);
+
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(lx - mx, ry); ctx.lineTo(lx - mx, ry + rh);
+      ctx.moveTo(lx + mx, ry); ctx.lineTo(lx + mx, ry + rh);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.moveTo(lx, ry);
+      ctx.lineTo(lx, ry + rh);
+      ctx.stroke();
+
+      const cy = ry + rh / 2;
+      const arrowX = dir === 'positive' ? lx + 12 : Math.max(rx + 6, lx - 140);
+      ctx.fillStyle = '#22C55E';
+      ctx.font = '600 13px sans-serif';
+      ctx.fillText(dir === 'positive' ? '▶ GİRİŞ YÖNÜ (+)' : '◀ GİRİŞ YÖNÜ (-)', arrowX, cy);
+    }
+    ctx.restore();
+  }
+
+  const hudCoords = $('#roiHudCoords');
+  if (hudCoords) {
+    hudCoords.textContent = `ROI: X:${pctX}% Y:${pctY}% · ${pctW}×${pctH}%` + (showLine ? ` | HAT: ${axis.toUpperCase()}=${lineVal}% (±${marginVal}%)` : '');
+  }
+}
+
+function syncRoiBoxFromInputs() {
+  const f = $('#ruleForm');
+  const b = $('#roiBox');
+  if (!f || !b) return;
+  const { x, y, width, height } = getRoiNumbers();
+  b.style.left = x + '%';
+  b.style.top = y + '%';
+  b.style.width = width + '%';
+  b.style.height = height + '%';
+  drawRoiCanvas();
 }
 
 function updateROI() {
   const f = $('#ruleForm');
-  const c = state?.cameras.find(c => c.id === f.elements.camera.value);
-  const visible = c?.status === 'Bağlı';
-  $('#roiPreview').hidden = !visible;
-  if (!visible) return;
-  $('#roiImage').src = '/api/frame/' + c.id + '?t=' + Date.now();
-  const b = $('#roiBox');
-  b.style.left = f.elements.x.value + '%';
-  b.style.top = f.elements.y.value + '%';
-  b.style.width = f.elements.width.value + '%';
-  b.style.height = f.elements.height.value + '%';
-  drawRoiCanvas();
+  if (!f) return;
+  const c = state?.cameras?.find(c => c.id === f.elements.camera.value);
+  const live = c?.status === 'Bağlı';
+  const img = $('#roiImage');
+  const hudCam = $('#roiHudCamera');
+  if (img) {
+    if (live) {
+      img.hidden = false;
+      img.src = '/api/frame/' + c.id + '?t=' + Date.now();
+    } else {
+      img.hidden = true;
+      img.removeAttribute('src');
+    }
+  }
+  if (hudCam) {
+    hudCam.textContent = live
+      ? `CANLI · ${c.name}`
+      : (c ? `${c.name} · ÇEVRİMDIŞI KALİBRASYON SAHNESİ` : 'KALİBRASYON SAHNESİ · 16:9');
+  }
+  syncRoiBoxFromInputs();
+}
+
+function detectHitHandle(px, py, roi) {
+  const tol = 3.5;
+  const right = roi.x + roi.width;
+  const bottom = roi.y + roi.height;
+  const midX = roi.x + roi.width / 2;
+  const midY = roi.y + roi.height / 2;
+
+  if (Math.abs(px - roi.x) <= tol && Math.abs(py - roi.y) <= tol) return 'nw';
+  if (Math.abs(px - right) <= tol && Math.abs(py - roi.y) <= tol) return 'ne';
+  if (Math.abs(px - right) <= tol && Math.abs(py - bottom) <= tol) return 'se';
+  if (Math.abs(px - roi.x) <= tol && Math.abs(py - bottom) <= tol) return 'sw';
+  if (Math.abs(px - midX) <= tol && Math.abs(py - roi.y) <= tol) return 'n';
+  if (Math.abs(px - right) <= tol && Math.abs(py - midY) <= tol) return 'e';
+  if (Math.abs(px - midX) <= tol && Math.abs(py - bottom) <= tol) return 's';
+  if (Math.abs(px - roi.x) <= tol && Math.abs(py - midY) <= tol) return 'w';
+
+  const isFullScreen = roi.x === 0 && roi.y === 0 && roi.width === 100 && roi.height === 100;
+  if (!isFullScreen && px > roi.x + tol && px < right - tol && py > roi.y + tol && py < bottom - tol) {
+    return 'move';
+  }
+  return 'new';
+}
+
+function cursorForAction(action) {
+  switch (action) {
+    case 'nw':
+    case 'se': return 'nwse-resize';
+    case 'ne':
+    case 'sw': return 'nesw-resize';
+    case 'n':
+    case 's': return 'ns-resize';
+    case 'e':
+    case 'w': return 'ew-resize';
+    case 'move': return 'move';
+    default: return 'crosshair';
+  }
+}
+
+function initInteractiveStudio() {
+  const preview = $('#roiPreview');
+  const f = $('#ruleForm');
+  if (!preview || !f) return;
+
+  $('#drawModeRoi')?.addEventListener('click', () => {
+    studioMode = 'roi';
+    $('#drawModeRoi').classList.add('active');
+    $('#drawModeLine').classList.remove('active');
+    drawRoiCanvas();
+  });
+  $('#drawModeLine')?.addEventListener('click', () => {
+    studioMode = 'line';
+    $('#drawModeLine').classList.add('active');
+    $('#drawModeRoi').classList.remove('active');
+    $('#accessSettings').hidden = false;
+    drawRoiCanvas();
+  });
+
+  document.querySelectorAll('[data-roi-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [x, y, width, height] = btn.dataset.roiPreset.split(',').map(Number);
+      setRoiNumbers({ x, y, width, height });
+    });
+  });
+
+  document.querySelectorAll('[data-time-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [start, end] = btn.dataset.timePreset.split(',');
+      f.elements.start.value = start;
+      f.elements.end.value = end;
+    });
+  });
+
+  function relCoords(e) {
+    const rect = preview.getBoundingClientRect();
+    const px = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const py = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    return [px, py];
+  }
+
+  preview.addEventListener('pointerdown', e => {
+    isDrawing = true;
+    dragStart = relCoords(e);
+    initialRoi = getRoiNumbers();
+    preview.setPointerCapture(e.pointerId);
+    if (studioMode === 'line') {
+      dragAction = 'line';
+      const axis = f.elements.axis?.value || 'y';
+      const val = Math.round(axis === 'y' ? dragStart[1] : dragStart[0]);
+      const margin = Number(f.elements.margin?.value) || 8;
+      f.elements.line.value = Math.max(margin + 5, Math.min(95 - margin, val));
+      drawRoiCanvas();
+    } else {
+      dragAction = detectHitHandle(dragStart[0], dragStart[1], initialRoi);
+    }
+  });
+
+  preview.addEventListener('pointermove', e => {
+    const [cx, cy] = relCoords(e);
+    if (!isDrawing || !dragStart || !initialRoi) {
+      if (studioMode === 'line') {
+        preview.style.cursor = (f.elements.axis?.value || 'y') === 'y' ? 'ns-resize' : 'ew-resize';
+      } else {
+        preview.style.cursor = cursorForAction(detectHitHandle(cx, cy, getRoiNumbers()));
+      }
+      return;
+    }
+
+    if (dragAction === 'line') {
+      const axis = f.elements.axis?.value || 'y';
+      const val = Math.round(axis === 'y' ? cy : cx);
+      const margin = Number(f.elements.margin?.value) || 8;
+      f.elements.line.value = Math.max(margin + 5, Math.min(95 - margin, val));
+      drawRoiCanvas();
+      return;
+    }
+
+    const dx = cx - dragStart[0];
+    const dy = cy - dragStart[1];
+    let { x, y, width, height } = initialRoi;
+
+    if (dragAction === 'move') {
+      x = Math.max(0, Math.min(100 - width, x + dx));
+      y = Math.max(0, Math.min(100 - height, y + dy));
+      setRoiNumbers({ x, y, width, height });
+      return;
+    }
+
+    if (dragAction === 'new') {
+      const x1 = Math.min(dragStart[0], cx);
+      const y1 = Math.min(dragStart[1], cy);
+      const x2 = Math.max(dragStart[0], cx);
+      const y2 = Math.max(dragStart[1], cy);
+      setRoiNumbers({ x: x1, y: y1, width: Math.max(5, x2 - x1), height: Math.max(5, y2 - y1) });
+      return;
+    }
+
+    const right = x + width;
+    const bottom = y + height;
+    if (dragAction.includes('w')) {
+      x = Math.max(0, Math.min(right - 5, cx));
+      width = right - x;
+    }
+    if (dragAction.includes('e')) {
+      width = Math.max(5, Math.min(100 - x, cx - x));
+    }
+    if (dragAction.includes('n')) {
+      y = Math.max(0, Math.min(bottom - 5, cy));
+      height = bottom - y;
+    }
+    if (dragAction.includes('s')) {
+      height = Math.max(5, Math.min(100 - y, cy - y));
+    }
+    setRoiNumbers({ x, y, width, height });
+  });
+
+  preview.addEventListener('pointerup', () => {
+    isDrawing = false;
+    dragAction = null;
+    dragStart = null;
+  });
+
+  for (const name of ['axis', 'direction', 'line', 'margin']) {
+    f.elements[name]?.addEventListener('input', drawRoiCanvas);
+    f.elements[name]?.addEventListener('change', drawRoiCanvas);
+  }
+  syncRoiBoxFromInputs();
 }
 
 $('#ruleTemplate').onchange = chooseTemplate;
 $('#resetRule').onclick = resetRule;
 $('#cameraSelect').onchange = updateROI;
 for (const key of ['x', 'y', 'width', 'height']) {
-  $('#ruleForm').elements[key].oninput = updateROI;
+  $('#ruleForm').elements[key].oninput = syncRoiBoxFromInputs;
 }
 
 /* ==========================================================================
@@ -751,12 +1560,107 @@ $('#cancelModel').onclick = async () => {
   try { await api('model-cancel', {}); await refresh(); } catch (e) { message(e.message); }
 };
 
-/* Initialize Theme, Language & Polling */
+/* ==========================================================================
+   Cortex 2.0 Pro — Copilot Search, Telegram, License & Matrix Wall
+   ========================================================================== */
+
+$('#telegramForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    const d = Object.fromEntries(new FormData(e.target));
+    d.enabled = !!d.enabled;
+    const r = await api('telegram-settings', d);
+    message(r.message);
+    await refresh();
+  } catch (err) { message(err.message); }
+});
+
+$('#testTelegramBtn')?.addEventListener('click', async () => {
+  const f = $('#telegramForm');
+  const d = Object.fromEntries(new FormData(f));
+  try {
+    const r = await api('telegram-test', d);
+    message(r.message);
+  } catch (err) { message(err.message); }
+});
+
+$('#licenseActivateForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    const d = Object.fromEntries(new FormData(e.target));
+    const r = await api('license-activate', d);
+    message(r.message);
+    await refresh();
+  } catch (err) { message(err.message); }
+});
+
+$('#generateKeyBtn')?.addEventListener('click', async () => {
+  const plan = $('#genPlan')?.value || 'ENTERPRISE';
+  const organization = $('#genOrg')?.value || 'IPScans';
+  try {
+    const r = await api('license-generate', { plan, organization });
+    $('#generatedKeyOutput').textContent = `Üretilen Anahtar (${r.plan}): ${r.key}`;
+    if ($('#licenseKeyInput')) $('#licenseKeyInput').value = r.key;
+    await refresh();
+  } catch (err) { message(err.message); }
+});
+
+$('#copilotQuery')?.addEventListener('input', renderEventsList);
+$('#eventCategoryFilter')?.addEventListener('change', renderEventsList);
+$('#eventReviewFilter')?.addEventListener('change', renderEventsList);
+
+$('#exportCsvBtn')?.addEventListener('click', () => {
+  const q = encodeURIComponent($('#copilotQuery')?.value || '');
+  const cat = encodeURIComponent($('#eventCategoryFilter')?.value || '');
+  const rev = encodeURIComponent($('#eventReviewFilter')?.value || '');
+  window.location.href = `/api/events-export?q=${q}&category=${cat}&reviewed=${rev}`;
+});
+
+$('#openMatrixWall')?.addEventListener('click', () => {
+  matrixOpen = true;
+  $('#matrixWallModal').hidden = false;
+  renderMatrixWall();
+});
+
+$('#closeMatrixWall')?.addEventListener('click', () => {
+  matrixOpen = false;
+  $('#matrixWallModal').hidden = true;
+});
+
+$('#wallHeatmapToggle')?.addEventListener('click', () => {
+  matrixHeatmap = !matrixHeatmap;
+  $('#wallHeatmapToggle').classList.toggle('primary', matrixHeatmap);
+  renderMatrixWall();
+});
+
+document.querySelectorAll('.wall-layout-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.wall-layout-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const grid = $('#matrixWallGrid');
+    if (grid) grid.className = `wall-grid cols-${btn.dataset.cols}`;
+  });
+});
+
+/* Initialize Theme, Language, Interactive Studio & Polling */
 initTheme();
 initLanguage();
-refresh();
-setInterval(() => { if (!document.hidden) refresh(); }, 1000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+initInteractiveStudio();
+try {
+  const qsTab = new URLSearchParams(window.location.search).get("tab");
+  if (qsTab && ["overview", "cameras", "rules", "events", "settings"].includes(qsTab)) {
+    tab(qsTab);
+  }
+} catch (e) {}
+refresh().then(() => {
+  try {
+    const qsEdit = new URLSearchParams(window.location.search).get("edit");
+    if (qsEdit === "first" && state?.rules?.[0]) {
+      editRule(state.rules[0].id, false);
+    }
+  } catch (e) {}
+});
+setInterval(refresh, 1000);
 
 let discoveryToken=null;
 function deviceData(){const d=Object.fromEntries(new FormData($('#deviceForm')));d.sync=!!d.sync;d.https=!!d.https;return d}
@@ -764,13 +1668,3 @@ function renderDevices(){ $('#deviceList').innerHTML=(state.devices||[]).map(d=>
 $('#deviceForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;discoveryToken=null;$('#importChannels').hidden=true;$('#channelChoices').textContent='';$('#deviceResult').textContent='ONVIF kanalları okunuyor…';try{const r=await api('recorder-discover',deviceData());discoveryToken=r.token;$('#channelChoices').innerHTML=r.channels.map(c=>`<label class="check"><input type="checkbox" class="channelChoice" value="${esc(c.token)}" ${c.error?'disabled':'checked'}>${esc(c.name)} · ${c.error?esc(c.error):esc(c.encoding)+' '+c.width+'×'+c.height}</label>`).join('');$('#importChannels').hidden=!r.channels.some(c=>!c.error);$('#deviceResult').textContent=r.channels.length+' kanal bulundu. Düşük çözünürlüklü analiz akışı tercih edilir.'}catch(e){$('#deviceResult').textContent=e.message}finally{b.disabled=false}};
 $('#saveClockDevice').onclick=async()=>{if(!$('#deviceForm').reportValidity())return;try{await api('device-add',deviceData());message('Cihaz saat yönetimine eklendi.');await refresh()}catch(e){message(e.message)}};
 $('#importChannels').onclick=async()=>{const b=$('#importChannels');b.disabled=true;try{const r=await api('recorder-import',{token:discoveryToken,channels:Array.from(document.querySelectorAll('.channelChoice:checked'),el=>el.value)});let failed=0;for(const id of r.ids){try{await api('toggle',{id})}catch(e){failed++}}$('#deviceResult').textContent=r.added+' kamera eklendi; '+r.duplicates+' tekrar atlandı.'+(failed?' '+failed+' kamera başlatılamadı.':'');b.hidden=true;$('#channelChoices').textContent='';$('#deviceForm').elements.password.value='';await refresh()}catch(e){message(e.message)}finally{b.disabled=false}};
-
-$('#templateSearch').addEventListener('input', () => {
-  const query = $('#templateSearch').value.toLocaleLowerCase(currentLang).trim();
-  for (const option of $('#ruleTemplate').options) {
-    option.hidden = !!query && !option.textContent.toLocaleLowerCase(currentLang).includes(query);
-  }
-});
-
-$('#eventSearch').addEventListener('input', refresh);
-$('#eventFilter').addEventListener('change', refresh);

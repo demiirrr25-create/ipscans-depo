@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex · Kamera zekâsı</title>
+  <title>IPScans Cortex 2.0 Pro · Kurumsal Kamera Zekâsı & Görsel Analitik</title>
   <link rel="icon" href="logo.svg">
   <script>
     (function() {
@@ -24,7 +24,7 @@
   <aside>
     <a class="brand" href="#">
       <img src="logo.svg" alt="" width="40" height="40">
-      <span>Cortex<small>by IPScans</small></span>
+      <span>Cortex<small>by IPScans · 2.0 Pro</small></span>
     </a>
     <span class="eyebrow" data-i18n="aside.eyebrow">KONTROL MERKEZİ</span>
     <nav aria-label="Ana menü">
@@ -32,11 +32,11 @@
       <button type="button" data-tab="cameras"><span class="nav-glyph">▦</span> <span data-i18n="nav.cameras">Kameralar</span></button>
       <button type="button" data-tab="rules"><span class="nav-glyph">⌘</span> <span data-i18n="nav.rules">Olay kuralları</span></button>
       <button type="button" data-tab="events"><span class="nav-glyph">◷</span> <span data-i18n="nav.events">Olay arşivi</span></button>
-      <button type="button" data-tab="settings"><span class="nav-glyph">⚙</span> <span data-i18n="nav.settings">Ayarlar</span></button>
+      <button type="button" data-tab="settings"><span class="nav-glyph">⚙</span> <span data-i18n="nav.settings">Ayarlar &amp; Lisans</span></button>
     </nav>
     <div class="asidefoot">
       <div class="aside-status"><span class="dot"></span> <span data-i18n="aside.workspace">Yerel çalışma alanı</span></div>
-      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Yerel RTSP + Gemma 3 4B Motoru</span><span id="version" data-version="1.2.0-rc.1" hidden>1.2.0-rc.1</span></small>
+      <small><span data-i18n="aside.privacy">Görüntüler bu bilgisayarda kalır.</span><br><span data-i18n="aside.engine">Hibrit Görsel AI + Akıllı Takip Motoru</span><span id="version" data-version="2.0.0-pro" hidden>2.0.0-pro</span></small>
     </div>
   </aside>
 
@@ -48,7 +48,8 @@
         <b id="crumb">Cortex</b>
       </div>
       <div class="header-actions">
-        <span class="badge"><span data-i18n="header.badge">LOCAL FIRST</span> <i class="dot"></i></span>
+        <button type="button" id="openMatrixWall" class="wall-trigger-btn" title="Tam Ekran Güvenlik Duvarı (Matrix Wall)">⊞ Kamera Duvarı</button>
+        <span class="badge" id="licenseBadge"><span data-i18n="header.badge">LOCAL FIRST</span> <i class="dot"></i></span>
         <div class="lang-switch" role="group" aria-label="Dil seçimi">
           <button type="button" class="lang-btn active" data-lang="tr" id="lang-tr">TR</button>
           <button type="button" class="lang-btn" data-lang="en" id="lang-en">EN</button>
@@ -72,22 +73,61 @@
         <div>
           <span class="eyebrow" data-i18n="overview.eyebrow">GÖREN KAMERALAR. ANLAYAN SİSTEM.</span>
           <h1 data-i18n-html="overview.title">Her kameraya<br>bir <em>beyin.</em></h1>
-          <p data-i18n-html="overview.lead">Neyi takip edeceğini sen söyle.<br>Cortex gözlemlesin, olayı kaydetsin, sana bildirsin.</p>
-          <button type="button" class="primary" data-tab="cameras" data-i18n="overview.cta">İlk kameranı bağla ↗</button>
+          <p data-i18n-html="overview.lead">Neyi takip edeceğini sen söyle.<br>Cortex gözlemlesin, olayı kanıtlarıyla kaydetsin, anında sana bildirsin.</p>
+          <div class="actions">
+            <button type="button" class="primary" data-tab="cameras" data-i18n="overview.cta">İlk kameranı bağla ↗</button>
+            <button type="button" data-tab="rules" data-i18n="overview.studioBtn">Bölge (ROI) &amp; Kural Stüdyosu ⌘</button>
+          </div>
         </div>
         <div class="orb">
           <img src="logo.svg" alt="Cortex geometrik göz logosu">
           <span data-i18n="overview.orb">GÖR · ANLA · BİLDİR</span>
         </div>
       </div>
+
       <div id="stats" class="stats">
         <div class="stat"><span data-i18n="stats.cameras">KAMERALAR</span><strong>00</strong></div>
         <div class="stat"><span data-i18n="stats.rules">ETKİN KURALLAR</span><strong>00</strong></div>
         <div class="stat"><span data-i18n="stats.events">İNCELEME BEKLEYEN</span><strong>00</strong></div>
       </div>
+
+      <section class="card pro-banner-card" style="margin-bottom:28px">
+        <div class="sector-toolbar">
+          <div>
+            <span class="eyebrow" data-i18n="sector.eyebrow">KURUMSAL SAHA PAKETLERİ · 6 SEKTÖR</span>
+            <h2 data-i18n="sector.title">Tek tıkla sektörel kurulum paketleri</h2>
+            <p class="fine" data-i18n="sector.desc">Site, Havuz, Fabrika, Depo, Perakende veya Ofis/Plaza kurulumlarında önceden kalibre edilmiş bölge (ROI), zaman çizelgesi ve akıllı takip kurallarını seçip tek tuşla devreye alın.</p>
+          </div>
+          <div class="sector-controls">
+            <label style="margin:0;min-width:210px"><span data-i18n="sector.targetCamera">Hedef kamera</span>
+              <select id="sectorCameraSelect"><option value="">Önce kamera ekleyin</option></select>
+            </label>
+            <label style="margin:0;min-width:210px"><span data-i18n="sector.deployMode">Kurulum modu</span>
+              <select id="sectorDeployMode">
+                <option value="merge">Mevcut kurallarla birleştir / güncelle</option>
+                <option value="replace">Kameradaki kuralları paketle değiştir</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div id="sectorPackGrid" class="sector-grid"></div>
+      </section>
+
+      <section class="card" id="analyticsCard" style="margin-bottom:28px">
+        <div class="sectiontitle" style="margin-bottom:12px">
+          <div>
+            <span class="eyebrow">CANLI SAHA TELEMETRİSİ</span>
+            <h2>Son 24 saat olay yoğunluğu ve kategori dağılımı</h2>
+          </div>
+          <span id="avgLatencyBadge" class="tag ok">Yerel gerçek zamanlı motor aktif</span>
+        </div>
+        <div id="hourlyChart" class="hourly-chart" aria-label="24 saatlik olay grafiği"></div>
+        <div id="categoryBreakdown" class="actions" style="margin-top:14px"></div>
+      </section>
+
       <div class="sectiontitle">
         <h2 data-i18n="overview.workspace">Çalışma alanın</h2>
-        <span data-i18n="overview.liveStatus">Gerçek bağlantı durumu</span>
+        <span data-i18n="overview.liveStatus">Gerçek bağlantı durumu · Canlı termal ısı haritası ve KVKK maskeleme destekli</span>
       </div>
       <div id="overviewCameras" class="grid">
         <div class="empty">
@@ -96,24 +136,57 @@
           <p data-i18n="empty.camerasDesc">IP adresi ve giriş bilgileriyle ilk kameranı bağla.</p>
         </div>
       </div>
-      <div class="hint" data-i18n="overview.hint">Başlamak için kamera ekle, olay kuralını tanımla ve izlemeyi başlat. Görsel AI kuralları için Ollama gerekir. 18 yerel kural türü AI modeli olmadan çalışır. Hayvan, doğa/hava ve müdahale için 32 görsel AI şablonu bulunur. Ayarlardan Gemma’yı tek tuşla hazırlayabilirsin.</div>
+      <div class="hint" data-i18n="overview.hint">Başlamak için kamera ekle, olay kuralını tanımla veya yukarıdan 6 kurumsal saha paketinden birini tek tıkla uygula. 12 yerel piksel kuralı, 4 Cortex Pro akıllı takip kuralı (Loitering, Kapasite, Tailgating, Yasak Bölge), 3 geçiş kontrol kuralı ve 12 görsel AI şablonu hazır gelir.</div>
     </section>
 
     <section id="cameras" class="view" hidden>
       <div class="sectiontitle">
         <div>
-          <span class="eyebrow" data-i18n="cameras.eyebrow">01 / GÖR</span>
+          <span class="eyebrow" data-i18n="cameras.eyebrow">01 / GÖR &amp; BAĞLAN</span>
           <h1 data-i18n="cameras.title">Kameraların.</h1>
-          <p data-i18n="cameras.subtitle">Aynı ağdaki cihazları keşfet veya RTSP ile bağlan.</p>
+          <p data-i18n="cameras.subtitle">Aynı ağdaki ONVIF cihazları keşfet, NVR kanallarını topluca içe aktar veya RTSP ile doğrudan bağlan.</p>
         </div>
-        <button type="button" id="discover" data-i18n="cameras.discover">Ağda keşfet ↗</button>
+        <button type="button" id="discover" class="primary" data-i18n="cameras.discover">Ağda keşfet ↗</button>
       </div>
-      <div id="discovery"></div><section class="card" style="margin-bottom:24px"><h2>Kayıt cihazı ve saat yönetimi</h2><p>NVR/DVR üzerindeki ONVIF kanallarını keşfedin, seçip topluca ekleyin. Kamera saatini yönetmek için aynı formdan tek cihaz da kaydedebilirsiniz.</p><form id="deviceForm"><div class="grid"><label>Cihaz adı<input name="name" required maxlength="100" placeholder="Havuz NVR"></label><label>IP / host<input name="host" required placeholder="192.168.1.100"></label><label>ONVIF portu<input name="port" type="number" min="1" max="65535" value="80" required></label><label>Kullanıcı<input name="username" required autocomplete="off"></label><label>Parola<input name="password" type="password" autocomplete="new-password"></label><label>Saat kontrol aralığı (dakika)<input name="interval" type="number" min="5" max="1440" value="60" required></label></div><label class="check"><input name="https" type="checkbox"> HTTPS ONVIF</label><label class="check"><input name="sync" type="checkbox" checked> Cihaz tarih ve saatini otomatik eşitle</label><p class="fine">Bilgisayarın UTC saati referanstır; mevcut saat dilimi korunur. Saat sapması varsa cihaz manuel saat moduna alınır. Cortex açıkken düzenli kontrol yapılır. NVR saatini eşitlemek, bağlı kameraların kendi saatlerini mutlaka değiştirmez; gerekirse kameraları ayrı kaydedin.</p><div class="actions"><button class="primary">Kanalları keşfet</button><button type="button" id="saveClockDevice">Yalnızca saat yönetimine ekle</button></div></form><p id="deviceResult" role="status"></p><div id="channelChoices"></div><button id="importChannels" hidden>Seçili kanalları ekle ve başlat</button><div id="deviceList" class="grid"></div></section>
+      <div id="discovery"></div>
+      <section class="card" style="margin-bottom:24px">
+        <div class="sectiontitle" style="margin-bottom:8px">
+          <div>
+            <span class="eyebrow">ONVIF NVR &amp; SAAT SENKRONİZASYONU</span>
+            <h2>Kayıt cihazı kanal keşfi ve otomatik saat yönetimi</h2>
+          </div>
+          <span class="tag">ONVIF Soap / UTC</span>
+        </div>
+        <p>NVR/DVR üzerindeki tüm kamera kanallarını tek seferde keşfedip içe aktarın ve cihaz saatlerini bilgisayarınızın UTC saatiyle senkronize tutun.</p>
+        <form id="deviceForm">
+          <div class="grid">
+            <label>Cihaz adı<input name="name" required maxlength="100" placeholder="Örn: Ana Bina NVR"></label>
+            <label>IP / host<input name="host" required placeholder="192.168.1.100"></label>
+            <label>ONVIF portu<input name="port" type="number" min="1" max="65535" value="80" required></label>
+            <label>Kullanıcı<input name="username" required autocomplete="off"></label>
+            <label>Parola<input name="password" type="password" autocomplete="new-password"></label>
+            <label>Saat kontrol aralığı (dakika)<input name="interval" type="number" min="5" max="1440" value="60" required></label>
+          </div>
+          <label class="check"><input name="https" type="checkbox"> HTTPS ONVIF bağlantısı kullan</label>
+          <label class="check"><input name="sync" type="checkbox" checked> Cihaz tarih ve saatini otomatik eşitle</label>
+          <p class="fine">Bilgisayarın UTC saati referanstır; mevcut saat dilimi korunur. Saat sapması varsa cihaz manuel saat moduna alınır.</p>
+          <div class="actions">
+            <button class="primary">Kanalları keşfet ↗</button>
+            <button type="button" id="saveClockDevice">Yalnızca saat yönetimine ekle</button>
+          </div>
+        </form>
+        <p id="deviceResult" role="status"></p>
+        <div id="channelChoices"></div>
+        <button id="importChannels" hidden>Seçili kanalları ekle ve başlat</button>
+        <div id="deviceList" class="grid"></div>
+      </section>
+
       <div class="twocol">
         <form id="cameraForm" class="card">
-          <h2 data-i18n="cameras.addTitle">Kamera ekle</h2>
+          <span class="eyebrow">RTSP AKIM BAĞLANTISI</span>
+          <h2 data-i18n="cameras.addTitle" style="margin-top:4px">Kamera ekle</h2>
           <label><span data-i18n="cameras.nameLabel">Kamera adı</span>
-            <input name="name" placeholder="Asansör 1" required maxlength="100">
+            <input name="name" placeholder="Örn: Nizamiye Giriş" required maxlength="100">
           </label>
           <label><span data-i18n="cameras.templateLabel">Bağlantı şablonu</span>
             <select id="brand">
@@ -134,8 +207,8 @@
           </label>
           <label><span data-i18n="cameras.transportLabel">RTSP taşıma biçimi</span>
             <select name="transport">
-              <option value="tcp">TCP (önerilen)</option>
-              <option value="udp">UDP</option>
+              <option value="tcp">TCP (önerilen · kesintisiz paket aktarımı)</option>
+              <option value="udp">UDP (düşük gecikme)</option>
             </select>
           </label>
           <p class="fine" data-i18n="cameras.credHint">Tam adres kullanıcı adı ve parola içeriyorsa aşağıdaki alanları boş bırakabilirsin. Ayrı alanlar doldurulursa bu bilgiler kullanılır.</p>
@@ -147,11 +220,11 @@
               <input name="password" type="password" autocomplete="new-password">
             </label>
           </div>
-          <p class="fine" data-i18n="cameras.vaultHint">Kimlik bilgileri yerel şifreli kasada saklanır. Keşif ONVIF etkin ve aynı ağdaki cihazlarla sınırlıdır. Şablon model ve kanalınıza göre değişebilir.</p>
+          <p class="fine" data-i18n="cameras.vaultHint">Kimlik bilgileri yerel Fernet AES-128 şifreli kasada saklanır.</p>
           <div id="cameraResult" role="status" class="fine"></div>
           <div class="actions">
             <button type="button" id="testCamera" data-i18n="cameras.testBtn">Bağlantıyı test et</button>
-            <button type="submit" class="primary" data-i18n="cameras.saveBtn">Kaydet ve izlemeyi başlat</button>
+            <button type="submit" class="primary" data-i18n="cameras.saveBtn">Kaydet ve izlemeyi başlat ↗</button>
           </div>
         </form>
         <div id="cameraList" class="stack">
@@ -165,25 +238,79 @@
     </section>
 
     <section id="rules" class="view" hidden>
-      <span class="eyebrow" data-i18n="rules.eyebrow">02 / ANLA</span>
+      <span class="eyebrow" data-i18n="rules.eyebrow">02 / ANLA &amp; TASARLA</span>
       <h1 data-i18n-html="rules.title">Sen söyle.<br>Cortex takip etsin.</h1>
       <div class="twocol">
         <form id="ruleForm" class="card">
-          <h2 data-i18n="rules.formTitle">Yeni olay kuralı</h2>
+          <div class="sectiontitle" style="margin-bottom:8px">
+            <div>
+              <span class="eyebrow">KURAL &amp; BÖLGE YAPILANDIRICISI</span>
+              <h2 data-i18n="rules.formTitle" style="margin-top:4px">Yeni olay kuralı</h2>
+            </div>
+            <span class="tag ok" id="ruleEngineBadge">Hibrit Motor</span>
+          </div>
           <label><span data-i18n="rules.catalogLabel">Konfigürasyon kütüphanesi</span>
-            <input id="templateSearch" type="search" placeholder="Şablon ara: havuz, kapı, araç…" aria-label="Şablon ara"><select id="ruleTemplate"></select>
+            <select id="ruleTemplate"></select>
           </label>
           <p id="templateDescription" class="hint"></p>
           <input type="hidden" name="id" value="">
           <input type="hidden" name="kind" value="vision">
-          <label><span data-i18n="rules.cameraLabel">Kamera</span>
-            <select name="camera" id="cameraSelect" required></select>
-          </label>
-          <label><span data-i18n="rules.nameLabel">Kural adı</span>
-            <input name="name" placeholder="Asansörde bırakılan çöp" required>
-          </label>
+          <div class="grid">
+            <label><span data-i18n="rules.cameraLabel">Kamera</span>
+              <select name="camera" id="cameraSelect" required></select>
+            </label>
+            <label><span data-i18n="rules.nameLabel">Kural adı</span>
+              <input name="name" placeholder="Asansörde bırakılan çöp" required>
+            </label>
+          </div>
+
+          <details open class="studio-details">
+            <summary data-i18n="rules.roiSummary">🎯 Profesyonel Bölge (ROI) &amp; Geçiş Hattı Çizim Stüdyosu</summary>
+            <p class="fine" data-i18n="rules.roiHint">Sahne üzerinde yeni bölge çizebilir, mevcut bölgeyi ortasından tutup taşıyabilir, 8 kenar/köşe tutamacından boyutlandırabilir veya hazır bölge şablonlarını seçebilirsiniz.</p>
+
+            <div class="studio-toolbar">
+              <div class="studio-mode-group">
+                <button type="button" id="drawModeRoi" class="studio-btn active">⬚ Bölge (ROI) Çiz &amp; Düzenle</button>
+                <button type="button" id="drawModeLine" class="studio-btn">📏 Geçiş Çizgisi (Tripwire) Taşı</button>
+              </div>
+              <div class="studio-preset-group" aria-label="Hazır bölge şablonları">
+                <button type="button" class="studio-preset-btn" data-roi-preset="0,0,100,100" id="roiFullBtn">Tam Ekran</button>
+                <button type="button" class="studio-preset-btn" data-roi-preset="15,15,70,70">Merkez %70</button>
+                <button type="button" class="studio-preset-btn" data-roi-preset="5,45,90,50">Alt Geçiş</button>
+                <button type="button" class="studio-preset-btn" data-roi-preset="5,5,90,50">Üst Bölge</button>
+                <button type="button" class="studio-preset-btn" data-roi-preset="0,10,50,85">Sol Yarı</button>
+                <button type="button" class="studio-preset-btn" data-roi-preset="50,10,50,85">Sağ Yarı</button>
+              </div>
+            </div>
+
+            <div id="roiPreview" class="roi-preview">
+              <img id="roiImage" alt="Seçilen kamera bölgesi" hidden>
+              <canvas id="roiCanvas" class="roi-canvas" width="768" height="432"></canvas>
+              <div id="roiBox"></div>
+              <div class="roi-hud">
+                <span id="roiHudCamera" class="roi-hud-pill">KALİBRASYON SAHNESİ · 16:9</span>
+                <span id="roiHudCoords" class="roi-hud-pill mono">ROI: 0%, 0% · 100×100%</span>
+              </div>
+            </div>
+
+            <div class="grid roi-coord-grid">
+              <label><span data-i18n="rules.left">Sol X (%)</span>
+                <input name="x" type="number" min="0" max="95" value="0">
+              </label>
+              <label><span data-i18n="rules.top">Üst Y (%)</span>
+                <input name="y" type="number" min="0" max="95" value="0">
+              </label>
+              <label><span data-i18n="rules.width">Genişlik W (%)</span>
+                <input name="width" type="number" min="5" max="100" value="100">
+              </label>
+              <label><span data-i18n="rules.height">Yükseklik H (%)</span>
+                <input name="height" type="number" min="5" max="100" value="100">
+              </label>
+            </div>
+          </details>
+
           <label><span data-i18n="rules.promptLabel">Ne olduğunda haber verelim?</span>
-            <textarea name="prompt" rows="5" required>Bir kişi asansör zeminine çöp veya poşet bırakıp ayrıldığında ve nesne yerde kalmaya devam ettiğinde bildir.</textarea>
+            <textarea name="prompt" rows="3" required>Bir kişi asansör zeminine çöp veya poşet bırakıp ayrıldığında ve nesne yerde kalmaya devam ettiğinde bildir.</textarea>
           </label>
           <div id="localSettings">
             <div class="grid">
@@ -196,48 +323,65 @@
             </div>
             <p class="fine" id="thresholdHelp"></p>
           </div>
-          <div id="accessSettings" hidden><h3>Geçiş çizgisi</h3><div class="grid"><label>Takip ekseni<select name="axis"><option value="y">Dikey hareket (üst → alt)</option><option value="x">Yatay hareket (sol → sağ)</option></select></label><label>Giriş yönü<select name="direction"><option value="positive">Artan yönde</option><option value="negative">Azalan yönde</option></select></label><label>Çizgi konumu (%)<input name="line" type="number" min="10" max="90" value="50"></label><label>İki tarafta doğrulama mesafesi (%)<input name="margin" type="number" min="5" max="20" value="8"></label></div><p class="hint">Pilot insan dedektörü: tam vücut görünümü ve sabit kamera gerekir. Kalabalık, örtüşme ve gece görüntüsünde geçiş kaçırabilir. Havuzda üyelik/ödeme durumu görüntüden belirlenmez. Kamera kartındaki izin düğmesi 15 saniyelik tek geçiş izni verir; kart/turnike bağlantısı bu sürümde henüz yok. Geçiş başına olay oluşur; tekrar bildirim aralığı bu kurallara uygulanmaz.</p></div><details>
-            <summary data-i18n="rules.roiSummary">Bölge ve çalışma takvimi</summary>
-            <p class="fine" data-i18n="rules.roiHint">Bölge koordinatları görüntünün yüzdesidir. Bağlantı kuralları kameranın tamamını izler. İlk kare referanstır; düzenleme referansı sıfırlar.</p>
-            <div class="grid">
-              <label><span data-i18n="rules.left">Sol (%)</span>
-                <input name="x" type="number" min="0" max="95" value="0">
-              </label>
-              <label><span data-i18n="rules.top">Üst (%)</span>
-                <input name="y" type="number" min="0" max="95" value="0">
-              </label>
-              <label><span data-i18n="rules.width">Genişlik (%)</span>
-                <input name="width" type="number" min="5" max="100" value="100">
-              </label>
-              <label><span data-i18n="rules.height">Yükseklik (%)</span>
-                <input name="height" type="number" min="5" max="100" value="100">
-              </label>
-            </div>
-            <div id="roiPreview" class="roi-preview" hidden>
-              <img id="roiImage" alt="Seçilen kamera bölgesi">
-              <canvas id="roiCanvas" class="roi-canvas" width="640" height="360"></canvas>
-              <div id="roiBox"></div>
+          <div id="accessSettings" hidden>
+            <div class="sectiontitle" style="margin:12px 0 6px">
+              <h3>Geçiş Çizgisi (Tripwire) &amp; Yön Kalibrasyonu</h3>
+              <span class="tag warn">İki Taraflı İz Doğrulama</span>
             </div>
             <div class="grid">
-              <label><span data-i18n="rules.startTime">Başlangıç</span>
-                <input name="start" type="time" value="00:00" required>
+              <label>Takip ekseni
+                <select name="axis">
+                  <option value="y">Dikey geçiş (Üst ↔ Alt)</option>
+                  <option value="x">Yatay geçiş (Sol ↔ Sağ)</option>
+                </select>
               </label>
-              <label><span data-i18n="rules.endTime">Bitiş</span>
-                <input name="end" type="time" value="00:00" required>
+              <label>İhlal / Giriş yönü
+                <select name="direction">
+                  <option value="positive">Artan yönde (+ · Üstten Alta / Soldan Sağa)</option>
+                  <option value="negative">Azalan yönde (- · Alttan Üste / Sağdan Sola)</option>
+                </select>
+              </label>
+              <label>Çizgi konumu (%)
+                <input name="line" type="number" min="10" max="90" value="50">
+              </label>
+              <label>Doğrulama bandı (±%)
+                <input name="margin" type="number" min="5" max="20" value="8">
               </label>
             </div>
-            <label><span data-i18n="rules.days">Günler</span>
-              <select id="ruleDays" multiple size="7">
-                <option value="0" selected>Pazartesi</option>
-                <option value="1" selected>Salı</option>
-                <option value="2" selected>Çarşamba</option>
-                <option value="3" selected>Perşembe</option>
-                <option value="4" selected>Cuma</option>
-                <option value="5" selected>Cumartesi</option>
-                <option value="6" selected>Pazar</option>
-              </select>
-            </label>
-            <p class="fine" data-i18n="rules.scheduleHint">Bilgisayarın yerel saati kullanılır. Başlangıç ve bitiş aynıysa tüm gün. Geceyi aşan aralık, başladığı güne aittir. Birden fazla gün için Ctrl/⌘ ile seçin.</p>
+          </div>
+
+          <details open>
+            <summary>🕒 Çalışma Takvimi &amp; Gün Seçimi</summary>
+            <div class="schedule-box" style="margin-top:4px;border-top:0;padding-top:0">
+              <div class="sectiontitle" style="margin-bottom:8px">
+                <span class="eyebrow">HIZLI TAKVİM ŞABLONLARI</span>
+                <div class="studio-preset-group">
+                  <button type="button" class="studio-preset-btn" data-time-preset="00:00,00:00">7/24 Tam Gün</button>
+                  <button type="button" class="studio-preset-btn" data-time-preset="20:00,07:00">Gece Nöbeti (20:00–07:00)</button>
+                  <button type="button" class="studio-preset-btn" data-time-preset="08:00,19:00">Mesai Saatleri (08:00–19:00)</button>
+                </div>
+              </div>
+              <div class="grid">
+                <label><span data-i18n="rules.startTime">Başlangıç</span>
+                  <input name="start" type="time" value="00:00" required>
+                </label>
+                <label><span data-i18n="rules.endTime">Bitiş</span>
+                  <input name="end" type="time" value="00:00" required>
+                </label>
+              </div>
+              <label><span data-i18n="rules.days">Aktif Günler</span>
+                <select id="ruleDays" multiple size="7">
+                  <option value="0" selected>Pazartesi</option>
+                  <option value="1" selected>Salı</option>
+                  <option value="2" selected>Çarşamba</option>
+                  <option value="3" selected>Perşembe</option>
+                  <option value="4" selected>Cuma</option>
+                  <option value="5" selected>Cumartesi</option>
+                  <option value="6" selected>Pazar</option>
+                </select>
+              </label>
+              <p class="fine" data-i18n="rules.scheduleHint">Bilgisayarın yerel saati kullanılır. Başlangıç ve bitiş aynıysa tüm gün (7/24) izlenir.</p>
+            </div>
           </details>
           <div class="grid">
             <label id="scoreLabel"><span data-i18n="rules.scoreLabel">Minimum model skoru</span>
@@ -247,7 +391,7 @@
               <input name="cooldown" type="number" min="30" max="86400" value="120">
             </label>
           </div>
-          <p class="fine" id="modelNotice" data-i18n="rules.modelNotice">Model skoru doğruluk yüzdesi değildir. Tespitler insan incelemesi gerektirir. Güncel kareler birlikte değerlendirilir. AI süresi kamera kartında görünür; 15 saniyeden eski yanıtlar alarm üretmez. Işık kapanması için yerel şablonu kullanın; AI yanıtını beklemez.</p>
+          <p class="fine" id="modelNotice" data-i18n="rules.modelNotice">Model skoru doğruluk yüzdesi değildir. Tespitler insan incelemesi gerektirir. Güncel kareler birlikte değerlendirilir. AI süresi kamera kartında görünür; 15 saniyeden eski yanıtlar alarm üretmez.</p>
           <div class="actions">
             <button type="submit" class="primary" id="saveRule" data-i18n="rules.saveBtn">Kuralı etkinleştir ↗</button>
             <button type="button" id="resetRule" data-i18n="rules.resetBtn">Yeni kural</button>
@@ -257,22 +401,58 @@
           <div class="empty">
             <span class="symbol" aria-hidden="true">⌘</span>
             <h2 data-i18n="empty.rulesTitle">Kütüphaneden bir konfigürasyon seç.</h2>
-            <p data-i18n="empty.rulesDesc">Aydınlatma, hareket ve bölge, görüntü sağlığı ve bağlantı kuralları model gerektirmez.</p>
+            <p data-i18n="empty.rulesDesc">Aydınlatma, hareket, loitering, kapasite, sınır güvenliği ve görsel AI kuralları hazır.</p>
           </div>
         </div>
       </div>
     </section>
 
     <section id="events" class="view" hidden>
-      <span class="eyebrow" data-i18n="events.eyebrow">03 / BİLDİR</span>
+      <span class="eyebrow" data-i18n="events.eyebrow">03 / BİLDİR &amp; SORGULA</span>
       <div class="sectiontitle">
         <div>
           <h1 data-i18n="events.title">Olay arşivi.</h1>
-          <p data-i18n="events.subtitle">Kanıtı görüntüle. Bağlamı kontrol et. İncelemeyi tamamla.</p>
+          <p data-i18n="events.subtitle">Doğal dilde ara, kanıt klibini incele, SHA-256 imzalı adli kanıt paketini indir.</p>
         </div>
-        <button type="button" id="notify" data-i18n="events.notifyBtn">Masaüstü bildirimi aç</button>
+        <div class="actions" style="margin:0">
+          <button type="button" id="exportCsvBtn">CSV Rapor İndir ↓</button>
+          <button type="button" id="notify" class="primary" data-i18n="events.notifyBtn">Masaüstü bildirimi aç</button>
+        </div>
       </div>
-      <div class="card event-filters"><label>Olay ara<input id="eventSearch" type="search" placeholder="Kamera, kural veya açıklama"></label><label>İnceleme durumu<select id="eventFilter"><option value="all">Tüm olaylar</option><option value="pending">İnceleme bekleyenler</option><option value="reviewed">İncelenenler</option></select></label><p id="eventCount" role="status" class="fine"></p></div><div id="eventList" class="stack">
+
+      <section class="card copilot-bar" style="margin-bottom:20px">
+        <div class="copilot-grid">
+          <label style="margin:0;flex:2">🔍 Cortex Copilot Doğal Dil Arama
+            <input type="search" id="copilotQuery" placeholder="Örn: dün gece havuzda insan, bugün incelenmemiş, tailgating, bekleme, kalabalık…">
+          </label>
+          <label style="margin:0">Kategori
+            <select id="eventCategoryFilter">
+              <option value="">Tüm kategoriler</option>
+              <option value="vision">Görsel AI (Gemma)</option>
+              <option value="pro">Cortex Pro (Loitering / Kapasite / Tailgating / Sınır)</option>
+              <option value="access">Geçiş Kontrolü (Tripwire)</option>
+              <option value="local">Yerel Ölçüm &amp; Bağlantı</option>
+            </select>
+          </label>
+          <label style="margin:0">Durum
+            <select id="eventReviewFilter">
+              <option value="">Tümü</option>
+              <option value="unreviewed">İnceleme bekleyen</option>
+              <option value="reviewed">İncelenmiş</option>
+            </select>
+          </label>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <span class="fine" id="copilotCount">Tüm olaylar gösteriliyor</span>
+          <button type="button" class="chip-query" data-query="bugün incelenmemiş">Bugün incelenmemiş</button>
+          <button type="button" class="chip-query" data-query="gece">Gece olayları (20:00–06:00)</button>
+          <button type="button" class="chip-query" data-query="tailgating">Tailgating / Kaçak geçiş</button>
+          <button type="button" class="chip-query" data-query="bekleme">Uzun bekleme (Loitering)</button>
+          <button type="button" class="chip-query" data-query="kalabalık">Kapasite / Kalabalık</button>
+        </div>
+      </section>
+
+      <div id="eventList" class="stack">
         <div class="empty">
           <span class="symbol" aria-hidden="true">◷</span>
           <h2 data-i18n="empty.eventsTitle">Henüz olay yok.</h2>
@@ -282,49 +462,145 @@
     </section>
 
     <section id="settings" class="view" hidden>
-      <span class="eyebrow" data-i18n="settings.eyebrow">ÇALIŞMA ALANI</span>
+      <span class="eyebrow" data-i18n="settings.eyebrow">04 / ÇALIŞMA ALANI &amp; TİCARİ LİSANS</span>
       <h1 data-i18n="settings.title">Kontrol sende.</h1>
-      <form id="settingsForm" class="card narrow">
-        <h2 data-i18n="settings.engineTitle">Yerel analiz motoru</h2>
-        <label><span data-i18n="settings.modelLabel">Ollama görsel model adı</span>
-          <input name="model" id="model" value="gemma3:4b" required>
-        </label>
-        <p class="fine">Ollama motoru ve Gemma 3 4B ilk açılışta otomatik hazırlanır. Ayrı kurulum gerekmez. İlk kullanımda birkaç GB indirme ve yeterli boş disk/RAM gerekir. İlerleme aşağıda görünür.</p>
-        <div class="model-setup">
-          <div class="actions">
-            <button type="button" id="installModel" class="primary" data-i18n="settings.installBtn">Gemma’yı kur ve bağla</button>
-            <button type="button" id="cancelModel" hidden data-i18n="settings.cancelBtn">İptal et</button>
+      <div class="twocol">
+        <form id="settingsForm" class="card">
+          <h2 data-i18n="settings.engineTitle">Yerel analiz motoru</h2>
+          <label><span data-i18n="settings.modelLabel">Ollama görsel model adı</span>
+            <input name="model" id="model" value="gemma3:4b" required>
+          </label>
+          <p class="fine">Ollama motoru ve Gemma 3 4B ilk açılışta otomatik hazırlanır. Ayrı kurulum gerekmez. İlk kullanımda birkaç GB indirme ve yeterli boş disk/RAM gerekir. İlerleme aşağıda görünür.</p>
+          <div class="model-setup">
+            <div class="actions">
+              <button type="button" id="installModel" class="primary" data-i18n="settings.installBtn">Gemma’yı kur ve bağla</button>
+              <button type="button" id="cancelModel" hidden data-i18n="settings.cancelBtn">İptal et</button>
+            </div>
+            <progress id="modelProgress" max="100" value="0" hidden></progress>
+            <p id="installStatus" role="status" aria-live="polite"></p>
           </div>
-          <progress id="modelProgress" max="100" value="0" hidden></progress>
-          <p id="installStatus" role="status" aria-live="polite"></p>
+          <button type="button" id="modelTest" data-i18n="settings.testModelBtn">Model bağlantısını kontrol et</button>
+          <p id="modelResult" role="status"></p>
+          <label><span data-i18n="settings.retentionLabel">Kayıt saklama süresi (gün)</span>
+            <input id="retention" name="retention" type="number" min="1" max="30" value="7">
+          </label>
+          <p class="fine" data-i18n="settings.retentionHint">Süreyi azaltmak, süresi dolan olay kayıtlarını ve kliplerini siler.</p>
+          <label class="check">
+            <input name="autostart" id="autostart" type="checkbox">
+            <span data-i18n="settings.autostart">Cortex açıldığında kayıtlı kameraları otomatik başlat</span>
+          </label>
+          <label class="check">
+            <input name="soundAlert" id="soundAlert" type="checkbox" checked>
+            <span>Yeni olay tespit edildiğinde operatör sesli alarmını çal</span>
+          </label>
+          <label class="check">
+            <input name="smartCascade" id="smartCascade" type="checkbox" checked>
+            <span>Hibrit 3-Katmanlı Akıllı AI (Hareket/değişim yoksa GPU/CPU koru)</span>
+          </label>
+          <p id="diskStatus" class="fine"></p>
+          <h2 data-i18n="settings.webhookTitle">Kurumsal Webhook Kanalı (Slack / Discord / SIEM)</h2>
+          <label><span data-i18n="settings.webhookLabel">HTTPS webhook URL</span>
+            <input name="webhook" type="url" placeholder="https://..." autocomplete="off">
+          </label>
+          <label>HMAC-SHA256 İmza Anahtarı (İsteğe bağlı kurumsal doğrulama sırrı)
+            <input name="webhookSecret" type="password" placeholder="X-Cortex-Signature-256 için gizli anahtar" autocomplete="new-password">
+          </label>
+          <label class="check">
+            <input name="replaceWebhook" type="checkbox">
+            <span data-i18n="settings.replaceWebhook">Webhook ayarını değiştir (boş bırakılırsa kapatılır)</span>
+          </label>
+          <p class="fine" data-i18n="settings.webhookHint">Slack ve Discord webhook adresleri otomatik tanınır. HMAC sırrı girilirse her bildirim X-Cortex-Signature-256 başlığıyla kriptografik olarak imzalanır.</p>
+          <button type="submit" class="primary" data-i18n="settings.saveBtn">Ayarları kaydet</button>
+        </form>
+
+        <div class="stack">
+          <form id="telegramForm" class="card">
+            <h2>📲 Telegram Bot Cep Telefonu Bildirimi</h2>
+            <p class="fine">Olay anında kamera fotoğrafını ve olay açıklamasını saniyesinde Telegram üzerinden cep telefonunuza veya güvenlik grubunuza gönderir.</p>
+            <label>Telegram Bot Token (@BotFather)
+              <input name="botToken" id="tgBotToken" type="password" placeholder="123456789:ABCdefGHIjklMNO..." autocomplete="new-password">
+            </label>
+            <label>Chat ID (Kullanıcı veya Grup ID)
+              <input name="chatId" id="tgChatId" placeholder="-100123456789 veya 987654321">
+            </label>
+            <label class="check">
+              <input name="enabled" id="tgEnabled" type="checkbox">
+              <span>Telegram anlık fotoğraflı bildirimlerini etkinleştir</span>
+            </label>
+            <p id="telegramStatus" class="fine" role="status"></p>
+            <div class="actions">
+              <button type="submit" class="primary">Telegram ayarlarını kaydet</button>
+              <button type="button" id="testTelegramBtn">Test mesajı gönder ↗</button>
+            </div>
+          </form>
+
+          <section class="card">
+            <h2>💼 Ticari Lisans &amp; Saha Satış Yönetimi</h2>
+            <div id="licenseDetails" class="hint" style="margin-top:10px"></div>
+            <form id="licenseActivateForm" style="margin-top:14px">
+              <div class="grid">
+                <label>Kurum / Müşteri Adı
+                  <input name="organization" placeholder="Örn: Marmara Park Sitesi" required>
+                </label>
+                <label>Lisans Anahtarı
+                  <input name="key" id="licenseKeyInput" placeholder="IPS-ENTERPRISE-..." required>
+                </label>
+              </div>
+              <div class="actions">
+                <button type="submit" class="primary">Lisansı etkinleştir</button>
+              </div>
+            </form>
+            <details style="margin-top:16px">
+              <summary>🔑 Satış &amp; Bayi: Müşteri Lisans Anahtarı Üretici</summary>
+              <p class="fine">Müşterilerinize kurulum yaparken kuruma özel imzalı Starter, Pro veya Enterprise lisans anahtarı üretin.</p>
+              <div class="grid">
+                <label>Paket Seviyesi
+                  <select id="genPlan">
+                    <option value="ENTERPRISE">ENTERPRISE (32 Kamera + Tam Paket)</option>
+                    <option value="PRO">PRO (16 Kamera + Görsel AI + Telegram)</option>
+                    <option value="STARTER">STARTER (4 Kamera + Yerel Kurallar)</option>
+                  </select>
+                </label>
+                <label>Müşteri / Saha Adı
+                  <input id="genOrg" placeholder="Örn: Akasya Rezidans" value="IPScans Saha">
+                </label>
+              </div>
+              <div class="actions">
+                <button type="button" id="generateKeyBtn">İmzalı Anahtar Üret</button>
+              </div>
+              <p id="generatedKeyOutput" class="mono fine" style="margin-top:10px"></p>
+            </details>
+          </section>
+
+          <section class="card">
+            <h2>🛡️ Kurumsal Denetim İzi (SHA-256 Audit Log)</h2>
+            <p class="fine">Yapılandırma, kural, saha paketi ve izin işlemleri değiştirilemez SHA-256 zinciriyle kaydedilir.</p>
+            <div id="auditList" class="audit-list"></div>
+          </section>
         </div>
-        <button type="button" id="modelTest" data-i18n="settings.testModelBtn">Model bağlantısını kontrol et</button>
-        <p id="modelResult" role="status"></p>
-        <label>AI çalışma profili<select name="aiInterval" id="aiInterval"><option value="1">Hızlı · analizler arasında 1 sn</option><option value="3">Dengeli · analizler arasında 3 sn</option><option value="10">Tasarruf · analizler arasında 10 sn</option></select></label><p class="fine">Yerel kurallar ve geçiş takibi kesintisiz kalır. Bu ayar yalnızca AI istek sıklığını azaltır; model yanıt hızını değiştirmez.</p><label><span data-i18n="settings.retentionLabel">Kayıt saklama süresi (gün)</span>
-          <input id="retention" name="retention" type="number" min="1" max="30" value="7">
-        </label>
-        <p class="fine" data-i18n="settings.retentionHint">Süreyi azaltmak, süresi dolan olay kayıtlarını ve kliplerini siler.</p>
-        <label class="check">
-          <input name="autostart" id="autostart" type="checkbox">
-          <span data-i18n="settings.autostart">Cortex açıldığında kayıtlı kameraları otomatik başlat</span>
-        </label>
-        <p id="diskStatus" class="fine"></p>
-        <h2 data-i18n="settings.webhookTitle">Bildirim kanalı</h2>
-        <label><span data-i18n="settings.webhookLabel">HTTPS webhook URL</span>
-          <input name="webhook" type="url" placeholder="https://..." autocomplete="off">
-        </label>
-        <label class="check">
-          <input name="replaceWebhook" type="checkbox">
-          <span data-i18n="settings.replaceWebhook">Webhook ayarını değiştir (boş bırakılırsa kapatılır)</span>
-        </label>
-        <p class="fine" data-i18n="settings.webhookHint">Bu adrese kamera adı, olay açıklaması ve model skoru gönderilir. Video gönderilmez; klipler yerel panelden açılır. Webhook isteğe bağlıdır. Başarısız gönderimler en fazla üç kez denenir; alıcı olay kimliğiyle tekrarları ayıklayabilir.</p>
-        <button type="submit" class="primary" data-i18n="settings.saveBtn">Ayarları kaydet</button>
-      </form>
+      </div>
     </section>
 
+    <div id="matrixWallModal" class="wall-modal" hidden>
+      <div class="wall-header">
+        <div>
+          <span class="eyebrow">CANLI İZLEME MERKEZİ</span>
+          <strong style="margin-left:12px;color:#fff">IPScans Cortex · Matrix Kamera Duvarı</strong>
+        </div>
+        <div class="actions" style="margin:0">
+          <button type="button" class="wall-layout-btn active" data-cols="2">2×2</button>
+          <button type="button" class="wall-layout-btn" data-cols="3">3×3</button>
+          <button type="button" class="wall-layout-btn" data-cols="4">4×4</button>
+          <button type="button" id="wallHeatmapToggle">🔥 Isı Haritası Katmanı</button>
+          <button type="button" id="closeMatrixWall" class="primary">Kapat ✕</button>
+        </div>
+      </div>
+      <div id="matrixWallGrid" class="wall-grid cols-2"></div>
+    </div>
+
     <footer>
-      <span>IPScans Cortex</span>
-      <span data-i18n="footer.tagline">Yerel zekâ. Senin kontrolün.</span>
+      <span>IPScans Cortex 2.0 Pro</span>
+      <span data-i18n="footer.tagline">Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.</span>
     </footer>
   </main>
   <script src="app.js"></script>

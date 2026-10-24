@@ -1,4 +1,4 @@
-"""IPScans Cortex 1.0.0-rc.2 — local camera intelligence, no cloud video transfer."""
+"""IPScans Cortex 2.0.0-pro — Multi-technology local camera intelligence, smart tracking, forensics & sector packs."""
 import base64, collections, concurrent.futures, http.server, json, os, pathlib, secrets
 import shutil, socket, subprocess, sys, threading, time, urllib.parse, urllib.request, uuid, webbrowser
 import xml.etree.ElementTree as ET
@@ -9,10 +9,13 @@ from PIL import Image, ImageStat
 import local_rules
 import fleet
 import access
+import intelligence
+import iot_automation
+import forensics
 from models import Installer, Health, VISION_TEMPLATES
 from stream import Stream
 
-VERSION = "1.2.0-rc.2"
+VERSION = "2.0.0-pro"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()
@@ -30,13 +33,34 @@ WORKERS = {}
 TOKEN = secrets.token_urlsafe(32)
 PORT = int(os.environ.get('CORTEX_PORT', '8765'))
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
-STATE = {'cameras': [], 'rules': [], 'events': [], 'model': 'gemma3:4b', 'retention': 7, 'webhook': '', 'autostart': False}
+STATE = {
+    'cameras': [],
+    'rules': [],
+    'events': [],
+    'model': 'gemma3:4b',
+    'retention': 7,
+    'webhook': '',
+    'autostart': False,
+}
 if (DATA / 'config.enc').exists(): STATE.update(json.loads(VAULT.decrypt((DATA / 'config.enc').read_bytes())))
 STATE['rules']=[local_rules.repair_light_rule(r) for r in STATE['rules']]
 STATE.setdefault('devices',[])
 STATE.setdefault('aiInterval',1)
+STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False})
+STATE.setdefault('webhookSecret','')
+STATE.setdefault('soundAlert',True)
+STATE.setdefault('smartCascade',True)
+STATE.setdefault('license',forensics.default_license())
+STATE.setdefault('audit',[])
+STATE.setdefault('accessWebhookToken',secrets.token_urlsafe(18))
 DEVICE_STATUS={}
 DISCOVERIES={}
+FORENSIC_INDEX = forensics.ForensicIndex(DATA / 'cortex_forensics.db')
+FORENSIC_INDEX.sync(STATE['events'])
+
+def audit(action, detail, actor='Operatör'):
+    with LOCK:
+        forensics.append_audit_entry(STATE.setdefault('audit',[]), action, detail, actor)
 
 def clock_loop(stop):
     due={}
@@ -56,6 +80,7 @@ def save():
         tmp = DATA / 'config.tmp'
         tmp.write_bytes(VAULT.encrypt(json.dumps(STATE, ensure_ascii=False).encode()))
         tmp.replace(DATA / 'config.enc')
+        FORENSIC_INDEX.sync(STATE['events'])
 
 def model_ready(model):
     with LOCK:
@@ -100,7 +125,10 @@ def normalize_camera(d):
     if not name or len(name)>100: raise InputError('Kamera adı 1–100 karakter olmalı.')
     transport = d.get('transport', 'tcp')
     if transport not in ('tcp','udp'): raise InputError('RTSP taşıma biçimi TCP veya UDP olmalı.')
-    return {'name': name, 'url': urllib.parse.urlunsplit(('rtsp', netloc, urllib.parse.quote(u.path, safe='/%:@'), urllib.parse.quote(u.query, safe='=&/%:+,;@'), '')), 'username': username, 'password': password, 'transport': transport}
+    cam = {'name': name, 'url': urllib.parse.urlunsplit(('rtsp', netloc, urllib.parse.quote(u.path, safe='/%:@'), urllib.parse.quote(u.query, safe='=&/%:+,;@'), '')), 'username': username, 'password': password, 'transport': transport}
+    if 'privacyMasks' in d:
+        cam['privacyMasks'] = intelligence.validate_privacy_masks(d['privacyMasks'])
+    return cam
 
 def rtsp(c):
     c = normalize_camera({'name': 'Kamera', **c})
@@ -222,6 +250,9 @@ class Camera:
         self.status = 'Bağlanıyor'; self.analysis = 'Bekliyor'; self.last = {}; self.future = None
         self.light_detectors = {}; self.detectors = {}; self.brightness = None
         self.access_detector=None; self.access_tracks={}; self.access_next=0
+        self.heatmap = intelligence.HeatmapAccumulator()
+        self.pro_trackers = {}
+        self.active_points = []
         self.stream=None; self.received=0; self.observed_at=0; self.inference_ms=None; self.ai_cursor=0; self.ai_next=0; self.sequence=0
         self.thread = threading.Thread(target=self.loop, daemon=True); self.thread.start()
     def loop(self):
@@ -233,8 +264,12 @@ class Camera:
                     frame,sequence,received=self.stream.get()
                     if sequence!=self.sequence:
                         self.sequence=sequence;self.received=received;self.observed_at=time.time()
+                        masks=self.c.get('privacyMasks')
+                        if masks: frame=intelligence.apply_privacy_masks(frame,masks)
                         self.frame=frame;self.frames.append(frame);self.status='Bağlı'
-                        self.check_lights();self.check_local();self.check_access()
+                        self.check_lights();self.check_local();self.check_access();self.check_pro()
+                        if hasattr(self,'heatmap') and self.heatmap:
+                            self.heatmap.update(self.frame, getattr(self,'active_points',None))
                         if len(self.frames)>=3 and time.monotonic()>=self.ai_next and (self.future is None or self.future.done()):
                             with LOCK:has_ai=any(r['camera']==self.c['id'] and r['enabled'] and r.get('kind','vision')=='vision' and local_rules.scheduled(r) for r in STATE['rules'])
                             if has_ai and AI_SLOTS.acquire(blocking=False):
@@ -294,6 +329,7 @@ class Camera:
         try:
             if self.access_detector is None:self.access_detector=access.Pedestrians()
             points=self.access_detector.detect(self.frame)
+            self.active_points=points
             for r in rules:
                 tracker=self.access_tracks.setdefault(r['id'],access.Tracker())
                 for direction in tracker.update(points,r,now):
@@ -306,6 +342,43 @@ class Camera:
                         self.event(r,result,list(self.frames))
             self.analysis='Yerel insan geçiş takibi · pilot'
         except Exception:self.analysis='Geçiş dedektörü kullanılamıyor; motor kurulumunu kontrol edin.'
+
+    def check_pro(self):
+        """Evaluate Cortex 2.0 Pro rules (Loitering, Occupancy/Crowd, Perimeter, Tailgating)."""
+        now=time.monotonic()
+        with LOCK:
+            rules=[dict(r) for r in STATE['rules'] if r['camera']==self.c['id'] and r['enabled'] and r.get('kind') in intelligence.PRO_KINDS and local_rules.scheduled(r)]
+        if not hasattr(self,'pro_trackers'): self.pro_trackers={}
+        active={r['id'] for r in rules}
+        self.pro_trackers={k:v for k,v in self.pro_trackers.items() if k in active}
+        if not rules or self.frame is None: return
+        try:
+            if self.access_detector is None: self.access_detector=access.Pedestrians()
+            points=self.access_detector.detect(self.frame)
+            self.active_points=points
+            for r in rules:
+                pt=self.pro_trackers.setdefault(r['id'],intelligence.ProTracker())
+                kind=r['kind']
+                if kind=='pro_loitering':
+                    hit,res=pt.evaluate_loitering(points,r,now)
+                    if hit and time.time()-self.last.get(r['id'],0)>=r.get('cooldown',30):
+                        self.last[r['id']]=time.time(); self.event(r,res,list(self.frames))
+                elif kind=='pro_occupancy':
+                    hit,res=pt.evaluate_occupancy(points,r,now)
+                    if hit and time.time()-self.last.get(r['id'],0)>=r.get('cooldown',30):
+                        self.last[r['id']]=time.time(); self.event(r,res,list(self.frames))
+                elif kind=='pro_perimeter':
+                    hit,res=pt.evaluate_perimeter(points,r,now)
+                    if hit and time.time()-self.last.get(r['id'],0)>=r.get('cooldown',30):
+                        self.last[r['id']]=time.time(); self.event(r,res,list(self.frames))
+                elif kind=='pro_tailgating':
+                    line_tracker=self.access_tracks.setdefault('tg_'+r['id'],access.Tracker())
+                    crossings=line_tracker.update(points,r,now)
+                    hit,res=pt.evaluate_tailgating(crossings,r,now)
+                    if hit:
+                        self.event(r,res,list(self.frames))
+            self.analysis='Cortex Pro akıllı takip etkin'
+        except Exception: pass
 
     def evaluate(self, frames=None):
         try:
@@ -344,6 +417,7 @@ class Camera:
         if self.stop.is_set() or not active_rule(rule): return
         eid=uuid.uuid4().hex
         event={'id':eid,'camera':self.c['name'],'rule':rule['name'],'time':time.time(),'reason':result['reason'][:2000], 'kind':rule.get('kind','vision'),'confidence':result['confidence'],'reviewed':False,'clip':False,'before':False,'snapshot':False,'recording':'pending','notification':'Panel','attempts':0,'retryAt':time.time(),'observedAt':result.get('observedAt',time.time()),'latencyMs':result.get('latencyMs',0)}
+        if result.get('tags'): event['tags']=result['tags']
         with LOCK: STATE['events'].insert(0,event); save()
         if EVIDENCE_SLOTS.acquire(blocking=False):
             EVIDENCE_POOL.submit(self.record,event,list(frames))
@@ -378,17 +452,38 @@ class Camera:
 def deliver_notifications():
     with LOCK:
         webhook=STATE['webhook']
+        secret=STATE.get('webhookSecret','')
+        tg=dict(STATE.get('telegram',{}))
         pending=[e for e in STATE['events'] if e.get('attempts',3)<3 and e.get('retryAt',0)<=time.time() and e.get('notification')!='Webhook gönderildi'][:10] if webhook else []
+        tg_pending=[e for e in STATE['events'] if not e.get('telegramSent') and e.get('telegramAttempts',0)<2][:5] if tg.get('enabled') and tg.get('botToken') and tg.get('chatId') else []
     for event in pending:
         try:
-            payload={k:event[k] for k in ('id','camera','rule','time','reason','confidence','kind')}
-            req=urllib.request.Request(webhook,json.dumps(payload).encode(),{'Content-Type':'application/json','Idempotency-Key':event['id']})
+            payload={k:event[k] for k in ('id','camera','rule','time','reason','confidence','kind') if k in event}
+            body_bytes=json.dumps(payload).encode()
+            headers={'Content-Type':'application/json','Idempotency-Key':event['id']}
+            if secret:
+                sig,ts=iot_automation.sign_webhook_payload(body_bytes,secret)
+                headers['X-Cortex-Signature-256']=sig
+                headers['X-Cortex-Timestamp']=ts
+            req=urllib.request.Request(webhook,body_bytes,headers)
             with urllib.request.urlopen(req,timeout=5) as response:
                 if response.status>=300: raise ValueError()
             status='Webhook gönderildi'
         except Exception: status='Webhook yeniden denenecek' if event.get('attempts',0)<2 else 'Webhook başarısız (3 deneme)'
         with LOCK:
             event['attempts']=event.get('attempts',0)+1; event['retryAt']=time.time()+30*event['attempts']; event['notification']=status; save()
+    for event in tg_pending:
+        try:
+            snap_file=DATA/'events'/event['id']/'00.jpg'
+            frame_bytes=snap_file.read_bytes() if snap_file.is_file() else None
+            iot_automation.send_telegram_alert(tg['botToken'],tg['chatId'],event,frame_bytes)
+            with LOCK:
+                event['telegramSent']=True
+                if event.get('notification')=='Panel': event['notification']='Telegram gönderildi'
+                save()
+        except Exception:
+            with LOCK:
+                event['telegramAttempts']=event.get('telegramAttempts',0)+1; save()
 
 def maintenance(stop):
     last_cleanup=0
@@ -410,16 +505,46 @@ def cleanup():
 
 def public_state():
     with LOCK:
-        cams = [{k:v for k,v in c.items() if k not in ('password','username','url')} | {'status':WORKERS[c['id']].status if c['id'] in WORKERS else 'Durduruldu','analysis':WORKERS[c['id']].analysis if c['id'] in WORKERS else 'Bekliyor','brightness':WORKERS[c['id']].brightness if c['id'] in WORKERS else None,'inferenceMs':WORKERS[c['id']].inference_ms if c['id'] in WORKERS else None,'frameAge':round(time.monotonic()-WORKERS[c['id']].received,1) if c['id'] in WORKERS and WORKERS[c['id']].sequence else None} for c in STATE['cameras']]
+        cams = [{k:v for k,v in c.items() if k not in ('password','username','url')} | {'status':WORKERS[c['id']].status if c['id'] in WORKERS else 'Durduruldu','analysis':WORKERS[c['id']].analysis if c['id'] in WORKERS else 'Bekliyor','brightness':WORKERS[c['id']].brightness if c['id'] in WORKERS else None,'inferenceMs':WORKERS[c['id']].inference_ms if c['id'] in WORKERS else None,'frameAge':round(time.monotonic()-WORKERS[c['id']].received,1) if c['id'] in WORKERS else None,'activePoints':getattr(WORKERS[c['id']],'active_points',[]) if c['id'] in WORKERS else []} for c in STATE['cameras']]
         devices=[{k:v for k,v in d.items() if k not in ('username','password')} | {'clock':DEVICE_STATUS.get(d['id'],{'phase':'waiting','message':'Eşitleme bekleniyor.' if d['sync'] else 'Otomatik saat eşitleme kapalı.'})} for d in STATE.get('devices',[])]
-        return {'aiInterval':STATE.get('aiInterval',1),'devices':devices,'cameras':cams,'rules':STATE['rules'],'events':STATE['events'],'model':STATE['model'],'retention':STATE['retention'],'webhookConfigured':bool(STATE['webhook']), 'version':VERSION, 'templates':local_rules.TEMPLATES+access.TEMPLATES, 'installer':INSTALLER.status(), 'modelHealth':MODEL_HEALTH.status(STATE['model']), 'visionTemplates':VISION_TEMPLATES, 'autostart':STATE['autostart'], 'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1)}
+        tg=STATE.get('telegram',{})
+        analytics=forensics.compute_analytics(STATE['events'],STATE['cameras'],STATE['rules'])
+        return {
+            'devices':devices,
+            'cameras':cams,
+            'rules':STATE['rules'],
+            'events':STATE['events'],
+            'model':STATE['model'],
+            'retention':STATE['retention'],
+            'aiInterval':STATE.get('aiInterval',1),
+            'webhookConfigured':bool(STATE['webhook']),
+            'webhookSigned':bool(STATE.get('webhookSecret')),
+            'telegram':{'enabled':bool(tg.get('enabled')),'configured':bool(tg.get('botToken') and tg.get('chatId')),'chatId':tg.get('chatId','')},
+            'soundAlert':bool(STATE.get('soundAlert',True)),
+            'smartCascade':bool(STATE.get('smartCascade',True)),
+            'license':STATE.get('license',forensics.default_license()),
+            'audit':STATE.get('audit',[])[:40],
+            'analytics':analytics,
+            'version':VERSION,
+            'templates':local_rules.TEMPLATES+access.TEMPLATES,
+            'proTemplates':intelligence.PRO_TEMPLATES,
+            'sectorPacks':intelligence.SECTOR_PACKS,
+            'installer':INSTALLER.status(),
+            'modelHealth':MODEL_HEALTH.status(STATE['model']),
+            'visionTemplates':VISION_TEMPLATES,
+            'autostart':STATE['autostart'],
+            'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1),
+        }
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args): pass
-    def send(self, status, data, mime='application/json'):
+    def send(self, status, data, mime='application/json', headers=None):
         if isinstance(data, (dict,list)): data=json.dumps(data,ensure_ascii=False).encode()
         if isinstance(data,str): data=data.encode()
-        self.send_response(status); self.send_header('Content-Type',mime); self.send_header('Content-Length',str(len(data))); self.send_header('Cache-Control','no-store'); self.send_header('X-Content-Type-Options','nosniff'); self.send_header('X-Frame-Options','DENY'); self.end_headers(); self.wfile.write(data)
+        self.send_response(status); self.send_header('Content-Type',mime); self.send_header('Content-Length',str(len(data))); self.send_header('Cache-Control','no-store'); self.send_header('X-Content-Type-Options','nosniff'); self.send_header('X-Frame-Options','DENY')
+        if headers:
+            for hk,hv in headers.items(): self.send_header(hk,hv)
+        self.end_headers(); self.wfile.write(data)
     def allowed(self):
         return self.headers.get('Host') in (f'127.0.0.1:{PORT}',f'localhost:{PORT}')
     def auth(self): return ('cortex='+TOKEN) in self.headers.get('Cookie','').split('; ')
@@ -427,12 +552,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not self.allowed(): return self.send(403,{'error':'Host reddedildi'})
         u=urllib.parse.urlsplit(self.path); path=u.path
         if path=='/bootstrap':
-            if not secrets.compare_digest(urllib.parse.parse_qs(u.query).get('token',[''])[0],TOKEN): return self.send(403,{})
-            self.send_response(303); self.send_header('Set-Cookie',f'cortex={TOKEN}; HttpOnly; SameSite=Strict; Path=/'); self.send_header('Location','/'); self.end_headers(); return
+            qs=urllib.parse.parse_qs(u.query)
+            if not secrets.compare_digest(qs.get('token',[''])[0],TOKEN): return self.send(403,{})
+            fwd={k:qs[k][0] for k in ('tab','theme','edit') if k in qs}
+            loc='/?'+urllib.parse.urlencode(fwd) if fwd else '/'
+            self.send_response(303); self.send_header('Set-Cookie',f'cortex={TOKEN}; HttpOnly; SameSite=Strict; Path=/'); self.send_header('Location',loc); self.end_headers(); return
         if not self.auth(): return self.send(401,{'error':'Uygulamayı EXE üzerinden açın.'})
         if path=='/api/state': return self.send(200,public_state())
         if path.startswith('/api/frame/'):
             worker=WORKERS.get(path.rsplit('/',1)[-1]); return self.send(200,worker.frame,'image/jpeg') if worker and worker.frame else self.send(404,{})
+        if path.startswith('/api/heatmap/'):
+            cid=path.rsplit('/',1)[-1]; worker=WORKERS.get(cid)
+            if worker and hasattr(worker,'heatmap') and worker.heatmap:
+                return self.send(200,worker.heatmap.render_png(),'image/png')
+            return self.send(200,intelligence.HeatmapAccumulator().render_png(),'image/png')
+        if path.startswith('/api/evidence-bundle/'):
+            eid=path.rsplit('/',1)[-1].replace('.zip','')
+            with LOCK: ev=next((e for e in STATE['events'] if e['id']==eid),None)
+            if not ev: return self.send(404,{'error':'Olay bulunamadı'})
+            archive=forensics.build_forensic_zip(DATA,ev,VERSION)
+            return self.send(200,archive,'application/zip',{'Content-Disposition':f'attachment; filename="cortex-kanit-{eid[:8]}.zip"'})
+        if path=='/api/events-export':
+            qs=urllib.parse.parse_qs(u.query)
+            q=qs.get('q',[''])[0]; cat=qs.get('category',[''])[0]; cam=qs.get('camera',[''])[0]; rev=qs.get('reviewed',[''])[0]
+            with LOCK: filtered=forensics.search_events(STATE['events'],q,cat,cam,rev)
+            csv_bytes=forensics.export_events_csv(filtered)
+            return self.send(200,csv_bytes,'text/csv; charset=utf-8',{'Content-Disposition':'attachment; filename="cortex-olay-raporu.csv"'})
         if path.startswith('/api/evidence/'):
             parts=path.split('/')
             if len(parts)!=5 or not any(e['id']==parts[3] for e in STATE['events']) or parts[4] not in ('clip.mp4','before.mp4','00.jpg'): return self.send(404,{})
@@ -451,7 +596,131 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if path=='/api/access-permit':
                 if not any(c['id']==d.get('id') for c in STATE['cameras']):raise InputError('Kamera bulunamadı.')
                 access.PERMITS.grant(d['id'])
+                audit('Geçiş İzni Verildi', f"Kamera ID: {d['id'][:8]} (15 sn)")
                 return self.send(200,{'ok':True,'message':'15 saniye için tek geçiş izni verildi.'})
+            if path=='/api/events-search':
+                with LOCK:
+                    matched=forensics.search_events(
+                        STATE['events'],
+                        d.get('query',''),
+                        d.get('category',''),
+                        d.get('camera',''),
+                        d.get('reviewed',''),
+                    )
+                return self.send(200,{'events':matched,'count':len(matched)})
+            if path=='/api/sector-apply':
+                cid=str(d.get('camera','')).strip()
+                pack_id=str(d.get('pack','')).strip()
+                mode=str(d.get('mode','merge')).strip()
+                selected_indices=d.get('rules')
+                pack=next((p for p in intelligence.SECTOR_PACKS if p['id']==pack_id),None)
+                if not pack: raise InputError('Geçerli bir kurumsal saha paketi seçin.')
+                with LOCK:
+                    if not STATE['cameras']: raise InputError('Önce en az bir kamera ekleyin.')
+                    target_cams=list(STATE['cameras']) if cid=='ALL' else [c for c in STATE['cameras'] if c['id']==cid]
+                    if not target_cams: raise InputError('Önce paketin uygulanacağı kamerayı seçin.')
+                    rules_to_deploy=pack['rules']
+                    if isinstance(selected_indices,list):
+                        allowed_idx={int(i) for i in selected_indices if str(i).isdigit()}
+                        rules_to_deploy=[r for idx,r in enumerate(pack['rules']) if idx in allowed_idx]
+                    if not rules_to_deploy: raise InputError('Kurulum için paketten en az bir kural seçin.')
+                    target_ids={c['id'] for c in target_cams}
+                    if mode=='replace':
+                        STATE['rules']=[r for r in STATE['rules'] if r['camera'] not in target_ids]
+                    added=0
+                    updated=0
+                    for cam in target_cams:
+                        for tmpl in rules_to_deploy:
+                            roi_vals=tmpl.get('roi',[0,0,100,100])
+                            base_val=local_rules.validate({
+                                'kind':'vision' if tmpl['kind'] in (access.KINDS|intelligence.PRO_KINDS) else tmpl['kind'],
+                                'duration':tmpl.get('duration',5),
+                                'sensitivity':tmpl.get('sensitivity',8),
+                                'start':tmpl.get('start','00:00'),
+                                'end':tmpl.get('end','00:00'),
+                                'x':roi_vals[0],
+                                'y':roi_vals[1],
+                                'width':roi_vals[2],
+                                'height':roi_vals[3],
+                            })
+                            base_val['kind']=tmpl['kind']
+                            if tmpl['kind'] in (access.KINDS|{'pro_tailgating'}):
+                                base_val.update(access.validate(tmpl))
+                            existing_idx=next((i for i,r in enumerate(STATE['rules']) if r['camera']==cam['id'] and r['name']==tmpl['name']),None)
+                            new_rule={
+                                'id':STATE['rules'][existing_idx]['id'] if existing_idx is not None else uuid.uuid4().hex,
+                                'camera':cam['id'],
+                                'name':tmpl['name'],
+                                'prompt':tmpl['prompt'],
+                                'threshold':float(tmpl.get('threshold',0.8)),
+                                'cooldown':int(tmpl.get('cooldown',60)),
+                                'enabled':True,
+                                'visionTemplate':tmpl.get('visionTemplate','custom'),
+                                'sectorPack':pack['id'],
+                                **base_val,
+                            }
+                            if tmpl['kind']=='lights_off':
+                                new_rule.update(dark=tmpl.get('dark',45),drop=tmpl.get('drop',0.45),hold=tmpl.get('hold',3))
+                            if existing_idx is not None:
+                                STATE['rules'][existing_idx]=new_rule
+                                updated+=1
+                            elif len(STATE['rules'])<512:
+                                STATE['rules'].append(new_rule)
+                                added+=1
+                    cam_label=f"{len(target_cams)} kamera" if len(target_cams)>1 else target_cams[0]['name']
+                    audit('Saha Paketi Uygulandı', f"{pack['name']} -> {cam_label} (+{added} yeni, {updated} güncellendi)")
+                    save()
+                return self.send(200,{'ok':True,'added':added,'updated':updated,'cameras':len(target_cams),'message':f"{pack['name']} -> {cam_label} üzerinde devreye alındı ({added} yeni, {updated} güncellenen kural)."})
+            if path=='/api/camera-privacy':
+                cid=str(d.get('id','')).strip()
+                try: masks=intelligence.validate_privacy_masks(d.get('masks',[]))
+                except ValueError as e: raise InputError(str(e)) from None
+                with LOCK:
+                    cam=next((c for c in STATE['cameras'] if c['id']==cid),None)
+                    if not cam: raise InputError('Kamera bulunamadı.')
+                    cam['privacyMasks']=masks
+                    worker=WORKERS.get(cid)
+                    if worker: worker.c['privacyMasks']=masks
+                    audit('KVKK Gizlilik Maskesi', f"{cam['name']}: {len(masks)} maske bölgesi kaydedildi")
+                    save()
+                return self.send(200,{'ok':True,'masks':masks})
+            if path=='/api/telegram-settings':
+                token_val=str(d.get('botToken','')).strip()
+                chat_val=str(d.get('chatId','')).strip()
+                enabled=bool(d.get('enabled',False))
+                with LOCK:
+                    cur=STATE.setdefault('telegram',{'botToken':'','chatId':'','enabled':False})
+                    if token_val: cur['botToken']=token_val
+                    if chat_val: cur['chatId']=chat_val
+                    cur['enabled']=enabled
+                    audit('Telegram Ayarları Güncellendi', f"Durum: {'Etkin' if enabled else 'Kapalı'}")
+                    save()
+                return self.send(200,{'ok':True,'message':'Telegram bildirim ayarları kaydedildi.'})
+            if path=='/api/telegram-test':
+                with LOCK: tg=dict(STATE.get('telegram',{}))
+                token_val=str(d.get('botToken') or tg.get('botToken','')).strip()
+                chat_val=str(d.get('chatId') or tg.get('chatId','')).strip()
+                try:
+                    iot_automation.send_telegram_alert(token_val,chat_val,{'camera':'Cortex Test','rule':'Telegram Bağlantı Testi','reason':'IPScans Cortex 2.0 Pro mobil bildirim hattı başarıyla doğrulandı.'})
+                    return self.send(200,{'ok':True,'message':'Telegram test mesajı cep telefonunuza gönderildi.'})
+                except ValueError as e: raise InputError(str(e)) from None
+                except Exception: raise InputError('Telegram API bağlantısı kurulamadı. Bot Token, Chat ID ve internet erişimini kontrol edin.') from None
+            if path=='/api/license-activate':
+                try: info=forensics.verify_commercial_key(d.get('key',''))
+                except ValueError as e: raise InputError(str(e)) from None
+                info['organization']=str(d.get('organization','Kurumsal Müşteri')).strip()[:80] or 'Kurumsal Müşteri'
+                with LOCK:
+                    STATE['license']=info
+                    audit('Ticari Lisans Etkinleştirildi', f"{info['plan']} ({info['organization']})")
+                    save()
+                return self.send(200,{'ok':True,'license':info,'message':f"{info['name']} lisansı başarıyla etkinleştirildi."})
+            if path=='/api/license-generate':
+                plan=str(d.get('plan','ENTERPRISE')).upper()
+                org=str(d.get('organization','IPScans')).strip()
+                key=forensics.generate_commercial_key(plan,org)
+                audit('Müşteri Lisans Anahtarı Üretildi', f"Paket: {plan} · Kurum: {org}")
+                save()
+                return self.send(200,{'ok':True,'key':key,'plan':plan,'organization':org})
             if path=='/api/recorder-discover':
                 device=fleet.settings(d)
                 channels=fleet.discover(device)
@@ -512,7 +781,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 with LOCK:
                     if len(STATE['cameras'])>=32: raise InputError('En fazla 32 kamera kaydedilebilir.')
                     STATE['cameras'].append(c)
-                    try: save()
+                    try:
+                        audit('Kamera Eklendi', c['name'])
+                        save()
                     except Exception: STATE['cameras'].pop(); raise
                 return self.send(200,{'ok':True,'id':c['id']})
             elif path=='/api/toggle':
@@ -532,6 +803,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         if rule['kind']=='access_unpermitted' and any(r['camera']==d['camera'] and r.get('kind')=='access_unpermitted' and r['id']!=d.get('id') for r in STATE['rules']):
                             raise ValueError('Kamera başına bir izin eşleştirme kuralı kullanılabilir.')
                         rule.update(values)
+                    elif rule['kind'] in intelligence.PRO_KINDS:
+                        values=local_rules.validate({**d,'kind':'vision'})
+                        values['kind']=rule['kind']
+                        if rule['kind']=='pro_tailgating':
+                            values.update(access.validate(d))
+                        rule.update(values)
                     else: rule.update(local_rules.validate(d))
                     rule['visionTemplate']=str(d.get('visionTemplate','custom'))[:40]
                 except ValueError as e: raise InputError(str(e)) from None
@@ -549,6 +826,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     worker=WORKERS.get(rule['camera'])
                     if worker: worker.detectors.pop(rule['id'],None); worker.light_detectors.pop(rule['id'],None)
                     if worker and hasattr(worker,'access_tracks'):worker.access_tracks.pop(rule['id'],None)
+                    if worker and hasattr(worker,'pro_trackers'):worker.pro_trackers.pop(rule['id'],None)
+                    audit('Kural Kaydedildi', f"{rule['name']} ({rule['kind']})")
                     save()
             elif path=='/api/rule-delete':
                 with LOCK: STATE['rules']=[r for r in STATE['rules'] if r['id']!=d['id']]; save()
@@ -572,7 +851,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if interval not in (1,3,10): raise InputError('AI aralığı 1, 3 veya 10 saniye olmalı.')
                 with LOCK:
                     STATE.update(model=model,retention=retention,autostart=bool(d.get('autostart',False)),aiInterval=interval)
-                    if d.get('replaceWebhook'): STATE['webhook']=webhook
+                    if 'soundAlert' in d: STATE['soundAlert']=bool(d.get('soundAlert'))
+                    if 'smartCascade' in d: STATE['smartCascade']=bool(d.get('smartCascade'))
+                    if d.get('replaceWebhook'):
+                        STATE['webhook']=webhook
+                        if 'webhookSecret' in d: STATE['webhookSecret']=str(d.get('webhookSecret','')).strip()
+                    audit('Ayarlar Güncellendi', f"Model: {model} · Saklama: {retention} gün")
                     save()
                 cleanup()
             elif path=='/api/model':

@@ -21,10 +21,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `https://ipscans.com/${locale}/cortex`,
       images: [
         {
-          url: "/cortex-1-2-rc2.png",
-          width: 1265,
-          height: 712,
+          url: "/cortex-preview.png",
+          width: 1440,
+          height: 1260,
           alt: copy.screenshotAlt,
+        },
+        {
+          url: "/cortex-studio-preview.png",
+          width: 1440,
+          height: 1260,
+          alt: "IPScans Cortex 2.0 Pro ROI & Tripwire Calibration Studio",
         },
       ],
     },
@@ -45,7 +51,7 @@ export default async function CortexPage({ params }: Props) {
     softwareVersion: cortexRelease.version,
     downloadUrl: cortexRelease.url,
     fileSize: `${(cortexRelease.bytes / 1_000_000).toFixed(1)} MB`,
-    screenshot: "https://ipscans.com/cortex-1-2-rc2.png",
+    screenshot: "https://ipscans.com/cortex-preview.png",
     description: copy.metaDescription,
     offers: {
       "@type": "Offer",
@@ -66,9 +72,22 @@ export default async function CortexPage({ params }: Props) {
         markSrc="/cortex-mark.svg"
         markAlt="IPScans Cortex"
         screenshot={{
-          src: "/cortex-1-2-rc2.png",
-          width: 1265,
-          height: 712,
+          src: "/cortex-preview.png",
+          width: 1440,
+          height: 1260,
+        }}
+        secondaryScreenshot={{
+          src: "/cortex-studio-preview.png",
+          width: 1440,
+          height: 1260,
+          alt:
+            locale === "tr"
+              ? "IPScans Cortex 2.0 Pro Profesyonel 8-Tutamaçlı Bölge (ROI) ve Geçiş Hattı (Tripwire) Çizim Stüdyosu"
+              : "IPScans Cortex 2.0 Pro Professional 8-Handle ROI & Tripwire Calibration Studio",
+          caption:
+            locale === "tr"
+              ? "Profesyonel 8-Tutamaçlı Bölge (ROI) ve Geçiş Hattı (Tripwire) Çizim Stüdyosu: Canlı kamera akışı üzerinde sürükle-taşı, 8 noktalı hassas boyutlandırma, ±% doğrulama bandı ve hazır bölge/zaman şablonları."
+              : "Professional 8-Handle ROI & Tripwire Calibration Studio: drag-to-pan, 8-point resize handles, ±% verification band, and one-click spatial/schedule presets over live RTSP streams.",
         }}
         downloadHref={cortexRelease.url}
         secondaryHref={cortexRelease.guideUrl}
