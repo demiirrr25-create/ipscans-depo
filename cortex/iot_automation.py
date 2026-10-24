@@ -137,56 +137,102 @@ def discover_telegram_chat(bot_token=None, fallback_chat_id='', fallback_phone='
     """Auto-discover the operator's Chat ID from recent /start, contact, or text messages sent to the bot."""
     token = str(bot_token or OFFICIAL_BOT_TOKEN).strip()
     updates = _tg_api(token, 'getUpdates', {'limit': 35, 'timeout': 1}, timeout=6) or []
+    norm_fb_phone = normalize_phone(fallback_phone)
     for item in reversed(updates):
         msg = item.get('message') or item.get('edited_message') or {}
         chat = msg.get('chat') or {}
         contact = msg.get('contact') or {}
+        c_phone = normalize_phone(contact.get('phone_number', ''))
+        if norm_fb_phone and c_phone and c_phone[-10:] != norm_fb_phone[-10:]:
+            continue
         if chat.get('id') is not None:
             return {
                 'chatId': str(chat['id']),
                 'title': (f"{chat.get('first_name', '')} {chat.get('last_name', '')}".strip() or chat.get('title') or chat.get('username') or 'Operatör'),
                 'username': chat.get('username', ''),
-                'phone': normalize_phone(contact.get('phone_number', '')) or normalize_phone(fallback_phone),
+                'phone': norm_fb_phone or c_phone,
                 'lastText': msg.get('text', ''),
                 'updateId': item.get('update_id', 0),
             }
-    fb_chat = str(fallback_chat_id or DEFAULT_ADMIN_CHAT_ID).strip()
+    fb_chat = str(fallback_chat_id or '').strip()
     if fb_chat:
         return {
             'chatId': fb_chat,
             'title': 'Kayıtlı Cortex Operatörü',
             'username': '',
-            'phone': normalize_phone(fallback_phone) or DEFAULT_ADMIN_PHONE,
+            'phone': norm_fb_phone,
             'lastText': '/start',
             'updateId': 0,
         }
     raise ValueError('Henüz bota gönderilmiş bir mesaj bulunamadı. Lütfen Telegram’da @intelligentcortexbot botunu açıp BAŞLAT (Start) butonuna tıklayın.')
 
 
-def bind_telegram_phone(phone_raw, bot_token=None, existing_directory=None, fallback_chat_id='', open_desktop_link=False, send_welcome=True):
-    """Bind a user phone number to @intelligentcortexbot and send instant confirmation."""
+def bind_telegram_phone(
+    phone_raw,
+    bot_token=None,
+    existing_directory=None,
+    fallback_chat_id='',
+    open_desktop_link=False,
+    send_welcome=True,
+    state_snapshot=None,
+    known_chats=None,
+):
+    """Bind a user phone number to @intelligentcortexbot, auto-start embedded bot session, and send instant welcome."""
     norm_phone = normalize_phone(phone_raw)
     if len(norm_phone) < 10:
         raise ValueError('Lütfen geçerli bir telefon numarası girin (Örn: 0532 123 45 67 veya +90 5XX XXX XX XX).')
     token = str(bot_token or OFFICIAL_BOT_TOKEN).strip()
     directory = dict(existing_directory or {})
+    known = {
+        str(k): dict(v)
+        for k, v in (known_chats or {}).items()
+        if isinstance(v, dict) and str(k).strip()
+    }
+    snap = dict(state_snapshot or {})
     deep_link = f"https://t.me/{OFFICIAL_BOT_USERNAME}?start=phone_{norm_phone}"
     tg_protocol = f"tg://resolve?domain={OFFICIAL_BOT_USERNAME}&start=phone_{norm_phone}"
 
     if open_desktop_link and sys.platform.startswith('win'):
         try:
             subprocess.Popen(['cmd', '/c', 'start', '', tg_protocol], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            time.sleep(1.2)
+            time.sleep(0.4)
         except Exception:
             pass
 
     matched_chat_id = str(directory.get(norm_phone) or '').strip()
+    if not matched_chat_id:
+        for k, v in list(directory.items()):
+            nk = normalize_phone(k)
+            if len(nk) >= 10 and nk[-10:] == norm_phone[-10:] and str(v or '').strip():
+                matched_chat_id = str(v).strip()
+                break
+
     matched_title = 'Cortex Kullanıcısı'
+    latest_known_chat_id = ''
+    latest_known_title = ''
+    latest_known_ts = -1.0
+
+    for cid_key, kinfo in known.items():
+        cid_str = str(kinfo.get('chatId') or cid_key).strip()
+        if not cid_str:
+            continue
+        k_title = str(kinfo.get('title') or kinfo.get('username') or 'Operatör').strip()
+        k_phone = normalize_phone(kinfo.get('phone', ''))
+        k_ts = float(kinfo.get('lastSeen') or 0.0)
+        if k_ts >= latest_known_ts:
+            latest_known_ts = k_ts
+            latest_known_chat_id = cid_str
+            latest_known_title = k_title
+        if len(k_phone) >= 10 and k_phone[-10:] == norm_phone[-10:]:
+            if not matched_chat_id:
+                matched_chat_id = cid_str
+            matched_title = k_title
+
     latest_private_chat_id = ''
     latest_private_title = ''
 
     try:
-        updates = _tg_api(token, 'getUpdates', {'limit': 50, 'timeout': 1}, timeout=6) or []
+        updates = _tg_api(token, 'getUpdates', {'limit': 50, 'timeout': 1}, timeout=5) or []
         for item in updates:
             msg = item.get('message') or item.get('edited_message') or {}
             chat = msg.get('chat') or {}
@@ -199,48 +245,74 @@ def bind_telegram_phone(phone_raw, bot_token=None, existing_directory=None, fall
                 or chat.get('username')
                 or 'Operatör'
             )
-            latest_private_chat_id = cid
-            latest_private_title = title
-
             contact = msg.get('contact') or {}
             c_phone = normalize_phone(contact.get('phone_number', ''))
-            if c_phone:
-                directory[c_phone] = cid
-                if c_phone == norm_phone or c_phone[-10:] == norm_phone[-10:]:
+            text = str(msg.get('text') or '').strip()
+            digits_in_text = normalize_phone(text) if text else ''
+            disc_phone = c_phone or (digits_in_text if len(digits_in_text) >= 10 else '')
+
+            if disc_phone:
+                if disc_phone == norm_phone or disc_phone[-10:] == norm_phone[-10:]:
                     matched_chat_id = cid
                     matched_title = title
-
-            text = str(msg.get('text') or '').strip()
-            if text:
-                digits_in_text = normalize_phone(text)
-                if len(digits_in_text) >= 10:
-                    directory[digits_in_text] = cid
-                    if digits_in_text == norm_phone or digits_in_text[-10:] == norm_phone[-10:]:
-                        matched_chat_id = cid
-                        matched_title = title
+                    directory[norm_phone] = cid
+                    known[cid] = {
+                        'chatId': cid,
+                        'title': title,
+                        'username': str(chat.get('username') or ''),
+                        'phone': norm_phone,
+                        'lastSeen': time.time(),
+                    }
+            else:
+                latest_private_chat_id = cid
+                latest_private_title = title
     except Exception:
         pass
 
     if not matched_chat_id:
-        matched_chat_id = latest_private_chat_id or str(fallback_chat_id or '').strip() or DEFAULT_ADMIN_CHAT_ID
+        matched_chat_id = (
+            latest_private_chat_id
+            or latest_known_chat_id
+            or str(fallback_chat_id or '').strip()
+            or DEFAULT_ADMIN_CHAT_ID
+        )
         if latest_private_title:
             matched_title = latest_private_title
+        elif latest_known_title:
+            matched_title = latest_known_title
+
+    if matched_chat_id and matched_chat_id in known and matched_title == 'Cortex Kullanıcısı':
+        matched_title = known[matched_chat_id].get('title') or matched_title
 
     if matched_chat_id:
         directory[norm_phone] = matched_chat_id
+        known[matched_chat_id] = {
+            'chatId': matched_chat_id,
+            'title': matched_title,
+            'username': known.get(matched_chat_id, {}).get('username', ''),
+            'phone': norm_phone,
+            'lastSeen': time.time(),
+        }
 
     phone_display = format_phone_display(norm_phone)
+    lic = snap.get('license') if isinstance(snap.get('license'), dict) else {}
+    plan_name = lic.get('name') or lic.get('plan') or 'Cortex ULTRA'
+    cameras_list = snap.get('cameras') if isinstance(snap.get('cameras'), list) else []
+    rules_list = snap.get('rules') if isinstance(snap.get('rules'), list) else []
+    cameras_count = len(cameras_list)
+    active_rules = sum(1 for r in rules_list if isinstance(r, dict) and r.get('enabled', True))
+
     notified = False
     if send_welcome and matched_chat_id:
         try:
             welcome_text = (
-                f"✅ IPScans Cortex 2.0 Pro — Telefon Numaranız Eşleştirildi!\n\n"
-                f"📱 Bildirim Hattı: {phone_display}\n"
-                f"👤 Hesap: {matched_title} (ID: {matched_chat_id})\n"
-                f"🤖 Resmi Bot: @{OFFICIAL_BOT_USERNAME}\n\n"
-                f"Artık Cortex üzerindeki tüm güvenlik ihlalleri, ROI bölge alarmları ve "
-                f"anlık kamera fotoğrafları doğrudan bu numaraya bağlı Telegram hesabınıza iletilecektir.\n\n"
-                f"👇 Aşağıdaki hızlı komuta butonlarını hemen kullanabilirsiniz:"
+                f"🚀 IPScans Cortex 2.0 Pro — Gömülü Bot Otomatik Başlatıldı!\n\n"
+                f"📱 Tanımlanan Numara: {phone_display}\n"
+                f"🟢 Durum: Aktif · Anlık Alarm & Kanıt Akışı Devrede\n"
+                f"📦 Paket: {plan_name} ({cameras_count} Kamera · {active_rules} Aktif Kural)\n"
+                f"🎬 İletim Modu: 📸 Olay Öncesi Kare + 🎬 Olay Videosu (MP4)\n\n"
+                f"Yeni numaranız Cortex gömülü bot motoru tarafından tanındı ve otomatik olarak başlatıldı (/start). "
+                f"Gerçekleşen tüm olaylar anında bu hesaba iletilecektir."
             )
             _tg_api(
                 token,
@@ -258,66 +330,162 @@ def bind_telegram_phone(phone_raw, bot_token=None, existing_directory=None, fall
 
     return {
         'ok': True,
+        'connected': True,
+        'verified': bool(matched_chat_id),
+        'autoStarted': notified,
+        'embeddedBotActive': True,
         'phone': norm_phone,
         'phoneDisplay': phone_display,
         'chatId': matched_chat_id,
         'title': matched_title,
         'notified': notified,
         'botUsername': OFFICIAL_BOT_USERNAME,
+        'botName': OFFICIAL_BOT_NAME,
         'botLink': OFFICIAL_BOT_LINK,
         'deepLink': deep_link,
         'tgProtocol': tg_protocol,
         'directory': directory,
+        'knownChats': known,
     }
 
 
-def send_telegram_alert(bot_token, chat_id, event, frame_bytes=None, phone_number=''):
-    """Send instant event notification (with JPEG photo if available) via Telegram Bot API."""
+def send_telegram_video(bot_token, chat_id, video_bytes, caption='', filename='olay_videosu.mp4'):
+    """Send an MP4 event video clip via Telegram Bot API /sendVideo."""
     token = str(bot_token or '').strip()
     chat = str(chat_id or '').strip()
     if not token or not chat or ':' not in token:
         raise ValueError('Geçerli bir Telegram Bot Token ve Chat ID girin.')
-    phone_line = f"📱 Numara: {format_phone_display(phone_number)}\n" if phone_number else ''
-    caption = (
-        f"🚨 IPScans Cortex Alarmı\n"
-        f"{phone_line}"
-        f"📹 Kamera: {event.get('camera', '-')}\n"
-        f"⚡ Kural: {event.get('rule', '-')}\n"
-        f"📝 Detay: {event.get('reason', '-')[:600]}"
-    )
-
-    if frame_bytes and frame_bytes.startswith(b'\xff\xd8'):
-        boundary = '----CortexBoundary' + secrets.token_hex(8)
-        parts = []
-        for field_name, val in (('chat_id', chat), ('caption', caption)):
-            parts.append(
-                f'--{boundary}\r\n'
-                f'Content-Disposition: form-data; name="{field_name}"\r\n\r\n'
-                f'{val}\r\n'.encode('utf-8')
-            )
+    if not video_bytes:
+        raise ValueError('Gönderilecek video verisi bulunamadı.')
+    boundary = '----CortexVideoBoundary' + secrets.token_hex(8)
+    parts = []
+    for field_name, val in (('chat_id', chat), ('caption', str(caption or '')[:1024]), ('supports_streaming', 'true')):
         parts.append(
             f'--{boundary}\r\n'
-            f'Content-Disposition: form-data; name="photo"; filename="event.jpg"\r\n'
-            f'Content-Type: image/jpeg\r\n\r\n'.encode('utf-8')
-            + frame_bytes
-            + f'\r\n--{boundary}--\r\n'.encode('utf-8')
+            f'Content-Disposition: form-data; name="{field_name}"\r\n\r\n'
+            f'{val}\r\n'.encode('utf-8')
         )
-        body = b''.join(parts)
-        url = f'https://api.telegram.org/bot{ urllib.parse.quote(token, safe=":") }/sendPhoto'
-        req = urllib.request.Request(
-            url,
-            data=body,
-            headers={'Content-Type': f'multipart/form-data; boundary={boundary}'},
-        )
-    else:
-        url = f'https://api.telegram.org/bot{ urllib.parse.quote(token, safe=":") }/sendMessage'
-        body = json.dumps({'chat_id': chat, 'text': caption, 'reply_markup': DEFAULT_BOT_REPLY_MARKUP}).encode('utf-8')
-        req = urllib.request.Request(url, data=body, headers={'Content-Type': 'application/json'})
-
-    with urllib.request.urlopen(req, timeout=8) as resp:
+    parts.append(
+        f'--{boundary}\r\n'
+        f'Content-Disposition: form-data; name="video"; filename="{filename}"\r\n'
+        f'Content-Type: video/mp4\r\n\r\n'.encode('utf-8')
+        + video_bytes
+        + f'\r\n--{boundary}--\r\n'.encode('utf-8')
+    )
+    body = b''.join(parts)
+    url = f'https://api.telegram.org/bot{urllib.parse.quote(token, safe=":")}/sendVideo'
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={'Content-Type': f'multipart/form-data; boundary={boundary}'},
+    )
+    with urllib.request.urlopen(req, timeout=20) as resp:
         result = json.loads(resp.read(65536))
     if not result.get('ok'):
-        raise ValueError('Telegram API yanıtı başarısız.')
+        raise ValueError(result.get('description', 'Telegram video gönderimi başarısız.'))
+    return True
+
+
+def send_telegram_alert(bot_token, chat_id, event, frame_bytes=None, video_bytes=None, phone_number='', recipients=None):
+    """Send instant event notification (with pre-event JPEG frame and/or MP4 video clip) to one or more registered phones."""
+    if isinstance(video_bytes, str):
+        phone_number = video_bytes
+        video_bytes = None
+    token = str(bot_token or '').strip()
+    fallback_chat = str(chat_id or '').strip()
+    if not token or ':' not in token:
+        raise ValueError('Geçerli bir Telegram Bot Token ve Chat ID girin.')
+
+    target_list = []
+    if isinstance(recipients, list) and recipients:
+        seen = set()
+        for item in recipients:
+            if not isinstance(item, dict) or item.get('enabled', True) is False:
+                continue
+            r_chat = str(item.get('chatId') or fallback_chat).strip()
+            r_phone = str(item.get('phone') or phone_number or '').strip()
+            if not r_chat:
+                continue
+            dedup_key = (r_chat, normalize_phone(r_phone) or r_phone)
+            if dedup_key not in seen:
+                seen.add(dedup_key)
+                target_list.append({'chatId': r_chat, 'phone': r_phone})
+
+    if not target_list:
+        if not fallback_chat:
+            raise ValueError('Geçerli bir Telegram Bot Token ve Chat ID girin.')
+        target_list = [{'chatId': fallback_chat, 'phone': str(phone_number or '').strip()}]
+
+    has_photo = bool(frame_bytes and isinstance(frame_bytes, (bytes, bytearray)) and frame_bytes.startswith(b'\xff\xd8'))
+    has_video = bool(video_bytes and isinstance(video_bytes, (bytes, bytearray)) and len(video_bytes) > 100)
+
+    for target in target_list:
+        target_chat = target['chatId']
+        target_phone = target['phone']
+        phone_line = f"📱 Numara: {format_phone_display(target_phone)}\n" if target_phone else ''
+
+        if has_photo:
+            photo_caption = (
+                f"📸 [OLAY ÖNCESİ KARE]\n"
+                f"🚨 IPScans Cortex Alarmı\n"
+                f"{phone_line}"
+                f"📹 Kamera: {event.get('camera', '-')}\n"
+                f"⚡ Kural: {event.get('rule', '-')}\n"
+                f"📝 Detay: {event.get('reason', '-')[:600]}"
+            )
+            boundary = '----CortexBoundary' + secrets.token_hex(8)
+            parts = []
+            for field_name, val in (('chat_id', target_chat), ('caption', photo_caption)):
+                parts.append(
+                    f'--{boundary}\r\n'
+                    f'Content-Disposition: form-data; name="{field_name}"\r\n\r\n'
+                    f'{val}\r\n'.encode('utf-8')
+                )
+            parts.append(
+                f'--{boundary}\r\n'
+                f'Content-Disposition: form-data; name="photo"; filename="olay_oncesi.jpg"\r\n'
+                f'Content-Type: image/jpeg\r\n\r\n'.encode('utf-8')
+                + frame_bytes
+                + f'\r\n--{boundary}--\r\n'.encode('utf-8')
+            )
+            body = b''.join(parts)
+            url = f'https://api.telegram.org/bot{urllib.parse.quote(token, safe=":")}/sendPhoto'
+            req = urllib.request.Request(
+                url,
+                data=body,
+                headers={'Content-Type': f'multipart/form-data; boundary={boundary}'},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read(65536))
+            if not result.get('ok'):
+                raise ValueError('Telegram API fotoğraf yanıtı başarısız.')
+
+        if has_video:
+            video_caption = (
+                f"🎬 [GERÇEKLEŞEN OLAY VİDEOSU]\n"
+                f"🚨 IPScans Cortex Kanıt Klipi\n"
+                f"{phone_line}"
+                f"📹 Kamera: {event.get('camera', '-')}\n"
+                f"⚡ Kural: {event.get('rule', '-')}"
+            )
+            send_telegram_video(token, target_chat, video_bytes, caption=video_caption, filename='olay_videosu.mp4')
+
+        if not has_photo and not has_video:
+            text_caption = (
+                f"🚨 IPScans Cortex Alarmı\n"
+                f"{phone_line}"
+                f"📹 Kamera: {event.get('camera', '-')}\n"
+                f"⚡ Kural: {event.get('rule', '-')}\n"
+                f"📝 Detay: {event.get('reason', '-')[:600]}"
+            )
+            url = f'https://api.telegram.org/bot{urllib.parse.quote(token, safe=":")}/sendMessage'
+            body = json.dumps({'chat_id': target_chat, 'text': text_caption, 'reply_markup': DEFAULT_BOT_REPLY_MARKUP}).encode('utf-8')
+            req = urllib.request.Request(url, data=body, headers={'Content-Type': 'application/json'})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                result = json.loads(resp.read(65536))
+            if not result.get('ok'):
+                raise ValueError('Telegram API yanıtı başarısız.')
+
     return True
 
 
@@ -330,19 +498,27 @@ def process_bot_command(text, state_snapshot, chat_id='YEREL-SIMULATOR', action_
     cmd = parts[0].lower().split('@')[0]
     arg = parts[1].strip() if len(parts) > 1 else ''
 
-    cameras = state_snapshot.get('cameras', [])
-    rules = state_snapshot.get('rules', [])
-    events = state_snapshot.get('events', [])
+    active_tid = str(state_snapshot.get('activeTenantId') or '').strip()
+    raw_cameras = state_snapshot.get('cameras', [])
+    raw_rules = state_snapshot.get('rules', [])
+    raw_events = state_snapshot.get('events', [])
+    cameras = [c for c in raw_cameras if isinstance(c, dict) and (not active_tid or c.get('ownerId', active_tid) == active_tid)]
+    rules = [r for r in raw_rules if isinstance(r, dict) and (not active_tid or r.get('ownerId', active_tid) == active_tid)]
+    events = [e for e in raw_events if isinstance(e, dict) and (not active_tid or e.get('ownerId', active_tid) == active_tid)]
     lic = state_snapshot.get('license', {})
     plan_name = lic.get('name', 'Cortex ULTRA')
     safe_mode = bool(state_snapshot.get('safeMode', False))
     active_rules = sum(1 for r in rules if r.get('enabled'))
 
     if cmd in ('/start', 'start'):
+        arg_digits = normalize_phone(arg)
+        active_phone = arg_digits if len(arg_digits) >= 10 else str(state_snapshot.get('telegramPhone') or '').strip()
+        phone_str = (format_phone_display(active_phone) or active_phone) if active_phone else 'Henüz eşleştirilmedi'
         return {
             'command': '/start',
             'reply': (
                 f"🛡️ IPScans Cortex 2.0 Pro Komuta Botu Aktif!\n\n"
+                f"📱 Bağlı Numara: {phone_str}\n"
                 f"🔑 Sohbet Kimliğiniz (Chat ID): {chat_id}\n"
                 f"📦 Aktif Paket: {plan_name}\n"
                 f"📹 Kameralar: {len(cameras)} kayıtlı · ⚡ Kurallar: {active_rules}/{len(rules)} aktif\n"
@@ -472,8 +648,21 @@ def poll_telegram_updates(bot_token, authorized_chat_id, last_update_id, state_s
                 or 'Operatör'
             )
 
-            # 1. Handle Contact Share button ("📱 Telefon Numaramı Doğrula & Eşleştir")
             c_phone = normalize_phone(contact.get('phone_number', ''))
+            text_digits = normalize_phone(text) if text else ''
+            discovered_phone = c_phone or (text_digits if len(text_digits) >= 10 else '')
+            if action_callback:
+                action_callback(
+                    'register_chat',
+                    {
+                        'chatId': chat_id,
+                        'title': sender_title,
+                        'username': chat.get('username', ''),
+                        'phone': discovered_phone,
+                    },
+                )
+
+            # 1. Handle Contact Share button ("📱 Telefon Numaramı Doğrula & Eşleştir")
             if c_phone:
                 cur_auth_chat = chat_id
                 if action_callback:
@@ -523,19 +712,36 @@ def poll_telegram_updates(bot_token, authorized_chat_id, last_update_id, state_s
                     )
                     continue
 
-            # 3. Handle /start (with or without phone_<digits>) -> authorize chat_id immediately
+            # 3. Handle /start (with or without phone_<digits>) -> authorize chat_id & auto-bind pending/recent phone
             if text.lower().startswith('/start'):
                 cur_auth_chat = chat_id
                 maybe_digits = normalize_phone(text)
-                bound_phone = maybe_digits if len(maybe_digits) >= 10 else (state_snapshot.get('telegramPhone') or DEFAULT_ADMIN_PHONE)
-                if action_callback:
-                    action_callback('bind_phone', {'phone': bound_phone, 'chatId': chat_id, 'title': sender_title})
+                pending_phone = ''
+                phones_in_snap = state_snapshot.get('telegramPhones') or state_snapshot.get('phones') or []
+                if isinstance(phones_in_snap, list) and phones_in_snap:
+                    for p_item in reversed(phones_in_snap):
+                        if isinstance(p_item, dict) and p_item.get('autoStartPending') and p_item.get('phone'):
+                            pending_phone = normalize_phone(p_item['phone'])
+                            break
+                    if not pending_phone:
+                        last_p = phones_in_snap[-1]
+                        if isinstance(last_p, dict) and last_p.get('phone'):
+                            pending_phone = normalize_phone(last_p['phone'])
+                bound_phone = (
+                    maybe_digits
+                    if len(maybe_digits) >= 10
+                    else (pending_phone or str(state_snapshot.get('telegramPhone') or '').strip())
+                )
+                if bound_phone:
+                    state_snapshot['telegramPhone'] = bound_phone
+                    if action_callback:
+                        action_callback('bind_phone', {'phone': bound_phone, 'chatId': chat_id, 'title': sender_title})
 
             # 4. Handle text fallback if desktop client sends button label as text
             if 'numaramı doğrula' in text.lower() or 'eşleştir' in text.lower():
                 cur_auth_chat = chat_id
-                fallback_p = state_snapshot.get('telegramPhone') or DEFAULT_ADMIN_PHONE
-                if action_callback:
+                fallback_p = str(state_snapshot.get('telegramPhone') or '').strip()
+                if fallback_p and action_callback:
                     action_callback('bind_phone', {'phone': fallback_p, 'chatId': chat_id, 'title': sender_title})
                 send_telegram_alert(
                     token,
@@ -543,7 +749,11 @@ def poll_telegram_updates(bot_token, authorized_chat_id, last_update_id, state_s
                     {
                         'camera': 'Cortex Numara Eşleştirme',
                         'rule': 'Telefon Eşleştirme Aktif ✓',
-                        'reason': f"✅ Hesabınız ({sender_title}) ve numaranız ({format_phone_display(fallback_p)}) Cortex bildirim hattına bağlandı!",
+                        'reason': (
+                            f"✅ Hesabınız ({sender_title}) ve numaranız ({format_phone_display(fallback_p)}) Cortex bildirim hattına bağlandı!"
+                            if fallback_p
+                            else f"📱 Lütfen telefon numaranızı doğrulamak için aşağıdaki 'Telefon Numaramı Doğrula & Eşleştir' butonuna dokunun veya numaranızı yazın."
+                        ),
                     },
                     phone_number=fallback_p,
                 )
@@ -565,7 +775,7 @@ def poll_telegram_updates(bot_token, authorized_chat_id, last_update_id, state_s
                     'reason': res['reply'],
                 },
                 frame_bytes=frame_bytes,
-                phone_number=state_snapshot.get('telegramPhone') or DEFAULT_ADMIN_PHONE,
+                phone_number=str(state_snapshot.get('telegramPhone') or '').strip(),
             )
         except Exception:
             continue

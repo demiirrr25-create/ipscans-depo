@@ -27,9 +27,10 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(result['license']['maxRules'],8)
         self.assertNotIn('fullKey',result['license'])
 
-    def test_new_assets_require_session(self):
+    def test_login_assets_load_but_state_requires_session(self):
         for path in ['/plans.js','/refinements.css']:
             self.assertEqual(self.request(path)[0],200)
-            with self.assertRaises(urllib.error.HTTPError) as error:
-                self.request(path,auth=False)
-            self.assertEqual(error.exception.code,401)
+            self.assertEqual(self.request(path,auth=False)[0],200)
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.request('/api/state',auth=False)
+        self.assertEqual(error.exception.code,401)

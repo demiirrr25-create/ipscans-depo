@@ -156,17 +156,19 @@ class EventTests(unittest.TestCase):
         w.event(r,{'reason':'test','confidence':1},[]);self.assertEqual(s.STATE['events'],[])
 
     def test_persisted_webhook_retries_and_idempotency(self):
-        previous_telegram = s.STATE.get('telegram', {})
-        s.STATE['telegram'] = {'enabled': False}
-        self.addCleanup(lambda: s.STATE.update(telegram=previous_telegram))
+        prev_tg=dict(s.STATE.get('telegram',{}))
+        s.STATE['telegram']={'enabled':False}
         s.STATE['webhook']='https://example.invalid/hook'
         e={'id':'event-test','camera':'test','rule':'test','time':0,'reason':'test','confidence':1,'kind':'offline','attempts':0,'retryAt':0,'notification':'Panel'}
         s.STATE['events']=[e]
-        with patch.object(s.urllib.request,'urlopen',side_effect=OSError()) as send:
-            for _ in range(3):e['retryAt']=0;s.deliver_notifications()
-            e['retryAt']=0;s.deliver_notifications()
-            self.assertEqual(send.call_count,3);self.assertEqual(e['attempts'],3)
-            self.assertEqual(send.call_args.args[0].get_header('Idempotency-key'),'event-test')
-        s.STATE['webhook']=''
+        try:
+            with patch.object(s.urllib.request,'urlopen',side_effect=OSError()) as send:
+                for _ in range(3):e['retryAt']=0;s.deliver_notifications()
+                e['retryAt']=0;s.deliver_notifications()
+                self.assertEqual(send.call_count,3);self.assertEqual(e['attempts'],3)
+                self.assertEqual(send.call_args.args[0].get_header('Idempotency-key'),'event-test')
+        finally:
+            s.STATE['webhook']=''
+            s.STATE['telegram']=prev_tg
 
 if __name__=='__main__':unittest.main()

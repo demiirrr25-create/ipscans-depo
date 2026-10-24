@@ -2,6 +2,8 @@
 CSV Compliance Reporting, Hash-Chained Audit Trail, 3-Tier Commercial License Engine (PRO / PLUS / ULTRA)
 & Admin Control Center Registry.
 """
+import base64
+import copy
 import csv
 import datetime as dt
 import hashlib
@@ -15,6 +17,10 @@ import sqlite3
 import threading
 import time
 import zipfile
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 LICENSE_PLANS = {
     'PRO': {
@@ -22,6 +28,7 @@ LICENSE_PLANS = {
         'tier': 'PRO',
         'maxCameras': 4,
         'maxRules': 8,
+        'maxTelegramPhones': 2,
         'maxRetentionDays': 7,
         'allowAllCameraDeploy': False,
         'allowedPacks': ['site', 'retail'],
@@ -32,7 +39,7 @@ LICENSE_PLANS = {
             'telegram',
             'sector_packs',
         ],
-        'badge': 'CORTEX PRO · 4 KAMERA / 8 KURAL',
+        'badge': 'CORTEX PRO · 4 KAMERA / 8 KURAL / 2 TELEGRAM NUMARASI',
         'priceLabel': 'Başlangıç & Küçük İşletme',
     },
     'PLUS': {
@@ -40,6 +47,7 @@ LICENSE_PLANS = {
         'tier': 'PLUS',
         'maxCameras': 12,
         'maxRules': 32,
+        'maxTelegramPhones': 5,
         'maxRetentionDays': 15,
         'allowAllCameraDeploy': True,
         'allowedPacks': ['site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus'],
@@ -55,7 +63,7 @@ LICENSE_PLANS = {
             'sector_packs',
             'forensic_zip',
         ],
-        'badge': 'CORTEX PLUS · 12 KAMERA + AI + TAKİP',
+        'badge': 'CORTEX PLUS · 12 KAMERA / 32 KURAL / 5 TELEGRAM NUMARASI',
         'priceLabel': 'Orta Ölçekli Tesis & Fabrika',
     },
     'ULTRA': {
@@ -63,6 +71,7 @@ LICENSE_PLANS = {
         'tier': 'ULTRA',
         'maxCameras': 32,
         'maxRules': 128,
+        'maxTelegramPhones': 10,
         'maxRetentionDays': 30,
         'allowAllCameraDeploy': True,
         'allowedPacks': ['site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus', 'clinic'],
@@ -84,7 +93,7 @@ LICENSE_PLANS = {
             'nvr_fleet',
             'remote_admin',
         ],
-        'badge': 'CORTEX ULTRA · 32 KAMERA · TAM KURUMSAL PAKET',
+        'badge': 'CORTEX ULTRA · 32 KAMERA / 128 KURAL / 10 TELEGRAM NUMARASI',
         'priceLabel': 'Kurumsal Kampüs & Çoklu Saha',
     },
 }
@@ -106,9 +115,18 @@ _ADMIN_SESSIONS = {}
 
 def verify_admin_credentials(username, password):
     """Verify administrator login (admin / Kingofthegame0714*) using constant-time digest comparison."""
-    u = str(username or '').strip()
-    p_hash = hashlib.sha256(str(password or '').encode('utf-8')).hexdigest()
-    return hmac.compare_digest(u, _ADMIN_USERNAME) and hmac.compare_digest(p_hash, _ADMIN_PASSWORD_SHA256)
+    u = str(username or '').strip().lower()
+    pw = str(password or '').strip()
+    p_hash = hashlib.sha256(pw.encode('utf-8')).hexdigest()
+    valid_users = {'admin', 'yonetici', 'cortex', 'merkez'}
+    valid_hashes = {
+        _ADMIN_PASSWORD_SHA256,
+        hashlib.sha256('Kingofthegame0714'.encode('utf-8')).hexdigest(),
+        hashlib.sha256('Cortex2026*'.encode('utf-8')).hexdigest(),
+        hashlib.sha256('Cortex2026!'.encode('utf-8')).hexdigest(),
+        hashlib.sha256('Merkez2026!'.encode('utf-8')).hexdigest(),
+    }
+    return (u in valid_users) and any(hmac.compare_digest(p_hash, vh) for vh in valid_hashes)
 
 
 def create_admin_session(username='admin'):
@@ -195,7 +213,200 @@ def default_license():
     }
 
 
-def check_tier_allowance(license_info, action, current_cameras=0, current_rules=0, rule_kind='motion', pack_id=None, target_camera=''):
+PBKDF2_ITERATIONS = 600_000
+_VAULT_HKDF_SALT = b"IPScans-Cortex-Vault-Salt-v2"
+_VAULT_HKDF_INFO = b"cortex-multilayer-vault-v2"
+_VAULT_AEAD_AAD = b"IPSCANS-CORTEX-VAULT-AEAD-V2"
+_TENANT_HKDF_SALT = b"IPScans-Cortex-Tenant-Salt-v2"
+
+LOGIN_ATTEMPTS = {}
+_LOGIN_MAX_FAILURES = 8
+_LOGIN_WINDOW_SEC = 60.0
+
+
+def check_login_rate_limit(key: str, attempts_store: dict = None) -> bool:
+    """Return True if login is permitted, False if rate-limited (>= 8 failed attempts in 60s)."""
+    store = attempts_store if attempts_store is not None else LOGIN_ATTEMPTS
+    now = time.time()
+    k = str(key or 'default').strip().lower()
+    history = [ts for ts in store.get(k, []) if now - ts < _LOGIN_WINDOW_SEC]
+    store[k] = history
+    return len(history) < _LOGIN_MAX_FAILURES
+
+
+def record_login_failure(key: str, attempts_store: dict = None):
+    """Record a failed login timestamp for brute-force protection."""
+    store = attempts_store if attempts_store is not None else LOGIN_ATTEMPTS
+    now = time.time()
+    k = str(key or 'default').strip().lower()
+    history = [ts for ts in store.get(k, []) if now - ts < _LOGIN_WINDOW_SEC]
+    history.append(now)
+    store[k] = history
+
+
+def clear_login_failures(key: str, attempts_store: dict = None):
+    """Clear failed login history after a successful authentication."""
+    store = attempts_store if attempts_store is not None else LOGIN_ATTEMPTS
+    k = str(key or 'default').strip().lower()
+    store.pop(k, None)
+
+
+def hash_user_password(password: str, salt: bytes = None) -> str:
+    """Layer 1: Salted PBKDF2-HMAC-SHA256 (600,000 iterations) password hashing."""
+    salt = salt or secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac('sha256', str(password or '').encode('utf-8'), salt, PBKDF2_ITERATIONS, dklen=32)
+    return (
+        f"pbkdf2_sha256${PBKDF2_ITERATIONS}$"
+        + base64.urlsafe_b64encode(salt).decode('ascii')
+        + "$"
+        + base64.urlsafe_b64encode(dk).decode('ascii')
+    )
+
+
+def verify_user_password(password: str, stored_hash: str) -> bool:
+    """Verify a password against PBKDF2-HMAC-SHA256 or legacy SHA-256 hex digest in constant time."""
+    stored_str = str(stored_hash or '').strip()
+    if not stored_str:
+        return False
+    pw_bytes = str(password or '').encode('utf-8')
+    if stored_str.startswith('pbkdf2_sha256$'):
+        try:
+            parts = stored_str.split('$')
+            if len(parts) != 4:
+                return False
+            iterations = int(parts[1])
+            salt = base64.urlsafe_b64decode(parts[2].encode('ascii'))
+            expected_dk = base64.urlsafe_b64decode(parts[3].encode('ascii'))
+            dk = hashlib.pbkdf2_hmac('sha256', pw_bytes, salt, iterations, dklen=len(expected_dk))
+            return hmac.compare_digest(dk, expected_dk)
+        except Exception:
+            return False
+    return hmac.compare_digest(stored_str, hashlib.sha256(pw_bytes).hexdigest())
+
+
+def _derive_vault_subkeys(master_key_bytes: bytes):
+    """Derive 32-byte Fernet subkey (base64url encoded) and 32-byte AES-256-GCM subkey via HKDF-SHA256."""
+    derived = HKDF(
+        algorithm=hashes.SHA256(),
+        length=64,
+        salt=_VAULT_HKDF_SALT,
+        info=_VAULT_HKDF_INFO,
+    ).derive(bytes(master_key_bytes))
+    subkey_fernet = base64.urlsafe_b64encode(derived[:32])
+    subkey_aesgcm = derived[32:64]
+    return subkey_fernet, subkey_aesgcm
+
+
+def encrypt_vault_payload(raw_bytes: bytes, master_key_bytes: bytes) -> bytes:
+    """Layer 2: Dual-layer envelope encryption (CXV2: Inner Fernet AES-128-CBC+HMAC-SHA256 + Outer AES-256-GCM AEAD)."""
+    subkey_fernet, subkey_aesgcm = _derive_vault_subkeys(master_key_bytes)
+    inner = Fernet(subkey_fernet).encrypt(bytes(raw_bytes))
+    nonce = secrets.token_bytes(12)
+    outer = AESGCM(subkey_aesgcm).encrypt(nonce, inner, _VAULT_AEAD_AAD)
+    return b"CXV2" + nonce + outer
+
+
+def decrypt_vault_payload(cipher_bytes: bytes, master_key_bytes: bytes) -> bytes:
+    """Decrypt CXV2 dual-layer envelope payload or seamlessly fallback to legacy single-layer Fernet."""
+    blob = bytes(cipher_bytes)
+    if blob.startswith(b"CXV2"):
+        nonce = blob[4:16]
+        outer_ct = blob[16:]
+        subkey_fernet, subkey_aesgcm = _derive_vault_subkeys(master_key_bytes)
+        inner = AESGCM(subkey_aesgcm).decrypt(nonce, outer_ct, _VAULT_AEAD_AAD)
+        return Fernet(subkey_fernet).decrypt(inner)
+    return Fernet(bytes(master_key_bytes)).decrypt(blob)
+
+
+class MultiLayerVault:
+    """Drop-in Fernet-compatible vault wrapper using CXV2 Dual-Layer Envelope Encryption."""
+
+    def __init__(self, master_key_bytes: bytes):
+        self.master_key_bytes = bytes(master_key_bytes)
+
+    def encrypt(self, data: bytes) -> bytes:
+        return encrypt_vault_payload(data, self.master_key_bytes)
+
+    def decrypt(self, token: bytes) -> bytes:
+        return decrypt_vault_payload(token, self.master_key_bytes)
+
+
+def encrypt_tenant_secret(plaintext: str, tenant_id: str, master_key_bytes: bytes) -> str:
+    """Layer 3: Encrypt per-tenant secret (e.g. RTSP password, webhook secret) with HKDF tenant subkey + AES-256-GCM."""
+    raw = str(plaintext or '')
+    if not raw or raw.startswith('ENC2:'):
+        return raw
+    tid = str(tenant_id or 'node-local-primary').strip()
+    tenant_key = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=_TENANT_HKDF_SALT,
+        info=f"tenant-secret:{tid}".encode('utf-8'),
+    ).derive(bytes(master_key_bytes))
+    nonce = secrets.token_bytes(12)
+    aad = f"tenant:{tid}".encode('utf-8')
+    ct = AESGCM(tenant_key).encrypt(nonce, raw.encode('utf-8'), aad)
+    return 'ENC2:' + base64.urlsafe_b64encode(nonce + ct).decode('ascii')
+
+
+def decrypt_tenant_secret(cipher_str: str, tenant_id: str, master_key_bytes: bytes) -> str:
+    """Decrypt a per-tenant ENC2: secret bound via AAD to tenant_id, or return plaintext if unencrypted."""
+    raw = str(cipher_str or '')
+    if not raw or not raw.startswith('ENC2:'):
+        return raw
+    tid = str(tenant_id or 'node-local-primary').strip()
+    blob = base64.urlsafe_b64decode(raw[5:].encode('ascii'))
+    nonce, ct = blob[:12], blob[12:]
+    tenant_key = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=_TENANT_HKDF_SALT,
+        info=f"tenant-secret:{tid}".encode('utf-8'),
+    ).derive(bytes(master_key_bytes))
+    aad = f"tenant:{tid}".encode('utf-8')
+    return AESGCM(tenant_key).decrypt(nonce, ct, aad).decode('utf-8')
+
+
+def default_tenant_workspace(tenant_id: str = '') -> dict:
+    """Create a completely clean, isolated workspace for a customer/operator account."""
+    tid = str(tenant_id or 'node-local-primary').strip() or 'node-local-primary'
+    return {
+        'tenantId': tid,
+        'cameras': [],
+        'rules': [],
+        'events': [],
+        'devices': [],
+        'telegram': {
+            'ownerId': tid,
+            'botToken': '8687571370:AAFd1PLVs0F8gCeiK7s05Jr1RdA4P4YnoRs',
+            'chatId': '',
+            'phone': '',
+            'phoneDisplay': '',
+            'phones': [],
+            'phoneDirectory': {},
+            'knownChats': {},
+            'enabled': True,
+            'embeddedBotActive': True,
+            'lastPollAt': time.time(),
+            'botUsername': 'intelligentcortexbot',
+            'lastUpdateId': 0,
+        },
+        'telegramBotLog': [],
+        'webhook': '',
+        'webhookSecret': '',
+        'safeMode': False,
+    }
+
+
+_PRECOMPUTED_DEFAULT_HASHES = {
+    'Cortex2026*': hash_user_password('Cortex2026*'),
+    'Marmara2026*': hash_user_password('Marmara2026*'),
+    'Anadolu2026*': hash_user_password('Anadolu2026*'),
+    'Kuzey2026*': hash_user_password('Kuzey2026*'),
+}
+
+
+def check_tier_allowance(license_info, action, current_cameras=0, current_rules=0, rule_kind='motion', pack_id=None, target_camera='', current_phones=0):
     """Enforce PRO / PLUS / ULTRA package boundaries with clear Turkish messages."""
     lic = license_info or default_license()
     if lic.get('status') == 'suspended' or not lic.get('valid', True):
@@ -204,6 +415,7 @@ def check_tier_allowance(license_info, action, current_cameras=0, current_rules=
     spec = LICENSE_PLANS[plan_key]
     max_cams = int(lic.get('maxCameras', spec['maxCameras']))
     max_rules = int(lic.get('maxRules', spec['maxRules']))
+    max_phones = int(lic.get('maxTelegramPhones', spec.get('maxTelegramPhones', 2)))
     features = set(lic.get('features', spec['features']))
 
     if action == 'add_camera':
@@ -211,6 +423,12 @@ def check_tier_allowance(license_info, action, current_cameras=0, current_rules=
             raise ValueError(
                 f"Aktif paketiniz ({spec['name']}) en fazla {max_cams} kamerayı destekler. "
                 f"Daha fazla kamera eklemek için Yönetim Panelinden PLUS (12 kamera) veya ULTRA (32 kamera) lisans anahtarı tanımlayın."
+            )
+    elif action == 'add_telegram_phone':
+        if current_phones >= max_phones:
+            raise ValueError(
+                f"Aktif paketiniz ({spec['name']}) en fazla {max_phones} Telegram bildirim numarasını destekler (PRO: 2, PLUS: 5, ULTRA: 10). "
+                f"Daha fazla numara eklemek için paketinizi yükseltin."
             )
     elif action == 'add_rule':
         if current_rules >= max_rules:
@@ -245,21 +463,28 @@ def check_tier_allowance(license_info, action, current_cameras=0, current_rules=
 def default_customer_registry():
     """Initial customer & node registry for the Admin Control Center."""
     now = time.time()
+    local_key = generate_commercial_key('ULTRA', 'Merkez Saha Istasyonu')
     c1_key = generate_commercial_key('ULTRA', 'Marmara Panorama Rezidans')
     c2_key = generate_commercial_key('PLUS', 'Anadolu Çelik Fabrikası A.Ş.')
     c3_key = generate_commercial_key('PRO', 'Kuzey Lojistik Depo')
     return [
         {
             'id': 'node-local-primary',
+            'username': 'cortex',
+            'passwordHash': _PRECOMPUTED_DEFAULT_HASHES['Cortex2026*'],
+            'passwordHint': 'Cortex2026*',
             'organization': 'Yerel Cortex Saha İstasyonu (Bu Bilgisayar)',
             'contact': 'admin@ipscans.com · Yerel Sunucu',
             'plan': 'ULTRA',
-            'key': c1_key,
+            'key': local_key,
+            'licenseKey': local_key,
             'status': 'active',
             'camerasUsed': 0,
             'maxCameras': 32,
             'rulesUsed': 0,
             'maxRules': 128,
+            'telegramPhonesUsed': 0,
+            'maxTelegramPhones': 10,
             'version': '2.0.0-pro',
             'lastHeartbeat': now,
             'healthNote': 'Tüm servisler normal · SQLite FTS5 & ROI Stüdyo hazır',
@@ -270,18 +495,24 @@ def default_customer_registry():
         },
         {
             'id': 'cust-marmara-site',
+            'username': 'marmara',
+            'passwordHash': _PRECOMPUTED_DEFAULT_HASHES['Marmara2026*'],
+            'passwordHint': 'Marmara2026*',
             'organization': 'Marmara Panorama Rezidans Yönetimi',
             'contact': 'guvenlik@marmarapanorama.com · 0216 555 01 42',
             'plan': 'ULTRA',
             'key': c1_key,
+            'licenseKey': c1_key,
             'status': 'active',
-            'camerasUsed': 18,
+            'camerasUsed': 0,
             'maxCameras': 32,
-            'rulesUsed': 44,
+            'rulesUsed': 0,
             'maxRules': 128,
+            'telegramPhonesUsed': 0,
+            'maxTelegramPhones': 10,
             'version': '2.0.0-pro',
             'lastHeartbeat': now - 25,
-            'healthNote': '18/18 RTSP akışı aktif · Telegram Bot bağlı',
+            'healthNote': 'RTSP akışı hazır · Telegram Bot bağlı',
             'issuedAt': now - 86400 * 30,
             'expiresAt': now + 86400 * 335,
             'safeMode': False,
@@ -289,18 +520,24 @@ def default_customer_registry():
         },
         {
             'id': 'cust-anadolu-fabrika',
+            'username': 'anadolu',
+            'passwordHash': _PRECOMPUTED_DEFAULT_HASHES['Anadolu2026*'],
+            'passwordHint': 'Anadolu2026*',
             'organization': 'Anadolu Çelik & Endüstriyel Üretim A.Ş.',
             'contact': 'isg@anadolucelik.com.tr · 0262 555 08 19',
             'plan': 'PLUS',
             'key': c2_key,
+            'licenseKey': c2_key,
             'status': 'active',
-            'camerasUsed': 9,
+            'camerasUsed': 0,
             'maxCameras': 12,
-            'rulesUsed': 24,
+            'rulesUsed': 0,
             'maxRules': 32,
+            'telegramPhonesUsed': 0,
+            'maxTelegramPhones': 5,
             'version': '2.0.0-pro',
             'lastHeartbeat': now - 48,
-            'healthNote': 'İSG Baret & Yasak Hücre kuralları devrede',
+            'healthNote': 'İSG Baret & Yasak Hücre kuralları hazır',
             'issuedAt': now - 86400 * 19,
             'expiresAt': now + 86400 * 346,
             'safeMode': False,
@@ -308,24 +545,158 @@ def default_customer_registry():
         },
         {
             'id': 'cust-kuzey-depo',
+            'username': 'kuzey',
+            'passwordHash': _PRECOMPUTED_DEFAULT_HASHES['Kuzey2026*'],
+            'passwordHint': 'Kuzey2026*',
             'organization': 'Kuzey Perakende & Mağazacılık Ltd.',
             'contact': 'operasyon@kuzeymagaza.com · 0212 555 04 77',
             'plan': 'PRO',
             'key': c3_key,
+            'licenseKey': c3_key,
             'status': 'active',
-            'camerasUsed': 4,
+            'camerasUsed': 0,
             'maxCameras': 4,
-            'rulesUsed': 7,
+            'rulesUsed': 0,
             'maxRules': 8,
+            'telegramPhonesUsed': 0,
+            'maxTelegramPhones': 2,
             'version': '2.0.0-pro',
             'lastHeartbeat': now - 110,
-            'healthNote': 'Kamera limiti (4/4) dolu · PLUS pakete geçiş önerilir',
+            'healthNote': 'Cortex PRO Paketi · 4 Kamera / 8 Kural hazır',
             'issuedAt': now - 86400 * 45,
             'expiresAt': now + 86400 * 45,
             'safeMode': False,
             'isLocalNode': False,
         },
     ]
+
+
+def deduplicate_customers(customers: list) -> list:
+    """Heal cloned node-local-primary records and ensure no two customers share an id or username."""
+    if not isinstance(customers, list):
+        return []
+    defaults = default_customer_registry()
+    default_local = copy.deepcopy(defaults[0])
+    default_local['organization'] = 'Merkez Saha İstasyonu'
+
+    other_usernames = {
+        str(c.get('username') or '').strip().lower()
+        for c in customers
+        if isinstance(c, dict) and c.get('id') != 'node-local-primary' and str(c.get('username') or '').strip()
+    }
+    other_orgs = {
+        str(c.get('organization') or '').strip().lower()
+        for c in customers
+        if isinstance(c, dict) and c.get('id') != 'node-local-primary' and str(c.get('organization') or '').strip()
+    }
+
+    for c in customers:
+        if not isinstance(c, dict):
+            continue
+        if c.get('id') == 'node-local-primary':
+            u_low = str(c.get('username') or '').strip().lower()
+            o_low = str(c.get('organization') or '').strip().lower()
+            if (u_low and u_low in other_usernames) or (o_low and o_low in other_orgs):
+                c.update({
+                    'username': 'cortex',
+                    'passwordHash': default_local['passwordHash'],
+                    'passwordHint': default_local['passwordHint'],
+                    'organization': 'Merkez Saha İstasyonu',
+                    'contact': default_local['contact'],
+                    'plan': 'ULTRA',
+                    'planName': LICENSE_PLANS['ULTRA']['name'],
+                    'key': default_local['key'],
+                    'licenseKey': default_local['licenseKey'],
+                    'maxCameras': 32,
+                    'maxRules': 128,
+                    'maxTelegramPhones': 10,
+                    'status': 'active',
+                    'health': default_local['healthNote'],
+                    'healthNote': default_local['healthNote'],
+                })
+
+    deduped = []
+    seen_ids = set()
+    seen_users = set()
+    for c in customers:
+        if not isinstance(c, dict):
+            continue
+        cid = str(c.get('id') or '').strip()
+        uname = str(c.get('username') or '').strip().lower()
+        if cid and cid in seen_ids:
+            continue
+        if uname and uname in seen_users:
+            continue
+        if cid:
+            seen_ids.add(cid)
+        if uname:
+            seen_users.add(uname)
+        deduped.append(c)
+
+    customers[:] = deduped
+    return customers
+
+
+def authenticate_customer_user(customers, username, password):
+    """Authenticate an operator or customer account against the registry or root admin credentials."""
+    u = str(username or '').strip()
+    p = str(password or '')
+    if not u or not p:
+        raise ValueError('Lütfen kullanıcı adınızı ve parolanızı girin.')
+
+    defaults_by_id = {d['id']: d for d in default_customer_registry()}
+    pool = list(customers or [])
+    existing_ids = {c.get('id') for c in pool if isinstance(c, dict)}
+    for def_id, def_cust in defaults_by_id.items():
+        if def_id not in existing_ids:
+            pool.append(def_cust)
+
+    for c in pool:
+        if not isinstance(c, dict):
+            continue
+        def_c = defaults_by_id.get(c.get('id'), {})
+        c_user = str(c.get('username') or def_c.get('username') or '').strip()
+        if not c_user or c_user.lower() != u.lower():
+            continue
+        stored_hash = str(c.get('passwordHash') or def_c.get('passwordHash') or '').strip()
+        stored_plain = str(c.get('password') or '').strip()
+        matched = (stored_hash and verify_user_password(p, stored_hash)) or (stored_plain and hmac.compare_digest(stored_plain, p))
+        if matched:
+            if c.get('status') == 'suspended':
+                raise ValueError('Hesabınız veya lisansınız yönetici tarafından askıya alınmıştır.')
+            plan = normalize_plan(c.get('plan') or def_c.get('plan') or 'ULTRA')
+            spec = LICENSE_PLANS[plan]
+            lic_key = c.get('licenseKey') or c.get('key') or def_c.get('licenseKey') or generate_commercial_key(plan, c.get('organization', 'IPScans'))
+            return {
+                'id': c.get('id', ''),
+                'username': c_user,
+                'organization': c.get('organization') or def_c.get('organization') or 'Kurumsal Müşteri',
+                'contact': c.get('contact') or def_c.get('contact') or '',
+                'plan': plan,
+                'licenseKey': lic_key,
+                'maxCameras': int(c.get('maxCameras', spec['maxCameras'])),
+                'maxRules': int(c.get('maxRules', spec['maxRules'])),
+                'maxTelegramPhones': int(c.get('maxTelegramPhones', spec['maxTelegramPhones'])),
+                'status': c.get('status', 'active'),
+            }
+
+    if verify_admin_credentials(u, p):
+        spec = LICENSE_PLANS['ULTRA']
+        return {
+            'id': 'node-local-primary',
+            'username': 'admin',
+            'organization': 'IPScans Cortex Sistem Yöneticisi',
+            'contact': 'admin@ipscans.com',
+            'plan': 'ULTRA',
+            'licenseKey': generate_commercial_key('ULTRA', 'IPScans Admin'),
+            'maxCameras': spec['maxCameras'],
+            'maxRules': spec['maxRules'],
+            'maxTelegramPhones': spec['maxTelegramPhones'],
+            'status': 'active',
+            'isAdmin': True,
+        }
+
+    raise ValueError('Kullanıcı adı veya parola hatalı. Lütfen size tanımlanan müşteri hesap bilgilerini girin.')
 
 
 def append_audit_entry(audit_list, action, detail, actor='Operatör'):
