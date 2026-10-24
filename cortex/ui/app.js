@@ -307,6 +307,7 @@ function applyLanguage(lang, persist = false) {
     if (dict[key]) el.innerHTML = dict[key];
   });
   updateCrumb(currentTab);
+  renderPlans();
 }
 
 function initLanguage() {
@@ -346,6 +347,7 @@ function empty(title, description, icon = '◈') {
 }
 
 function updateCrumb(name) {
+  if (name === 'plans') { $('#crumb').textContent = currentLang === 'en' ? 'Plans & usage' : 'Paketler ve kullanım'; return; }
   const labels = currentLang === 'en'
     ? { overview: 'Cortex', cameras: 'Cameras', rules: 'Event rules', events: 'Event archive', settings: 'Settings & License', admin: 'Admin Control Panel' }
     : { overview: 'Cortex', cameras: 'Kameralar', rules: 'Olay kuralları', events: 'Olay arşivi', settings: 'Ayarlar & Lisans', admin: 'Yönetim Paneli' };
@@ -353,7 +355,9 @@ function updateCrumb(name) {
 }
 
 function tab(name) {
+  if (!document.getElementById(name)?.classList.contains('view')) return;
   currentTab = name;
+  window.scrollTo({top:0,behavior:'instant'});
   document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== name);
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   updateCrumb(name);
@@ -712,9 +716,10 @@ function renderAnalytics() {
 function renderLicenseAndAudit() {
   if (!state) return;
   const lic = state.license || {};
+  $('#retention').max = lic.maxRetentionDays || 7;
   const badge = $('#licenseBadge');
   if (badge && lic.badge) {
-    badge.innerHTML = `<span>${esc(lic.badge)}</span> <i class="dot"></i>`;
+    badge.innerHTML = `<span>${esc('CORTEX ' + (lic.plan || 'PRO'))}</span> <i class="dot"></i>`;
   }
   const licDetails = $('#licenseDetails');
   if (licDetails) {
@@ -834,6 +839,7 @@ async function refresh() {
     renderSectorPacks();
     renderAnalytics();
     renderLicenseAndAudit();
+    renderPlans();
     renderMatrixWall();
 
     if ($('#version')) $('#version').textContent = state.version;

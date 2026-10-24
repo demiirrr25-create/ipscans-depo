@@ -156,6 +156,9 @@ class EventTests(unittest.TestCase):
         w.event(r,{'reason':'test','confidence':1},[]);self.assertEqual(s.STATE['events'],[])
 
     def test_persisted_webhook_retries_and_idempotency(self):
+        previous_telegram = s.STATE.get('telegram', {})
+        s.STATE['telegram'] = {'enabled': False}
+        self.addCleanup(lambda: s.STATE.update(telegram=previous_telegram))
         s.STATE['webhook']='https://example.invalid/hook'
         e={'id':'event-test','camera':'test','rule':'test','time':0,'reason':'test','confidence':1,'kind':'offline','attempts':0,'retryAt':0,'notification':'Panel'}
         s.STATE['events']=[e]
