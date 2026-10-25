@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
-import Cortex3DPrimitives 1.0
 
 Window {
     id: rootWindow
@@ -11,7 +10,7 @@ Window {
     minimumWidth: 1240
     minimumHeight: 760
     visible: true
-    title: "IPScans Cortex · 2.4.0"
+    title: "IPScans Cortex · 2.5.0"
     color: Theme.bg
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint
 
@@ -21,7 +20,7 @@ Window {
     property bool sidebarCollapsed: false
     property int activeNavIndex: 0
     property string cameraGridMode: "1x1" // "1x1" or "2x2"
-    property bool showRoiOverlay: true
+    property bool showRoiOverlay: false
     property bool showHeatmapOverlay: false
     property bool commandPaletteOpen: false
     property string toastMessage: ""
@@ -46,15 +45,7 @@ Window {
         rootWindow.activeNavIndex = idx
     }
 
-    function setStartupPreview(activeState, progressVal) {
-        if (!activeState) {
-            startupOverlay.skipSequence()
-        } else if (progressVal <= 0.05) {
-            startupOverlay.startSequence()
-        } else {
-            startupOverlay.freezeAtProgress(progressVal)
-        }
-    }
+    function setStartupPreview(activeState, progressVal) {}
 
     Timer {
         id: toastTimer
@@ -82,9 +73,7 @@ Window {
     Shortcut {
         sequence: "Escape"
         onActivated: {
-            if (startupOverlay.active) {
-                startupOverlay.skipSequence()
-            } else if (rootWindow.commandPaletteOpen) {
+            if (rootWindow.commandPaletteOpen) {
                 rootWindow.commandPaletteOpen = false
             }
         }
@@ -348,7 +337,7 @@ Window {
                                 color: Theme.ok
                             }
                             Text {
-                                text: backend ? (backend.serverAddress + " · D3D11") : "127.0.0.1:8765 · D3D11"
+                                text: backend ? (backend.serverAddress + "") : "127.0.0.1:8765"
                                 color: Theme.ink2
                                 font.family: Theme.mono
                                 font.pixelSize: 11
@@ -620,11 +609,7 @@ Window {
                                 anchors.rightMargin: 10
                                 spacing: 10
 
-                                CortexLogo3D {
-                                    Layout.preferredWidth: 46
-                                    Layout.preferredHeight: 46
-                                    isDark: rootWindow.isDark
-                                }
+                                Image { Layout.preferredWidth: 46; Layout.preferredHeight: 46; source: "../ui/logo.svg" }
 
                                 ColumnLayout {
                                     visible: !rootWindow.sidebarCollapsed
@@ -632,7 +617,7 @@ Window {
                                     spacing: 2
 
                                     Text {
-                                        text: "Cortex Core"
+                                        text: "Cortex"
                                         color: Theme.ink
                                         font.family: Theme.sans
                                         font.pixelSize: 14
@@ -701,10 +686,10 @@ Window {
                                 {
                                     titleTr: "Genel Bakış",
                                     titleEn: "Overview",
-                                    subTr: "3D çekirdek ve canlı saha",
-                                    subEn: "3D core & live wall",
+                                    subTr: "Kameralar ve olaylar",
+                                    subEn: "Cameras & events",
                                     iconType: "grid",
-                                    badge: "3D"
+                                    badge: ""
                                 },
                                 {
                                     titleTr: "Kameralar",
@@ -977,77 +962,7 @@ Window {
                             }
                         }
 
-                        // Secondary Pill Button: Replay 3D Startup Sequence
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 38
-                            radius: 19
-                            color: splashBtnMouse.containsMouse ? Theme.bgMuted : Theme.surface
-                            border.width: 1
-                            border.color: Theme.borderStrong
 
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                Rectangle {
-                                    width: 6
-                                    height: 6
-                                    radius: 3
-                                    color: Theme.signal
-                                }
-                                Text {
-                                    visible: !rootWindow.sidebarCollapsed
-                                    text: rootWindow.tr("3D Açılış Sahnesi", "3D Startup Scene")
-                                    color: Theme.ink
-                                    font.family: Theme.sans
-                                    font.pixelSize: 12
-                                    font.weight: Theme.wMedium
-                                }
-                            }
-
-                            MouseArea {
-                                id: splashBtnMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: startupOverlay.startSequence()
-                            }
-                        }
-
-                        // Primary Solid Ink Pill Button: Open Web Admin Panel
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 40
-                            radius: 20
-                            color: adminBtnMouse.containsMouse ? Theme.primaryHover : Theme.primaryBg
-
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                Text {
-                                    visible: !rootWindow.sidebarCollapsed
-                                    text: rootWindow.tr("Web Yönetim Paneli ↗", "Web Admin Panel ↗")
-                                    color: Theme.primaryFg
-                                    font.family: Theme.sans
-                                    font.pixelSize: 12
-                                    font.weight: Theme.wMedium
-                                }
-                                Text {
-                                    visible: rootWindow.sidebarCollapsed
-                                    text: "↗"
-                                    color: Theme.primaryFg
-                                    font.pixelSize: 12
-                                }
-                            }
-
-                            MouseArea {
-                                id: adminBtnMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: if (backend) backend.openAdminPanel()
-                            }
-                        }
                     }
                 }
 
@@ -1228,201 +1143,6 @@ Window {
                             Layout.fillHeight: true
                             Layout.minimumHeight: 420
                             spacing: 12
-
-                            // -------------------------------------------------
-                            // LEFT PANEL (48%): REAL QT QUICK 3D CORTEX CORE & TOPOLOGY
-                            // -------------------------------------------------
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                Layout.preferredWidth: 480
-                                radius: Theme.rLg
-                                color: Theme.surface
-                                border.width: 1
-                                border.color: Theme.border
-                                clip: true
-
-                                ColumnLayout {
-                                    anchors.fill: parent
-                                    anchors.margins: 12
-                                    spacing: 10
-
-                                    // Card Header Toolbar with Eyebrow + Segmented Control
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 36
-                                        spacing: 8
-
-                                        Rectangle {
-                                            width: 14
-                                            height: 14
-                                            radius: 7
-                                            color: Theme.signalSoft
-                                            Rectangle {
-                                                anchors.centerIn: parent
-                                                width: 6
-                                                height: 6
-                                                radius: 3
-                                                color: Theme.signal
-                                            }
-                                        }
-
-                                        Text {
-                                            text: rootWindow.tr("3D Cortex Core & Ağ Topolojisi", "3D Cortex Core & Network Topology")
-                                            color: Theme.ink
-                                            font.family: Theme.sans
-                                            font.pixelSize: 15
-                                            font.weight: Theme.wDisplay
-                                            font.letterSpacing: Theme.tight(15)
-                                        }
-
-                                        Item { Layout.fillWidth: true }
-
-                                        // Segmented Control (matching ipscans.com "Cihaz Keşfi / Topoloji Haritası" pill track)
-                                        Rectangle {
-                                            height: 32
-                                            width: segRow3D.implicitWidth + 8
-                                            radius: 16
-                                            color: Theme.bgMuted
-                                            border.width: 1
-                                            border.color: Theme.border
-
-                                            RowLayout {
-                                                id: segRow3D
-                                                anchors.centerIn: parent
-                                                spacing: 2
-
-                                                Rectangle {
-                                                    height: 26
-                                                    width: seg3DTxt.implicitWidth + 18
-                                                    radius: 13
-                                                    color: !core3DScene.show2DFallback ? Theme.segActive : "transparent"
-                                                    border.width: !core3DScene.show2DFallback ? 1 : 0
-                                                    border.color: Theme.border
-                                                    Text {
-                                                        id: seg3DTxt
-                                                        anchors.centerIn: parent
-                                                        text: "3D Sahne"
-                                                        color: !core3DScene.show2DFallback ? Theme.ink : Theme.ink2
-                                                        font.family: Theme.sans
-                                                        font.pixelSize: 11
-                                                        font.weight: !core3DScene.show2DFallback ? Theme.wMedium : Theme.wBody
-                                                    }
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        cursorShape: Qt.PointingHandCursor
-                                                        onClicked: core3DScene.show2DFallback = false
-                                                    }
-                                                }
-
-                                                Rectangle {
-                                                    height: 26
-                                                    width: seg2DTxt.implicitWidth + 18
-                                                    radius: 13
-                                                    color: core3DScene.show2DFallback ? Theme.segActive : "transparent"
-                                                    border.width: core3DScene.show2DFallback ? 1 : 0
-                                                    border.color: Theme.border
-                                                    Text {
-                                                        id: seg2DTxt
-                                                        anchors.centerIn: parent
-                                                        text: "2D Matris"
-                                                        color: core3DScene.show2DFallback ? Theme.ink : Theme.ink2
-                                                        font.family: Theme.sans
-                                                        font.pixelSize: 11
-                                                        font.weight: core3DScene.show2DFallback ? Theme.wMedium : Theme.wBody
-                                                    }
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        cursorShape: Qt.PointingHandCursor
-                                                        onClicked: core3DScene.show2DFallback = true
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        // Auto-Orbit Pill
-                                        Rectangle {
-                                            height: 30
-                                            width: orbitToggleText.implicitWidth + 16
-                                            radius: 15
-                                            color: core3DScene.autoOrbit ? Theme.signalSoft : Theme.bgSubtle
-                                            border.width: 1
-                                            border.color: core3DScene.autoOrbit ? Theme.signal : Theme.border
-                                            Text {
-                                                id: orbitToggleText
-                                                anchors.centerIn: parent
-                                                text: core3DScene.autoOrbit ? "Yörünge: Açık" : "Yörünge: Durdu"
-                                                color: core3DScene.autoOrbit ? Theme.signal : Theme.ink2
-                                                font.family: Theme.sans
-                                                font.pixelSize: 11
-                                                font.weight: Theme.wMedium
-                                            }
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: core3DScene.autoOrbit = !core3DScene.autoOrbit
-                                            }
-                                        }
-
-                                        // Zoom In / Out / Reset Circular Buttons
-                                        Rectangle {
-                                            width: 30
-                                            height: 30
-                                            radius: 15
-                                            color: Theme.bgSubtle
-                                            border.width: 1
-                                            border.color: Theme.borderStrong
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "+"
-                                                color: Theme.ink
-                                                font.family: Theme.mono
-                                                font.pixelSize: 13
-                                                font.weight: Font.Medium
-                                            }
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: core3DScene.zoomIn()
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            width: 30
-                                            height: 30
-                                            radius: 15
-                                            color: Theme.bgSubtle
-                                            border.width: 1
-                                            border.color: Theme.borderStrong
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "−"
-                                                color: Theme.ink
-                                                font.family: Theme.mono
-                                                font.pixelSize: 13
-                                                font.weight: Font.Medium
-                                            }
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: core3DScene.zoomOut()
-                                            }
-                                        }
-                                    }
-
-                                    // 3D Viewport Area
-                                    CortexCore3DView {
-                                        id: core3DScene
-                                        Layout.fillWidth: true
-                                        Layout.fillHeight: true
-                                        isDark: rootWindow.isDark
-                                        topologyNodes: backend ? backend.topologyNodes : []
-                                        onNodeClicked: function(nodeId, nodeTitle) {
-                                            rootWindow.showToast("3D Düğüm Seçildi: " + nodeTitle)
-                                        }
-                                    }
-                                }
-                            }
 
                             // -------------------------------------------------
                             // RIGHT PANEL (52%): 2D NVR CAMERA COMMAND WALL & CONTEXTUAL SUB-VIEWS
@@ -2651,7 +2371,6 @@ Window {
 
                     Repeater {
                         model: [
-                            { label: "3D Sinematik Açılış Sahnesini Oynat", action: "splash" },
                             { label: "Tema Değiştir (Açık / Koyu Görünüm)", action: "theme" },
                             { label: "CH-01 kapı önü · 15 Saniye Geçiş İzni Ver", action: "pass" },
                             { label: "ROI Bölge Çizimlerini Aç / Kapat", action: "roi" },
@@ -2694,8 +2413,7 @@ Window {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     rootWindow.commandPaletteOpen = false
-                                    if (modelData.action === "splash") startupOverlay.startSequence()
-                                    else if (modelData.action === "theme" && backend) backend.toggleTheme()
+                                    if (modelData.action === "theme" && backend) backend.toggleTheme()
                                     else if (modelData.action === "pass" && backend) backend.grantPass("06c256561cc943948c714c45addbcd47", 15)
                                     else if (modelData.action === "roi") rootWindow.showRoiOverlay = !rootWindow.showRoiOverlay
                                     else if (modelData.action === "admin" && backend) backend.openAdminPanel()
@@ -2744,9 +2462,6 @@ Window {
         // =====================================================================
         // 5. FULL-SCREEN 3D CINEMATIC STARTUP OVERLAY
         // =====================================================================
-        CortexStartup3D {
-            id: startupOverlay
-            anchors.fill: parent
-        }
+        Item {}
     }
 }

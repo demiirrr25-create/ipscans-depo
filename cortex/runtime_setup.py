@@ -9,19 +9,24 @@ import time
 import urllib.request
 import zipfile
 
-def ensure_runtime(progress,cancel):
+def ensure_runtime(progress,cancel,allow_download=True):
     def online():
         try:
             with urllib.request.urlopen('http://127.0.0.1:11434/api/tags',timeout=2) as r: json.load(r)
             return True
         except Exception:return False
     if online():return
-    base=pathlib.Path(os.environ.get('LOCALAPPDATA',str(pathlib.Path.home())))/'IPScansCortex'/'runtime'
+    data=pathlib.Path(os.environ.get('CORTEX_DATA',str(pathlib.Path(os.environ.get('LOCALAPPDATA',str(pathlib.Path.home())))/'IPScansCortex')))
+    base=data/'runtime'
+    settings={}
+    try: settings=json.loads((data/'runtime-settings.json').read_text(encoding='utf-8-sig'))
+    except (OSError,ValueError): pass
     executable=base/'ollama.exe'
     installed=pathlib.Path(os.environ.get('LOCALAPPDATA',''))/'Programs'/'Ollama'/'ollama.exe'
-    found=shutil.which('ollama') or (str(installed) if installed.is_file() else None)
+    found=settings.get('executable') or shutil.which('ollama') or (str(installed) if installed.is_file() else None)
     if found: executable=pathlib.Path(found)
     if not executable.is_file():
+        if not allow_download: return False
         if os.name!='nt': raise RuntimeError('Automatic runtime currently requires Windows x64')
         progress(phase='runtime',message='Ollama motoru otomatik indiriliyor; ayrı kurulum gerekmez.',completed=0,total=0)
         req=urllib.request.Request('https://api.github.com/repos/ollama/ollama/releases/latest',headers={'User-Agent':'IPScans-Cortex'})
@@ -61,7 +66,8 @@ def ensure_runtime(progress,cancel):
             shutil.rmtree(staging)
         finally: archive.unlink(missing_ok=True)
     cancel(); progress(phase='runtime',message='Yerel Ollama motoru başlatılıyor.',completed=0,total=0)
-    env=dict(os.environ,OLLAMA_HOST='127.0.0.1:11434',OLLAMA_NO_CLOUD='1')
+    models=settings.get('models') or str(data/'models')
+    env=dict(os.environ,OLLAMA_HOST='127.0.0.1:11434',OLLAMA_NO_CLOUD='1',OLLAMA_MODELS=models)
     subprocess.Popen([str(executable),'serve'],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
                      env=env,creationflags=0x08000000 if os.name=='nt' else 0)
     for _ in range(60):

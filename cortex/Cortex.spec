@@ -1,16 +1,19 @@
+from PyInstaller.utils.hooks import collect_all
+ffmpeg_data, ffmpeg_binaries, ffmpeg_hidden = collect_all('imageio_ffmpeg')
+cv_data, cv_binaries, cv_hidden = collect_all('cv2')
 # -*- mode: python ; coding: utf-8 -*-
 
 
 a = Analysis(
-    ['server.py'],
+    ['launcher.py'],
     pathex=[],
-    binaries=[],
-    datas=[('ui', 'ui'), ('third-party-notices', 'third-party-notices')],
-    hiddenimports=[],
+    binaries=ffmpeg_binaries + cv_binaries,
+    datas=[('ui', 'ui'), ('third-party-notices', 'third-party-notices')] + ffmpeg_data + cv_data,
+    hiddenimports=ffmpeg_hidden + cv_hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['PySide6'],
     noarchive=False,
     optimize=0,
 )

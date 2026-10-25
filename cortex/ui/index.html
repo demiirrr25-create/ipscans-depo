@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex 2.4.0 · Kurumsal Kamera Zekâsı, Görsel AI &amp; 3D Komuta Merkezi</title>
+  <title>IPScans Cortex 2.5.0 · Kurumsal Kamera Zekâsı, Görsel AI &amp; 3D Komuta Merkezi</title>
   <link rel="icon" href="logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,8 +24,9 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=2.4.0">
-  <link rel="stylesheet" href="refinements.css?v=2.4.0">
+  <link rel="stylesheet" href="style.css?v=2.5.0">
+  <link rel="stylesheet" href="refinements.css?v=2.5.0">
+<link rel="stylesheet" href="premium.css?v=2.5.0">
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true" focusable="false">
@@ -43,47 +44,9 @@
   </svg>
 
   <!-- Cinematic 7-Step 3D Startup Sequence (Windows 11 / IPScans Flagship Experience) -->
-  <div id="cortexStartupStage" class="cortex-startup-stage" role="dialog" aria-modal="true" aria-label="IPScans Cortex 3D Sinematik Açılış Sahnesi" hidden>
-    <canvas id="cortexStartupCanvas" class="cortex-startup-canvas" aria-hidden="true"></canvas>
-    <div class="startup-hud-top">
-      <div class="startup-brand-pill">
-        <img src="logo.svg" alt="" width="24" height="24">
-        <span class="mono">IPSCANS CORTEX · 3D CORE v2.4</span>
-      </div>
-      <div class="startup-top-actions">
-        <span id="startupStepBadge" class="startup-step-badge mono">ADIM 01 / 07 · SİYAH SAHNE</span>
-        <button type="button" id="skipStartupBtn" class="startup-skip-btn mono" title="Açılış animasyonunu atla (ESC)">Atla · ESC</button>
-      </div>
-    </div>
 
-    <div class="startup-hud-center" id="startupBrandReveal">
-      <span class="startup-eyebrow mono" id="startupEyebrow">IPSCANS ECOSYSTEM · GÖRSEL ZEKÂ VE AĞ KOMUTA MERKEZİ</span>
-      <h1 class="startup-title" id="startupTitle">CORTEX</h1>
-      <p class="startup-subtitle" id="startupStepText">Merkezi 3D çekirdek ve yerel ağ düğümleri başlatılıyor…</p>
-      <div class="startup-progress-track" aria-hidden="true">
-        <div id="startupProgressBar" class="startup-progress-fill" style="width:14%"></div>
-      </div>
-      <div class="startup-steps-strip mono" id="startupStepsStrip" aria-hidden="true">
-        <span class="startup-step-dot is-active" data-step-dot="1">01 Siyah Sahne</span>
-        <span class="startup-step-dot" data-step-dot="2">02 3D Logo</span>
-        <span class="startup-step-dot" data-step-dot="3">03 3D Ağ Hatları</span>
-        <span class="startup-step-dot" data-step-dot="4">04 Derinlik</span>
-        <span class="startup-step-dot" data-step-dot="5">05 Düğüm Senkronu</span>
-        <span class="startup-step-dot" data-step-dot="6">06 Cortex Kimliği</span>
-        <span class="startup-step-dot" data-step-dot="7">07 Komuta Merkezi</span>
-      </div>
-    </div>
-
-    <div class="startup-hud-bottom">
-      <label class="startup-pref-toggle">
-        <input type="checkbox" id="disableStartupAnimCheck">
-        <span>Açılış animasyonunu sonraki başlatmalarda otomatik atla</span>
-      </label>
-      <span class="startup-bottom-meta mono">127.0.0.1 · 60 FPS GPU KONTROLLÜ · SIFIR BULUT YÜKLEMESİ</span>
-    </div>
-  </div>
   <div id="cortexLoginGate" class="cortex-login-gate">
-    <canvas id="loginSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
+
     <div class="login-scrim" aria-hidden="true"></div>
 
     <div class="login-topbar">
@@ -118,10 +81,10 @@
           <span data-i18n="login.badge">KURUMSAL LİSANS &amp; MERKEZİ ERİŞİM</span>
         </span>
         <h1 class="login-display login-stage-headline" data-i18n-html="login.title">Kameralarına bir <em>beyin</em> bağla.</h1>
-        <p class="login-lead" data-i18n="login.lead">Görüntüler bu bilgisayardan dışarı çıkmaz. Gerçek zamanlı yerel görsel AI, 8 sektörel saha paketi, NVR kamera duvarı ve @intelligentcortexbot iki yönlü Telegram komuta merkezi.</p>
+        <p class="login-lead" data-i18n="login.lead">Görüntüler bu bilgisayardan dışarı çıkmaz. Gerçek zamanlı yerel görsel AI, 10 sektörel saha paketi, NVR kamera duvarı ve @intelligentcortexbot iki yönlü Telegram komuta merkezi.</p>
         <div class="login-chips">
           <span class="login-chip" data-i18n-html="login.pillPrivacy"><strong>%100 Yerel Gizlilik</strong><span>Bulut yüklemesi yok</span></span>
-          <span class="login-chip" data-i18n-html="login.pillRules"><strong>73 Hazır Kural</strong><span>8 Sektörel Paket</span></span>
+          <span class="login-chip" data-i18n-html="login.pillRules"><strong>97 Hazır Kural</strong><span>10 Sektörel Paket</span></span>
           <span class="login-chip" data-i18n-html="login.pillTelegram"><strong>Telegram Bot</strong><span>MP4 Video + Kare</span></span>
         </div>
       </div>
@@ -129,7 +92,7 @@
       <div class="login-panel">
         <div class="cortex-login-card">
           <div class="cortex-login-brand">
-            <img src="logo.svg" alt="IPScans Cortex 2.4.0" width="40" height="40">
+            <img src="logo.svg" alt="IPScans Cortex 2.5.0" width="40" height="40">
             <div>
               <span class="eyebrow" data-i18n="login.cardEyebrow">GÜVENLİ ERİŞİM KAPISI</span>
               <h2 data-i18n="login.cardTitle">Müşteri Girişi</h2>
@@ -163,14 +126,14 @@
     <div class="aside-brand-row">
       <a class="brand" href="#">
         <img src="logo.svg" alt="" width="38" height="38">
-        <span class="brand-text">Cortex<small>by IPScans · 2.4.0</small></span>
+        <span class="brand-text">Cortex<small>ipscans.com projesi · 2.5.0</small></span>
       </a>
       <button type="button" id="sidebarCollapseBtn" class="sidebar-collapse-btn" aria-label="Kenar çubuğunu daralt veya genişlet" title="Kenar Çubuğunu Daralt / Genişlet (Ctrl+B)">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5L5.5 8 10 12.5"/></svg>
       </button>
     </div>
     <nav aria-label="Ana menü" data-i18n-aria="nav.ariaLabel">
-      <button type="button" data-tab="overview" class="active" title="Genel bakış & 3D Komuta Merkezi">
+      <button type="button" data-tab="overview" class="active" title="Genel bakış ve canlı izleme">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
         </span>
@@ -210,14 +173,11 @@
     <div class="asidefoot">
       <div class="aside-status" id="asideEngineStatus">
         <span class="dot"></span>
-        <span class="aside-status-text" data-i18n="aside.workspace">3D Çekirdek &amp; Motor Aktif</span>
+        <span class="aside-status-text" data-i18n="aside.workspace">Yerel istasyon</span>
       </div>
       <div class="aside-foot-actions">
-        <button type="button" id="replayStartupBtn" class="aside-replay-btn mono" title="Sinematik 3D açılış deneyimini tekrar oynat">
-          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 13 8 5 13 5 3"/></svg>
-          <span class="aside-replay-label">3D Açılış</span>
-        </button>
-        <span id="version" class="mono aside-version-pill" data-version="2.4.0">2.4.0</span>
+
+        <a class="project-credit" href="https://ipscans.com" target="_blank" rel="noopener">Bir ipscans.com projesi</a><span id="version" class="mono aside-version-pill" data-version="2.5.0">2.5.0</span>
       </div>
     </div>
   </aside>
@@ -311,58 +271,7 @@
       </div>
 
       <!-- 4. CORTEX 3D CORE & INTERACTIVE 3D NETWORK / DEVICE EXPLORER -->
-      <section class="card cortex-3d-explorer-card" id="cortex3DExplorerSection" data-bento-card style="margin-bottom:24px" aria-label="3D Cortex Çekirdek ve Etkileşimli Ağ / Cihaz Görselleştirme Merkezi">
-        <div class="sectiontitle cortex-3d-explorer-head">
-          <div>
-            <span class="eyebrow" data-i18n="core3d.eyebrow">3D CORTEX CORE &amp; ETKİLEŞİMLİ AĞ / CİHAZ TOPOLOJİSİ</span>
-            <h2 style="margin-top:3px" data-i18n="core3d.title">Merkezi 3D Çekirdek, Kameralar, Cihazlar ve Canlı Veri Bağlantıları</h2>
-          </div>
-          <div class="cortex-3d-toolbar" role="toolbar" aria-label="3D ve 2D Topoloji Kontrolleri">
-            <div class="cortex-3d-view-switch" role="group" aria-label="Görünüm Modu">
-              <button type="button" id="viewMode3DBtn" class="nvr-grid-btn active" data-topo-view="3d" title="Etkileşimli 3D Çekirdek ve Ağ Görünümü">
-                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5L14 5v6l-6 3.5L2 11V5l6-3.5z"/><path d="M2 5l6 3.5L14 5M8 8.5V15"/></svg>
-                <span data-i18n="core3d.mode3d">3D Çekirdek &amp; Ağ</span>
-              </button>
-              <button type="button" id="viewMode2DBtn" class="nvr-grid-btn" data-topo-view="2d" title="Sade 2D Topoloji Matrisi">
-                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2" width="4" height="4" rx="1"/><rect x="10.5" y="2" width="4" height="4" rx="1"/><rect x="10.5" y="10" width="4" height="4" rx="1"/><path d="M5.5 4h5M7.5 4v8h3"/></svg>
-                <span data-i18n="core3d.mode2d">2D Topoloji</span>
-              </button>
-            </div>
-            <div class="cortex-3d-cam-controls" id="cortex3DCamControls" role="group" aria-label="3D Kamera Kontrolleri">
-              <button type="button" id="topoZoomInBtn" class="nvr-grid-btn" title="Yakınlaştır (+)" aria-label="Yakınlaştır">+</button>
-              <button type="button" id="topoZoomOutBtn" class="nvr-grid-btn" title="Uzaklaştır (−)" aria-label="Uzaklaştır">−</button>
-              <button type="button" id="topoAutoRotateBtn" class="nvr-grid-btn active" title="Yumuşak Yörünge Dönüşü Aç/Kapat" data-i18n="core3d.orbit">Yörünge</button>
-              <button type="button" id="topoResetViewBtn" class="nvr-grid-btn" title="3D Kamera Açısını ve Yakınlaştırmayı Sıfırla" data-i18n="core3d.reset">Sıfırla</button>
-            </div>
-          </div>
-        </div>
 
-        <div id="cortex3DViewportWrap" class="cortex-3d-viewport-wrap">
-          <canvas id="cortex3DCoreCanvas" class="cortex-3d-core-canvas" aria-label="Etkileşimli 3D Cortex Core ve Ağ Düğümleri"></canvas>
-
-          <div class="cortex-3d-hud-top">
-            <span id="core3DStatusPill" class="cortex-3d-pill is-ok mono">
-              <span class="dot"></span>
-              <span id="core3DStatusText">CORTEX CORE · AKTİF</span>
-            </span>
-            <span id="core3DNodeCountPill" class="cortex-3d-pill mono">DÜĞÜMLER: 0</span>
-            <span id="core3DHintPill" class="cortex-3d-pill mono">Sürükle: Döndür · Tekerlek: Yakınlaştır · Düğüme Tıkla: Detay Paneli</span>
-          </div>
-
-          <div class="cortex-3d-hud-bottom">
-            <div class="cortex-3d-legend" aria-label="Bağlantı Türleri">
-              <span class="legend-item"><i class="legend-line is-verified"></i> <span data-i18n="core3d.legVerified">Doğrulanmış Bağlantı (Aktif RTSP/ONVIF)</span></span>
-              <span class="legend-item"><i class="legend-line is-inferred"></i> <span data-i18n="core3d.legInferred">Tahmini / Alt Akış İlişkisi</span></span>
-              <span class="legend-item"><i class="legend-line is-unknown"></i> <span data-i18n="core3d.legUnknown">Bekleyen / Çevrimdışı İlişki</span></span>
-            </div>
-            <div id="cortex3DNodePills" class="cortex-3d-node-pills" role="toolbar" aria-label="Ağ Düğümleri Hızlı Seçim"></div>
-          </div>
-        </div>
-
-        <div id="cortex2DTopologyWrap" class="cortex-2d-topology-wrap" hidden>
-          <div id="cortex2DTopologyGrid" class="cortex-2d-topology-grid"></div>
-        </div>
-      </section>
 
       <section class="nvr-recorder-console" style="margin-bottom:24px">
         <div class="nvr-console-head" hidden></div>
@@ -378,7 +287,7 @@
             <button type="button" class="nvr-grid-btn" data-nvr-grid="grid-1plus5" data-i18n="nvr.grid1plus5">1+5 VIP</button>
             <button type="button" class="nvr-grid-btn" data-nvr-grid="grid-3x3" data-i18n="nvr.grid3x3">3×3 Dokuzlu</button>
             <button type="button" class="nvr-grid-btn" data-nvr-grid="grid-4x4" data-i18n="nvr.grid4x4">4×4 Onaltılı</button>
-            <button type="button" id="nvrGlobalRoiBtn" class="nvr-grid-btn" title="Tüm kameralarda aktif kural bölgelerini (ROI) ve geçiş hatlarını göster" data-i18n="nvr.roiZones">ROI Bölgeleri</button>
+            <button type="button" aria-pressed="false" id="nvrGlobalRoiBtn" class="nvr-grid-btn" title="Tüm kameralarda aktif kural bölgelerini (ROI) ve geçiş hatlarını göster" data-i18n="nvr.roiZones">ROI Bölgeleri</button>
             <button type="button" id="nvrAutoTourBtn" class="nvr-grid-btn" data-i18n="nvr.autoTour">Otomatik Tur</button>
             <button type="button" id="openMatrixWallBtn" class="nvr-grid-btn nvr-fullscreen-btn" data-i18n="nvr.fullscreen">Tam Ekran NVR</button>
           </div>
@@ -397,10 +306,10 @@
       <details class="card pro-banner-card sector-drawer" style="margin-bottom:24px">
         <summary class="sector-drawer-summary">
           <div class="sector-drawer-title">
-            <span class="eyebrow" data-i18n="sector.eyebrow">KURUMSAL SAHA PAKETLERİ · 8 SEKTÖR · PRO / PLUS / ULTRA</span>
-            <h2 data-i18n="sector.title">Hazır Sektörel Kurulum Paketleri (8 Sektör · Tek Tıkla Kurulum)</h2>
+            <span class="eyebrow" data-i18n="sector.eyebrow">KURUMSAL SAHA PAKETLERİ · 10 SEKTÖR · PRO / PLUS / ULTRA</span>
+            <h2 data-i18n="sector.title">Hazır Sektörel Kurulum Paketleri (10 Sektör · Tek Tıkla Kurulum)</h2>
           </div>
-          <span class="tag" data-i18n="sector.tag">8 Sektör · Kalibre ROI</span>
+          <span class="tag" data-i18n="sector.tag">10 Sektör · Kalibre ROI</span>
         </summary>
         <div class="sector-drawer-body">
           <div class="sector-toolbar">
@@ -424,7 +333,7 @@
       <section class="card pipeline-schematic-card" id="livePipelineSchematicCard" data-bento-card style="margin-bottom:24px">
         <div class="sectiontitle pipeline-card-head" style="margin-bottom:10px">
           <div>
-            <span class="eyebrow" data-i18n="pipeline.eyebrow">HİBRİT GÖRSEL ZEKÂ · CANLI VERİ YOLU MİMARİSİ (v2.4)</span>
+            <span class="eyebrow" data-i18n="pipeline.eyebrow">HİBRİT GÖRSEL ZEKÂ · CANLI VERİ YOLU MİMARİSİ (v2.5)</span>
             <h2 style="margin-top:3px" data-i18n="pipeline.title">RTSP Akışından SHA-256 Adli Kanıt Kasasına Canlı İşleme Hattı</h2>
           </div>
           <div class="actions" style="margin:0;gap:6px">
@@ -433,8 +342,8 @@
           </div>
         </div>
         <div class="pipeline-svg-wrap">
-          <svg id="livePipelineSvg" class="pipeline-schematic-svg" viewBox="0 0 980 176" role="img" aria-label="IPScans Cortex v2.4 Canlı Görsel Zekâ ve Adli Kanıt Akış Şeması">
-            <title>IPScans Cortex v2.4 Hibrit İşleme Hattı</title>
+          <svg id="livePipelineSvg" class="pipeline-schematic-svg" viewBox="0 0 980 176" role="img" aria-label="IPScans Cortex v2.5 Canlı Görsel Zekâ ve Adli Kanıt Akış Şeması">
+            <title>IPScans Cortex v2.5 Hibrit İşleme Hattı</title>
             <desc>RTSP Kamera Akışı, 3-Katmanlı Yerel ve Pro Takip Motoru, Ollama Görsel AI Modeli ve SHA-256 Adli Kanıt Kasası ile Telegram Bot bağlantısını gösteren etkileşimli teknik diyagram.</desc>
             <defs>
               <pattern id="pipeSubGrid" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -470,7 +379,7 @@
               <circle class="pipe-node-dot is-emerald" cx="296" cy="46" r="4.5"/>
               <text class="pipe-node-step" x="308" y="50">KATMAN 02 · ÖN FİLTRE</text>
               <text class="pipe-node-title" x="292" y="76">Yerel &amp; Pro ROI Motoru</text>
-              <text class="pipe-node-sub" id="pipeNodeRulesSub" x="292" y="98">73 Şablon · 8-Kol ROI</text>
+              <text class="pipe-node-sub" id="pipeNodeRulesSub" x="292" y="98">97 Şablon · 8-Kol ROI</text>
               <rect class="pipe-node-pill" x="290" y="112" width="172" height="24" rx="6"/>
               <text class="pipe-node-metric" id="pipeNodeRulesMetric" x="300" y="128">0 Etkin Kural</text>
             </g>
@@ -625,18 +534,18 @@
 
           <div class="catalog-filter-shell">
             <div class="sectiontitle" style="margin-bottom:6px">
-              <span class="eyebrow" data-i18n="rules.catalogLabel">Konfigürasyon kütüphanesi (22 Yerel + 6 Pro Takip + 3 Geçiş + 42 Görsel AI)</span>
-              <span id="ruleCatalogCount" class="tag mono">73 Şablon</span>
+              <span class="eyebrow" data-i18n="rules.catalogLabel">Konfigürasyon kütüphanesi (22 Yerel + 6 Pro Takip + 3 Geçiş + 66 Görsel AI)</span>
+              <span id="ruleCatalogCount" class="tag mono">97 Şablon</span>
             </div>
             <div class="catalog-filter-bar" role="toolbar" aria-label="Kural kütüphanesi kategori filtresi">
-              <button type="button" class="catalog-cat-pill active" data-rule-cat="all" data-i18n="rules.catAll">Tümü (73)</button>
-              <button type="button" class="catalog-cat-pill" data-rule-cat="vision" data-i18n="rules.catVision">Görsel AI (42)</button>
+              <button type="button" class="catalog-cat-pill active" data-rule-cat="all" data-i18n="rules.catAll">Tümü (97)</button>
+              <button type="button" class="catalog-cat-pill" data-rule-cat="vision" data-i18n="rules.catVision">Görsel AI (66)</button>
               <button type="button" class="catalog-cat-pill" data-rule-cat="pro" data-i18n="rules.catPro">Pro Takip (6)</button>
               <button type="button" class="catalog-cat-pill" data-rule-cat="access" data-i18n="rules.catAccess">Geçiş / Tripwire (3)</button>
               <button type="button" class="catalog-cat-pill" data-rule-cat="local" data-i18n="rules.catLocal">Yerel Motor (22)</button>
             </div>
             <div class="catalog-search-row">
-              <input type="search" id="ruleCatalogSearch" placeholder="73 hazır kural içinde ara (örn: baret, duman, tailgating, havuz, bekleme, ışık)…" data-i18n-placeholder="rules.catalogSearchPlaceholder" autocomplete="off" aria-label="Kural şablonu ara">
+              <input type="search" id="ruleCatalogSearch" placeholder="97 hazır kural içinde ara (örn: baret, duman, tailgating, havuz, bekleme, ışık)…" data-i18n-placeholder="rules.catalogSearchPlaceholder" autocomplete="off" aria-label="Kural şablonu ara">
             </div>
             <label style="margin-top:8px">
               <select id="ruleTemplate"></select>
@@ -1163,7 +1072,7 @@
               <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span data-i18n="tier.ultraFeat1">32 Kamera Kanalı &amp; Tam Ekran NVR Duvarı</span></li>
               <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span data-i18n="tier.ultraFeat2">128 AI Kuralı (Tüm VLM + Pro + Geçiş Kontrol)</span></li>
               <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span data-i18n="tier.ultraFeat3">10 Telegram Numarası (Çoklu Alıcı Operasyon)</span></li>
-              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span data-i18n="tier.ultraFeat4">Tüm 8 Sektör Paketi &amp; Tek Tıkla Filo Kurulum</span></li>
+              <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span data-i18n="tier.ultraFeat4">Tüm 10 Sektör Paketi &amp; Tek Tıkla Filo Kurulum</span></li>
               <li><svg class="tier-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg><span data-i18n="tier.ultraFeat5">30 Gün Kanıt + SHA-256 Adli Denetim &amp; Copilot</span></li>
             </ul>
           </article>
@@ -1428,7 +1337,7 @@
       <div class="cmdk-backdrop" data-close-cmdk="1"></div>
       <div class="cmdk-dialog" id="cmdkDialogBox">
         <div id="cmdkBreadcrumbs" class="cmdk-breadcrumbs">
-          <span class="cmdk-crumb-pill active">Cortex v2.4</span>
+          <span class="cmdk-crumb-pill active">Cortex v2.5</span>
           <span class="cmdk-crumb-pill">Ana Komutlar</span>
         </div>
         <div class="cmdk-search-bar">
@@ -1468,14 +1377,14 @@
     <div id="chordIndicatorPill" class="chord-indicator-pill mono" aria-live="polite" hidden></div>
 
     <!-- Sonner-Inspired Stacked Toast Notification Center -->
-    <ol id="cortexToaster" class="sonner-toaster" aria-live="polite"></ol>
+    <div id="cortexToaster" class="sonner-toaster" aria-live="polite"></div>
 
     <footer>
-      <span>IPScans Cortex 2.4.0</span>
+      <span>IPScans Cortex 2.5.0</span>
       <span data-i18n="footer.tagline">Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.</span>
     </footer>
   </main>
-  <script src="plans.js?v=2.4.0"></script>
-  <script src="app.js?v=2.4.0"></script>
+  <script src="plans.js?v=2.5.0"></script>
+  <script src="app.js?v=2.5.0"></script>
 </body>
 </html>

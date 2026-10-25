@@ -11,7 +11,7 @@ import traceback
 import urllib.request
 import webbrowser
 
-VERSION = '2.4.0'
+VERSION = '2.5.0'
 
 def data_directory():
     return Path(os.environ.get('CORTEX_DATA', str(Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'IPScansCortex')))
@@ -32,9 +32,16 @@ def existing_instance(port):
         return False
 
 def main():
+    if '--data-dir' in sys.argv:
+        index = sys.argv.index('--data-dir')
+        os.environ['CORTEX_DATA'] = str(Path(sys.argv[index + 1]).resolve())
+        del sys.argv[index:index + 2]
+    if '--background' in sys.argv:
+        if '--no-browser' not in sys.argv: sys.argv.append('--no-browser')
+        if '--resume' not in sys.argv: sys.argv.append('--resume')
     if os.name == 'nt':
         try:
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('ipscans.cortex.desktop.2.4')
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('ipscans.cortex.desktop.2.5')
             ctypes.windll.shcore.SetProcessDpiAwareness(2)
         except Exception:
             pass
@@ -48,6 +55,9 @@ def main():
         server.main()
         return
     port=int(os.environ.get('CORTEX_PORT','8765'))
+    if existing_instance(port):
+        if '--no-browser' not in sys.argv: webbrowser.open(f'http://127.0.0.1:{port}/')
+        return
     handle=None
     if os.name == 'nt':
         kernel=ctypes.WinDLL('kernel32',use_last_error=True)
@@ -71,12 +81,8 @@ def main():
         config=directory/'config.enc'
         backup=directory/f'config.before-{VERSION}.enc'
         if config.exists() and not backup.exists(): shutil.copy2(config,backup)
-        if '--web' in sys.argv:
-            import server
-            server.main()
-        else:
-            import cortex_desktop
-            cortex_desktop.main([a for a in sys.argv[1:] if a != '--native'])
+        import server
+        server.main()
     finally:
         if handle: kernel.CloseHandle(handle)
 

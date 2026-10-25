@@ -17,7 +17,7 @@ let adminToken = '';
 let lastGeneratedKey = '';
 let lastGeneratedOrg = '';
 let syncSignalFieldRunning = () => {};
-let nvrShowRoiOverlays = true;
+let nvrShowRoiOverlays = false;
 let studioGridMode = '3x3';
 let catalogCategoryFilter = 'ALL';
 let catalogSearchQuery = '';
@@ -69,19 +69,44 @@ function setHtmlIfChanged(el, html, key) {
   return true;
 }
 
+// Fetch once, decode once, discard stale results after view changes.
 function updateCameraImageSmooth(imgEl, url) {
-  if (!imgEl || imgEl.dataset.loading === '1') return;
+  if (!imgEl || !imgEl.isConnected || imgEl.dataset.loading === '1') return;
   imgEl.dataset.loading = '1';
-  const pre = new Image();
-  pre.onload = () => {
-    imgEl.src = url;
-    imgEl.dataset.loading = '0';
-  };
-  pre.onerror = () => {
-    imgEl.dataset.loading = '0';
-  };
-  pre.src = url;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2500);
+  fetch(url, {signal: controller.signal, cache: 'no-store'})
+    .then(r => { if (!r.ok) throw new Error('frame unavailable'); return r.blob(); })
+    .then(async blob => {
+      const objectURL = URL.createObjectURL(blob);
+      const pre = new Image(); pre.src = objectURL;
+      try {
+        await pre.decode();
+        if (!imgEl.isConnected) return;
+        const previous = imgEl.dataset.objectUrl;
+        imgEl.src = objectURL; imgEl.dataset.objectUrl = objectURL;
+        if (previous) URL.revokeObjectURL(previous);
+      } finally { if (imgEl.dataset.objectUrl !== objectURL) URL.revokeObjectURL(objectURL); }
+    }).catch(() => {}).finally(() => {
+      clearTimeout(timeout); imgEl.dataset.loading = '0';
+    });
 }
+new MutationObserver(records => {
+  for (const record of records) for (const node of record.removedNodes) {
+    if (node.nodeType !== 1) continue;
+    for (const img of [node, ...node.querySelectorAll('img')])
+      if (img.dataset?.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+  }
+}).observe(document.body, {childList:true, subtree:true});
+function refreshLiveFrames() {
+  if (document.hidden || !state) return;
+  for (const img of document.querySelectorAll('img.cameraimg')) {
+    if (!img.getClientRects().length) continue;
+    const cid = img.closest('[data-camera-id]')?.dataset.cameraId;
+    if (cid) updateCameraImageSmooth(img, `/api/frame/${encodeURIComponent(cid)}?t=${Date.now()}`);
+  }
+}
+setInterval(refreshLiveFrames, 125);
 
 /* ==========================================================================
    ipscans.com SignalField Canvas Engine (Login Architectural Stage)
@@ -420,9 +445,9 @@ const I18N = {
     'skip.main': 'Ana içeriğe geç',
     'login.badge': 'KURUMSAL LİSANS & MERKEZİ ERİŞİM',
     'login.title': 'Kameralarına bir <em>beyin</em> bağla.',
-    'login.lead': 'Görüntüler bu bilgisayardan dışarı çıkmaz. Gerçek zamanlı yerel görsel AI, 8 sektörel saha paketi, NVR kamera duvarı ve @intelligentcortexbot iki yönlü Telegram komuta merkezi.',
+    'login.lead': 'Görüntüler bu bilgisayardan dışarı çıkmaz. Gerçek zamanlı yerel görsel AI, 10 sektörel saha paketi, NVR kamera duvarı ve @intelligentcortexbot iki yönlü Telegram komuta merkezi.',
     'login.pillPrivacy': '<strong>%100 Yerel Gizlilik</strong><span>Bulut yüklemesi yok</span>',
-    'login.pillRules': '<strong>73 Hazır Kural</strong><span>8 Sektörel Paket</span>',
+    'login.pillRules': '<strong>97 Hazır Kural</strong><span>10 Sektörel Paket</span>',
     'login.pillTelegram': '<strong>Telegram Bot</strong><span>MP4 Video + Kare</span>',
     'login.cardEyebrow': 'GÜVENLİ ERİŞİM KAPISI',
     'login.cardTitle': 'Müşteri Girişi',
@@ -468,8 +493,8 @@ const I18N = {
     'nvr.fullscreen': 'Tam Ekran ↗',
     'analytics.eyebrow': 'CANLI TELEMETRİ · SON 24 SAAT',
     'analytics.title': 'Olay Yoğunluğu ve Kategori Dağılımı',
-    'sector.eyebrow': 'KURUMSAL SAHA PAKETLERİ · 8 SEKTÖR · PRO / PLUS / ULTRA',
-    'sector.title': 'Hazır Sektörel Kurulum Paketleri (8 Sektör · Tek Tıkla Kurulum)',
+    'sector.eyebrow': 'KURUMSAL SAHA PAKETLERİ · 10 SEKTÖR · PRO / PLUS / ULTRA',
+    'sector.title': 'Hazır Sektörel Kurulum Paketleri (10 Sektör · Tek Tıkla Kurulum)',
     'sector.desc': 'Site/Rezidans, Havuz, Fabrika/İSG, Depo/Lojistik, Perakende/AVM, Ofis/Plaza, Okul/Kampüs ve Hastane/Klinik için kalibre edilmiş bölge (ROI), zaman çizelgesi ve akıllı takip kurallarını seçip tek tuşla devreye alın.',
     'sector.targetCamera': 'Hedef kamera',
     'sector.deployMode': 'Kurulum modu',
@@ -505,13 +530,13 @@ const I18N = {
     'rules.eyebrow': '02 / ANLA & TASARLA',
     'rules.title': 'Sen söyle.<br>Cortex takip etsin.',
     'rules.formTitle': 'Yeni olay kuralı',
-    'rules.catalogLabel': 'Konfigürasyon kütüphanesi (22 Yerel + 6 Pro Takip + 3 Geçiş + 42 Görsel AI)',
-    'rules.catalogSearchPlaceholder': '73 hazır kural içinde ara (örn: baret, yangın, kuyruk, plaka, loitering)...',
-    'rules.catAll': 'Tümü (73)',
+    'rules.catalogLabel': 'Konfigürasyon kütüphanesi (22 Yerel + 6 Pro Takip + 3 Geçiş + 66 Görsel AI)',
+    'rules.catalogSearchPlaceholder': '97 hazır kural içinde ara (örn: baret, yangın, kuyruk, plaka, loitering)...',
+    'rules.catAll': 'Tümü (97)',
     'rules.catLocal': 'Yerel (22)',
     'rules.catPro': 'Pro Takip (6)',
     'rules.catAccess': 'Geçiş (3)',
-    'rules.catVision': 'Görsel AI (42)',
+    'rules.catVision': 'Görsel AI (66)',
     'rules.cameraLabel': 'Kamera',
     'rules.nameLabel': 'Kural adı',
     'rules.promptLabel': 'Ne olduğunda haber verelim?',
@@ -604,9 +629,9 @@ const I18N = {
     'skip.main': 'Skip to main content',
     'login.badge': 'ENTERPRISE LICENSE & CENTRAL ACCESS',
     'login.title': 'Connect a <em>brain</em> to your cameras.',
-    'login.lead': 'Video never leaves this computer. Real-time local Vision AI, 8 enterprise sector packs, NVR camera wall, and @intelligentcortexbot two-way Telegram command center.',
+    'login.lead': 'Video never leaves this computer. Real-time local Vision AI, 10 enterprise sector packs, NVR camera wall, and @intelligentcortexbot two-way Telegram command center.',
     'login.pillPrivacy': '<strong>100% Local Privacy</strong><span>Zero cloud uploads</span>',
-    'login.pillRules': '<strong>73 Ready Rules</strong><span>8 Sector Packs</span>',
+    'login.pillRules': '<strong>97 Ready Rules</strong><span>10 Sector Packs</span>',
     'login.pillTelegram': '<strong>Telegram Bot</strong><span>MP4 Video + Frame</span>',
     'login.cardEyebrow': 'SECURE ACCESS GATE',
     'login.cardTitle': 'Customer Sign In',
@@ -645,14 +670,14 @@ const I18N = {
     'overview.orb': 'SEE · UNDERSTAND · ALERT',
     'overview.workspace': 'NVR Camera Wall & Live Command Center',
     'overview.liveStatus': 'Live connection status · Thermal heatmap, 2-Way Telegram Bot & GDPR masking ready',
-    'overview.hint': 'Add a camera, design a custom zone in the ROI Studio, or deploy one of the 8 enterprise sector packs.',
+    'overview.hint': 'Add a camera, design a custom zone in the ROI Studio, or deploy one of the 10 enterprise sector packs.',
     'nvr.roiBtn': 'ROI Zones',
     'nvr.roiBtnTitle': 'Show/hide active ROI polygons and tripwires on camera tiles',
     'nvr.autoTour': 'Auto Tour',
     'nvr.fullscreen': 'Fullscreen ↗',
     'analytics.eyebrow': 'LIVE TELEMETRY · LAST 24 HOURS',
     'analytics.title': 'Event Density & Category Distribution',
-    'sector.eyebrow': 'ENTERPRISE SECTOR PACKS · 8 VERTICALS · PRO / PLUS / ULTRA',
+    'sector.eyebrow': 'ENTERPRISE SECTOR PACKS · 10 VERTICALS · PRO / PLUS / ULTRA',
     'sector.title': 'Ready Sector Deployment Packages (8 Verticals · One-Click Setup)',
     'sector.desc': 'Deploy pre-calibrated ROI zones, schedules, and smart tracking rules for Residence, Pool, Factory, Warehouse, Retail, Office, Campus, or Clinic.',
     'sector.targetCamera': 'Target camera',
@@ -689,13 +714,13 @@ const I18N = {
     'rules.eyebrow': '02 / UNDERSTAND & DESIGN',
     'rules.title': 'You describe it.<br>Cortex watches.',
     'rules.formTitle': 'New event rule',
-    'rules.catalogLabel': 'Configuration library (22 Local + 6 Pro Tracking + 3 Access + 42 Vision AI)',
-    'rules.catalogSearchPlaceholder': 'Search 73 ready rules (e.g. helmet, fire, queue, plate, loitering)...',
-    'rules.catAll': 'All (73)',
+    'rules.catalogLabel': 'Configuration library (22 Local + 6 Pro Tracking + 3 Access + 66 Vision AI)',
+    'rules.catalogSearchPlaceholder': 'Search 97 ready rules (e.g. helmet, fire, queue, plate, loitering)...',
+    'rules.catAll': 'All (97)',
     'rules.catLocal': 'Local (22)',
     'rules.catPro': 'Pro Track (6)',
     'rules.catAccess': 'Access (3)',
-    'rules.catVision': 'Vision AI (42)',
+    'rules.catVision': 'Vision AI (66)',
     'rules.cameraLabel': 'Camera',
     'rules.nameLabel': 'Rule name',
     'rules.promptLabel': 'When should we alert you?',
@@ -877,32 +902,24 @@ function inferToastType(text) {
 }
 
 function message(txt, forcedType) {
-  const msgEl = $('#message');
-  if (msgEl) {
-    msgEl.textContent = txt;
-    msgEl.hidden = false;
-    setTimeout(() => { msgEl.hidden = true; }, 7000);
-  }
   const toaster = $('#cortexToaster');
   if (!toaster || !txt) return;
   const type = forcedType || inferToastType(txt);
-  const icon = type === 'error' ? '!' : (type === 'warn' ? '◆' : '✓');
+  if ([...toaster.children].some(el => el.dataset.message === txt)) return;
   const toast = document.createElement('div');
-  toast.className = `sonner-toast is-${type}`;
-  toast.innerHTML = `
-    <span class="sonner-toast-icon" aria-hidden="true">${icon}</span>
-    <div class="sonner-toast-body">${esc(txt)}</div>
-    <button type="button" class="sonner-toast-close" aria-label="Close">✕</button>
-    <div class="sonner-toast-progress"></div>
-  `;
-  toast.querySelector('.sonner-toast-close')?.addEventListener('click', () => toast.remove());
+  toast.className = `sonner-toast is-${type}`; toast.dataset.message = txt;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  const title = type === 'error' ? t('İşlem tamamlanamadı', 'Action failed') : type === 'warn' ? t('Dikkat', 'Attention') : t('Cortex', 'Cortex');
+  toast.innerHTML = `<span class="sonner-toast-icon" aria-hidden="true">${type === 'error' ? '!' : '✓'}</span><div class="sonner-toast-body"><strong>${title}</strong><span>${esc(txt)}</span></div><button type="button" class="sonner-toast-close" aria-label="${t('Bildirimi kapat','Dismiss notification')}">×</button>`;
+  let timer;
+  const dismiss = () => {clearTimeout(timer);toast.remove();};
+  const schedule = () => {clearTimeout(timer);if(type !== 'error') timer=setTimeout(dismiss,6000);};
+  toast.querySelector('button').onclick = dismiss;
+  toast.onmouseenter = toast.onfocusin = () => clearTimeout(timer);
+  toast.onmouseleave = toast.onfocusout = schedule;
   toaster.appendChild(toast);
-  while (toaster.children.length > 4) {
-    toaster.firstElementChild?.remove();
-  }
-  setTimeout(() => {
-    toast.remove();
-  }, 4300);
+  while(toaster.children.length>3) toaster.firstElementChild.remove();
+  schedule();
 }
 
 /* ==========================================================================
@@ -1116,7 +1133,7 @@ function buildCommandItems() {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
       icon: 'RI',
       title: t('Olay Kuralları & ROI Çizim Stüdyosu', 'Event Rules & ROI Studio'),
-      sub: t('73 hazır kural ve interaktif bölge stüdyosu', '73 ready rules & interactive zone studio'),
+      sub: t('97 hazır kural ve interaktif bölge stüdyosu', '97 ready rules & interactive zone studio'),
       kbd: 'G R',
       run: () => tab('rules')
     },
@@ -1147,7 +1164,7 @@ function buildCommandItems() {
     {
       group: t('Alt Menüler & Hızlı Dağıtım', 'Sub-Menus & Rapid Deployment'),
       icon: 'PK',
-      title: t('Sektör Paketi Dağıt (8 Sektör)…', 'Deploy Sector Pack (8 Sectors)…'),
+      title: t('Sektör Paketi Dağıt (10 Sektör)…', 'Deploy Sector Pack (10 Sectors)…'),
       sub: t('Site, Havuz, Fabrika, Depo, Perakende, Ofis, Kampüs, Klinik', 'Residential, Pool, Factory, Warehouse, Retail, Office, Campus, Clinic'),
       kbd: '→ Alt Menü',
       keepOpen: true,
@@ -1869,7 +1886,7 @@ function camera(c, idx = 0) {
       <div class="camera-row-chips">
         <span class="tag ${camRulesCount > 0 ? 'ok' : ''}" data-cam-rules-badge>${camRulesCount} ${t('Etkin Kural', 'Active Rules')}</span>
         <span class="tag" data-cam-analysis>${t('Durum', 'Status')}: ${esc(c.analysis || t('Hazır', 'Ready'))}</span>
-        <span class="tag mono" data-cam-inference>AI: ${infSeconds}s</span>
+
         <span class="tag ${masksCount > 0 ? 'ok' : ''}" data-cam-masks>KVKK: ${masksCount}</span>
         ${hasPermit ? `<span class="tag warn" data-cam-permit>${t('Geçici İzin Aktif', 'Access Permit Active')}</span>` : ''}
       </div>
@@ -2139,7 +2156,7 @@ function renderSystemTelemetryAndStats() {
         <span>${t('Disk Alanı', 'Disk Free')}: <strong>${diskFree} GB</strong></span>
       </span>
       <span class="sys-tel-pill">
-        <span>${t('Ort. AI Gecikmesi', 'Avg AI Latency')}: <strong>${avgLatMs ? (avgLatMs / 1000).toFixed(1) + 's' : '0.4s'}</strong></span>
+        <span>${t('Ort. AI Gecikmesi', 'Avg AI Latency')}: <strong>${avgLatMs ? (avgLatMs / 1000).toFixed(1) + 's' : '—'}</strong></span>
       </span>
       <span class="sys-tel-pill">
         <i class="sys-tel-dot ${tgConnected ? '' : 'warn'}"></i>
@@ -2189,7 +2206,7 @@ function renderSystemTelemetryAndStats() {
         </div>
         <div class="kpi-main-row">
           <strong>${String(rulesEnabled).padStart(2, '0')}</strong>
-          <span class="fine mono">${t('73 Kütüphane', '73 Library')}</span>
+          <span class="fine mono">${t('97 Kütüphane', '97 Library')}</span>
         </div>
         <div class="kpi-progress-track"><div class="kpi-progress-fill ${rulePct >= 90 ? 'warn' : ''}" style="width:${rulePct}%"></div></div>
       </div>
@@ -2232,7 +2249,7 @@ function renderLivePipelineSchematic() {
   const rulesMetric = $('#pipeNodeRulesMetric');
   if (rulesMetric) rulesMetric.textContent = `${rulesEnabled} ${t('Etkin Kural', 'Active Rules')}`;
   const rulesSub = $('#pipeNodeRulesSub');
-  if (rulesSub) rulesSub.textContent = `${totalRules} ${t('Tanımlı · 73 Şablon', 'Configured · 73 Tpl')}`;
+  if (rulesSub) rulesSub.textContent = `${totalRules} ${t('Tanımlı · 97 Şablon', 'Configured · 97 Tpl')}`;
 
   const vlmMetric = $('#pipeNodeVlmMetric');
   if (vlmMetric) {
@@ -2564,7 +2581,7 @@ function buildCameraRoiOverlaySvg(c) {
     }
   }
   if (!shapes && camRules.length > 0) {
-    shapes = `<rect class="nvr-target-reticle" x="12" y="12" width="76" height="76" rx="2" stroke-dasharray="3 3"/>`;
+    shapes = ''; // A full-frame rule has no artificial ROI border.
   }
   return `<div class="nvr-roi-overlay-wrap"><svg class="nvr-roi-svg" viewBox="0 0 100 100" preserveAspectRatio="none">${shapes}</svg></div>`;
 }
@@ -2623,7 +2640,7 @@ function buildNvrCellsHtml(forMatrix = false) {
               <strong class="nvr-cam-title">${esc(c.name)}</strong>
             </div>
             <div class="nvr-osd-right">
-              <span class="nvr-stream-tel-pill" data-nvr-stream-tel>RTSP/${esc(transportUpper)} · ${infMs}ms</span>
+
               <span class="nvr-osd-pill" data-nvr-rules>${camRulesCount} ${t('Kural', 'Rules')}</span>
               <span class="nvr-osd-clock mono">${timeShort}</span>
             </div>
@@ -2952,7 +2969,7 @@ function renderLicenseAndAudit() {
             <span class="upgrade-delta-chip is-complete mono">32 KAMERA</span>
             <span class="upgrade-delta-chip is-complete mono">128 AI KURALI</span>
             <span class="upgrade-delta-chip is-complete mono">10 TELEGRAM</span>
-            <span class="upgrade-delta-chip is-complete mono">8 SEKTÖR · 30 GÜN ARŞİV</span>
+            <span class="upgrade-delta-chip is-complete mono">10 SEKTÖR · 30 GÜN ARŞİV</span>
           </div>
         </div>
       `;
@@ -2974,7 +2991,7 @@ function renderLicenseAndAudit() {
             <span class="upgrade-delta-chip mono">+${ruleGain} AI Kuralı (128)</span>
             <span class="upgrade-delta-chip mono">+${phoneGain} Telegram (10)</span>
             <span class="upgrade-delta-chip mono">+${retGain} Gün Arşiv (30G)</span>
-            <span class="upgrade-delta-chip mono">8 Sektör + Filo</span>
+            <span class="upgrade-delta-chip mono">10 Sektör + Filo</span>
           </div>
         </div>
       `;
@@ -3248,7 +3265,7 @@ function renderEventSummaryAndFilters(allEvents, filtered) {
   const latencies = allEvents.map(e => Number(e.latencyMs || 0)).filter(v => v > 0);
   const avgLat = latencies.length
     ? (latencies.reduce((a, b) => a + b, 0) / latencies.length / 1000).toFixed(1) + 's'
-    : '0.4s';
+    : '—';
 
   if ($('#evMetricTotal')) $('#evMetricTotal').textContent = String(total);
   if ($('#evMetricPending')) $('#evMetricPending').textContent = String(pending);
@@ -4007,7 +4024,7 @@ function renderCatalogOptions() {
 
   const badge = $('#catalogMatchCount');
   if (badge) {
-    badge.textContent = `${totalMatched || 73} ${t('Şablon', 'Templates')}`;
+    badge.textContent = `${totalMatched || 97} ${t('Şablon', 'Templates')}`;
   }
 }
 
@@ -5168,7 +5185,7 @@ initTheme();
 initLanguage();
 uiSound.syncBtn();
 initBentoSpotlight();
-initSignalField();
+
 syncLoginGate();
 updateNvrClocks();
 initInteractiveStudio();
@@ -5572,7 +5589,7 @@ function buildTopologyGraphFromState() {
     id: 'core:main',
     kind: 'core',
     label: 'Cortex 3D Core',
-    sub: `127.0.0.1:8765 · v${state?.version || '2.4.0'}`,
+    sub: `127.0.0.1:8765 · v${state?.version || '2.5.0'}`,
     status: unreviewedCount > 0 ? 'warn' : 'online',
     x: 0, y: 0, z: 0,
     radius: 18,
@@ -5657,7 +5674,7 @@ function buildTopologyGraphFromState() {
     {
       id: 'svc:rules',
       label: t(`ROI & Kural Motoru (${activeRulesCount})`, `ROI & Rule Engine (${activeRulesCount})`),
-      sub: t(`${rules.length} Toplam Kural · 73 Şablon`, `${rules.length} Total Rules · 73 Templates`),
+      sub: t(`${rules.length} Toplam Kural · 97 Şablon`, `${rules.length} Total Rules · 97 Templates`),
       status: activeRulesCount > 0 ? 'online' : 'standby',
       color: '#26D096',
       rel: activeRulesCount > 0 ? 'verified' : 'inferred'
@@ -6257,6 +6274,6 @@ document.addEventListener('keydown', e => {
 });
 
 initCollapsibleSidebar();
-initCortexStartupSequence();
-initCortex3DExplorer();
+
+
 renderCortexTopology();

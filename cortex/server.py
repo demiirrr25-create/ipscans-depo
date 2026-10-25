@@ -1,4 +1,4 @@
-"""IPScans Cortex 2.4.0 — Multi-technology local camera intelligence, smart tracking, forensics, 2-way Telegram bot & 3-tier admin control center."""
+"""IPScans Cortex 2.5.0 — Multi-technology local camera intelligence, smart tracking, forensics, 2-way Telegram bot & 3-tier admin control center."""
 import base64, collections, concurrent.futures, copy, http.server, json, os, pathlib, secrets
 import shutil, socket, subprocess, sys, threading, time, urllib.parse, urllib.request, uuid, webbrowser
 import xml.etree.ElementTree as ET
@@ -15,7 +15,7 @@ import forensics
 from models import Installer, Health, VISION_TEMPLATES, RECOMMENDED_MODELS
 from stream import Stream
 
-VERSION = "2.4.0"
+VERSION = "2.5.0"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()
@@ -42,7 +42,7 @@ STATE = {
     'model': 'gemma3:4b',
     'retention': 7,
     'webhook': '',
-    'autostart': False,
+    'autostart': True,
 }
 _LAST_CONFIG_MTIME = 0.0
 _LAST_CONFIG_TOKEN = b''
@@ -826,7 +826,9 @@ class Camera:
         self.pro_trackers = {}
         self.active_points = []
         self.stream=None; self.received=0; self.observed_at=0; self.inference_ms=None; self.ai_cursor=0; self.ai_next=0; self.sequence=0
+        self.sample_at=0
         self.thread = threading.Thread(target=self.loop, daemon=True); self.thread.start()
+        self.analysis_thread=threading.Thread(target=self.analysis_loop,daemon=True);self.analysis_thread.start()
     def loop(self):
         try:
             while not self.stop.is_set():
@@ -838,26 +840,34 @@ class Camera:
                         self.sequence=sequence;self.received=received;self.observed_at=time.time()
                         masks=self.c.get('privacyMasks')
                         if masks: frame=intelligence.apply_privacy_masks(frame,masks)
-                        self.frame=frame;self.frames.append(frame);self.status='Bağlı'
-                        self.check_lights();self.check_local();self.check_access();self.check_pro()
-                        if hasattr(self,'heatmap') and self.heatmap:
-                            self.heatmap.update(self.frame, getattr(self,'active_points',None))
-                        if len(self.frames)>=3 and time.monotonic()>=self.ai_next and (self.future is None or self.future.done()):
-                            with LOCK:has_ai=any(r['camera']==self.c['id'] and r['enabled'] and r.get('kind','vision')=='vision' and local_rules.scheduled(r) for r in STATE['rules'])
-                            if has_ai and AI_SLOTS.acquire(blocking=False):
-                                self.future=POOL.submit(self.evaluate)
-                            elif has_ai:self.analysis='AI meşgul; güncel kareler korunuyor, eski analiz kuyruğa alınmıyor'
+                        self.frame=frame;self.status='Bağlı'
+                        if time.monotonic() >= self.sample_at:
+                            self.frames.append(frame);self.sample_at=time.monotonic()+.5
                     elif time.monotonic()-self.received>(5 if self.sequence else 15) or self.stream.process.poll() is not None:
                         raise InputError('Yayın kesildi; yeniden bağlanılıyor')
                 except Exception:
                     self.frame=None;self.frames.clear();self.light_detectors.clear();self.status='Yayın kesildi; yeniden bağlanılıyor'
                     if self.stream:self.stream.close();self.stream=None
-                    try:self.check_local()
-                    except Exception:self.analysis='Yerel olay işlenemedi; diski kontrol edin'
                     self.stop.wait(1)
-                self.stop.wait(.1)
+                self.stop.wait(.025)
         finally:
             if self.stream:self.stream.close()
+
+    def analysis_loop(self):
+        while not self.stop.wait(.5):
+            try:
+                if self.frame is None:
+                    self.check_local()
+                    continue
+                self.check_lights();self.check_local();self.check_access();self.check_pro()
+                if self.heatmap:self.heatmap.update(self.frame,self.active_points)
+                if len(self.frames)>=3 and time.monotonic()>=self.ai_next and (self.future is None or self.future.done()):
+                    with LOCK:has_ai=any(r['camera']==self.c['id'] and r['enabled'] and r.get('kind','vision')=='vision' and local_rules.scheduled(r) for r in STATE['rules'])
+                    if has_ai and AI_SLOTS.acquire(blocking=False):
+                        self.future=POOL.submit(self.evaluate)
+                    elif has_ai:self.analysis='Analiz sırası bekleniyor'
+            except Exception:
+                self.analysis='Analiz yeniden deneniyor; canlı yayın devam ediyor'
 
     def check_lights(self):
         self.brightness = round(brightness(self.frame), 1)
@@ -1044,6 +1054,18 @@ class Camera:
                 with LOCK: save()
             finally: EVIDENCE_SLOTS.release()
 
+def background_workspace_authorized():
+    """Resume only the saved licensed tenant, without creating a browser session."""
+    license_info = STATE.get('license', {})
+    tenant = get_active_tenant_id()
+    if not license_info.get('valid') or license_info.get('status') == 'suspended':
+        return False
+    if license_info.get('customerId') != tenant:
+        return False
+    return any(c.get('id') == tenant and c.get('status', 'active') == 'active'
+               for c in STATE.get('customers', []) if isinstance(c, dict))
+
+
 def deliver_notifications():
     with LOCK:
         if STATE.get('safeMode'): return
@@ -1069,7 +1091,7 @@ def deliver_notifications():
             and e.get('telegramAttempts',0)<2
             and now_ts - float(e.get('time',0)) <= 90
             and (e.get('recording')!='pending' or now_ts - float(e.get('time',0)) > 15)
-        ][:5] if ACTIVE_USER.get('authenticated') and tg.get('enabled') and tg_token and (tg_chat or phones_list) else []
+        ][:5] if (ACTIVE_USER.get('authenticated') or background_workspace_authorized()) and tg.get('enabled') and tg_token and (tg_chat or phones_list) else []
     for event in pending:
         try:
             payload={k:event[k] for k in ('id','camera','rule','time','reason','confidence','kind') if k in event}
@@ -1461,6 +1483,7 @@ def public_state():
             'modelHealth':MODEL_HEALTH.status(STATE['model']),
             'visionTemplates':VISION_TEMPLATES,
             'autostart':STATE['autostart'],
+            'backgroundMode': True,
             'diskFreeGB':round(shutil.disk_usage(DATA).free/1024**3,1),
         }
 
@@ -1490,10 +1513,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             fwd={k:qs[k][0] for k in ('tab','theme','edit') if k in qs}
             loc='/?'+urllib.parse.urlencode(fwd) if fwd else '/'
             self.send_response(303); self.send_header('Set-Cookie',f'cortex={TOKEN}; HttpOnly; SameSite=Strict; Path=/'); self.send_header('Location',loc); self.end_headers(); return
-        assets={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/style.css':'style.css','/plans.js':'plans.js','/refinements.css':'refinements.css','/logo.svg':'logo.svg'}
+        assets={'/premium.css':'premium.css','/':'index.html','/index.html':'index.html','/app.js':'app.js','/style.css':'style.css','/plans.js':'plans.js','/refinements.css':'refinements.css','/logo.svg':'logo.svg'}
         if path in assets:
             extra_hdr={'Set-Cookie':f'cortex={TOKEN}; HttpOnly; SameSite=Strict; Path=/'} if path in ('/','/index.html') else None
-            return self.send(200,(ROOT/'ui'/assets[path]).read_bytes(), {'/':'text/html; charset=utf-8','/index.html':'text/html; charset=utf-8','/app.js':'text/javascript; charset=utf-8','/style.css':'text/css; charset=utf-8','/plans.js':'text/javascript; charset=utf-8','/refinements.css':'text/css; charset=utf-8','/logo.svg':'image/svg+xml'}[path], headers=extra_hdr)
+            return self.send(200,(ROOT/'ui'/assets[path]).read_bytes(), {'/premium.css':'text/css; charset=utf-8','/':'text/html; charset=utf-8','/index.html':'text/html; charset=utf-8','/app.js':'text/javascript; charset=utf-8','/style.css':'text/css; charset=utf-8','/plans.js':'text/javascript; charset=utf-8','/refinements.css':'text/css; charset=utf-8','/logo.svg':'image/svg+xml'}[path], headers=extra_hdr)
         if not self.auth(): return self.send(401,{'error':'Uygulamayı EXE üzerinden açın.'})
         if path=='/api/state': return self.send(200,public_state())
         if path.startswith('/api/frame/'):
@@ -1532,8 +1555,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if len(parts)!=5 or not any(e['id']==parts[3] for e in STATE['events']) or parts[4] not in ('clip.mp4','before.mp4','00.jpg'): return self.send(404,{})
             file=DATA/'events'/parts[3]/parts[4]
             return self.send(200,file.read_bytes(),'video/mp4' if file.suffix=='.mp4' else 'image/jpeg') if file.exists() else self.send(404,{})
-        assets={'/':'index.html','/app.js':'app.js','/style.css':'style.css','/plans.js':'plans.js','/refinements.css':'refinements.css','/logo.svg':'logo.svg'}
-        if path in assets: return self.send(200,(ROOT/'ui'/assets[path]).read_bytes(), {'/':'text/html; charset=utf-8','/app.js':'text/javascript; charset=utf-8','/style.css':'text/css; charset=utf-8','/plans.js':'text/javascript; charset=utf-8','/refinements.css':'text/css; charset=utf-8','/logo.svg':'image/svg+xml'}[path])
+        assets={'/premium.css':'premium.css','/':'index.html','/app.js':'app.js','/style.css':'style.css','/plans.js':'plans.js','/refinements.css':'refinements.css','/logo.svg':'logo.svg'}
+        if path in assets: return self.send(200,(ROOT/'ui'/assets[path]).read_bytes(), {'/premium.css':'text/css; charset=utf-8','/':'text/html; charset=utf-8','/app.js':'text/javascript; charset=utf-8','/style.css':'text/css; charset=utf-8','/plans.js':'text/javascript; charset=utf-8','/refinements.css':'text/css; charset=utf-8','/logo.svg':'image/svg+xml'}[path])
         self.send(404,{})
     def do_POST(self):
         if not self.allowed() or self.headers.get('Origin') not in (f'http://127.0.0.1:{PORT}',f'http://localhost:{PORT}'): return self.send(403,{'error':'Oturum veya kaynak geçersiz'})
@@ -2408,11 +2431,20 @@ def main():
         threading.Thread(target=clock_loop,args=(maintenance_stop,),daemon=True).start()
     if '--no-integrations' not in sys.argv:
         threading.Thread(target=telegram_bot_loop,args=(maintenance_stop,),daemon=True).start()
-    if '--no-integrations' not in sys.argv and '--no-browser' not in sys.argv and STATE['model']=='gemma3:4b': INSTALLER.start()
-    if STATE.get('autostart') and '--no-integrations' not in sys.argv:
+    if '--no-integrations' not in sys.argv:
+        if '--no-browser' not in sys.argv and STATE['model']=='gemma3:4b': INSTALLER.start()
+        else:
+            def resume_runtime():
+                try:
+                    from runtime_setup import ensure_runtime
+                    ensure_runtime(lambda **kw: None, lambda: None, allow_download=False)
+                except Exception:
+                    pass  # Readiness probe reports an unavailable engine without stopping local rules.
+            threading.Thread(target=resume_runtime,daemon=True).start()
+    if (STATE.get('autostart') or '--resume' in sys.argv) and '--no-integrations' not in sys.argv:
         for c in STATE['cameras']: WORKERS[c['id']]=Camera(c)
     if '--no-browser' not in sys.argv: webbrowser.open(f'http://127.0.0.1:{PORT}/bootstrap?token={TOKEN}')
-    print(f'IPScans Cortex — http://127.0.0.1:{PORT} — close this window to stop. Camera analysis starts manually.')
+    print(f'IPScans Cortex — http://127.0.0.1:{PORT} — background monitoring is independent of browser windows.')
     try: server.serve_forever()
     except KeyboardInterrupt: pass
     finally:

@@ -23,7 +23,7 @@ class JPEGParser:
 class Stream:
     def __init__(self, executable, url, transport='tcp', source_args=None):
         args=source_args or ['-rtsp_transport',transport,'-timeout','5000000','-fflags','nobuffer','-i',url]
-        self.process=subprocess.Popen([executable,'-hide_banner','-loglevel','error','-nostdin',*args,'-an','-vf','fps=2,scale=640:-2','-f','image2pipe','-vcodec','mjpeg','-q:v','5','pipe:1'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,creationflags=0x08000000 if os.name=='nt' else 0)
+        self.process=subprocess.Popen([executable,'-hide_banner','-loglevel','error','-nostdin',*args,'-an','-vf','fps=8,scale=960:-2','-f','image2pipe','-vcodec','mjpeg','-q:v','5','pipe:1'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,creationflags=0x08000000 if os.name=='nt' else 0)
         self.lock=threading.Lock(); self.latest=None; self.sequence=0; self.received=0; self.closed=threading.Event()
         self.thread=threading.Thread(target=self.read,daemon=True);self.thread.start()
     def read(self):

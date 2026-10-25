@@ -1,4 +1,4 @@
-/* IPScans Cortex 2.4.0 — Bağımsız Geliştirici & Müşteri Yönetim Merkezi (Port 8766) */
+/* IPScans Cortex 2.5.0 — Bağımsız Geliştirici & Müşteri Yönetim Merkezi (Port 8766) */
 (() => {
   'use strict';
 
@@ -209,12 +209,16 @@
     if (!el) return;
     adminSound.trigger(isError ? 'error' : 'success');
     el.textContent = msg;
+    const close = document.createElement('button'); close.className = 'toast-dismiss';
+    close.textContent = '×'; close.setAttribute('aria-label','Bildirimi kapat');
+    close.onclick = () => {el.hidden=true;clearTimeout(showToast._timer);};el.appendChild(close);
+    el.setAttribute('role',isError ? 'alert' : 'status');
     el.className = 'toast ' + (isError ? 'toast-error' : 'toast-ok');
     el.hidden = false;
     clearTimeout(showToast._timer);
-    showToast._timer = setTimeout(() => {
+    if (!isError) showToast._timer = setTimeout(() => {
       el.hidden = true;
-    }, 4200);
+    }, 6000);
   }
 
   async function copyText(text, label = 'Panoya kopyalandı') {
@@ -1444,7 +1448,7 @@
     if ($('#inspectorOrgName')) $('#inspectorOrgName').textContent = cust.organization || 'Kurumsal Müşteri';
     if ($('#inspectorUsername')) $('#inspectorUsername').textContent = `@${cust.username || 'musteri'}`;
     if ($('#inspectorLastSeen')) $('#inspectorLastSeen').textContent = formatTimestamp(cust.lastSeen || cust.lastHeartbeat);
-    if ($('#inspectorVersion')) $('#inspectorVersion').textContent = `v${cust.version || '2.4.0'}`;
+    if ($('#inspectorVersion')) $('#inspectorVersion').textContent = `v${cust.version || '2.5.0'}`;
     if ($('#inspectorContact')) $('#inspectorContact').textContent = cust.contact || 'Belirtilmedi';
     if ($('#inspectorPasswordHint')) $('#inspectorPasswordHint').textContent = cust.passwordHint || 'Cortex2026!';
     if ($('#inspectorHealthNote')) $('#inspectorHealthNote').textContent = cust.healthNote || cust.health || 'Lisans ve kullanıcı hesabı aktif';
@@ -2613,8 +2617,8 @@
     initSidebar();
     adminSound.syncBtn();
     initAdminBentoSpotlight();
-    signalFieldCtrl = initSignalField();
-    infra3DCtrl = initAdminInfra3D();
+    signalFieldCtrl = null;
+    infra3DCtrl = null;
     bindEvents();
     resetStudioForm();
     if (adminToken) {

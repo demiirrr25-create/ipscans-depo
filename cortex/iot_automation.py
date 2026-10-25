@@ -1,4 +1,4 @@
-"""Cortex 2.0 Pro — Two-Way Interactive Telegram Bot Engine & HMAC-SHA256 Signed Enterprise Webhooks."""
+"""Cortex — Two-Way Interactive Telegram Bot Engine & HMAC-SHA256 Signed Enterprise Webhooks."""
 import datetime as dt
 import hashlib
 import hmac
@@ -13,7 +13,7 @@ import urllib.request
 
 OFFICIAL_BOT_TOKEN = '8687571370:AAFd1PLVs0F8gCeiK7s05Jr1RdA4P4YnoRs'
 OFFICIAL_BOT_USERNAME = 'intelligentcortexbot'
-OFFICIAL_BOT_NAME = 'IPScans Cortex AI | Kamera & Güvenlik'
+OFFICIAL_BOT_NAME = 'Cortex | Kamera ve Güvenlik'
 OFFICIAL_BOT_LINK = 'https://t.me/intelligentcortexbot'
 DEFAULT_ADMIN_CHAT_ID = '8972256505'
 DEFAULT_ADMIN_PHONE = '905415130525'
@@ -107,13 +107,18 @@ def _tg_api(bot_token, method, payload=None, timeout=8):
 
 DEFAULT_BOT_REPLY_MARKUP = {
     'keyboard': [
-        [{'text': '📱 Telefon Numaramı Doğrula & Eşleştir', 'request_contact': True}],
-        [{'text': '/durum'}, {'text': '/kameralar'}, {'text': '/anlik'}],
-        [{'text': '/olaylar'}, {'text': '/koru'}, {'text': '/sustur'}],
+        [{'text': 'Durum'}, {'text': 'Kameralar'}],
+        [{'text': 'Anlık görüntü'}, {'text': 'Son olaylar'}],
+        [{'text': 'Korumayı aç'}, {'text': 'Bildirimleri sustur'}],
+        [{'text': 'Telefon Numaramı Doğrula & Eşleştir', 'request_contact': True}, {'text': 'Yardım'}],
     ],
     'resize_keyboard': True,
     'is_persistent': True,
+    'input_field_placeholder': 'Bir işlem seçin veya komut yazın',
 }
+COMMAND_LABELS = {'durum':'/durum', 'kameralar':'/kameralar', 'anlık görüntü':'/anlik',
+                  'son olaylar':'/olaylar', 'korumayı aç':'/koru',
+                  'bildirimleri sustur':'/sustur', 'yardım':'/yardim'}
 
 
 def verify_telegram_bot(bot_token=None):
@@ -306,7 +311,7 @@ def bind_telegram_phone(
     if send_welcome and matched_chat_id:
         try:
             welcome_text = (
-                f"🚀 IPScans Cortex 2.0 Pro — Gömülü Bot Otomatik Başlatıldı!\n\n"
+                f"🚀 Cortex · Bağlantınız hazır\n\n"
                 f"📱 Tanımlanan Numara: {phone_display}\n"
                 f"🟢 Durum: Aktif · Anlık Alarm & Kanıt Akışı Devrede\n"
                 f"📦 Paket: {plan_name} ({cameras_count} Kamera · {active_rules} Aktif Kural)\n"
@@ -427,7 +432,7 @@ def send_telegram_alert(bot_token, chat_id, event, frame_bytes=None, video_bytes
         if has_photo:
             photo_caption = (
                 f"📸 [OLAY ÖNCESİ KARE]\n"
-                f"🚨 IPScans Cortex Alarmı\n"
+                f"Cortex · Yeni olay\n"
                 f"{phone_line}"
                 f"📹 Kamera: {event.get('camera', '-')}\n"
                 f"⚡ Kural: {event.get('rule', '-')}\n"
@@ -463,7 +468,7 @@ def send_telegram_alert(bot_token, chat_id, event, frame_bytes=None, video_bytes
         if has_video:
             video_caption = (
                 f"🎬 [GERÇEKLEŞEN OLAY VİDEOSU]\n"
-                f"🚨 IPScans Cortex Kanıt Klipi\n"
+                f"Cortex · Olay kaydı\n"
                 f"{phone_line}"
                 f"📹 Kamera: {event.get('camera', '-')}\n"
                 f"⚡ Kural: {event.get('rule', '-')}"
@@ -472,7 +477,7 @@ def send_telegram_alert(bot_token, chat_id, event, frame_bytes=None, video_bytes
 
         if not has_photo and not has_video:
             text_caption = (
-                f"🚨 IPScans Cortex Alarmı\n"
+                f"Cortex · Yeni olay\n"
                 f"{phone_line}"
                 f"📹 Kamera: {event.get('camera', '-')}\n"
                 f"⚡ Kural: {event.get('rule', '-')}\n"
@@ -494,6 +499,7 @@ def process_bot_command(text, state_snapshot, chat_id='YEREL-SIMULATOR', action_
     raw = str(text or '').strip()
     if not raw:
         raw = '/yardim'
+    raw = COMMAND_LABELS.get(raw.casefold(), raw)
     parts = raw.split(maxsplit=1)
     cmd = parts[0].lower().split('@')[0]
     arg = parts[1].strip() if len(parts) > 1 else ''
@@ -517,7 +523,7 @@ def process_bot_command(text, state_snapshot, chat_id='YEREL-SIMULATOR', action_
         return {
             'command': '/start',
             'reply': (
-                f"🛡️ IPScans Cortex 2.0 Pro Komuta Botu Aktif!\n\n"
+                f"🛡️ Cortex · Kontrol merkezi\nipscans.com projesi\n\n"
                 f"📱 Bağlı Numara: {phone_str}\n"
                 f"🔑 Sohbet Kimliğiniz (Chat ID): {chat_id}\n"
                 f"📦 Aktif Paket: {plan_name}\n"
@@ -540,7 +546,7 @@ def process_bot_command(text, state_snapshot, chat_id='YEREL-SIMULATOR', action_
         return {
             'command': '/durum',
             'reply': (
-                f"📊 IPScans Cortex 2.0 Pro Sistem Durumu\n"
+                f"📊 Cortex · Sistem durumu\n"
                 f"────────────────────\n"
                 f"📦 Lisans Paketi: {plan_name} ({lic.get('plan', 'ULTRA')})\n"
                 f"📹 Kamera Kapasitesi: {len(cameras)} / {lic.get('maxCameras', 32)}\n"
@@ -677,7 +683,7 @@ def poll_telegram_updates(bot_token, authorized_chat_id, last_update_id, state_s
                             'rule': 'Telefon Numaranız Doğrulandı ✓',
                             'reason': (
                                 f"✅ Telefon numaranız ({format_phone_display(c_phone)}) başarıyla doğrulandı ve "
-                                f"Cortex 2.0 Pro ana bildirim hattı olarak kaydedildi!\n\n"
+                                f"Cortex ana bildirim hattı olarak kaydedildi!\n\n"
                                 f"👤 Operatör: {sender_title}\n"
                                 f"👇 Aşağıdaki butonlarla kameralarınızı ve sistem durumunu hemen kontrol edebilirsiniz:"
                             ),
@@ -703,7 +709,7 @@ def poll_telegram_updates(bot_token, authorized_chat_id, last_update_id, state_s
                             'camera': 'Cortex Numara Eşleştirme',
                             'rule': 'Telefon Numaranız Kaydedildi ✓',
                             'reason': (
-                                f"✅ Girdiğiniz telefon numarası ({format_phone_display(typed_phone)}) Cortex 2.0 Pro "
+                                f"✅ Girdiğiniz telefon numarası ({format_phone_display(typed_phone)}) Cortex "
                                 f"bildirim hattı olarak eşleştirildi!\n\n"
                                 f"👤 Operatör: {sender_title}"
                             ),

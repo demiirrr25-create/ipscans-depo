@@ -50,7 +50,7 @@ LICENSE_PLANS = {
         'maxTelegramPhones': 5,
         'maxRetentionDays': 15,
         'allowAllCameraDeploy': True,
-        'allowedPacks': ['site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus'],
+        'allowedPacks': ['site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus', 'hotel', 'home'],
         'features': [
             'local_rules',
             'access_rules',
@@ -74,7 +74,7 @@ LICENSE_PLANS = {
         'maxTelegramPhones': 10,
         'maxRetentionDays': 30,
         'allowAllCameraDeploy': True,
-        'allowedPacks': ['site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus', 'clinic'],
+        'allowedPacks': ['site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus', 'clinic', 'hotel', 'home'],
         'features': [
             'local_rules',
             'access_rules',

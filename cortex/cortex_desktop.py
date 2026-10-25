@@ -27,7 +27,7 @@ from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
 from PySide6.QtQuickControls2 import QQuickStyle
 
 import server
-from cortex_3d_geometry import register_3d_geometry_types
+
 from cortex_bridge import (
     CortexBackendBridge,
     CortexEventImageProvider,
@@ -116,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     app = QGuiApplication(sys.argv)
     app.setApplicationName("IPScans Cortex")
     app.setOrganizationName("IPScans")
-    app.setApplicationVersion("2.4.0")
+    app.setApplicationVersion("2.5.0")
 
     icon_path = resolve_resource_path("ui/favicon.ico")
     if icon_path.exists():
@@ -134,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     ensure_backend_services_running()
 
     # Register procedural 3D geometry types (Cortex3DPrimitives 1.0)
-    register_3d_geometry_types()
+
 
     # Create Backend Bridge & QQuickImageProviders
     bridge = CortexBackendBridge()
@@ -206,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
         QTimer.singleShot(900, _step_1_capture_light)
     else:
         # Interactive Launch: Play the 3D Cinematic Startup Sequence on startup
-        if not args.no_splash:
+        if False:
             QTimer.singleShot(120, lambda: root_win.setStartupPreview(True, 0.02))
 
     return app.exec()
