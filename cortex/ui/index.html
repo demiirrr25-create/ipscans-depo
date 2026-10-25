@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex 2.3.0 · Kurumsal Kamera Zekâsı, Görsel AI &amp; Komuta Merkezi</title>
+  <title>IPScans Cortex 2.4.0 · Kurumsal Kamera Zekâsı, Görsel AI &amp; 3D Komuta Merkezi</title>
   <link rel="icon" href="logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,9 +13,10 @@
       try {
         var qsTheme = new URLSearchParams(window.location.search).get("theme");
         var saved = localStorage.getItem("ipscans-theme");
+        var sysDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
         var theme = (qsTheme === "light" || qsTheme === "dark")
           ? qsTheme
-          : ((saved === "light" || saved === "dark") ? saved : "light");
+          : ((saved === "light" || saved === "dark") ? saved : (sysDark ? "dark" : "light"));
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
       } catch (e) {
@@ -23,8 +24,8 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=2.3.0">
-  <link rel="stylesheet" href="refinements.css?v=2.3.0">
+  <link rel="stylesheet" href="style.css?v=2.4.0">
+  <link rel="stylesheet" href="refinements.css?v=2.4.0">
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true" focusable="false">
@@ -40,21 +41,57 @@
       </filter>
     </defs>
   </svg>
-  <div id="cortexLoginGate" class="cortex-login-gate">
-    <div class="login-stage">
-      <canvas id="loginSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
-      <div class="login-stage-top">
-        <div class="login-stage-brand">
-          <img src="logo.svg" alt="IPScans Cortex" width="34" height="34">
-          <span>IPScans Cortex</span>
-        </div>
+
+  <!-- Cinematic 7-Step 3D Startup Sequence (Windows 11 / IPScans Flagship Experience) -->
+  <div id="cortexStartupStage" class="cortex-startup-stage" role="dialog" aria-modal="true" aria-label="IPScans Cortex 3D Sinematik Açılış Sahnesi" hidden>
+    <canvas id="cortexStartupCanvas" class="cortex-startup-canvas" aria-hidden="true"></canvas>
+    <div class="startup-hud-top">
+      <div class="startup-brand-pill">
+        <img src="logo.svg" alt="" width="24" height="24">
+        <span class="mono">IPSCANS CORTEX · 3D CORE v2.4</span>
       </div>
-      <div class="login-stage-center">
-        <h2 class="login-stage-headline" data-i18n-html="login.headline">Gören kameralar.<br><em>Anlayan sistem.</em></h2>
+      <div class="startup-top-actions">
+        <span id="startupStepBadge" class="startup-step-badge mono">ADIM 01 / 07 · SİYAH SAHNE</span>
+        <button type="button" id="skipStartupBtn" class="startup-skip-btn mono" title="Açılış animasyonunu atla (ESC)">Atla · ESC</button>
       </div>
-      <div class="login-stage-foot" hidden></div>
     </div>
-    <div class="login-panel">
+
+    <div class="startup-hud-center" id="startupBrandReveal">
+      <span class="startup-eyebrow mono" id="startupEyebrow">IPSCANS ECOSYSTEM · GÖRSEL ZEKÂ VE AĞ KOMUTA MERKEZİ</span>
+      <h1 class="startup-title" id="startupTitle">CORTEX</h1>
+      <p class="startup-subtitle" id="startupStepText">Merkezi 3D çekirdek ve yerel ağ düğümleri başlatılıyor…</p>
+      <div class="startup-progress-track" aria-hidden="true">
+        <div id="startupProgressBar" class="startup-progress-fill" style="width:14%"></div>
+      </div>
+      <div class="startup-steps-strip mono" id="startupStepsStrip" aria-hidden="true">
+        <span class="startup-step-dot is-active" data-step-dot="1">01 Siyah Sahne</span>
+        <span class="startup-step-dot" data-step-dot="2">02 3D Logo</span>
+        <span class="startup-step-dot" data-step-dot="3">03 3D Ağ Hatları</span>
+        <span class="startup-step-dot" data-step-dot="4">04 Derinlik</span>
+        <span class="startup-step-dot" data-step-dot="5">05 Düğüm Senkronu</span>
+        <span class="startup-step-dot" data-step-dot="6">06 Cortex Kimliği</span>
+        <span class="startup-step-dot" data-step-dot="7">07 Komuta Merkezi</span>
+      </div>
+    </div>
+
+    <div class="startup-hud-bottom">
+      <label class="startup-pref-toggle">
+        <input type="checkbox" id="disableStartupAnimCheck">
+        <span>Açılış animasyonunu sonraki başlatmalarda otomatik atla</span>
+      </label>
+      <span class="startup-bottom-meta mono">127.0.0.1 · 60 FPS GPU KONTROLLÜ · SIFIR BULUT YÜKLEMESİ</span>
+    </div>
+  </div>
+  <div id="cortexLoginGate" class="cortex-login-gate">
+    <canvas id="loginSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
+    <div class="login-scrim" aria-hidden="true"></div>
+
+    <div class="login-topbar">
+      <div class="login-stage-brand">
+        <img src="logo.svg" alt="IPScans Cortex" width="32" height="32">
+        <span>IPScans Cortex</span>
+        <span class="brand-badge">2.4 CORE</span>
+      </div>
       <div class="login-top-controls" aria-label="Dil ve tema seçimi">
         <div class="lang-switch" role="group" aria-label="Dil seçimi" data-i18n-aria="header.langAria" title="Dil Değiştir / Switch Language (Alt+L)">
           <svg class="lang-globe-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2a9.5 9.5 0 0 1 2.6 6A9.5 9.5 0 0 1 8 14a9.5 9.5 0 0 1-2.6-6A9.5 9.5 0 0 1 8 2z"/></svg>
@@ -70,77 +107,118 @@
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
+        <a href="http://127.0.0.1:8766" target="_blank" rel="noopener" class="login-admin-link" data-i18n="login.adminLink">Yönetim Merkezi ↗</a>
       </div>
-      <div class="cortex-login-card">
-        <div class="cortex-login-brand">
-          <img src="logo.svg" alt="IPScans Cortex 2.3.0" width="40" height="40">
-          <div>
-            <h1 data-i18n="login.title">Oturum açın</h1>
-          </div>
+    </div>
+
+    <div class="login-layout">
+      <div class="login-hero">
+        <span class="ds-eyebrow">
+          <span class="dot"></span>
+          <span data-i18n="login.badge">KURUMSAL LİSANS &amp; MERKEZİ ERİŞİM</span>
+        </span>
+        <h1 class="login-display login-stage-headline" data-i18n-html="login.title">Kameralarına bir <em>beyin</em> bağla.</h1>
+        <p class="login-lead" data-i18n="login.lead">Görüntüler bu bilgisayardan dışarı çıkmaz. Gerçek zamanlı yerel görsel AI, 8 sektörel saha paketi, NVR kamera duvarı ve @intelligentcortexbot iki yönlü Telegram komuta merkezi.</p>
+        <div class="login-chips">
+          <span class="login-chip" data-i18n-html="login.pillPrivacy"><strong>%100 Yerel Gizlilik</strong><span>Bulut yüklemesi yok</span></span>
+          <span class="login-chip" data-i18n-html="login.pillRules"><strong>73 Hazır Kural</strong><span>8 Sektörel Paket</span></span>
+          <span class="login-chip" data-i18n-html="login.pillTelegram"><strong>Telegram Bot</strong><span>MP4 Video + Kare</span></span>
         </div>
-        <form id="cortexLoginForm">
-          <label><span data-i18n="login.userLabel">Kullanıcı Adı</span>
-            <input id="cortexLoginUser" name="username" placeholder="Kullanıcı Adı" data-i18n-placeholder="login.userPlaceholder" required autocomplete="username">
-          </label>
-          <label><span data-i18n="login.passLabel">Parola</span>
-            <input id="cortexLoginPass" name="password" type="password" placeholder="Parola" data-i18n-placeholder="login.passPlaceholder" required autocomplete="current-password">
-          </label>
-          <p id="cortexLoginError" class="fine cortex-login-error" role="alert"></p>
-          <button type="submit" id="cortexLoginBtn" class="primary login-submit-btn" style="width:100%">
-            <span id="cortexLoginBtnLabel" data-i18n="login.submit">Giriş Yap</span>
-            <svg class="btn-arrow" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3.5 8h9M8.5 4l4 4-4 4"></path>
-            </svg>
-          </button>
-        </form>
-        <div class="cortex-login-footer">
-          <a href="http://127.0.0.1:8766" target="_blank" rel="noopener" class="login-admin-link" data-i18n="login.adminLink">Yönetim Merkezi ↗</a>
+      </div>
+
+      <div class="login-panel">
+        <div class="cortex-login-card">
+          <div class="cortex-login-brand">
+            <img src="logo.svg" alt="IPScans Cortex 2.4.0" width="40" height="40">
+            <div>
+              <span class="eyebrow" data-i18n="login.cardEyebrow">GÜVENLİ ERİŞİM KAPISI</span>
+              <h2 data-i18n="login.cardTitle">Müşteri Girişi</h2>
+            </div>
+          </div>
+          <p class="fine login-card-desc" data-i18n="login.cardDesc">Size tanımlanan kurumsal kullanıcı adı ve şifrenizle Cortex komuta merkezine giriş yapın.</p>
+          <form id="cortexLoginForm">
+            <label><span data-i18n="login.userLabel">KULLANICI ADI</span>
+              <input id="cortexLoginUser" name="username" placeholder="Kullanıcı adınız" data-i18n-placeholder="login.userPlaceholder" required autocomplete="username">
+            </label>
+            <label><span data-i18n="login.passLabel">ŞİFRE</span>
+              <input id="cortexLoginPass" name="password" type="password" placeholder="Şifreniz" data-i18n-placeholder="login.passPlaceholder" required autocomplete="current-password">
+            </label>
+            <p id="cortexLoginError" class="fine cortex-login-error" role="alert"></p>
+            <button type="submit" id="cortexLoginBtn" class="primary login-submit-btn" style="width:100%">
+              <span id="cortexLoginBtnLabel" data-i18n="login.submitBtn">Giriş Yap</span>
+              <svg class="btn-arrow" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3.5 8h9M8.5 4l4 4-4 4"></path>
+              </svg>
+            </button>
+          </form>
+          <div class="cortex-login-footer">
+            <p class="fine" style="margin:0" data-i18n="login.footNote">Kurumsal hesap tanımlama, şifre sıfırlama ve paket yükseltme işlemleri merkezi yönetim panelinden yapılır.</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <aside>
-    <a class="brand" href="#">
-      <img src="logo.svg" alt="" width="38" height="38">
-      <span>Cortex<small>by IPScans · 2.3.0</small></span>
-    </a>
+  <aside id="cortexSidebar">
+    <div class="aside-brand-row">
+      <a class="brand" href="#">
+        <img src="logo.svg" alt="" width="38" height="38">
+        <span class="brand-text">Cortex<small>by IPScans · 2.4.0</small></span>
+      </a>
+      <button type="button" id="sidebarCollapseBtn" class="sidebar-collapse-btn" aria-label="Kenar çubuğunu daralt veya genişlet" title="Kenar Çubuğunu Daralt / Genişlet (Ctrl+B)">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5L5.5 8 10 12.5"/></svg>
+      </button>
+    </div>
     <nav aria-label="Ana menü" data-i18n-aria="nav.ariaLabel">
-      <button type="button" data-tab="overview" class="active">
+      <button type="button" data-tab="overview" class="active" title="Genel bakış & 3D Komuta Merkezi">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
         </span>
-        <span data-i18n="nav.overview">Genel bakış</span>
+        <span class="nav-label" data-i18n="nav.overview">Genel bakış</span>
       </button>
-      <button type="button" data-tab="cameras">
+      <button type="button" data-tab="cameras" title="Kameralar & ONVIF Keşfi">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3.5" width="9.5" height="9" rx="1.5"/><path d="M11 6.5l3.5-2v7L11 9.5z"/></svg>
         </span>
-        <span data-i18n="nav.cameras">Kameralar</span>
+        <span class="nav-label" data-i18n="nav.cameras">Kameralar</span>
       </button>
-      <button type="button" data-tab="rules">
+      <button type="button" data-tab="rules" title="Olay Kuralları & ROI Stüdyosu">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5V3a1 1 0 0 1 1-1h2M11 2h2a1 1 0 0 1 1 1v2M14 11v2a1 1 0 0 1-1 1h-2M5 14H3a1 1 0 0 1-1-1v-2"/><rect x="5" y="5" width="6" height="6" rx="1"/></svg>
         </span>
-        <span data-i18n="nav.rules">Olay kuralları</span>
+        <span class="nav-label" data-i18n="nav.rules">Olay kuralları</span>
       </button>
-      <button type="button" data-tab="events">
+      <button type="button" data-tab="events" title="Olay Arşivi & Adli İnceleme">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>
         </span>
-        <span data-i18n="nav.events">Olay arşivi</span>
+        <span class="nav-label" data-i18n="nav.events">Olay arşivi</span>
       </button>
-      <button type="button" data-tab="settings">
+      <button type="button" data-tab="settings" title="Ayarlar, Lisans & Yerel AI">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="5" cy="4" r="1.5" fill="var(--bg)"/><circle cx="11" cy="8" r="1.5" fill="var(--bg)"/><circle cx="7" cy="12" r="1.5" fill="var(--bg)"/></svg>
         </span>
-        <span data-i18n="nav.settings">Ayarlar &amp; Lisans</span>
+        <span class="nav-label" data-i18n="nav.settings">Ayarlar &amp; Lisans</span>
       </button>
-      <button type="button" data-tab="plans"><span class="nav-glyph">◇</span><span data-i18n="nav.plans">Paketler</span></button>
+      <button type="button" data-tab="plans" title="Paketler & Kapasite">
+        <span class="nav-glyph" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8L14.2 8 8 14.2 1.8 8 8 1.8z"/><path d="M8 5.2L10.8 8 8 10.8 5.2 8 8 5.2z"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.plans">Paketler</span>
+      </button>
     </nav>
-    <div class="asidefoot" hidden>
-      <div class="aside-status" hidden><span class="dot"></span> <span data-i18n="aside.workspace">Yerel Motor Aktif</span></div>
-      <span id="version" data-version="2.3.0" hidden>2.3.0</span>
+    <div class="asidefoot">
+      <div class="aside-status" id="asideEngineStatus">
+        <span class="dot"></span>
+        <span class="aside-status-text" data-i18n="aside.workspace">3D Çekirdek &amp; Motor Aktif</span>
+      </div>
+      <div class="aside-foot-actions">
+        <button type="button" id="replayStartupBtn" class="aside-replay-btn mono" title="Sinematik 3D açılış deneyimini tekrar oynat">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 13 8 5 13 5 3"/></svg>
+          <span class="aside-replay-label">3D Açılış</span>
+        </button>
+        <span id="version" class="mono aside-version-pill" data-version="2.4.0">2.4.0</span>
+      </div>
     </div>
   </aside>
 
@@ -232,6 +310,60 @@
         <div class="stat"><span data-i18n="stats.events">İNCELEME BEKLEYEN</span><strong>00</strong></div>
       </div>
 
+      <!-- 4. CORTEX 3D CORE & INTERACTIVE 3D NETWORK / DEVICE EXPLORER -->
+      <section class="card cortex-3d-explorer-card" id="cortex3DExplorerSection" data-bento-card style="margin-bottom:24px" aria-label="3D Cortex Çekirdek ve Etkileşimli Ağ / Cihaz Görselleştirme Merkezi">
+        <div class="sectiontitle cortex-3d-explorer-head">
+          <div>
+            <span class="eyebrow" data-i18n="core3d.eyebrow">3D CORTEX CORE &amp; ETKİLEŞİMLİ AĞ / CİHAZ TOPOLOJİSİ</span>
+            <h2 style="margin-top:3px" data-i18n="core3d.title">Merkezi 3D Çekirdek, Kameralar, Cihazlar ve Canlı Veri Bağlantıları</h2>
+          </div>
+          <div class="cortex-3d-toolbar" role="toolbar" aria-label="3D ve 2D Topoloji Kontrolleri">
+            <div class="cortex-3d-view-switch" role="group" aria-label="Görünüm Modu">
+              <button type="button" id="viewMode3DBtn" class="nvr-grid-btn active" data-topo-view="3d" title="Etkileşimli 3D Çekirdek ve Ağ Görünümü">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5L14 5v6l-6 3.5L2 11V5l6-3.5z"/><path d="M2 5l6 3.5L14 5M8 8.5V15"/></svg>
+                <span data-i18n="core3d.mode3d">3D Çekirdek &amp; Ağ</span>
+              </button>
+              <button type="button" id="viewMode2DBtn" class="nvr-grid-btn" data-topo-view="2d" title="Sade 2D Topoloji Matrisi">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2" width="4" height="4" rx="1"/><rect x="10.5" y="2" width="4" height="4" rx="1"/><rect x="10.5" y="10" width="4" height="4" rx="1"/><path d="M5.5 4h5M7.5 4v8h3"/></svg>
+                <span data-i18n="core3d.mode2d">2D Topoloji</span>
+              </button>
+            </div>
+            <div class="cortex-3d-cam-controls" id="cortex3DCamControls" role="group" aria-label="3D Kamera Kontrolleri">
+              <button type="button" id="topoZoomInBtn" class="nvr-grid-btn" title="Yakınlaştır (+)" aria-label="Yakınlaştır">+</button>
+              <button type="button" id="topoZoomOutBtn" class="nvr-grid-btn" title="Uzaklaştır (−)" aria-label="Uzaklaştır">−</button>
+              <button type="button" id="topoAutoRotateBtn" class="nvr-grid-btn active" title="Yumuşak Yörünge Dönüşü Aç/Kapat" data-i18n="core3d.orbit">Yörünge</button>
+              <button type="button" id="topoResetViewBtn" class="nvr-grid-btn" title="3D Kamera Açısını ve Yakınlaştırmayı Sıfırla" data-i18n="core3d.reset">Sıfırla</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="cortex3DViewportWrap" class="cortex-3d-viewport-wrap">
+          <canvas id="cortex3DCoreCanvas" class="cortex-3d-core-canvas" aria-label="Etkileşimli 3D Cortex Core ve Ağ Düğümleri"></canvas>
+
+          <div class="cortex-3d-hud-top">
+            <span id="core3DStatusPill" class="cortex-3d-pill is-ok mono">
+              <span class="dot"></span>
+              <span id="core3DStatusText">CORTEX CORE · AKTİF</span>
+            </span>
+            <span id="core3DNodeCountPill" class="cortex-3d-pill mono">DÜĞÜMLER: 0</span>
+            <span id="core3DHintPill" class="cortex-3d-pill mono">Sürükle: Döndür · Tekerlek: Yakınlaştır · Düğüme Tıkla: Detay Paneli</span>
+          </div>
+
+          <div class="cortex-3d-hud-bottom">
+            <div class="cortex-3d-legend" aria-label="Bağlantı Türleri">
+              <span class="legend-item"><i class="legend-line is-verified"></i> <span data-i18n="core3d.legVerified">Doğrulanmış Bağlantı (Aktif RTSP/ONVIF)</span></span>
+              <span class="legend-item"><i class="legend-line is-inferred"></i> <span data-i18n="core3d.legInferred">Tahmini / Alt Akış İlişkisi</span></span>
+              <span class="legend-item"><i class="legend-line is-unknown"></i> <span data-i18n="core3d.legUnknown">Bekleyen / Çevrimdışı İlişki</span></span>
+            </div>
+            <div id="cortex3DNodePills" class="cortex-3d-node-pills" role="toolbar" aria-label="Ağ Düğümleri Hızlı Seçim"></div>
+          </div>
+        </div>
+
+        <div id="cortex2DTopologyWrap" class="cortex-2d-topology-wrap" hidden>
+          <div id="cortex2DTopologyGrid" class="cortex-2d-topology-grid"></div>
+        </div>
+      </section>
+
       <section class="nvr-recorder-console" style="margin-bottom:24px">
         <div class="nvr-console-head" hidden></div>
         <div class="nvr-deck-bar">
@@ -292,7 +424,7 @@
       <section class="card pipeline-schematic-card" id="livePipelineSchematicCard" data-bento-card style="margin-bottom:24px">
         <div class="sectiontitle pipeline-card-head" style="margin-bottom:10px">
           <div>
-            <span class="eyebrow" data-i18n="pipeline.eyebrow">HİBRİT GÖRSEL ZEKÂ · CANLI VERİ YOLU MİMARİSİ (v2.3)</span>
+            <span class="eyebrow" data-i18n="pipeline.eyebrow">HİBRİT GÖRSEL ZEKÂ · CANLI VERİ YOLU MİMARİSİ (v2.4)</span>
             <h2 style="margin-top:3px" data-i18n="pipeline.title">RTSP Akışından SHA-256 Adli Kanıt Kasasına Canlı İşleme Hattı</h2>
           </div>
           <div class="actions" style="margin:0;gap:6px">
@@ -301,8 +433,8 @@
           </div>
         </div>
         <div class="pipeline-svg-wrap">
-          <svg id="livePipelineSvg" class="pipeline-schematic-svg" viewBox="0 0 980 176" role="img" aria-label="IPScans Cortex v2.3 Canlı Görsel Zekâ ve Adli Kanıt Akış Şeması">
-            <title>IPScans Cortex v2.3 Hibrit İşleme Hattı</title>
+          <svg id="livePipelineSvg" class="pipeline-schematic-svg" viewBox="0 0 980 176" role="img" aria-label="IPScans Cortex v2.4 Canlı Görsel Zekâ ve Adli Kanıt Akış Şeması">
+            <title>IPScans Cortex v2.4 Hibrit İşleme Hattı</title>
             <desc>RTSP Kamera Akışı, 3-Katmanlı Yerel ve Pro Takip Motoru, Ollama Görsel AI Modeli ve SHA-256 Adli Kanıt Kasası ile Telegram Bot bağlantısını gösteren etkileşimli teknik diyagram.</desc>
             <defs>
               <pattern id="pipeSubGrid" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -697,7 +829,7 @@
     <section id="events" class="view" hidden>
       <div class="sectiontitle">
         <div>
-          <span class="eyebrow" data-i18n="events.eyebrow">03 / BİLDİR &amp; SORGULA</span>
+          <span class="eyebrow" data-i18n="events.eyebrow">ADLİ OLAY ARŞİVİ · BİLDİR &amp; SORGULA</span>
           <h1 data-i18n="events.title">Olay arşivi.</h1>
           <p data-i18n="events.subtitle" hidden></p>
         </div>
@@ -1096,7 +1228,7 @@
                     </div>
                   </div>
                   <div class="tg-sim-head-actions">
-                    <span class="tag ok mono" id="tgSimPhotoBadge" hidden>📸 JPEG Kare Eklendi</span>
+                    <span class="tag ok mono" id="tgSimPhotoBadge" hidden>JPEG Kare Eklendi</span>
                     <button type="button" class="sector-mini-btn" id="tgSimRerunBtn" data-tg-rerun="/durum" title="Son komutu tekrar çalıştır" data-i18n="tg.simRerun">↻ Tekrar Çalıştır</button>
                     <button type="button" class="sector-mini-btn" id="tgSimCopyBtn" title="Bot yanıtını kopyala" data-i18n="tg.simCopy">Kopyala</button>
                   </div>
@@ -1274,7 +1406,7 @@
     <div id="matrixWallModal" class="wall-modal" hidden>
       <div class="wall-header nvr-deck-bar" style="margin-bottom:14px">
         <div class="nvr-status-group">
-          <strong style="color:#F5F7FA;font-size:14px" data-i18n="nvr.matrixTitle">IPScans Cortex · NVR Kamera Duvarı</strong>
+          <strong style="font-size:14px" data-i18n="nvr.matrixTitle">IPScans Cortex · NVR Kamera Duvarı</strong>
           <span id="matrixLiveClock" class="nvr-clock mono">24.10.2026 | 15:42:08</span>
         </div>
         <div class="nvr-grid-controls actions" style="margin:0">
@@ -1296,7 +1428,7 @@
       <div class="cmdk-backdrop" data-close-cmdk="1"></div>
       <div class="cmdk-dialog" id="cmdkDialogBox">
         <div id="cmdkBreadcrumbs" class="cmdk-breadcrumbs">
-          <span class="cmdk-crumb-pill active">Cortex v2.3</span>
+          <span class="cmdk-crumb-pill active">Cortex v2.4</span>
           <span class="cmdk-crumb-pill">Ana Komutlar</span>
         </div>
         <div class="cmdk-search-bar">
@@ -1314,17 +1446,36 @@
       </div>
     </div>
 
+    <!-- Right-Side Slide-Over Device & Camera Detail Inspector Drawer -->
+    <aside id="cortexInspectorDrawer" class="cortex-inspector-drawer" role="dialog" aria-modal="false" aria-labelledby="inspectorTitle" hidden>
+      <div class="inspector-backdrop" data-close-inspector="1"></div>
+      <div class="inspector-panel">
+        <header class="inspector-head">
+          <div class="inspector-head-meta">
+            <div class="inspector-badges">
+              <span id="inspectorKindBadge" class="tag mono">KAMERA DÜĞÜMÜ</span>
+              <span id="inspectorStatusBadge" class="tag ok mono">ÇEVRİMİÇİ</span>
+            </div>
+            <h2 id="inspectorTitle" class="inspector-title">Cihaz / Kamera Detayı</h2>
+            <span id="inspectorSubtitle" class="inspector-sub mono">RTSP/TCP · 127.0.0.1</span>
+          </div>
+          <button type="button" id="closeInspectorBtn" class="inspector-close-btn" data-close-inspector="1" aria-label="Detay panelini kapat" title="Kapat (ESC)">✕</button>
+        </header>
+        <div id="inspectorBody" class="inspector-body"></div>
+      </div>
+    </aside>
+
     <div id="chordIndicatorPill" class="chord-indicator-pill mono" aria-live="polite" hidden></div>
 
     <!-- Sonner-Inspired Stacked Toast Notification Center -->
     <ol id="cortexToaster" class="sonner-toaster" aria-live="polite"></ol>
 
     <footer>
-      <span>IPScans Cortex 2.3.0</span>
+      <span>IPScans Cortex 2.4.0</span>
       <span data-i18n="footer.tagline">Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.</span>
     </footer>
   </main>
-  <script src="plans.js?v=2.3.0"></script>
-  <script src="app.js?v=2.3.0"></script>
+  <script src="plans.js?v=2.4.0"></script>
+  <script src="app.js?v=2.4.0"></script>
 </body>
 </html>

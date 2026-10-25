@@ -93,19 +93,24 @@ function initSignalField() {
   const ctx = canvas.getContext('2d', { alpha: true });
   if (!ctx) return;
 
+  const STOPS_LIGHT = [
+    [47, 107, 255],  // #2F6BFF
+    [0, 184, 217],   // #00B8D9
+    [124, 92, 255],  // #7C5CFF
+  ];
   const STOPS_DARK = [
     [76, 130, 255],  // #4C82FF
     [0, 210, 255],   // #00D2FF
     [155, 132, 255], // #9B84FF
   ];
 
-  function gradientColor(t) {
+  function gradientColor(t, stops) {
     const x = ((t % 1) + 1) % 1;
-    const seg = x * STOPS_DARK.length;
+    const seg = x * stops.length;
     const i = Math.floor(seg);
     const f = seg - i;
-    const a = STOPS_DARK[i % STOPS_DARK.length];
-    const b = STOPS_DARK[(i + 1) % STOPS_DARK.length];
+    const a = stops[i % stops.length];
+    const b = stops[(i + 1) % stops.length];
     return [
       a[0] + (b[0] - a[0]) * f,
       a[1] + (b[1] - a[1]) * f,
@@ -114,8 +119,12 @@ function initSignalField() {
   }
 
   const BUCKET_COUNT = 16;
-  const PALETTE = Array.from({ length: BUCKET_COUNT }, (_, b) => {
-    const rgb = gradientColor(b / BUCKET_COUNT);
+  const PALETTE_LIGHT = Array.from({ length: BUCKET_COUNT }, (_, b) => {
+    const rgb = gradientColor(b / BUCKET_COUNT, STOPS_LIGHT);
+    return `rgba(${rgb[0] | 0},${rgb[1] | 0},${rgb[2] | 0},0.55)`;
+  });
+  const PALETTE_DARK = Array.from({ length: BUCKET_COUNT }, (_, b) => {
+    const rgb = gradientColor(b / BUCKET_COUNT, STOPS_DARK);
     return `rgba(${rgb[0] | 0},${rgb[1] | 0},${rgb[2] | 0},0.72)`;
   });
   const buckets = Array.from({ length: BUCKET_COUNT }, () => []);
@@ -236,11 +245,13 @@ function initSignalField() {
       buckets[colorIdx & 15].push(p);
     }
 
+    const isDark = document.documentElement.dataset.theme === 'dark';
+    const palette = isDark ? PALETTE_DARK : PALETTE_LIGHT;
     ctx.lineWidth = 1.6;
     for (let b = 0; b < BUCKET_COUNT; b++) {
       const bucket = buckets[b];
       if (!bucket.length) continue;
-      ctx.strokeStyle = PALETTE[b];
+      ctx.strokeStyle = palette[b];
       ctx.beginPath();
       for (let j = 0; j < bucket.length; j++) {
         const p = bucket[j];
@@ -362,6 +373,7 @@ function getPreferredTheme() {
     if (qsTheme === "light" || qsTheme === "dark") return qsTheme;
     const saved = localStorage.getItem("ipscans-theme");
     if (saved === "light" || saved === "dark") return saved;
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
   } catch (e) {}
   return "light";
 }
@@ -383,6 +395,7 @@ function applyTheme(theme, persist = false) {
     }
   }
   drawRoiCanvas();
+  syncSignalFieldRunning();
 }
 
 function initTheme() {
@@ -449,7 +462,7 @@ const I18N = {
     'overview.workspace': 'NVR Kamera Duvarı & Canlı Komuta Merkezi',
     'overview.liveStatus': 'Gerçek bağlantı durumu · Canlı termal ısı haritası, İki Yönlü Telegram Bot ve KVKK maskeleme destekli',
     'overview.hint': 'Başlamak için kamera ekle, olay kuralını tanımla veya 8 kurumsal saha paketinden birini tek tıkla uygula.',
-    'nvr.roiBtn': '📐 ROI Bölgeleri',
+    'nvr.roiBtn': 'ROI Bölgeleri',
     'nvr.roiBtnTitle': 'Kamera üzerinde tanımlı ROI ve geçiş hatlarını göster/gizle',
     'nvr.autoTour': 'Otomatik Tur',
     'nvr.fullscreen': 'Tam Ekran ↗',
@@ -495,10 +508,10 @@ const I18N = {
     'rules.catalogLabel': 'Konfigürasyon kütüphanesi (22 Yerel + 6 Pro Takip + 3 Geçiş + 42 Görsel AI)',
     'rules.catalogSearchPlaceholder': '73 hazır kural içinde ara (örn: baret, yangın, kuyruk, plaka, loitering)...',
     'rules.catAll': 'Tümü (73)',
-    'rules.catLocal': '⚡ Yerel (22)',
-    'rules.catPro': '🎯 Pro Takip (6)',
-    'rules.catAccess': '🚧 Geçiş (3)',
-    'rules.catVision': '🧠 Görsel AI (42)',
+    'rules.catLocal': 'Yerel (22)',
+    'rules.catPro': 'Pro Takip (6)',
+    'rules.catAccess': 'Geçiş (3)',
+    'rules.catVision': 'Görsel AI (42)',
     'rules.cameraLabel': 'Kamera',
     'rules.nameLabel': 'Kural adı',
     'rules.promptLabel': 'Ne olduğunda haber verelim?',
@@ -506,8 +519,8 @@ const I18N = {
     'rules.durationLabel': 'Doğrulama süresi (saniye)',
     'rules.roiSummary': 'Profesyonel Bölge (ROI) & Geçiş Hattı Çizim Stüdyosu',
     'rules.roiHint': 'Sahne üzerinde yeni bölge çizebilir, mevcut bölgeyi ortasından tutup taşıyabilir veya 8 tutamaçtan boyutlandırabilirsiniz.',
-    'rules.modeRoi': '📐 Bölge (ROI) Modu',
-    'rules.modeLine': '🚧 Geçiş Hattı (Tripwire) Modu',
+    'rules.modeRoi': 'Bölge (ROI) Modu',
+    'rules.modeLine': 'Geçiş Hattı (Tripwire) Modu',
     'rules.flipDir': '⇄ Yön Çevir',
     'rules.refreshSnap': '↻ Kare Yenile',
     'rules.presetFull': 'Tam Sahne',
@@ -537,7 +550,7 @@ const I18N = {
     'rules.filterAll': 'Tüm Kurallar',
     'rules.filterEnabled': 'Yalnızca Etkin',
     'rules.filterPaused': 'Duraklatılanlar',
-    'events.eyebrow': '03 / BİLDİR & SORGULA',
+    'events.eyebrow': 'ADLİ OLAY ARŞİVİ · BİLDİR & SORGULA',
     'events.title': 'Olay arşivi.',
     'events.subtitle': 'Doğal dilde ara, kanıt klibini incele, SHA-256 imzalı adli kanıt paketini indir.',
     'events.exportCsv': 'CSV Dışa Aktar ↓',
@@ -547,8 +560,8 @@ const I18N = {
     'events.metricReviewed': 'İncelenen:',
     'events.metricLatency': 'Ort. Gecikme:',
     'events.batchReviewBtn': '✓ Gösterilenleri İncelendi İşaretle',
-    'events.viewCards': ' Kartlar',
-    'events.viewTable': '☰ Adli Tablo',
+    'events.viewCards': 'Kartlar',
+    'events.viewTable': 'Adli Tablo',
     'events.searchPlaceholder': 'Copilot ile ara: "bugün bahçe girişi", "gece incelenmemiş", "loitering" (/ ile odakla)...',
     'events.allCameras': 'Tüm Kameralar',
     'events.allCategories': 'Tüm Kategoriler',
@@ -564,7 +577,7 @@ const I18N = {
     'flx.split': 'Önce / Sonra Yan Yana',
     'flx.slider': 'Perde Karşılaştırma',
     'flx.copyBtn': 'Kopyala',
-    'settings.eyebrow': '04 / ÇALIŞMA ALANI, OLLAMA VLM & MÜŞTERİ LİSANSI',
+    'settings.eyebrow': 'HESAP, LİSANS, TELEGRAM KOMUTA & YEREL AI MOTORU',
     'settings.title': 'Ayarlar & Üyelik Merkezi',
     'settings.engineTitle': 'Yerel Ollama Görsel AI Motoru',
     'settings.modelLabel': 'Aktif Ollama görsel model adı',
@@ -580,7 +593,7 @@ const I18N = {
     'settings.webhookHint': 'Slack ve Discord webhook adresleri otomatik tanınır.',
     'settings.saveBtn': 'Ayarları kaydet',
     'settings.tgSimRerun': '↻ Yeniden Çalıştır',
-    'settings.tgSimCopy': '📋 Yanıtı Kopyala',
+    'settings.tgSimCopy': 'Yanıtı Kopyala',
     'settings.auditEyebrow': 'KURUMSAL DENETİM İZİ',
     'settings.auditTitle': 'Son Kritik İşlemler (SHA-256 Audit Log)',
     'settings.auditSearchPlaceholder': 'Denetim kayıtlarında ara (işlem, detay veya SHA-256)...',
@@ -633,7 +646,7 @@ const I18N = {
     'overview.workspace': 'NVR Camera Wall & Live Command Center',
     'overview.liveStatus': 'Live connection status · Thermal heatmap, 2-Way Telegram Bot & GDPR masking ready',
     'overview.hint': 'Add a camera, design a custom zone in the ROI Studio, or deploy one of the 8 enterprise sector packs.',
-    'nvr.roiBtn': '📐 ROI Zones',
+    'nvr.roiBtn': 'ROI Zones',
     'nvr.roiBtnTitle': 'Show/hide active ROI polygons and tripwires on camera tiles',
     'nvr.autoTour': 'Auto Tour',
     'nvr.fullscreen': 'Fullscreen ↗',
@@ -679,10 +692,10 @@ const I18N = {
     'rules.catalogLabel': 'Configuration library (22 Local + 6 Pro Tracking + 3 Access + 42 Vision AI)',
     'rules.catalogSearchPlaceholder': 'Search 73 ready rules (e.g. helmet, fire, queue, plate, loitering)...',
     'rules.catAll': 'All (73)',
-    'rules.catLocal': '⚡ Local (22)',
-    'rules.catPro': '🎯 Pro Track (6)',
-    'rules.catAccess': '🚧 Access (3)',
-    'rules.catVision': '🧠 Vision AI (42)',
+    'rules.catLocal': 'Local (22)',
+    'rules.catPro': 'Pro Track (6)',
+    'rules.catAccess': 'Access (3)',
+    'rules.catVision': 'Vision AI (42)',
     'rules.cameraLabel': 'Camera',
     'rules.nameLabel': 'Rule name',
     'rules.promptLabel': 'When should we alert you?',
@@ -690,8 +703,8 @@ const I18N = {
     'rules.durationLabel': 'Verification duration (seconds)',
     'rules.roiSummary': 'Professional ROI Zone & Tripwire Studio',
     'rules.roiHint': 'Draw a new zone, drag inside to move, resize using the 8 handles, or apply one-click zone presets.',
-    'rules.modeRoi': '📐 Region (ROI) Mode',
-    'rules.modeLine': '🚧 Tripwire Line Mode',
+    'rules.modeRoi': 'Region (ROI) Mode',
+    'rules.modeLine': 'Tripwire Line Mode',
     'rules.flipDir': '⇄ Flip Direction',
     'rules.refreshSnap': '↻ Refresh Frame',
     'rules.presetFull': 'Full Scene',
@@ -721,7 +734,7 @@ const I18N = {
     'rules.filterAll': 'All Rules',
     'rules.filterEnabled': 'Active Only',
     'rules.filterPaused': 'Paused Only',
-    'events.eyebrow': '03 / NOTIFY & SEARCH',
+    'events.eyebrow': 'FORENSIC EVENT ARCHIVE · NOTIFY & SEARCH',
     'events.title': 'Event archive.',
     'events.subtitle': 'Search in natural language, inspect evidence clips, download SHA-256 forensic bundles.',
     'events.exportCsv': 'Export CSV ↓',
@@ -731,8 +744,8 @@ const I18N = {
     'events.metricReviewed': 'Reviewed:',
     'events.metricLatency': 'Avg Latency:',
     'events.batchReviewBtn': '✓ Mark Shown as Reviewed',
-    'events.viewCards': ' Cards',
-    'events.viewTable': '☰ Forensic Table',
+    'events.viewCards': 'Cards',
+    'events.viewTable': 'Forensic Table',
     'events.searchPlaceholder': 'Search with Copilot: "today main gate", "night unreviewed", "loitering" (Press /)...',
     'events.allCameras': 'All Cameras',
     'events.allCategories': 'All Categories',
@@ -748,7 +761,7 @@ const I18N = {
     'flx.split': 'Before / After Split',
     'flx.slider': 'Curtain Slider',
     'flx.copyBtn': 'Copy',
-    'settings.eyebrow': '04 / WORKSPACE, OLLAMA VLM & CUSTOMER LICENSE',
+    'settings.eyebrow': 'WORKSPACE, OLLAMA VLM & CUSTOMER LICENSE',
     'settings.title': 'Settings & Membership Hub',
     'settings.engineTitle': 'Local Ollama Vision AI Engine',
     'settings.modelLabel': 'Active Ollama vision model name',
@@ -764,7 +777,7 @@ const I18N = {
     'settings.webhookHint': 'Sends event payload over HTTPS JSON with optional HMAC-SHA256 signature.',
     'settings.saveBtn': 'Save settings',
     'settings.tgSimRerun': '↻ Re-run',
-    'settings.tgSimCopy': '📋 Copy Reply',
+    'settings.tgSimCopy': 'Copy Reply',
     'settings.auditEyebrow': 'ENTERPRISE AUDIT TRAIL',
     'settings.auditTitle': 'Recent Critical Operations (SHA-256 Audit Log)',
     'settings.auditSearchPlaceholder': 'Search audit records (action, detail, or SHA-256)...',
@@ -873,7 +886,7 @@ function message(txt, forcedType) {
   const toaster = $('#cortexToaster');
   if (!toaster || !txt) return;
   const type = forcedType || inferToastType(txt);
-  const icon = type === 'error' ? '⚠️' : (type === 'warn' ? '⚡' : '✓');
+  const icon = type === 'error' ? '!' : (type === 'warn' ? '◆' : '✓');
   const toast = document.createElement('div');
   toast.className = `sonner-toast is-${type}`;
   toast.innerHTML = `
@@ -1038,7 +1051,7 @@ function buildCommandItems() {
     const packs = state?.sectorPacks || [];
     return packs.map(p => ({
       group: t('Hazır Sektör Paketleri (Tek Tıkla Kurulum)', 'Ready Sector Packs (One-Click Deploy)'),
-      icon: '📦',
+      icon: 'PK',
       title: `${p.name} (${p.rules?.length || 0} ${t('Kural', 'Rules')})`,
       sub: p.summary || '',
       kbd: p.tier || 'PLUS',
@@ -1057,7 +1070,7 @@ function buildCommandItems() {
     return [
       {
         group: t('Görünüm & Ses Tercihleri', 'Appearance & Audio Preferences'),
-        icon: '☀️',
+        icon: 'LT',
         title: t('Açık Temaya Geç (Studio Daylight)', 'Switch to Light Theme (Studio Daylight)'),
         sub: t('Yüksek kontrastlı gündüz komuta görünümü', 'High-contrast daylight command view'),
         kbd: 'Light',
@@ -1065,7 +1078,7 @@ function buildCommandItems() {
       },
       {
         group: t('Görünüm & Ses Tercihleri', 'Appearance & Audio Preferences'),
-        icon: '🌙',
+        icon: 'DK',
         title: t('Koyu Temaya Geç (Carbon Obsidian)', 'Switch to Dark Theme (Carbon Obsidian)'),
         sub: t('Gece vardiyası ve NVR izleme görünümü', 'Night shift & NVR monitoring view'),
         kbd: 'Dark',
@@ -1073,7 +1086,7 @@ function buildCommandItems() {
       },
       {
         group: t('Görünüm & Ses Tercihleri', 'Appearance & Audio Preferences'),
-        icon: '🔊',
+        icon: 'AU',
         title: t('Dokunsal Arayüz Seslerini Aç / Kapat', 'Toggle Tactile UI Micro-Sounds'),
         sub: t('Web Audio API mekanik anahtar ve onay sesleri', 'Web Audio API mechanical switch & confirmation sounds'),
         kbd: 'Audio',
@@ -1086,14 +1099,14 @@ function buildCommandItems() {
     {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
       icon: '◈',
-      title: t('Genel Bakış & NVR Kamera Duvarı', 'Overview & NVR Camera Wall'),
-      sub: t('Canlı kameralar, 24s yoğunluk ve saha paketleri', 'Live streams, 24h density & sector packs'),
+      title: t('Genel Bakış, 3D Çekirdek & NVR Duvarı', 'Overview, 3D Core & NVR Wall'),
+      sub: t('3D Ağ Topolojisi, canlı kameralar ve 24s yoğunluk', '3D Network Topology, live streams & 24h density'),
       kbd: 'G O',
       run: () => tab('overview')
     },
     {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
-      icon: '📹',
+      icon: 'CM',
       title: t('Kameralar & ONVIF Keşfi', 'Cameras & ONVIF Discovery'),
       sub: t('RTSP kamera ekle, bağlantıyı test et', 'Add RTSP camera, test stream'),
       kbd: 'G C',
@@ -1101,7 +1114,7 @@ function buildCommandItems() {
     },
     {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
-      icon: '📐',
+      icon: 'RI',
       title: t('Olay Kuralları & ROI Çizim Stüdyosu', 'Event Rules & ROI Studio'),
       sub: t('73 hazır kural ve interaktif bölge stüdyosu', '73 ready rules & interactive zone studio'),
       kbd: 'G R',
@@ -1109,7 +1122,7 @@ function buildCommandItems() {
     },
     {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
-      icon: '🔍',
+      icon: 'EV',
       title: t('Olay Arşivi & Adli İnceleme', 'Event Archive & Forensics'),
       sub: t('Copilot arama, Lightbox inceleme ve SHA-256 ZIP', 'Copilot search, Lightbox & SHA-256 ZIP'),
       kbd: 'G E',
@@ -1117,7 +1130,7 @@ function buildCommandItems() {
     },
     {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
-      icon: '💎',
+      icon: 'PL',
       title: t('Paketler & Kapasite Karşılaştırması', 'Plans & Capacity Comparison'),
       sub: 'Cortex PRO / PLUS / ULTRA',
       kbd: 'G P',
@@ -1125,7 +1138,7 @@ function buildCommandItems() {
     },
     {
       group: t('Sayfalar & Komuta Merkezi', 'Navigation & Views'),
-      icon: '⚙️',
+      icon: 'ST',
       title: t('Ayarlar, Ollama VLM & Telegram Bot', 'Settings, Ollama VLM & Telegram Bot'),
       sub: t('Donanım danışmanı, lisans ve webhook', 'Hardware advisor, license & webhooks'),
       kbd: 'G S',
@@ -1133,7 +1146,7 @@ function buildCommandItems() {
     },
     {
       group: t('Alt Menüler & Hızlı Dağıtım', 'Sub-Menus & Rapid Deployment'),
-      icon: '📦',
+      icon: 'PK',
       title: t('Sektör Paketi Dağıt (8 Sektör)…', 'Deploy Sector Pack (8 Sectors)…'),
       sub: t('Site, Havuz, Fabrika, Depo, Perakende, Ofis, Kampüs, Klinik', 'Residential, Pool, Factory, Warehouse, Retail, Office, Campus, Clinic'),
       kbd: '→ Alt Menü',
@@ -1150,7 +1163,7 @@ function buildCommandItems() {
     },
     {
       group: t('Alt Menüler & Hızlı Dağıtım', 'Sub-Menus & Rapid Deployment'),
-      icon: '🎨',
+      icon: 'TH',
       title: t('Görünüm, Tema & Dokunsal Ses Ayarları…', 'Theme, Appearance & Tactile Sound Settings…'),
       sub: t('Açık/Koyu tema ve Web Audio mikro ses kontrolü', 'Light/Dark theme & Web Audio micro-sound control'),
       kbd: '→ Alt Menü',
@@ -1167,7 +1180,17 @@ function buildCommandItems() {
     },
     {
       group: t('Hızlı İşlemler', 'Quick Actions'),
-      icon: '🌐',
+      icon: '3D',
+      title: t('Sinematik 3D Açılış Deneyimini Oynat', 'Replay Cinematic 3D Startup Sequence'),
+      sub: t('Cortex 7 aşamalı 3D çekirdek ve ağ başlangıç animasyonu', 'Cortex 7-stage 3D core & network startup sequence'),
+      kbd: '3D Intro',
+      run: () => {
+        if (typeof playCortexStartupSequence === 'function') playCortexStartupSequence(true);
+      }
+    },
+    {
+      group: t('Hızlı İşlemler', 'Quick Actions'),
+      icon: 'TR',
       title: t('Dili Değiştir (Türkçe ↔ English)', 'Switch Language (Turkish ↔ English)'),
       sub: t(`Aktif dil: ${currentLang.toUpperCase()}`, `Current language: ${currentLang.toUpperCase()}`),
       kbd: 'Alt+L',
@@ -1175,7 +1198,7 @@ function buildCommandItems() {
     },
     {
       group: t('Hızlı İşlemler', 'Quick Actions'),
-      icon: '🖥️',
+      icon: 'NV',
       title: t('Tam Ekran NVR Kamera Duvarını Aç', 'Open Fullscreen NVR Camera Wall'),
       sub: t('Çoklu kanal izleme matrisi', 'Multi-channel monitoring matrix'),
       kbd: 'Matrix',
@@ -1190,14 +1213,12 @@ function buildCommandItems() {
   for (const c of (state?.cameras || [])) {
     items.push({
       group: t('Kayıtlı Kameralar', 'Connected Cameras'),
-      icon: c.status === 'Bağlı' ? '🟢' : '🔴',
+      icon: c.status === 'Bağlı' ? '●' : '○',
       title: c.name,
-      sub: `${c.status} · ROI & NVR Odak`,
+      sub: `${c.status} · ROI & 3D Detay Paneli`,
       kbd: 'CAM',
       run: () => {
-        nvrFocusedCameraId = c.id;
-        tab('overview');
-        renderNvrWall();
+        if (typeof openNodeInspector === 'function') openNodeInspector(`cam:${c.id}`);
       }
     });
   }
@@ -1205,7 +1226,7 @@ function buildCommandItems() {
   for (const r of (state?.rules || []).slice(0, 12)) {
     items.push({
       group: t('Etkin Kurallar', 'Active Rules'),
-      icon: r.enabled ? '⚡' : '⏸',
+      icon: r.enabled ? '◆' : '◇',
       title: r.name,
       sub: r.prompt || '',
       kbd: 'RULE',
@@ -1813,11 +1834,11 @@ function camera(c, idx = 0) {
 
   let statusPillHtml = '';
   if (isOnline) {
-    statusPillHtml = `<span class="status-pill online" data-cam-status>🟢 ${t('Çevrimiçi (Online)', 'Online')}</span>`;
+    statusPillHtml = `<span class="status-pill online" data-cam-status>● ${t('Çevrimiçi (Online)', 'Online')}</span>`;
   } else if (isPaused) {
-    statusPillHtml = `<span class="status-pill paused" data-cam-status>⏸ ${t('Durduruldu', 'Paused')}</span>`;
+    statusPillHtml = `<span class="status-pill paused" data-cam-status>◇ ${t('Durduruldu', 'Paused')}</span>`;
   } else {
-    statusPillHtml = `<span class="status-pill offline" data-cam-status>🔴 ${t('Bağlantı Yok', 'Offline')} (${esc(c.status || t('Çevrimdışı', 'Offline'))})</span>`;
+    statusPillHtml = `<span class="status-pill offline" data-cam-status>○ ${t('Bağlantı Yok', 'Offline')} (${esc(c.status || t('Çevrimdışı', 'Offline'))})</span>`;
   }
 
   return `<article class="card camera-card inventory-mode camera-list-row" data-camera-id="${esc(c.id)}">
@@ -1854,6 +1875,7 @@ function camera(c, idx = 0) {
       </div>
       <div class="camera-row-actions">
         <button type="button" data-action="toggle" data-id="${esc(c.id)}" class="${isPaused ? 'primary' : ''}">${isPaused ? t('Başlat', 'Start') : t('Durdur', 'Pause')}</button>
+        <button type="button" data-inspect-node="cam:${esc(c.id)}" title="${t('Kamera detay ve AI analiz panelini aç', 'Open camera detail & AI panel')}">${t('Detay Paneli', 'Details')}</button>
         <button type="button" data-cam-snap-refresh="${esc(c.id)}" title="${t('Önizleme karesini yenile', 'Refresh snapshot')}">↻ ${t('Kare', 'Snap')}</button>
         <button type="button" data-nvr-roi="${esc(c.id)}">${t('ROI & Kural', 'ROI & Rule')}</button>
         <button type="button" data-action="access-permit" data-id="${esc(c.id)}">${t('15sn İzin', '15s Permit')}</button>
@@ -2628,6 +2650,7 @@ function buildNvrCellsHtml(forMatrix = false) {
 
         <div class="nvr-dock">
           <button type="button" data-action="toggle" data-id="${c.id}" class="nvr-dock-btn ${c.status === 'Durduruldu' ? 'primary' : ''}" title="${c.status === 'Durduruldu' ? t('İzlemeyi Başlat', 'Start') : t('İzlemeyi Durdur', 'Pause')}">${c.status === 'Durduruldu' ? t('BAŞLAT', 'START') : t('DURDUR', 'PAUSE')}</button>
+          <button type="button" data-inspect-node="cam:${c.id}" class="nvr-dock-btn" title="${t('Kamera Detay ve AI Analiz Panelini Aç', 'Open Camera Detail Inspector')}">${t('DETAY', 'INFO')}</button>
           <button type="button" data-nvr-focus="${c.id}" class="nvr-dock-btn ${nvrGridLayout === 'grid-1x1' && nvrFocusedCameraId === c.id ? 'active' : ''}">${t('ODAK', 'FOCUS')}</button>
           <button type="button" data-nvr-tile-fs="${c.id}" class="nvr-dock-btn" title="${t('Bu kamerayı genişlet', 'Expand tile')}">⛶</button>
           <button type="button" data-nvr-snapshot="${c.id}" class="nvr-dock-btn">${t('KARE', 'SNAP')}</button>
@@ -3261,10 +3284,10 @@ function renderEventSummaryAndFilters(allEvents, filtered) {
     activeBox.hidden = !hasFilters;
     if (hasFilters) {
       const chips = [];
-      if (q) chips.push(`<span class="active-filter-chip">🔍 "${esc(q)}"</span>`);
-      if (cam) chips.push(`<span class="active-filter-chip">📹 ${esc(cam)}</span>`);
-      if (cat) chips.push(`<span class="active-filter-chip">🏷️ ${esc(cat)}</span>`);
-      if (rev) chips.push(`<span class="active-filter-chip">✓ ${esc(rev)}</span>`);
+      if (q) chips.push(`<span class="active-filter-chip">Sorgu: "${esc(q)}"</span>`);
+      if (cam) chips.push(`<span class="active-filter-chip">Kamera: ${esc(cam)}</span>`);
+      if (cat) chips.push(`<span class="active-filter-chip">Kategori: ${esc(cat)}</span>`);
+      if (rev) chips.push(`<span class="active-filter-chip">Durum: ${esc(rev)}</span>`);
       activeBox.innerHTML = chips.join('');
     }
   }
@@ -3329,7 +3352,7 @@ function renderEventsList() {
               <td><code class="mono" style="font-size:10px">${esc(hashShort)}</code></td>
               <td>
                 <div class="actions" style="margin:0;gap:6px">
-                  <button type="button" class="sector-mini-btn primary" data-open-lightbox="${esc(e.id)}">🔍 ${t('İncele', 'Inspect')}</button>
+                  <button type="button" class="sector-mini-btn primary" data-open-lightbox="${esc(e.id)}">${t('İncele', 'Inspect')}</button>
                   <a download href="/api/evidence-bundle/${e.id}.zip" class="sector-mini-btn">ZIP ↓</a>
                   ${!e.reviewed ? `<button type="button" class="sector-mini-btn" data-action="review" data-id="${esc(e.id)}">✓</button>` : ''}
                 </div>
@@ -3360,7 +3383,7 @@ function renderEventsList() {
       ${e.snapshot ? `<a target="_blank" href="/api/evidence/${e.id}/00.jpg">${t('Olay karesini aç ↗', 'Open event frame ↗')}</a>` : ''}
       ${e.clip ? `<video controls preload="none" src="/api/evidence/${e.id}/clip.mp4"></video>` : ''}
       <div class="actions">
-        <button type="button" class="primary" data-open-lightbox="${esc(e.id)}">🔍 ${t('Adli İnceleme (Lightbox)', 'Forensic Lightbox')}</button>
+        <button type="button" class="primary" data-open-lightbox="${esc(e.id)}">${t('Adli İnceleme (Lightbox)', 'Forensic Lightbox')}</button>
         ${e.before ? `<a target="_blank" href="/api/evidence/${e.id}/before.mp4">${t('Olay öncesi örnek kareler ↗', 'Pre-event frames ↗')}</a>` : ''}
         ${e.clip ? `<a download href="/api/evidence/${e.id}/clip.mp4">${t('Klibi indir ↓', 'Download clip ↓')}</a>` : `<span>${t('RTSP klibi alınamadı; örnek kareleri inceleyin.', 'Clip unavailable; inspect frames.')}</span>`}
         <a download href="/api/evidence-bundle/${e.id}.zip">${t('Adli Kanıt Paketi (SHA-256 ZIP) ↓', 'Forensic Bundle (SHA-256 ZIP) ↓')}</a>
@@ -3493,7 +3516,7 @@ function renderForensicLightbox() {
         </div>
       </div>
       <div class="actions" style="flex-direction:column;align-items:stretch">
-        <a download href="/api/evidence-bundle/${ev.id}.zip" class="primary" style="text-align:center;padding:11px;border-radius:10px;text-decoration:none">📦 ${t('SHA-256 Adli Kanıt Paketini İndir (.ZIP)', 'Download SHA-256 Forensic Bundle (.ZIP)')}</a>
+        <a download href="/api/evidence-bundle/${ev.id}.zip" class="primary" style="text-align:center;padding:11px;border-radius:10px;text-decoration:none">${t('SHA-256 Adli Kanıt Paketini İndir (.ZIP)', 'Download SHA-256 Forensic Bundle (.ZIP)')}</a>
         ${ev.clip ? `<a download href="/api/evidence/${ev.id}/clip.mp4" style="text-align:center;padding:9px;border-radius:10px">${t('MP4 Video Klibi İndir ↓', 'Download MP4 Video Clip ↓')}</a>` : ''}
         ${!ev.reviewed ? `<button type="button" data-action="review" data-id="${esc(ev.id)}">✓ ${t('İncelendi Olarak İşaretle', 'Mark as Reviewed')}</button>` : ''}
       </div>
@@ -3665,6 +3688,8 @@ async function refresh() {
     renderVlmHardwareAdvisor();
     renderNvrWall();
     renderMatrixWall();
+    if (typeof renderCortexTopology === 'function') renderCortexTopology();
+    if (typeof renderNodeInspector === 'function') renderNodeInspector();
 
     if ($('#version')) $('#version').textContent = state.version;
     $('#diskStatus').textContent = t('Olay diski boş alanı: ', 'Event disk free space: ') + state.diskFreeGB + ' GB';
@@ -5236,3 +5261,1002 @@ $('#importChannels').onclick = async () => {
     b.disabled = false;
   }
 };
+
+/* ==========================================================================
+   CORTEX 3D ULTIMATE REDESIGN MODULES:
+   A. Cinematic 7-Step 3D Startup Sequence (#cortexStartupStage)
+   B. Collapsible Sidebar Rail (Ctrl+B & #sidebarCollapseBtn)
+   C. 3D Cortex Core & Interactive 3D Network / Device Explorer
+   D. Right-Side Slide-Over Device & Camera Detail Inspector Drawer
+   ========================================================================== */
+
+let startupAnimRaf = 0;
+let startupAnimActive = false;
+let topologyViewMode = '3d'; // '3d' | '2d'
+let selectedTopologyNodeId = null;
+let inspectorOpen = false;
+let topoOrbit = {
+  yaw: 0.35,
+  pitch: 0.32,
+  targetYaw: 0.35,
+  targetPitch: 0.32,
+  zoom: 1.0,
+  targetZoom: 1.0,
+  autoRotate: true,
+  dragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  pointerX: -9999,
+  pointerY: -9999,
+  hoveredNodeId: null,
+  projectedNodes: []
+};
+
+/* --- MODULE A: Cinematic 7-Step 3D Startup Sequence --- */
+const STARTUP_STEPS = [
+  { step: 1, pct: 14, badge: 'ADIM 01 / 07 · SİYAH SAHNE', text: 'Minimal siyah sahne ve yerel kriptografik motor hazırlanıyor…' },
+  { step: 2, pct: 28, badge: 'ADIM 02 / 07 · 3D CORTEX LOGOSU', text: 'Merkezi 3D Cortex geometrik çekirdeği oluşturuluyor…' },
+  { step: 3, pct: 43, badge: 'ADIM 03 / 07 · 3D AĞ BAĞLANTILARI', text: 'Logo çevresinde 3D ağ bağlantı hatları örülüyor…' },
+  { step: 4, pct: 57, badge: 'ADIM 04 / 07 · DERİNLİK & KAMERA', text: 'Uzamsal derinlik ve yörünge kamera kalibrasyonu yapılıyor…' },
+  { step: 5, pct: 72, badge: 'ADIM 05 / 07 · DÜĞÜM SENKRONU', text: 'Ağ düğümleri, kameralar ve yerel AI servisleri birbirine bağlanıyor…' },
+  { step: 6, pct: 88, badge: 'ADIM 06 / 07 · CORTEX KİMLİĞİ', text: 'IPScans Cortex 2.3 Komuta Merkezi kimliği doğrulanıyor…' },
+  { step: 7, pct: 100, badge: 'ADIM 07 / 07 · KOMUTA MERKEZİ', text: 'Ana kontrol merkezi açılıyor…' }
+];
+
+function closeCortexStartupSequence() {
+  const stage = $('#cortexStartupStage');
+  if (!stage || stage.hidden) return;
+  startupAnimActive = false;
+  if (startupAnimRaf) cancelAnimationFrame(startupAnimRaf);
+  stage.classList.add('is-exiting');
+  setTimeout(() => {
+    stage.hidden = true;
+    stage.classList.remove('is-exiting');
+  }, 380);
+}
+
+function playCortexStartupSequence(force = false) {
+  const stage = $('#cortexStartupStage');
+  const canvas = $('#cortexStartupCanvas');
+  if (!stage || !canvas) return;
+
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let skipPref = false;
+  try {
+    skipPref = localStorage.getItem('cortex-skip-startup-3d') === '1';
+  } catch (e) {}
+
+  const chk = $('#disableStartupAnimCheck');
+  if (chk) chk.checked = skipPref;
+
+  const gate = $('#cortexLoginGate');
+  if (!force && (reduced || skipPref || (gate && !gate.hidden))) {
+    stage.hidden = true;
+    return;
+  }
+
+  stage.hidden = false;
+  stage.classList.remove('is-exiting');
+  startupAnimActive = true;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const startTs = performance.now();
+  const totalDuration = 2850; // 2.85s crisp, high-FPS 7-step startup
+
+  // Pre-build 3D icosahedron/sphere nodes for startup scene
+  const nodes3D = [];
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const nodeCount = 28;
+  for (let i = 0; i < nodeCount; i++) {
+    const y = 1 - (i / (nodeCount - 1)) * 2;
+    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = golden * i;
+    const radius = i < 12 ? 95 : 175;
+    nodes3D.push({
+      x: Math.cos(theta) * r * radius,
+      y: y * radius * 0.78,
+      z: Math.sin(theta) * r * radius,
+      ring: i < 12 ? 1 : 2
+    });
+  }
+
+  function frame(now) {
+    if (!startupAnimActive || stage.hidden) return;
+    const elapsed = Math.max(0, now - startTs);
+    const progress = Math.min(1, Math.max(0, elapsed / totalDuration));
+    const stepIdx = Math.max(0, Math.min(6, Math.floor(progress * 7)));
+    const stepInfo = STARTUP_STEPS[stepIdx];
+
+    if ($('#startupStepBadge')) $('#startupStepBadge').textContent = stepInfo.badge;
+    if ($('#startupStepText')) $('#startupStepText').textContent = stepInfo.text;
+    if ($('#startupProgressBar')) $('#startupProgressBar').style.width = `${ Math.round(progress * 100) }%`;
+    document.querySelectorAll('[data-step-dot]').forEach(el => {
+      const s = Number(el.dataset.stepDot);
+      el.classList.toggle('is-active', s === stepInfo.step);
+      el.classList.toggle('is-done', s < stepInfo.step);
+    });
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, stage.clientWidth || window.innerWidth);
+    const h = Math.max(1, stage.clientHeight || window.innerHeight);
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h * 0.44;
+    const coreReveal = Math.min(1, Math.max(0, (progress - 0.08) / 0.22));
+    const wireReveal = Math.min(1, Math.max(0, (progress - 0.22) / 0.28));
+    const nodeLock = Math.min(1, Math.max(0, (progress - 0.45) / 0.28));
+    const dolly = 0.86 + 0.18 * Math.sin(progress * Math.PI * 0.65);
+
+    const yaw = elapsed * 0.00075;
+    const pitch = 0.26 + Math.sin(elapsed * 0.0011) * 0.08;
+    const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+    const cosP = Math.cos(pitch), sinP = Math.sin(pitch);
+
+    function project(x, y, z) {
+      const rx = x * cosY - z * sinY;
+      const rz1 = x * sinY + z * cosY;
+      const ry = y * cosP - rz1 * sinP;
+      const rz = y * sinP + rz1 * cosP;
+      const fov = 540 * dolly;
+      const scale = fov / Math.max(140, fov + rz + 260);
+      return { sx: cx + rx * scale, sy: cy + ry * scale, rz, scale };
+    }
+
+    // Subtle radial depth glow in step 2+
+    if (coreReveal > 0.01) {
+      const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, 240 * coreReveal);
+      grad.addColorStop(0, `rgba(76, 130, 255, ${0.26 * coreReveal})`);
+      grad.addColorStop(0.5, `rgba(0, 210, 255, ${0.09 * coreReveal})`);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 240 * coreReveal, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const proj = nodes3D.map(n => project(n.x, n.y, n.z));
+
+    // Step 3+: 3D network wire connections from core and between neighbor nodes
+    if (wireReveal > 0.01) {
+      ctx.lineWidth = 1.1;
+      for (let i = 0; i < proj.length; i++) {
+        const p = proj[i];
+        const ex = cx + (p.sx - cx) * wireReveal;
+        const ey = cy + (p.sy - cy) * wireReveal;
+        ctx.strokeStyle = i < 12
+          ? `rgba(76, 130, 255, ${0.34 * wireReveal})`
+          : `rgba(0, 210, 255, ${0.18 * wireReveal})`;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        if (nodeLock > 0.02) {
+          const next = proj[(i + 3) % proj.length];
+          ctx.strokeStyle = `rgba(38, 208, 150, ${0.22 * nodeLock})`;
+          ctx.beginPath();
+          ctx.moveTo(p.sx, p.sy);
+          ctx.lineTo(p.sx + (next.sx - p.sx) * nodeLock, p.sy + (next.sy - p.sy) * nodeLock);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Step 2+: Central 3D Cortex Core & Rings
+    const isDarkStartup = document.documentElement.dataset.theme === 'dark';
+    if (coreReveal > 0.01) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.strokeStyle = isDarkStartup
+        ? `rgba(255, 255, 255, ${0.22 * coreReveal})`
+        : `rgba(11, 13, 18, ${0.18 * coreReveal})`;
+      ctx.lineWidth = 1.25;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 58 * coreReveal, 24 * coreReveal, yaw * 0.7, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(47, 107, 255, ${0.55 * coreReveal})`;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 38 * coreReveal, 38 * coreReveal, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = isDarkStartup ? '#07080B' : '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(0, 0, 18 * coreReveal, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = isDarkStartup ? '#00D2FF' : '#2F6BFF';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Step 5+: Network Nodes Locking In
+    if (wireReveal > 0.25) {
+      for (let i = 0; i < proj.length; i++) {
+        const p = proj[i];
+        const r = Math.max(2.2, (i < 12 ? 4.5 : 3.2) * p.scale);
+        ctx.fillStyle = nodeLock > 0.5 ? (i % 3 === 0 ? '#26D096' : '#4C82FF') : '#93C5FD';
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (progress < 1) {
+      startupAnimRaf = requestAnimationFrame(frame);
+    } else {
+      closeCortexStartupSequence();
+    }
+  }
+
+  startupAnimRaf = requestAnimationFrame(frame);
+}
+
+function initCortexStartupSequence() {
+  $('#skipStartupBtn')?.addEventListener('click', closeCortexStartupSequence);
+  $('#replayStartupBtn')?.addEventListener('click', () => playCortexStartupSequence(true));
+  $('#disableStartupAnimCheck')?.addEventListener('change', e => {
+    try {
+      localStorage.setItem('cortex-skip-startup-3d', e.target.checked ? '1' : '0');
+    } catch (err) {}
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && startupAnimActive) {
+      closeCortexStartupSequence();
+    }
+  });
+  // Play once per session when authenticated or on initial launch
+  let playedSession = false;
+  try {
+    playedSession = sessionStorage.getItem('cortex_startup_played') === '1';
+  } catch (e) {}
+  if (!playedSession) {
+    try { sessionStorage.setItem('cortex_startup_played', '1'); } catch (e) {}
+    playCortexStartupSequence(false);
+  }
+}
+
+/* --- MODULE B: Collapsible Sidebar Rail --- */
+function initCollapsibleSidebar() {
+  const btn = $('#sidebarCollapseBtn');
+  let collapsed = false;
+  try {
+    collapsed = localStorage.getItem('cortex-sidebar-collapsed') === '1';
+  } catch (e) {}
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+
+  function toggleSidebar() {
+    collapsed = !document.body.classList.contains('sidebar-collapsed');
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    try {
+      localStorage.setItem('cortex-sidebar-collapsed', collapsed ? '1' : '0');
+    } catch (e) {}
+    uiSound.trigger('click');
+  }
+
+  btn?.addEventListener('click', toggleSidebar);
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+      const inEditable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+      if (!inEditable) {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    }
+  });
+}
+
+/* --- MODULE C: 3D Cortex Core & Interactive 3D Network / Device Explorer --- */
+function buildTopologyGraphFromState() {
+  const cams = state?.cameras || [];
+  const devs = state?.devices || [];
+  const rules = state?.rules || [];
+  const events = state?.events || [];
+  const onlineCams = cams.filter(c => c.status === 'Bağlı').length;
+  const unreviewedCount = events.filter(e => !e.reviewed).length;
+  const activeRulesCount = rules.filter(r => r.enabled).length;
+
+  const nodes = [];
+  const links = [];
+
+  // 1. Central Cortex Core Node
+  nodes.push({
+    id: 'core:main',
+    kind: 'core',
+    label: 'Cortex 3D Core',
+    sub: `127.0.0.1:8765 · v${state?.version || '2.4.0'}`,
+    status: unreviewedCount > 0 ? 'warn' : 'online',
+    x: 0, y: 0, z: 0,
+    radius: 18,
+    color: '#00D2FF'
+  });
+
+  // 2. Network / ONVIF Recorder Nodes (Ring 1)
+  const devList = devs.length > 0 ? devs : [
+    {
+      id: 'lan-onvif-bridge',
+      name: t('ONVIF & RTSP Ağ Köprüsü', 'ONVIF & RTSP LAN Bridge'),
+      host: '127.0.0.1 / LAN',
+      sync: true,
+      clock: { message: t('Doğrudan RTSP/ONVIF Havuzu Aktif', 'Direct RTSP/ONVIF Pool Active'), drift: 0 },
+      synthetic: true
+    }
+  ];
+
+  devList.forEach((d, idx) => {
+    const angle = (idx / Math.max(1, devList.length)) * Math.PI * 2 - Math.PI / 3;
+    const r = 105;
+    const nid = `dev:${d.id}`;
+    nodes.push({
+      id: nid,
+      kind: 'device',
+      rawId: d.id,
+      label: d.name || 'ONVIF Cihazı',
+      sub: d.host || 'LAN',
+      status: d.sync !== false ? 'online' : 'standby',
+      x: Math.cos(angle) * r,
+      y: (idx % 2 === 0 ? -18 : 18),
+      z: Math.sin(angle) * r,
+      radius: 10,
+      color: '#4C82FF'
+    });
+    links.push({
+      from: 'core:main',
+      to: nid,
+      rel: d.synthetic ? 'inferred' : 'verified'
+    });
+  });
+
+  // 3. Camera Nodes (Ring 2)
+  cams.forEach((c, idx) => {
+    const angle = (idx / Math.max(1, cams.length)) * Math.PI * 2 + 0.25;
+    const r = 195;
+    const isOnline = c.status === 'Bağlı';
+    const isPaused = c.status === 'Durduruldu';
+    const nid = `cam:${c.id}`;
+    const chCode = `CH-${String(idx + 1).padStart(2, '0')}`;
+    nodes.push({
+      id: nid,
+      kind: 'camera',
+      rawId: c.id,
+      label: `${chCode} · ${c.name}`,
+      sub: `RTSP/${String(c.transport || 'tcp').toUpperCase()} · ${c.status}`,
+      status: isOnline ? 'online' : (isPaused ? 'standby' : 'offline'),
+      x: Math.cos(angle) * r,
+      y: Math.sin(idx * 1.7) * 34,
+      z: Math.sin(angle) * r,
+      radius: 8.5,
+      color: isOnline ? '#26D096' : (isPaused ? '#F5A524' : '#F43F5E')
+    });
+    const parentDevId = `dev:${devList[idx % devList.length].id}`;
+    links.push({
+      from: parentDevId,
+      to: nid,
+      rel: isOnline ? 'verified' : (isPaused ? 'inferred' : 'unknown')
+    });
+  });
+
+  // 4. AI & Service Nodes (Ring 3)
+  const services = [
+    {
+      id: 'svc:ollama',
+      label: `Ollama VLM (${state?.model || 'gemma3:4b'})`,
+      sub: state?.modelHealth?.ok ? t('127.0.0.1:11434 · Hazır', '127.0.0.1:11434 · Ready') : t('Yerel Görsel AI Motoru', 'Local Vision AI Engine'),
+      status: state?.modelHealth?.ok !== false ? 'online' : 'standby',
+      color: '#9B84FF',
+      rel: 'verified'
+    },
+    {
+      id: 'svc:rules',
+      label: t(`ROI & Kural Motoru (${activeRulesCount})`, `ROI & Rule Engine (${activeRulesCount})`),
+      sub: t(`${rules.length} Toplam Kural · 73 Şablon`, `${rules.length} Total Rules · 73 Templates`),
+      status: activeRulesCount > 0 ? 'online' : 'standby',
+      color: '#26D096',
+      rel: activeRulesCount > 0 ? 'verified' : 'inferred'
+    },
+    {
+      id: 'svc:vault',
+      label: t(`SHA-256 Kanıt Kasası (${events.length})`, `SHA-256 Evidence Vault (${events.length})`),
+      sub: `${state?.diskFreeGB ?? '--'} GB ${t('Boş Disk', 'Free Disk')}`,
+      status: unreviewedCount > 0 ? 'warn' : 'online',
+      color: '#F5A524',
+      rel: 'verified'
+    },
+    {
+      id: 'svc:telegram',
+      label: `@${state?.telegram?.botUsername || 'intelligentcortexbot'}`,
+      sub: t(`${normalizeTelegramPhones(state?.telegram).length} Kayıtlı Alıcı`, `${normalizeTelegramPhones(state?.telegram).length} Recipients`),
+      status: normalizeTelegramPhones(state?.telegram).length > 0 ? 'online' : 'standby',
+      color: '#38BDF8',
+      rel: normalizeTelegramPhones(state?.telegram).length > 0 ? 'verified' : 'inferred'
+    }
+  ];
+
+  services.forEach((s, idx) => {
+    const angle = (idx / services.length) * Math.PI * 2 + Math.PI / 4;
+    const r = 150;
+    nodes.push({
+      id: s.id,
+      kind: 'service',
+      label: s.label,
+      sub: s.sub,
+      status: s.status,
+      x: Math.cos(angle) * r,
+      y: idx % 2 === 0 ? 44 : -44,
+      z: Math.sin(angle) * r,
+      radius: 9,
+      color: s.color
+    });
+    links.push({
+      from: 'core:main',
+      to: s.id,
+      rel: s.rel
+    });
+  });
+
+  // Update HUD summary pills
+  const statusPill = $('#core3DStatusPill');
+  const statusTxt = $('#core3DStatusText');
+  if (statusPill && statusTxt) {
+    statusTxt.textContent = unreviewedCount > 0
+      ? t(`CORTEX CORE · ${unreviewedCount} OLAY BEKLİYOR`, `CORTEX CORE · ${unreviewedCount} PENDING`)
+      : t(`CORTEX CORE · ${onlineCams}/${cams.length} KAMERA AKTİF`, `CORTEX CORE · ${onlineCams}/${cams.length} CAMERAS ONLINE`);
+  }
+  if ($('#core3DNodeCountPill')) {
+    $('#core3DNodeCountPill').textContent = `${t('DÜĞÜMLER', 'NODES')}: ${nodes.length} · ${t('BAĞLANTILAR', 'LINKS')}: ${links.length}`;
+  }
+
+  return { nodes, links };
+}
+
+function renderCortexTopology() {
+  if (!state) return;
+  const { nodes, links } = buildTopologyGraphFromState();
+
+  // Render quick-select pills at bottom of 3D stage
+  const pillsEl = $('#cortex3DNodePills');
+  if (pillsEl) {
+    const pillsKey = JSON.stringify([currentLang, selectedTopologyNodeId, nodes.map(n => [n.id, n.label, n.status])]);
+    const pillsHtml = nodes.map(n => `
+      <button type="button" class="topo-node-pill-btn ${selectedTopologyNodeId === n.id ? 'is-selected' : ''}" data-inspect-node="${esc(n.id)}">
+        <span class="dot ${n.status === 'online' ? '' : 'offline'}" style="background:${esc(n.color)}"></span>
+        <span>${esc(n.label)}</span>
+      </button>
+    `).join('');
+    setHtmlIfChanged(pillsEl, pillsHtml, pillsKey);
+  }
+
+  // Render 2D Alternative Topology Matrix
+  const grid2D = $('#cortex2DTopologyGrid');
+  if (grid2D) {
+    const cols = [
+      { title: t('01 · ANA SİSTEM (CORE)', '01 · MAIN SYSTEM (CORE)'), items: nodes.filter(n => n.kind === 'core') },
+      { title: t('02 · AĞ & ONVIF CİHAZLARI', '02 · LAN & ONVIF DEVICES'), items: nodes.filter(n => n.kind === 'device') },
+      { title: t('03 · KAMERALAR (RTSP)', '03 · CAMERAS (RTSP)'), items: nodes.filter(n => n.kind === 'camera') },
+      { title: t('04 · GÖRSEL AI & SERVİSLER', '04 · VISION AI & SERVICES'), items: nodes.filter(n => n.kind === 'service') }
+    ];
+    const html2D = cols.map(col => `
+      <div class="topo-2d-col">
+        <div class="topo-2d-col-head">
+          <span>${esc(col.title)}</span>
+          <span>${col.items.length}</span>
+        </div>
+        ${col.items.length ? col.items.map(item => `
+          <button type="button" class="topo-2d-node-btn ${selectedTopologyNodeId === item.id ? 'is-selected' : ''}" data-inspect-node="${esc(item.id)}">
+            <div class="topo-2d-node-top">
+              <span class="topo-2d-node-title">${esc(item.label)}</span>
+              <span class="tag ${item.status === 'online' ? 'ok' : (item.status === 'warn' ? 'warn' : '')} mono" style="font-size:9.5px;padding:2px 6px">${esc(item.status.toUpperCase())}</span>
+            </div>
+            <span class="topo-2d-node-sub">${esc(item.sub)}</span>
+          </button>
+        `).join('') : `<div class="fine" style="padding:8px 4px">${t('Kayıtlı düğüm yok', 'No nodes')}</div>`}
+      </div>
+    `).join('');
+    const key2D = JSON.stringify([currentLang, selectedTopologyNodeId, nodes.map(n => [n.id, n.label, n.sub, n.status])]);
+    setHtmlIfChanged(grid2D, html2D, key2D);
+  }
+}
+
+function initCortex3DExplorer() {
+  const canvas = $('#cortex3DCoreCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) topoOrbit.autoRotate = false;
+
+  function setTopoView(mode) {
+    topologyViewMode = mode === '2d' ? '2d' : '3d';
+    $('#viewMode3DBtn')?.classList.toggle('active', topologyViewMode === '3d');
+    $('#viewMode2DBtn')?.classList.toggle('active', topologyViewMode === '2d');
+    if ($('#cortex3DViewportWrap')) $('#cortex3DViewportWrap').hidden = topologyViewMode !== '3d';
+    if ($('#cortex3DCamControls')) $('#cortex3DCamControls').hidden = topologyViewMode !== '3d';
+    if ($('#cortex2DTopologyWrap')) $('#cortex2DTopologyWrap').hidden = topologyViewMode !== '2d';
+    renderCortexTopology();
+  }
+
+  $('#viewMode3DBtn')?.addEventListener('click', () => setTopoView('3d'));
+  $('#viewMode2DBtn')?.addEventListener('click', () => setTopoView('2d'));
+
+  $('#topoZoomInBtn')?.addEventListener('click', () => {
+    topoOrbit.targetZoom = Math.min(1.85, topoOrbit.targetZoom + 0.18);
+  });
+  $('#topoZoomOutBtn')?.addEventListener('click', () => {
+    topoOrbit.targetZoom = Math.max(0.58, topoOrbit.targetZoom - 0.18);
+  });
+  $('#topoAutoRotateBtn')?.addEventListener('click', () => {
+    topoOrbit.autoRotate = !topoOrbit.autoRotate;
+    $('#topoAutoRotateBtn')?.classList.toggle('active', topoOrbit.autoRotate);
+  });
+  $('#topoResetViewBtn')?.addEventListener('click', () => {
+    topoOrbit.targetYaw = 0.35;
+    topoOrbit.targetPitch = 0.32;
+    topoOrbit.targetZoom = 1.0;
+    selectedTopologyNodeId = null;
+    renderCortexTopology();
+  });
+
+  canvas.addEventListener('pointerdown', e => {
+    topoOrbit.dragging = true;
+    topoOrbit.dragStartX = e.clientX;
+    topoOrbit.dragStartY = e.clientY;
+    canvas.setPointerCapture?.(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    const rect = canvas.getBoundingClientRect();
+    topoOrbit.pointerX = e.clientX - rect.left;
+    topoOrbit.pointerY = e.clientY - rect.top;
+
+    if (topoOrbit.dragging) {
+      const dx = e.clientX - topoOrbit.dragStartX;
+      const dy = e.clientY - topoOrbit.dragStartY;
+      topoOrbit.dragStartX = e.clientX;
+      topoOrbit.dragStartY = e.clientY;
+      topoOrbit.targetYaw += dx * 0.0075;
+      topoOrbit.targetPitch = Math.max(-0.85, Math.min(0.85, topoOrbit.targetPitch + dy * 0.0065));
+      return;
+    }
+
+    // Hover hit test
+    let hit = null;
+    for (let i = topoOrbit.projectedNodes.length - 1; i >= 0; i--) {
+      const p = topoOrbit.projectedNodes[i];
+      const d = Math.hypot(topoOrbit.pointerX - p.sx, topoOrbit.pointerY - p.sy);
+      if (d <= Math.max(14, p.r + 6)) {
+        hit = p.id;
+        break;
+      }
+    }
+    topoOrbit.hoveredNodeId = hit;
+    canvas.style.cursor = hit ? 'pointer' : (topoOrbit.dragging ? 'grabbing' : 'grab');
+  });
+
+  window.addEventListener('pointerup', e => {
+    if (!topoOrbit.dragging) return;
+    topoOrbit.dragging = false;
+  });
+
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    for (let i = topoOrbit.projectedNodes.length - 1; i >= 0; i--) {
+      const p = topoOrbit.projectedNodes[i];
+      if (Math.hypot(mx - p.sx, my - p.sy) <= Math.max(16, p.r + 8)) {
+        openNodeInspector(p.id);
+        return;
+      }
+    }
+  });
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    topoOrbit.targetZoom = Math.max(0.58, Math.min(1.85, topoOrbit.targetZoom + delta));
+  }, { passive: false });
+
+  let lastTs = performance.now();
+  function renderLoop(now) {
+    requestAnimationFrame(renderLoop);
+    if (document.hidden || currentTab !== 'overview' || topologyViewMode !== '3d') return;
+    const gate = $('#cortexLoginGate');
+    if (gate && !gate.hidden) return;
+
+    const dt = Math.min(0.05, Math.max(0.001, (now - lastTs) / 1000));
+    lastTs = now;
+
+    if (topoOrbit.autoRotate && !topoOrbit.dragging && !reduced) {
+      topoOrbit.targetYaw += dt * 0.22;
+    }
+
+    // Smooth critically-damped interpolation
+    topoOrbit.yaw += (topoOrbit.targetYaw - topoOrbit.yaw) * 0.12;
+    topoOrbit.pitch += (topoOrbit.targetPitch - topoOrbit.pitch) * 0.12;
+    topoOrbit.zoom += (topoOrbit.targetZoom - topoOrbit.zoom) * 0.14;
+
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, rect.width || 760);
+    const h = Math.max(1, rect.height || 410);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const { nodes, links } = buildTopologyGraphFromState();
+
+    const cosY = Math.cos(topoOrbit.yaw), sinY = Math.sin(topoOrbit.yaw);
+    const cosP = Math.cos(topoOrbit.pitch), sinP = Math.sin(topoOrbit.pitch);
+    const fov = 560 * topoOrbit.zoom;
+
+    function project3D(x, y, z) {
+      const rx = x * cosY - z * sinY;
+      const rz1 = x * sinY + z * cosY;
+      const ry = y * cosP - rz1 * sinP;
+      const rz = y * sinP + rz1 * cosP;
+      const scale = fov / Math.max(160, fov + rz + 310);
+      return { sx: cx + rx * scale, sy: cy + ry * scale, rz, scale };
+    }
+
+    const isDark3D = document.documentElement.dataset.theme === 'dark';
+
+    // Draw subtle 3D orbital reference rings around Cortex Core
+    [105, 150, 195].forEach((ringR, idx) => {
+      ctx.beginPath();
+      const segs = 64;
+      for (let s = 0; s <= segs; s++) {
+        const a = (s / segs) * Math.PI * 2;
+        const pt = project3D(Math.cos(a) * ringR, 0, Math.sin(a) * ringR);
+        if (s === 0) ctx.moveTo(pt.sx, pt.sy);
+        else ctx.lineTo(pt.sx, pt.sy);
+      }
+      ctx.strokeStyle = idx === 0
+        ? (isDark3D ? 'rgba(76, 130, 255, 0.16)' : 'rgba(47, 107, 255, 0.22)')
+        : (idx === 1
+            ? (isDark3D ? 'rgba(155, 132, 255, 0.12)' : 'rgba(124, 92, 255, 0.18)')
+            : (isDark3D ? 'rgba(38, 208, 150, 0.14)' : 'rgba(18, 185, 129, 0.20)'));
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    const nodeMap = new Map();
+    const projected = nodes.map(n => {
+      const p = project3D(n.x, n.y, n.z);
+      const item = {
+        ...n,
+        sx: p.sx,
+        sy: p.sy,
+        rz: p.rz,
+        scale: p.scale,
+        r: Math.max(4, n.radius * p.scale)
+      };
+      nodeMap.set(n.id, item);
+      return item;
+    });
+
+    // Sort back-to-front by depth (rz descending)
+    projected.sort((a, b) => b.rz - a.rz);
+    topoOrbit.projectedNodes = projected;
+
+    // Draw 3D links with visual differentiation for verified / inferred / unknown
+    const pulseT = (now * 0.00055) % 1;
+    for (const lnk of links) {
+      const a = nodeMap.get(lnk.from);
+      const b = nodeMap.get(lnk.to);
+      if (!a || !b) continue;
+
+      ctx.save();
+      if (lnk.rel === 'verified') {
+        ctx.strokeStyle = isDark3D ? 'rgba(38, 208, 150, 0.48)' : 'rgba(18, 185, 129, 0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([]);
+      } else if (lnk.rel === 'inferred') {
+        ctx.strokeStyle = isDark3D ? 'rgba(76, 130, 255, 0.42)' : 'rgba(47, 107, 255, 0.48)';
+        ctx.lineWidth = 1.25;
+        ctx.setLineDash([5, 5]);
+      } else {
+        ctx.strokeStyle = 'rgba(245, 165, 36, 0.52)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([2, 4]);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(a.sx, a.sy);
+      ctx.lineTo(b.sx, b.sy);
+      ctx.stroke();
+
+      // Animated data packet on verified connections
+      if (lnk.rel === 'verified' && !reduced) {
+        const px = a.sx + (b.sx - a.sx) * pulseT;
+        const py = a.sy + (b.sy - a.sy) * pulseT;
+        ctx.fillStyle = isDark3D ? '#00D2FF' : '#2F6BFF';
+        ctx.beginPath();
+        ctx.arc(px, py, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Draw 3D nodes + labels
+    for (const n of projected) {
+      const isHovered = topoOrbit.hoveredNodeId === n.id;
+      const isSelected = selectedTopologyNodeId === n.id;
+
+      ctx.save();
+      if (n.kind === 'core') {
+        const glow = ctx.createRadialGradient(n.sx, n.sy, 2, n.sx, n.sy, n.r * 2.8);
+        glow.addColorStop(0, isDark3D ? 'rgba(0, 210, 255, 0.42)' : 'rgba(47, 107, 255, 0.28)');
+        glow.addColorStop(1, 'rgba(0, 210, 255, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(n.sx, n.sy, n.r * 2.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = isDark3D ? 'rgba(76, 130, 255, 0.75)' : 'rgba(47, 107, 255, 0.65)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(n.sx, n.sy, n.r * 1.45, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      if (isHovered || isSelected) {
+        ctx.strokeStyle = isDark3D ? '#FFFFFF' : '#0B0D12';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(n.sx, n.sy, n.r + 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = isDark3D ? '#0B0E17' : '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(n.sx, n.sy, n.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.lineWidth = n.kind === 'core' ? 2.4 : 1.8;
+      ctx.strokeStyle = n.color;
+      ctx.stroke();
+
+      ctx.fillStyle = n.color;
+      ctx.beginPath();
+      ctx.arc(n.sx, n.sy, Math.max(2, n.r * 0.42), 0, Math.PI * 2);
+      ctx.fill();
+
+      // Crisp node label
+      ctx.font = `${n.kind === 'core' ? '700 11.5px' : '600 10.5px'} "Google Sans Flex", system-ui, sans-serif`;
+      ctx.fillStyle = isDark3D
+        ? (isHovered || isSelected ? '#FFFFFF' : 'rgba(245, 247, 250, 0.88)')
+        : (isHovered || isSelected ? '#0B0D12' : 'rgba(11, 13, 18, 0.86)');
+      ctx.textAlign = 'center';
+      ctx.fillText(n.label, n.sx, n.sy + n.r + 14);
+      ctx.restore();
+    }
+  }
+
+  requestAnimationFrame(renderLoop);
+}
+
+/* --- MODULE D: Right-Side Slide-Over Device & Camera Detail Inspector Drawer --- */
+function openNodeInspector(nodeId) {
+  if (!nodeId) return;
+  selectedTopologyNodeId = nodeId;
+  inspectorOpen = true;
+  const drawer = $('#cortexInspectorDrawer');
+  if (drawer) drawer.hidden = false;
+  uiSound.trigger('pop');
+  renderCortexTopology();
+  renderNodeInspector();
+}
+
+function closeNodeInspector() {
+  inspectorOpen = false;
+  const drawer = $('#cortexInspectorDrawer');
+  if (drawer) drawer.hidden = true;
+}
+
+function renderNodeInspector() {
+  if (!inspectorOpen || !selectedTopologyNodeId || !state) return;
+  const bodyEl = $('#inspectorBody');
+  const titleEl = $('#inspectorTitle');
+  const subEl = $('#inspectorSubtitle');
+  const kindBadge = $('#inspectorKindBadge');
+  const statusBadge = $('#inspectorStatusBadge');
+  if (!bodyEl) return;
+
+  const [kind, rawId] = selectedTopologyNodeId.split(':');
+
+  if (kind === 'cam') {
+    const cam = (state.cameras || []).find(c => String(c.id) === String(rawId));
+    if (!cam) return closeNodeInspector();
+    const isOnline = cam.status === 'Bağlı';
+    const isPaused = cam.status === 'Durduruldu';
+    const camRules = (state.rules || []).filter(r => r.camera === cam.id);
+    const camEvents = (state.events || []).filter(e => e.camera === cam.name).slice(0, 5);
+    const transportUpper = String(cam.transport || 'tcp').toUpperCase();
+
+    if (kindBadge) kindBadge.textContent = t('KAMERA DÜĞÜMÜ', 'CAMERA NODE');
+    if (statusBadge) {
+      statusBadge.className = `tag mono ${isOnline ? 'ok' : (isPaused ? 'warn' : 'danger')}`;
+      statusBadge.textContent = cam.status.toUpperCase();
+    }
+    if (titleEl) titleEl.textContent = cam.name;
+    if (subEl) subEl.textContent = `RTSP/${transportUpper} · ID: ${cam.id}`;
+
+    const html = `
+      <div class="inspector-video-box">
+        ${isOnline
+          ? `<img src="/api/frame/${encodeURIComponent(cam.id)}?t=${Date.now()}" alt="${esc(cam.name)}">`
+          : `<div class="fine mono" style="color:#94a3b8;padding:20px;text-align:center">${esc(cam.status)} · ${t('Canlı görüntü akışı duraklatıldı veya çevrimdışı', 'Live stream paused or offline')}</div>`}
+      </div>
+
+      <div class="inspector-kv-grid">
+        <div class="inspector-kv-cell">
+          <span>${t('BAĞLANTI PROTOKOLÜ', 'PROTOCOL')}</span>
+          <strong>RTSP/${esc(transportUpper)} · ONVIF</strong>
+        </div>
+        <div class="inspector-kv-cell">
+          <span>${t('AI ÇIKARIM SÜRESİ', 'AI LATENCY')}</span>
+          <strong>${Number(cam.inferenceMs || 180)} ms</strong>
+        </div>
+        <div class="inspector-kv-cell">
+          <span>${t('TANIMLI KURALLAR', 'ASSIGNED RULES')}</span>
+          <strong>${camRules.filter(r => r.enabled).length} / ${camRules.length} ${t('Etkin', 'Active')}</strong>
+        </div>
+        <div class="inspector-kv-cell">
+          <span>${t('KVKK GİZLİLİK MASKESİ', 'PRIVACY MASKS')}</span>
+          <strong>${(cam.privacyMasks || []).length} ${t('Bölge', 'Zones')}</strong>
+        </div>
+      </div>
+
+      <div class="actions" style="margin:0;gap:8px;flex-wrap:wrap">
+        <button type="button" data-action="toggle" data-id="${esc(cam.id)}" class="primary">${isPaused ? t('İzlemeyi Başlat', 'Start Stream') : t('İzlemeyi Durdur', 'Pause Stream')}</button>
+        <button type="button" data-nvr-roi="${esc(cam.id)}">${t('ROI & Kural Stüdyosu ↗', 'ROI & Rule Studio ↗')}</button>
+        <button type="button" data-action="access-permit" data-id="${esc(cam.id)}">${t('15sn Geçici İzin', '15s Permit')}</button>
+        <button type="button" data-watch-overview="${esc(cam.id)}">${t('NVR Duvarında Odakla', 'Focus on NVR Wall')}</button>
+      </div>
+
+      <div class="inspector-section-card">
+        <h3>${t('AKTİF AI ANALİZLERİ & KURALLAR', 'ACTIVE AI ANALYTICS & RULES')} (${camRules.length})</h3>
+        ${camRules.length ? camRules.map(r => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+            <div>
+              <strong style="font-size:12.5px;display:block">${esc(r.name)}</strong>
+              <span class="fine mono">${esc(ruleCategoryLabel(r.kind))} · ROI ${ (r.roi || [0,0,100,100]).join(',') }%</span>
+            </div>
+            <button type="button" class="sector-mini-btn" data-edit="${esc(r.id)}">${t('Düzenle', 'Edit')}</button>
+          </div>
+        `).join('') : `<p class="fine" style="margin:0">${t('Bu kameraya henüz olay kuralı atanmadı.', 'No rules assigned to this camera yet.')}</p>`}
+      </div>
+
+      <div class="inspector-section-card">
+        <h3>${t('BU KAMERADAKİ SON OLAYLAR', 'RECENT EVENTS ON THIS CAMERA')} (${camEvents.length})</h3>
+        ${camEvents.length ? camEvents.map(ev => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+            <div>
+              <strong style="font-size:12.5px;display:block">${esc(ev.rule)}</strong>
+              <span class="fine mono">${new Date((ev.observedAt || ev.time) * 1000).toLocaleTimeString('tr-TR')} · ${esc(ev.reason.slice(0, 48))}</span>
+            </div>
+            <button type="button" class="sector-mini-btn" data-open-lightbox="${esc(ev.id)}">${t('Kanıt', 'Evidence')}</button>
+          </div>
+        `).join('') : `<p class="fine" style="margin:0">${t('Bu kamerada henüz kayıtlı olay yok.', 'No recorded events on this camera yet.')}</p>`}
+      </div>
+    `;
+    setHtmlIfChanged(bodyEl, html, `cam:${cam.id}:${cam.status}:${camRules.length}:${camEvents.length}:${currentLang}`);
+    return;
+  }
+
+  if (kind === 'dev') {
+    const dev = (state.devices || []).find(d => String(d.id) === String(rawId));
+    if (kindBadge) kindBadge.textContent = t('ONVIF AĞ CİHAZI', 'ONVIF NETWORK DEVICE');
+    if (statusBadge) {
+      statusBadge.className = 'tag ok mono';
+      statusBadge.textContent = dev ? (dev.sync ? 'SENKRON AKTİF' : 'BEKLEMEDE') : 'DOĞRUDAN HAVUZ';
+    }
+    if (titleEl) titleEl.textContent = dev ? dev.name : t('ONVIF & RTSP Ağ Köprüsü', 'ONVIF & RTSP LAN Bridge');
+    if (subEl) subEl.textContent = dev ? `${dev.host}:${dev.port || 80}` : '127.0.0.1 · Yerel Ağ Havuzu';
+
+    const html = `
+      <div class="inspector-kv-grid">
+        <div class="inspector-kv-cell">
+          <span>IP / HOST</span>
+          <strong>${esc(dev?.host || 'LAN / Doğrudan RTSP')}</strong>
+        </div>
+        <div class="inspector-kv-cell">
+          <span>SAAT SENKRONİZASYONU</span>
+          <strong>${dev ? (dev.sync ? 'Otomatik UTC' : 'Kapalı') : 'Sistem Saati'}</strong>
+        </div>
+        <div class="inspector-kv-cell">
+          <span>SAAT SAPMASI (DRIFT)</span>
+          <strong>${dev?.clock?.drift != null ? dev.clock.drift + ' sn' : '0.0 sn'}</strong>
+        </div>
+        <div class="inspector-kv-cell">
+          <span>BAĞLI KAMERALAR</span>
+          <strong>${(state.cameras || []).length} Kanal</strong>
+        </div>
+      </div>
+      <div class="inspector-section-card">
+        <h3>DURUM RAPORU</h3>
+        <p class="fine" style="margin:0">${esc(dev?.clock?.message || 'ONVIF kayıt cihazı ve RTSP kamera kanalları yerel ağ üzerinden kesintisiz izleniyor.')}</p>
+      </div>
+      <div class="actions" style="margin:0">
+        <button type="button" class="primary" data-tab="cameras">${t('Kameralar & ONVIF Yönetimine Git ↗', 'Open Cameras & ONVIF Settings ↗')}</button>
+      </div>
+    `;
+    setHtmlIfChanged(bodyEl, html, `dev:${rawId}:${currentLang}`);
+    return;
+  }
+
+  // Core or Service Node Inspector
+  if (kindBadge) kindBadge.textContent = kind === 'core' ? '3D CORTEX CORE' : 'SİSTEM SERVİSİ';
+  if (statusBadge) {
+    statusBadge.className = 'tag ok mono';
+    statusBadge.textContent = 'ÇEVRİMİÇİ';
+  }
+  if (titleEl) titleEl.textContent = kind === 'core' ? 'IPScans Cortex 3D Core Engine' : `Servis Düğümü (${rawId.toUpperCase()})`;
+  if (subEl) subEl.textContent = `127.0.0.1:8765 · Paket: ${(state.license?.plan || 'PRO').toUpperCase()}`;
+
+  const html = `
+    <div class="inspector-kv-grid">
+      <div class="inspector-kv-cell">
+        <span>AKTİF KAMERALAR</span>
+        <strong>${(state.cameras || []).filter(c => c.status === 'Bağlı').length} / ${(state.cameras || []).length}</strong>
+      </div>
+      <div class="inspector-kv-cell">
+        <span>ETKİN AI KURALLARI</span>
+        <strong>${(state.rules || []).filter(r => r.enabled).length} Kural</strong>
+      </div>
+      <div class="inspector-kv-cell">
+        <span>GÖRSEL AI MODELİ</span>
+        <strong>${esc(state.model || 'gemma3:4b')}</strong>
+      </div>
+      <div class="inspector-kv-cell">
+        <span>OLAY DİSKİ BOŞ ALAN</span>
+        <strong>${esc(state.diskFreeGB)} GB</strong>
+      </div>
+    </div>
+    <div class="inspector-section-card">
+      <h3>YEREL MİMARİ VE GÜVENLİK</h3>
+      <p class="fine" style="margin:0">Tüm RTSP akışları, 3-katmanlı hibrit görsel AI değerlendirmesi ve SHA-256 adli kanıt zinciri %100 bu bilgisayarda (127.0.0.1) çalışır.</p>
+    </div>
+    <div class="actions" style="margin:0;gap:8px">
+      <button type="button" class="primary" data-tab="settings">${t('Motor & Lisans Ayarları ↗', 'Engine & License Settings ↗')}</button>
+      <button type="button" data-tab="events">${t('Olay Arşivini Aç ↗', 'Open Event Archive ↗')}</button>
+    </div>
+  `;
+  setHtmlIfChanged(bodyEl, html, `core:${selectedTopologyNodeId}:${currentLang}`);
+}
+
+document.addEventListener('click', e => {
+  const inspectBtn = e.target.closest('[data-inspect-node]');
+  if (inspectBtn) {
+    openNodeInspector(inspectBtn.dataset.inspectNode);
+    return;
+  }
+  if (e.target.closest('[data-close-inspector]')) {
+    closeNodeInspector();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && inspectorOpen) {
+    closeNodeInspector();
+  }
+});
+
+initCollapsibleSidebar();
+initCortexStartupSequence();
+initCortex3DExplorer();
+renderCortexTopology();

@@ -72,8 +72,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 0;
 }
 
 .lang-globe-icon {
@@ -200,7 +200,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .cmdk-item:hover,
 .cmdk-item.is-selected {
   background: var(--signal-soft);
-  border-color: rgba(23, 121, 90, 0.25);
+  border-color: var(--signal);
 }
 .cmdk-item-left {
   display: flex;
@@ -1220,9 +1220,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   margin-top: 14px;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid var(--border-strong);
-  background: #0f172a;
-  color: #f8fafc;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--ink);
 }
 .tg-sim-chat-header {
   display: flex;
@@ -1230,8 +1230,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   justify-content: space-between;
   gap: 10px;
   padding: 10px 14px;
-  background: #1e293b;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 .tg-sim-bot-info {
   display: flex;
@@ -1253,12 +1253,12 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .tg-sim-bot-info strong {
   display: block;
   font-size: 12px;
-  color: #f8fafc;
+  color: var(--ink);
 }
 .tg-sim-status {
   display: block;
   font-size: 10px;
-  color: #38bdf8;
+  color: var(--signal);
   font-family: var(--mono);
 }
 .tg-sim-chat-actions {
@@ -1269,21 +1269,21 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   min-height: 28px !important;
   padding: 3px 9px !important;
   font-size: 10px !important;
-  border-radius: 7px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #e2e8f0 !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 999px !important;
+  background: var(--bg-subtle) !important;
+  color: var(--ink-2) !important;
+  border: 1px solid var(--border) !important;
 }
 .tg-sim-chat-window {
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: radial-gradient(circle at top right, rgba(42, 171, 238, 0.12), transparent 60%), #0f172a;
+  background: radial-gradient(circle at top right, rgba(47, 107, 255, 0.08), transparent 60%), var(--bg-subtle);
 }
 .tg-sim-bubble-user {
   align-self: flex-end;
-  background: #229ed9;
+  background: var(--signal);
   color: #fff;
   padding: 7px 12px;
   border-radius: 14px 14px 2px 14px;
@@ -1293,20 +1293,21 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 }
 .tg-sim-bubble-bot {
   align-self: flex-start;
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #f1f5f9;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink);
   padding: 10px 14px;
   border-radius: 14px 14px 14px 2px;
   max-width: 92%;
   width: 100%;
+  box-shadow: var(--shadow-soft);
 }
 .tg-sim-bubble-bot pre {
   margin: 0 !important;
   padding: 0 !important;
   background: transparent !important;
   border: none !important;
-  color: #e2e8f0 !important;
+  color: var(--ink) !important;
   font-family: var(--mono);
   font-size: 11.5px;
   white-space: pre-wrap;
@@ -1360,7 +1361,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   --mouse-y: -999px;
   box-shadow:
     inset 0 1px 0 0 oklch(1 0 0 / 0.14),
-    var(--shadow-sm);
+    var(--shadow-card);
   transition:
     transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -1487,7 +1488,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   outline: none;
 }
 .pipe-node-box {
-  fill: var(--card);
+  fill: var(--surface);
   stroke: var(--border-strong);
   stroke-width: 1.25;
   transition: stroke 180ms cubic-bezier(0.22, 1, 0.36, 1), fill 180ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -1587,7 +1588,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .cmdk-crumb-pill.active {
   background: var(--signal-soft);
   color: var(--signal);
-  border-color: rgba(23, 121, 90, 0.28);
+  border-color: var(--signal);
 }
 .cmdk-highlight {
   background: transparent;
@@ -1644,4 +1645,638 @@ button.is-optimistic-error {
   display: block;
   color: var(--signal);
   opacity: 0.82;
+}
+
+/* =========================================================================
+   7. CORTEX 3D ULTIMATE REDESIGN (IPScans Design DNA · 3D Startup Stage ·
+      Collapsible Sidebar · 3D Core & Network Topology · Slide-Over Inspector)
+   ========================================================================= */
+
+/* 7.1 Cinematic 7-Step 3D Startup Sequence (#cortexStartupStage) */
+.cortex-startup-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 16000;
+  background: var(--bg);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 32px;
+  overflow: hidden;
+  transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cortex-startup-stage.is-exiting {
+  opacity: 0;
+  transform: scale(1.025);
+  pointer-events: none;
+}
+.cortex-startup-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.startup-hud-top,
+.startup-hud-bottom {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.startup-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-radius: 99px;
+  background: var(--surface-glass);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.startup-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.startup-step-badge {
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: var(--signal-soft);
+  border: 1px solid rgba(47, 107, 255, 0.28);
+  color: var(--signal);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.startup-skip-btn {
+  min-height: 34px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.startup-skip-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--signal);
+}
+.startup-hud-center {
+  position: relative;
+  z-index: 2;
+  margin: auto;
+  text-align: center;
+  max-width: 680px;
+  width: 100%;
+  padding: 20px;
+  pointer-events: none;
+}
+.startup-eyebrow {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ink-2);
+  margin-bottom: 10px;
+}
+.startup-title {
+  font-size: clamp(38px, 6vw, 68px);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.startup-subtitle {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  margin: 0 auto 22px;
+  max-width: 520px;
+  min-height: 22px;
+}
+.startup-progress-track {
+  width: min(440px, 88vw);
+  height: 4px;
+  margin: 0 auto 14px;
+  border-radius: 99px;
+  background: var(--bg-muted);
+  overflow: hidden;
+}
+.startup-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #2F6BFF, #00C2FF, #12B76A);
+  transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.startup-steps-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.startup-step-dot {
+  font-size: 9.5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--ink-3);
+  transition: all 180ms ease;
+}
+.startup-step-dot.is-active {
+  background: var(--signal-soft);
+  border-color: var(--signal);
+  color: var(--signal);
+}
+.startup-step-dot.is-done {
+  background: var(--ok-soft);
+  border-color: rgba(18, 183, 106, 0.35);
+  color: var(--ok);
+}
+.startup-pref-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+  cursor: pointer;
+  margin: 0;
+}
+.startup-pref-toggle input {
+  width: 15px;
+  height: 15px;
+  min-height: 15px;
+  margin: 0;
+}
+.startup-bottom-meta {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+}
+
+/* 7.2 Collapsible Sidebar Rail (236px ↔ 68px) */
+body.sidebar-collapsed {
+  --sidebar-width: 68px;
+}
+body.sidebar-collapsed aside {
+  padding: 18px 10px;
+}
+.aside-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.sidebar-collapse-btn {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
+  flex-shrink: 0;
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), color 160ms ease, border-color 160ms ease;
+}
+.sidebar-collapse-btn:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+}
+body.sidebar-collapsed .aside-brand-row {
+  flex-direction: column;
+  gap: 8px;
+}
+body.sidebar-collapsed .brand {
+  padding: 6px;
+  justify-content: center;
+}
+body.sidebar-collapsed .brand-text,
+body.sidebar-collapsed .nav-label,
+body.sidebar-collapsed .aside-status-text,
+body.sidebar-collapsed .aside-replay-label,
+body.sidebar-collapsed .aside-version-pill {
+  display: none !important;
+}
+body.sidebar-collapsed nav button {
+  justify-content: center;
+  padding: 10px 0;
+}
+body.sidebar-collapsed .sidebar-collapse-btn svg {
+  transform: rotate(180deg);
+}
+.asidefoot {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.aside-foot-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.aside-replay-btn {
+  min-height: 28px !important;
+  padding: 4px 9px !important;
+  border-radius: 7px !important;
+  font-size: 10.5px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
+}
+.aside-replay-btn:hover {
+  border-color: var(--signal);
+  color: var(--ink);
+}
+.aside-version-pill {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+/* 7.3 3D Cortex Core & Interactive 3D Network / Device Explorer */
+.cortex-3d-explorer-card {
+  overflow: hidden;
+}
+.cortex-3d-explorer-head {
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cortex-3d-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cortex-3d-view-switch,
+.cortex-3d-cam-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.cortex-3d-viewport-wrap {
+  position: relative;
+  height: 410px;
+  border-radius: 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(47, 107, 255, 0.08), rgba(0, 194, 255, 0.03) 48%, transparent 80%),
+    var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+html[data-theme="dark"] .cortex-3d-viewport-wrap {
+  background:
+    radial-gradient(circle at 50% 46%, rgba(76, 130, 255, 0.14), rgba(0, 210, 255, 0.04) 42%, rgba(7, 8, 11, 0.98) 78%),
+    #050608;
+  border-color: var(--border-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.cortex-3d-core-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+.cortex-3d-core-canvas:active {
+  cursor: grabbing;
+}
+.cortex-3d-hud-top {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  pointer-events: none;
+}
+.cortex-3d-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: var(--surface-glass);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-soft);
+}
+.cortex-3d-hud-bottom {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.cortex-3d-legend {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--surface-glass);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
+  font-size: 11px;
+  width: fit-content;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-soft);
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-line {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+}
+.legend-line.is-verified {
+  background: #26D096;
+  box-shadow: 0 0 8px rgba(38, 208, 150, 0.65);
+}
+.legend-line.is-inferred {
+  border-top: 2px dashed #4C82FF;
+  height: 0;
+}
+.legend-line.is-unknown {
+  border-top: 2px dotted #F5A524;
+  height: 0;
+}
+.cortex-3d-node-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  pointer-events: auto;
+}
+.topo-node-pill-btn {
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  border-radius: 99px !important;
+  background: var(--surface-glass) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--ink) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+.topo-node-pill-btn:hover,
+.topo-node-pill-btn.is-selected {
+  border-color: var(--signal) !important;
+  background: var(--signal-soft) !important;
+  color: var(--signal) !important;
+}
+
+/* 7.4 2D Alternative Topology Matrix */
+.cortex-2d-topology-wrap {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  padding: 16px;
+}
+.cortex-2d-topology-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.topo-2d-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.topo-2d-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+}
+.topo-2d-node-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.topo-2d-node-btn:hover,
+.topo-2d-node-btn.is-selected {
+  border-color: var(--signal);
+  background: var(--signal-soft);
+}
+.topo-2d-node-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.topo-2d-node-title {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.topo-2d-node-sub {
+  font-size: 11px;
+  color: var(--ink-2);
+  font-family: var(--mono);
+}
+
+/* 7.5 Right-Side Slide-Over Device & Camera Detail Inspector Drawer */
+.cortex-inspector-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 12500;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+.inspector-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  animation: fadeIn 180ms ease-out;
+}
+.inspector-panel {
+  position: relative;
+  z-index: 1;
+  width: min(460px, 94vw);
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-float);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  animation: inspectorSlideIn 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes inspectorSlideIn {
+  from { transform: translateX(100%); opacity: 0.6; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.inspector-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.inspector-title {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.inspector-sub {
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.inspector-close-btn {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+.inspector-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.inspector-video-box {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #050608;
+  border: 1px solid var(--border-strong);
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+}
+.inspector-video-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.inspector-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.inspector-kv-cell {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+}
+.inspector-kv-cell span {
+  display: block;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  margin-bottom: 3px;
+}
+.inspector-kv-cell strong {
+  font-size: 13px;
+  color: var(--ink);
+  font-family: var(--mono);
+}
+.inspector-section-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inspector-section-card h3 {
+  font-size: 12px;
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin: 0;
+}
+@media (max-width: 960px) {
+  .cortex-2d-topology-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .cortex-2d-topology-grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,406 +1,778 @@
 <!doctype html>
-<html lang="tr" data-theme="dark">
+<html lang="tr" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex 2.3.0 — Yönetim Merkezi (Port 8766)</title>
+  <meta name="color-scheme" content="light dark">
+  <title>IPScans Cortex 2.4.0 — Yönetim Merkezi</title>
+  <!-- No-flash theme bootstrap: ipscans-theme (light|dark) → OS preference → light -->
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('ipscans-theme'); } catch (_) {}
+      if (t !== 'light' && t !== 'dark') {
+        t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.style.colorScheme = t;
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600;700&family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600&family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap" rel="stylesheet">
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/style.css?v=2.3.0">
+  <link rel="stylesheet" href="/style.css?v=2.4.0">
 </head>
 <body>
   <!-- Toast Notification -->
   <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
-  <!-- SPLIT-STAGE ARCHITECTURAL LOGIN GATE (admin / Kingofthegame0714*) -->
+  <!-- Reusable inline SVG symbols -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="ipsSignalGrad" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#2F6BFF"/><stop offset="0.5" stop-color="#00C2FF"/><stop offset="1" stop-color="#7A5CFF"/>
+      </linearGradient>
+      <symbol id="ipsLogo" viewBox="0 0 64 64">
+        <path d="M32 5.5 55 18.75v26.5L32 58.5 9 45.25v-26.5L32 5.5Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M32 5.5V24M55 18.75 39 28M55 45.25 39 36M32 58.5V40M9 45.25 25 36M9 18.75 25 28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+        <circle cx="32" cy="32" r="9" fill="url(#ipsSignalGrad)"/>
+      </symbol>
+      <symbol id="icSun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+      <symbol id="icMoon" viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+      <symbol id="icArrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="icExternal" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- LOGIN GATE — ipscans.com hero aesthetic -->
   <section id="loginGate" class="login-gate">
-    <!-- Left Column: Solid #07080B SignalField Stage -->
-    <div class="login-stage">
-      <canvas id="adminSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
+    <canvas id="adminSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
+    <div class="login-scrim" aria-hidden="true"></div>
 
-      <div class="login-stage-top">
-        <div class="stage-brand-lockup">
-          <img src="/logo.svg" alt="IPScans Cortex" class="stage-logo">
-          <span class="stage-brand-name">IPScans Cortex · v2.3.0</span>
-        </div>
+    <header class="login-topbar">
+      <span class="brand-lockup">
+        <svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#ipsLogo"/></svg>
+        <span class="brand-word">IPScans</span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="brand-product">Cortex Yönetim Merkezi</span>
+      </span>
+      <div class="login-topbar-actions">
+        <a href="http://127.0.0.1:8765" target="_blank" rel="noopener" class="topnav-link">Yerel istasyon</a>
+        <button type="button" class="icon-btn theme-toggle" data-theme-toggle title="Temayı değiştir" aria-label="Açık / koyu tema">
+          <svg class="ic-sun" width="18" height="18" aria-hidden="true"><use href="#icSun"/></svg>
+          <svg class="ic-moon" width="18" height="18" aria-hidden="true"><use href="#icMoon"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="login-layout">
+      <div class="login-hero">
+        <span class="ds-eyebrow">Yetkili geliştirici erişimi</span>
+        <h1 class="login-display">Merkezi lisans ve müşteri yönetimi.</h1>
+        <p class="login-lead">Müşteri istasyonlarını, PRO / PLUS / ULTRA paket kotalarını ve AES-256-GCM şifreli kasayı tek bir yerel konsoldan yönetin.</p>
+        <ul class="login-chips" aria-label="Güvenlik özellikleri">
+          <li class="chip">Port 8766</li>
+          <li class="chip">PBKDF2-SHA256 · 600K</li>
+          <li class="chip">AES-256-GCM kasa</li>
+          <li class="chip">HMAC-SHA256 lisans</li>
+        </ul>
       </div>
 
-      <div class="login-stage-center">
-        <h2 class="stage-headline">Merkezi Lisans ve Müşteri Yönetimi.</h2>
-      </div>
-
-      <div class="login-stage-bottom" hidden></div>
-    </div>
-
-    <!-- Right Column: Solid Surface Login Panel -->
-    <div class="login-panel">
-      <div class="login-card">
-        <div class="login-brand">
-          <h1>Yönetici Girişi</h1>
-        </div>
-
-        <form id="loginForm" class="login-form" autocomplete="off">
-          <div class="field">
-            <label for="adminUsername">Kullanıcı Adı</label>
-            <input id="adminUsername" name="username" type="text" value="admin" required placeholder="admin">
+      <div class="login-panel">
+        <div class="login-card">
+          <div class="login-brand">
+            <h2>Yönetici girişi</h2>
+            <p>Yerel yönetim kasasına ve lisans stüdyosuna bağlanmak için kimliğinizi doğrulayın.</p>
           </div>
-          <div class="field">
-            <label for="adminPassword">Parola</label>
-            <div class="password-input-wrap">
-              <input id="adminPassword" name="password" type="password" value="Kingofthegame0714*" required placeholder="••••••••••••">
-              <button type="button" id="toggleLoginPwBtn" class="btn-ghost btn-sm" title="Parolayı Göster/Gizle">Göster</button>
+
+          <form id="loginForm" class="login-form" autocomplete="off">
+            <div class="field">
+              <label for="adminUsername">Kullanıcı adı</label>
+              <input id="adminUsername" name="username" type="text" value="admin" required placeholder="admin">
             </div>
+            <div class="field">
+              <label for="adminPassword">Parola</label>
+              <div class="password-input-wrap">
+                <input id="adminPassword" name="password" type="password" value="Kingofthegame0714*" required placeholder="••••••••••••">
+                <button type="button" id="toggleLoginPwBtn" class="btn-ghost btn-xs" title="Parolayı göster / gizle">Göster</button>
+              </div>
+            </div>
+            <!-- Legacy ID compatibility hooks -->
+            <span id="loginUsername" hidden></span>
+            <span id="loginPassword" hidden></span>
+            <button type="button" id="quickFillAdminBtn" hidden></button>
+
+            <div id="loginError" class="login-error" hidden></div>
+
+            <div class="login-actions">
+              <button type="submit" id="loginSubmitBtn" class="btn-primary btn-lg btn-block">
+                <span>Giriş yap</span>
+                <svg class="btn-arrow" width="18" height="18" aria-hidden="true"><use href="#icArrow"/></svg>
+              </button>
+            </div>
+          </form>
+
+          <div class="login-footer">
+            <span>Yerel saha istemcisi · Port 8765</span>
+            <a href="http://127.0.0.1:8765" target="_blank" rel="noopener">Cortex'i aç
+              <svg width="14" height="14" aria-hidden="true"><use href="#icExternal"/></svg>
+            </a>
           </div>
-          <!-- Legacy ID compatibility hooks -->
-          <span id="loginUsername" hidden></span>
-          <span id="loginPassword" hidden></span>
-          <button type="button" id="quickFillAdminBtn" hidden></button>
-
-          <div id="loginError" class="login-error" hidden></div>
-
-          <div class="login-actions">
-            <button type="submit" id="loginSubmitBtn" class="btn-primary btn-lg btn-block">
-              <span>Giriş Yap</span>
-              <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6"/>
-              </svg>
-            </button>
-          </div>
-        </form>
-
-        <div class="login-footer">
-          <a href="http://127.0.0.1:8765" target="_blank" rel="noopener">Cortex ↗</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- MAIN DEVELOPER CONTROL CENTER WORKSPACE -->
+  <!-- MAIN CONTROL CENTER WORKSPACE -->
   <div id="adminWorkspace" class="workspace-root" hidden>
-    <!-- Full-Width Architectural Header -->
     <header class="topbar">
       <div class="topbar-left">
-        <img src="/logo.svg" alt="IPScans Cortex" class="topbar-logo">
-        <div class="topbar-title-row">
-          <h1>IPScans Cortex</h1>
-          <span class="topbar-divider" aria-hidden="true"></span>
-          <span class="topbar-subtle-label">Yönetim Merkezi · v2.3.0</span>
-        </div>
+        <button type="button" id="adminSidebarToggleBtn" class="icon-btn icon-btn-plain sidebar-toggle-btn" title="Kenar çubuğunu daralt / genişlet (Ctrl+B)" aria-label="Kenar çubuğunu daralt / genişlet">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>
+          </svg>
+        </button>
+        <span class="brand-lockup">
+          <svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#ipsLogo"/></svg>
+          <h1 class="brand-word">IPScans</h1>
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-product">Cortex Yönetim Merkezi</span>
+        </span>
       </div>
       <div class="topbar-right">
-        <button type="button" id="adminCmdkBtn" class="btn-secondary btn-sm admin-cmdk-trigger" title="Hızlı Komut ve Müşteri Arama Merkezi (Ctrl+K)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button type="button" id="adminCmdkBtn" class="btn-secondary btn-sm admin-cmdk-trigger" title="Hızlı komut ve müşteri arama (Ctrl+K)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
           </svg>
-          <span>Komut &amp; Ara</span>
+          <span>Komut ve ara</span>
           <kbd class="admin-kbd-pill">Ctrl K</kbd>
         </button>
-        <button type="button" id="runDiagBtn" class="btn-secondary btn-sm" title="Şifreli Kasa, Veritabanı ve Disk Tanılamasını Çalıştır">
-          <span>⚡ Tanılama</span>
+        <button type="button" id="runDiagBtn" class="icon-btn" title="Kasa, veritabanı ve disk tanılamasını çalıştır" aria-label="Tanılama çalıştır">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12h4l3-8 4 16 3-8h4"/>
+          </svg>
+          <span class="sr-only">Tanılama</span>
         </button>
-        <button type="button" id="refreshStateBtn" class="btn-secondary btn-sm">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button type="button" id="refreshStateBtn" class="icon-btn" title="Durumu yenile" aria-label="Durumu yenile">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>
           </svg>
-          <span>Yenile</span>
+          <span class="sr-only">Yenile</span>
         </button>
-        <button type="button" id="adminSoundToggleBtn" class="btn-secondary btn-sm" title="Dokunsal Arayüz Sesleri (Aç/Kapat)">
-          <span id="adminSoundIcon">🔊</span>
+        <button type="button" id="adminSoundToggleBtn" class="icon-btn" title="Arayüz sesleri (aç / kapat)" aria-label="Arayüz sesleri (aç / kapat)">
+          <span id="adminSoundIcon" class="admin-sound-icon-wrap" aria-hidden="true">
+            <svg class="icon-sound-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+            </svg>
+            <svg class="icon-sound-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" hidden>
+              <path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/>
+            </svg>
+          </span>
         </button>
-        <button type="button" id="themeToggleBtn" class="btn-secondary btn-sm">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 3v2m0 14v2M3 12h2m14 0h2m-2.6-6.4-1.4 1.4M7 17l-1.4 1.4m0-12.8L7 7m10 10 1.4 1.4"/>
-          </svg>
-          <span>Tema</span>
+        <button type="button" id="themeToggleBtn" class="icon-btn theme-toggle" data-theme-toggle title="Temayı değiştir" aria-label="Açık / koyu tema">
+          <svg class="ic-sun" width="18" height="18" aria-hidden="true"><use href="#icSun"/></svg>
+          <svg class="ic-moon" width="18" height="18" aria-hidden="true"><use href="#icMoon"/></svg>
         </button>
         <a id="openClientCortexLink" href="http://127.0.0.1:8765" target="_blank" rel="noopener" class="btn-primary btn-sm">
-          <span>Cortex ↗</span>
+          <span>Cortex'i aç</span>
+          <svg width="15" height="15" aria-hidden="true"><use href="#icExternal"/></svg>
         </a>
         <button type="button" id="logoutBtn" class="btn-ghost btn-sm">Çıkış</button>
       </div>
     </header>
 
-    <div id="workspace" class="workspace">
-      <!-- Sleek 4-Card Bento KPI Bar -->
-      <section class="telemetry-ribbon" aria-label="Lisans Özeti">
-        <article class="metric-card" data-bento-card>
-          <div class="metric-card-top">
-            <span class="metric-label">Toplam Müşteri &amp; Hesap</span>
-            <span class="metric-pill-tag">PBKDF2 · 600K</span>
-          </div>
-          <div class="metric-card-main">
-            <strong id="metricTotalCustomers" class="metric-value">0</strong>
-            <svg class="metric-spark-svg" viewBox="0 0 76 24" aria-hidden="true">
-              <polyline fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="2,18 16,15 30,16 44,10 58,11 74,4"/>
+    <div class="admin-shell-body">
+      <aside id="adminSidebar" class="admin-sidebar" aria-label="Yönetim merkezi navigasyonu">
+        <div class="admin-sidebar-section">
+          <span class="admin-sidebar-heading">Modüller</span>
+          <nav class="admin-sidebar-nav">
+            <button type="button" class="admin-nav-item active" data-admin-nav="overview" title="Genel bakış">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/>
+              </svg>
+              <span class="admin-nav-label">Genel bakış</span>
+            </button>
+            <button type="button" class="admin-nav-item" data-admin-nav="infra3d" title="Altyapı topolojisi">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>
+              </svg>
+              <span class="admin-nav-label">Altyapı topolojisi</span>
+              <span id="sidebarInfraCountBadge" class="admin-nav-badge">0</span>
+            </button>
+            <button type="button" class="admin-nav-item" data-admin-nav="customers" title="Müşteri ve lisans stüdyosu">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span class="admin-nav-label">Müşteriler ve lisanslar</span>
+              <span id="sidebarCustCountBadge" class="admin-nav-badge">0</span>
+            </button>
+            <button type="button" class="admin-nav-item" data-admin-nav="audit" title="Denetim ve olay kayıtları">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+              </svg>
+              <span class="admin-nav-label">Denetim kayıtları</span>
+              <span id="sidebarAuditCountBadge" class="admin-nav-badge">0</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="admin-sidebar-section admin-sidebar-quick">
+          <span class="admin-sidebar-heading">Hızlı işlemler</span>
+          <button type="button" id="sidebarInspectLocalBtn" class="admin-nav-item" title="Yerel istasyonu (8765) denetçide aç">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2.5"/><path d="M8 21h8M12 17v4"/>
             </svg>
-          </div>
-          <span id="metricCustomerSub" class="metric-sub">Çoklu kiracı (Multi-Tenant) izole</span>
-        </article>
-        <article class="metric-card" data-bento-card>
-          <div class="metric-card-top">
-            <span class="metric-label">Aktif Ticari Lisans</span>
-            <span class="metric-pill-tag is-ok">HMAC-SHA256</span>
-          </div>
-          <div class="metric-card-main">
-            <strong id="metricActiveLicenses" class="metric-value">0</strong>
-            <span id="metricTierDistText" class="metric-sub-mono">PRO / PLUS / ULTRA</span>
-          </div>
-          <div id="metricTierDistBar" class="metric-tier-bar" aria-hidden="true"></div>
-        </article>
-        <article class="metric-card" data-bento-card>
-          <div class="metric-card-top">
-            <span class="metric-label">Seçili Yerel İstasyon (8765)</span>
-            <span class="metric-pill-tag" id="metricLocalPlanTag">ULTRA</span>
-          </div>
-          <strong id="metricLocalOrg" class="metric-value">—</strong>
-          <span id="metricLocalUserPlan" class="metric-sub"></span>
-        </article>
-        <article class="metric-card" data-bento-card>
-          <div class="metric-card-top">
-            <span class="metric-label">Kasa &amp; Bot Telemetrisi</span>
-            <span class="metric-pill-tag is-ok" id="metricVaultBadge">AES-256-GCM</span>
-          </div>
-          <strong id="metricTelegramQuota" class="metric-value" style="font-size:1.15rem">0 / 10 Numara</strong>
-          <span id="metricDiskFree" class="metric-sub">@intelligentcortexbot · Disk Hazır</span>
-        </article>
-        <div hidden>
-          <strong id="metricLocalQuotas"></strong>
-          <span id="metricLocalUsage"></strong>
-          <span id="metricTelegramPhone"></span>
-          <strong id="metricEngineStatus"></strong>
+            <span class="admin-nav-label">Yerel istasyon (8765)</span>
+          </button>
+          <button type="button" id="sidebarNewCustomerBtn" class="admin-nav-item" title="Yeni müşteri ve lisans oluştur">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+            </svg>
+            <span class="admin-nav-label">Yeni müşteri ekle</span>
+          </button>
         </div>
-      </section>
 
-      <!-- Interactive 3-Tier Commercial Architecture Selector (PRO / PLUS / ULTRA) -->
-      <section class="tier-showcase" aria-label="Ticari Paket Şablonları">
-        <div class="tier-card" data-select-plan="PRO" data-bento-card tabindex="0" role="button" aria-label="Cortex PRO paketini seç">
-          <div class="tier-card-head">
-            <span class="tier-badge tier-pro">CORTEX PRO</span>
-            <span class="tier-SelectHint">Seçmek için tıkla →</span>
-          </div>
-          <strong>4 Kamera · 8 Kural · 2 Telegram</strong>
-          <span class="tier-card-sub">7 Gün Arşiv · Site &amp; Perakende Paketleri · Yerel ROI Motoru</span>
-        </div>
-        <div class="tier-card" data-select-plan="PLUS" data-bento-card tabindex="0" role="button" aria-label="Cortex PLUS paketini seç">
-          <div class="tier-card-head">
-            <span class="tier-badge tier-plus">CORTEX PLUS</span>
-            <span class="tier-SelectHint">Seçmek için tıkla →</span>
-          </div>
-          <strong>12 Kamera · 32 Kural · 5 Telegram</strong>
-          <span class="tier-card-sub">15 Gün Arşiv · Görsel AI &amp; Akıllı Takip · 7 Sektör Paketi</span>
-        </div>
-        <div class="tier-card is-selected-tier" data-select-plan="ULTRA" data-bento-card tabindex="0" role="button" aria-label="Cortex ULTRA paketini seç">
-          <div class="tier-card-head">
-            <span class="tier-badge tier-ultra">CORTEX ULTRA</span>
-            <span class="tier-SelectHint">Kurumsal Tam Kapasite</span>
-          </div>
-          <strong>32 Kamera · 128 Kural · 10 Telegram</strong>
-          <span class="tier-card-sub">30 Gün Arşiv · 8 Sektör + Copilot + SHA-256 Kanıt + ONVIF Filo</span>
-        </div>
-      </section>
-
-      <!-- Main Two-Column Grid: Left = Customer Studio, Right = Customer Accounts -->
-      <main class="main-grid">
-        <!-- LEFT COLUMN: Müşteri Tanımla -->
-        <section class="panel studio-panel" data-bento-card>
-          <div class="panel-head">
-            <div>
-              <span id="formModeBadge" hidden></span>
-              <h2 id="studioTitle">Müşteri Tanımla</h2>
+        <div class="admin-sidebar-foot">
+          <div class="sidebar-vault-status">
+            <span class="status-dot is-ok"></span>
+            <div class="sidebar-vault-meta">
+              <strong>AES-256-GCM kasa</strong>
+              <span>Port 8766 · Çevrimiçi</span>
             </div>
-            <button type="button" id="resetFormBtn" class="btn-secondary btn-sm" hidden>Yeni Müşteri</button>
           </div>
+          <button type="button" id="adminSidebarRailCollapseBtn" class="btn-ghost btn-xs sidebar-rail-btn" title="Kenar çubuğunu daralt / genişlet (Ctrl+B)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            <span class="admin-nav-label">Daralt</span>
+          </button>
+        </div>
+      </aside>
 
-          <form id="customerStudioForm" class="studio-form" autocomplete="off">
-            <input type="hidden" id="custId" name="id" value="">
+      <div id="workspace" class="workspace">
+        <section class="page-intro" aria-labelledby="pageIntroTitle">
+          <span class="ds-eyebrow">Yönetim merkezi · v2.4.0</span>
+          <h2 id="pageIntroTitle" class="page-title">Lisanslar, müşteriler ve istasyonlar.</h2>
+          <p class="page-lead">Ticari paket kotalarını tanımlayın, lisans anahtarı üretin ve bağlı Cortex istasyonlarına uzaktan müdahale edin.</p>
+        </section>
 
-            <div class="form-row two-col">
-              <div class="field">
-                <label for="custOrganization">Müşteri / Kurum Adı *</label>
-                <input id="custOrganization" name="organization" type="text" required placeholder="Örn: Marmara Panorama Rezidans">
-              </div>
-              <div class="field">
-                <label for="custContact">İletişim</label>
-                <input id="custContact" name="contact" type="text" placeholder="Örn: 0532 555 01 42">
+        <!-- KPI cards -->
+        <section id="adminOverviewSection" class="telemetry-ribbon" aria-label="Lisans özeti">
+          <article class="metric-card" data-bento-card>
+            <div class="metric-card-top">
+              <span class="metric-label">Toplam müşteri</span>
+              <span class="metric-pill-tag">PBKDF2 · 600K</span>
+            </div>
+            <div class="metric-card-main">
+              <strong id="metricTotalCustomers" class="metric-value">0</strong>
+              <svg class="metric-spark-svg" viewBox="0 0 76 24" aria-hidden="true">
+                <polyline fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" points="2,18 16,15 30,16 44,10 58,11 74,4"/>
+              </svg>
+            </div>
+            <span id="metricCustomerSub" class="metric-sub">Çoklu kiracı, izole kasa</span>
+          </article>
+          <article class="metric-card" data-bento-card>
+            <div class="metric-card-top">
+              <span class="metric-label">Aktif lisans</span>
+              <span class="metric-pill-tag is-ok">HMAC-SHA256</span>
+            </div>
+            <div class="metric-card-main">
+              <strong id="metricActiveLicenses" class="metric-value">0</strong>
+              <span id="metricTierDistText" class="metric-sub-mono">PRO / PLUS / ULTRA</span>
+            </div>
+            <div id="metricTierDistBar" class="metric-tier-bar" aria-hidden="true"></div>
+          </article>
+          <article class="metric-card" data-bento-card>
+            <div class="metric-card-top">
+              <span class="metric-label">Yerel istasyon (8765)</span>
+              <span class="metric-pill-tag" id="metricLocalPlanTag">ULTRA</span>
+            </div>
+            <strong id="metricLocalOrg" class="metric-value metric-value-text">—</strong>
+            <span id="metricLocalUserPlan" class="metric-sub"></span>
+          </article>
+          <article class="metric-card" data-bento-card>
+            <div class="metric-card-top">
+              <span class="metric-label">Kasa ve Telegram</span>
+              <span class="metric-pill-tag is-ok" id="metricVaultBadge">AES-256-GCM</span>
+            </div>
+            <strong id="metricTelegramQuota" class="metric-value metric-value-text">0 / 10 Numara</strong>
+            <span id="metricDiskFree" class="metric-sub">@intelligentcortexbot · Disk hazır</span>
+          </article>
+          <div hidden>
+            <strong id="metricLocalQuotas"></strong>
+            <span id="metricLocalUsage"></span>
+            <span id="metricTelegramPhone"></span>
+            <strong id="metricEngineStatus"></strong>
+          </div>
+        </section>
+
+        <!-- Plan templates -->
+        <section class="tier-showcase" aria-label="Ticari paket şablonları">
+          <div class="tier-card" data-select-plan="PRO" data-bento-card tabindex="0" role="button" aria-label="Cortex PRO paketini seç">
+            <div class="tier-card-head">
+              <span class="tier-badge tier-pro">Cortex PRO</span>
+              <span class="tier-SelectHint">Seç →</span>
+            </div>
+            <strong>4 kamera · 8 kural · 2 Telegram</strong>
+            <span class="tier-card-sub">7 gün arşiv · Site ve perakende paketleri · Yerel ROI motoru</span>
+          </div>
+          <div class="tier-card" data-select-plan="PLUS" data-bento-card tabindex="0" role="button" aria-label="Cortex PLUS paketini seç">
+            <div class="tier-card-head">
+              <span class="tier-badge tier-plus">Cortex PLUS</span>
+              <span class="tier-SelectHint">Seç →</span>
+            </div>
+            <strong>12 kamera · 32 kural · 5 Telegram</strong>
+            <span class="tier-card-sub">15 gün arşiv · Görsel AI ve akıllı takip · 7 sektör paketi</span>
+          </div>
+          <div class="tier-card is-selected-tier tier-card-selected" data-select-plan="ULTRA" data-bento-card tabindex="0" role="button" aria-label="Cortex ULTRA paketini seç">
+            <div class="tier-card-head">
+              <span class="tier-badge tier-ultra">Cortex ULTRA</span>
+              <span class="tier-SelectHint">Kurumsal tam kapasite</span>
+            </div>
+            <strong>32 kamera · 128 kural · 10 Telegram</strong>
+            <span class="tier-card-sub">30 gün arşiv · 8 sektör + Copilot + SHA-256 kanıt + ONVIF filo</span>
+          </div>
+        </section>
+
+        <!-- 3D infrastructure explorer -->
+        <section id="admin3DInfraSection" class="panel infra-3d-section" data-bento-card aria-label="Kurumsal altyapı ve istasyon topolojisi">
+          <div class="infra-3d-head">
+            <div class="infra-3d-title-wrap">
+              <span class="ds-eyebrow">Canlı istasyon topolojisi</span>
+              <div class="infra-3d-title-row">
+                <h2>Altyapı ve istasyonlar</h2>
+                <span id="adminInfraNodeBadge" class="badge-pill badge-signal">0 İstasyon</span>
+                <span id="adminInfraActiveBadge" class="badge-pill badge-ok">HMAC-SHA256 kök aktif</span>
               </div>
             </div>
 
-            <div class="form-row two-col">
-              <div class="field">
-                <label for="custUsername">Kullanıcı Adı *</label>
-                <input id="custUsername" name="username" type="text" required placeholder="Örn: marmara_yonetim">
+            <div class="infra-3d-controls">
+              <div class="infra-view-switch segmented" role="group" aria-label="Görünüm modu">
+                <button type="button" id="infraView3DBtn" class="infra-view-btn active" data-infra-view="3d">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>
+                  </svg>
+                  <span>3B sahne</span>
+                </button>
+                <button type="button" id="infraView2DBtn" class="infra-view-btn" data-infra-view="2d">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                  </svg>
+                  <span>2B matris</span>
+                </button>
               </div>
-              <div class="field">
-                <label for="custPassword">Giriş Parolası *</label>
-                <div class="password-input-wrap">
-                  <input id="custPassword" name="password" type="text" required placeholder="Örn: Marmara2026!">
-                  <button type="button" id="genRandomPwBtn" class="btn-ghost btn-sm" title="Güçlü Parola Üret">Üret</button>
+
+              <div class="infra-cam-controls">
+                <button type="button" id="infraZoomOutBtn" class="icon-btn icon-btn-sm" title="Uzaklaştır" aria-label="Uzaklaştır">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                </button>
+                <button type="button" id="infraZoomInBtn" class="icon-btn icon-btn-sm" title="Yakınlaştır" aria-label="Yakınlaştır">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>
+                </button>
+                <button type="button" id="infraAutoRotateBtn" class="btn-secondary btn-xs toggle-pill is-active" title="Otomatik yörünge dönüşü (aç / kapat)">Yörünge</button>
+                <button type="button" id="infraResetViewBtn" class="btn-secondary btn-xs" title="Görünümü sıfırla">Sıfırla</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="infra-3d-stage-wrap">
+            <div id="infra3DCanvasWrap" class="infra-3d-canvas-wrap">
+              <canvas id="adminInfra3DCanvas" class="admin-infra-3d-canvas" aria-label="Kurumsal altyapı ve müşteri istasyonları topolojisi"></canvas>
+
+              <div class="infra-hud-legend" aria-hidden="true">
+                <span class="infra-legend-item"><i class="legend-dot is-root"></i>Kök otorite (8766)</span>
+                <span class="infra-legend-item"><i class="legend-dot is-local"></i>Yerel istasyon (8765)</span>
+                <span class="infra-legend-item"><i class="legend-dot is-active"></i>Aktif bağlantı</span>
+                <span class="infra-legend-item"><i class="legend-dot is-warn"></i>Yüksek kota</span>
+                <span class="infra-legend-item"><i class="legend-dot is-suspended"></i>Askıda</span>
+              </div>
+
+              <div class="infra-hud-hint" aria-hidden="true">
+                <span>Sürükle: yörünge · Tıkla: istasyon denetçisi · Tekerlek: yakınlaştır</span>
+              </div>
+
+              <div id="infra3DHoverTooltip" class="infra-3d-tooltip" hidden></div>
+            </div>
+
+            <div id="adminInfra2DMatrix" class="infra-2d-matrix" hidden></div>
+          </div>
+
+          <div id="adminInfraStationBar" class="infra-station-bar" role="toolbar" aria-label="İstasyon hızlı seçim çubuğu"></div>
+        </section>
+
+        <!-- Customer studio + registry -->
+        <main id="adminCustomersSection" class="main-grid">
+          <section class="panel studio-panel" data-bento-card>
+            <div class="panel-head">
+              <div>
+                <span id="formModeBadge" hidden></span>
+                <span class="ds-eyebrow">Lisans stüdyosu</span>
+                <h2 id="studioTitle">Müşteri Tanımla</h2>
+              </div>
+              <button type="button" id="resetFormBtn" class="btn-secondary btn-sm" hidden>Yeni müşteri</button>
+            </div>
+
+            <form id="customerStudioForm" class="studio-form" autocomplete="off">
+              <input type="hidden" id="custId" name="id" value="">
+
+              <div class="form-row two-col">
+                <div class="field">
+                  <label for="custOrganization">Müşteri / kurum adı *</label>
+                  <input id="custOrganization" name="organization" type="text" required placeholder="Örn: Marmara Panorama Rezidans">
+                </div>
+                <div class="field">
+                  <label for="custContact">İletişim</label>
+                  <input id="custContact" name="contact" type="text" placeholder="Örn: 0532 555 01 42">
                 </div>
               </div>
-            </div>
 
-            <div class="form-row two-col">
-              <div class="field">
-                <label for="custPlan">Paket Seçimi</label>
-                <select id="custPlan" name="plan">
-                  <option value="PRO">PRO (4 Kamera · 2 Telegram)</option>
-                  <option value="PLUS">PLUS (12 Kamera · 5 Telegram)</option>
-                  <option value="ULTRA" selected>ULTRA (32 Kamera · 10 Telegram)</option>
+              <div class="form-row two-col">
+                <div class="field">
+                  <label for="custUsername">Kullanıcı adı *</label>
+                  <input id="custUsername" name="username" type="text" required placeholder="Örn: marmara_yonetim">
+                </div>
+                <div class="field">
+                  <label for="custPassword">Giriş parolası *</label>
+                  <div class="password-input-wrap">
+                    <input id="custPassword" name="password" type="text" required placeholder="Örn: Marmara2026!">
+                    <button type="button" id="genRandomPwBtn" class="btn-ghost btn-xs" title="Güçlü parola üret">Üret</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row two-col">
+                <div class="field">
+                  <label for="custPlan">Paket</label>
+                  <select id="custPlan" name="plan">
+                    <option value="PRO">PRO (4 kamera · 2 Telegram)</option>
+                    <option value="PLUS">PLUS (12 kamera · 5 Telegram)</option>
+                    <option value="ULTRA" selected>ULTRA (32 kamera · 10 Telegram)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="custDays">Lisans süresi (gün)</label>
+                  <input id="custDays" name="days" type="number" min="1" max="3650" value="365" required>
+                </div>
+              </div>
+
+              <div class="form-row three-col">
+                <div class="field">
+                  <label for="custMaxCameras">Maks. kamera</label>
+                  <input id="custMaxCameras" name="maxCameras" type="number" min="1" max="256" value="32" required>
+                </div>
+                <div class="field">
+                  <label for="custMaxRules">Maks. kural</label>
+                  <input id="custMaxRules" name="maxRules" type="number" min="1" max="1024" value="128" required>
+                </div>
+                <div class="field">
+                  <label for="custMaxTelegramPhones">Telegram numara</label>
+                  <input id="custMaxTelegramPhones" name="maxTelegramPhones" type="number" min="2" max="100" value="10" required>
+                </div>
+              </div>
+
+              <div class="form-row two-col">
+                <div class="field">
+                  <label for="custStatus">Hesap durumu</label>
+                  <select id="custStatus" name="status">
+                    <option value="active" selected>Aktif</option>
+                    <option value="suspended">Askıda</option>
+                  </select>
+                </div>
+                <div class="field checkbox-field">
+                  <label class="checkbox-label">
+                    <input id="custAssignToLocal" name="assignToLocal" type="checkbox">
+                    <span>Bu bilgisayarda aktif et</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="studio-submit-row">
+                <button type="submit" id="saveCustomerBtn" class="btn-primary btn-lg btn-block">
+                  <span>Müşteri Hesabını ve Lisansı Kaydet</span>
+                  <svg class="btn-arrow" width="18" height="18" aria-hidden="true"><use href="#icArrow"/></svg>
+                </button>
+              </div>
+            </form>
+
+            <div id="savedCredentialsBanner" class="saved-banner" hidden>
+              <div class="saved-banner-head">
+                <strong>Müşteri hesabı ve lisans anahtarı hazır</strong>
+                <div class="saved-banner-actions">
+                  <button type="button" id="copyLicenseKeyBtn" class="btn-secondary btn-sm">Anahtarı kopyala</button>
+                  <button type="button" id="copyCustomerSummaryBtn" class="btn-primary btn-sm">Teslim bilgilerini kopyala</button>
+                </div>
+              </div>
+              <div id="savedCredentialsContent" class="saved-banner-grid"></div>
+            </div>
+          </section>
+
+          <section class="panel registry-panel" data-bento-card>
+            <div class="panel-head">
+              <div>
+                <span class="ds-eyebrow">Kayıtlı hesaplar</span>
+                <h2>Müşteri hesapları</h2>
+              </div>
+              <div class="registry-filters">
+                <input id="customerSearchInput" type="search" placeholder="Kurum, kullanıcı adı veya anahtar ara…" aria-label="Müşteri ara">
+                <select id="customerPlanFilter" aria-label="Paket filtresi">
+                  <option value="ALL">Tüm paketler</option>
+                  <option value="PRO">PRO</option>
+                  <option value="PLUS">PLUS</option>
+                  <option value="ULTRA">ULTRA</option>
                 </select>
               </div>
-              <div class="field">
-                <label for="custDays">Lisans Süresi (Gün)</label>
-                <input id="custDays" name="days" type="number" min="1" max="3650" value="365" required>
+            </div>
+
+            <div class="registry-quick-pills segmented segmented-wrap" role="toolbar" aria-label="Hızlı müşteri filtreleri">
+              <button type="button" class="quick-filter-pill active" data-quick-filter="ALL">Tümü</button>
+              <button type="button" class="quick-filter-pill" data-quick-filter="ACTIVE">Aktif</button>
+              <button type="button" class="quick-filter-pill" data-quick-filter="SUSPENDED">Askıda</button>
+              <button type="button" class="quick-filter-pill" data-quick-filter="LOCAL">Bu istasyon</button>
+              <button type="button" class="quick-filter-pill" data-quick-filter="ULTRA">ULTRA</button>
+              <button type="button" class="quick-filter-pill" data-quick-filter="PLUS">PLUS</button>
+              <button type="button" class="quick-filter-pill" data-quick-filter="PRO">PRO</button>
+            </div>
+
+            <div id="customerListContainer" class="customer-list"></div>
+          </section>
+        </main>
+
+        <!-- License history & audit trail -->
+        <details id="adminAuditSection" class="panel bottom-drawer" open>
+          <summary>
+            <span class="summary-text">
+              <span class="ds-eyebrow">Kayıt defteri</span>
+              <span class="summary-title">Lisans geçmişi ve denetim kayıtları</span>
+            </span>
+            <svg class="summary-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <section class="bottom-grid">
+            <div class="panel-sub">
+              <div class="panel-head">
+                <h2>Üretilen lisans anahtarları</h2>
+              </div>
+              <div id="issuedLicensesList" class="compact-table-wrap">
+                <table class="compact-table">
+                  <thead>
+                    <tr>
+                      <th>Kurum &amp; Kullanıcı</th>
+                      <th>Paket</th>
+                      <th>Kotalar</th>
+                      <th>Lisans Anahtarı</th>
+                      <th>İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody id="licenseTableBody"></tbody>
+                </table>
               </div>
             </div>
 
-            <div class="form-row three-col">
-              <div class="field">
-                <label for="custMaxCameras">Maks. Kamera</label>
-                <input id="custMaxCameras" name="maxCameras" type="number" min="1" max="256" value="32" required>
+            <div class="panel-sub">
+              <div class="panel-head">
+                <h2>Denetim kayıtları</h2>
+                <button type="button" id="restartTelegramGlobalBtn" class="btn-secondary btn-sm">Telegram motorunu sıfırla</button>
               </div>
-              <div class="field">
-                <label for="custMaxRules">Maks. Kural</label>
-                <input id="custMaxRules" name="maxRules" type="number" min="1" max="1024" value="128" required>
-              </div>
-              <div class="field">
-                <label for="custMaxTelegramPhones">Telegram Numara</label>
-                <input id="custMaxTelegramPhones" name="maxTelegramPhones" type="number" min="2" max="100" value="10" required>
-              </div>
-            </div>
 
-            <div class="form-row two-col">
-              <div class="field">
-                <label for="custStatus">Hesap Durumu</label>
-                <select id="custStatus" name="status">
-                  <option value="active" selected>Aktif</option>
-                  <option value="suspended">Askıda</option>
-                </select>
+              <div class="audit-filter-bar" role="toolbar" aria-label="Denetim kaydı filtreleri">
+                <div class="audit-filter-pills segmented">
+                  <button type="button" class="quick-filter-pill active" data-audit-filter="ALL">Tümü</button>
+                  <button type="button" class="quick-filter-pill" data-audit-filter="LICENSE">Lisans</button>
+                  <button type="button" class="quick-filter-pill" data-audit-filter="ACTION">Müdahale</button>
+                  <button type="button" class="quick-filter-pill" data-audit-filter="DIAG">Tanılama</button>
+                  <button type="button" class="quick-filter-pill" data-audit-filter="SECURITY">Güvenlik</button>
+                </div>
+                <input id="auditFilterInput" class="audit-search-input" type="search" placeholder="Kayıtlarda ara (müşteri, işlem, SHA-256)…" aria-label="Denetim kayıtlarında ara">
               </div>
-              <div class="field checkbox-field">
-                <label class="checkbox-label">
-                  <input id="custAssignToLocal" name="assignToLocal" type="checkbox">
-                  <span>Bu bilgisayarda aktif et</span>
-                </label>
+
+              <div id="auditLogContainer" class="compact-table-wrap">
+                <div id="auditLogList"></div>
               </div>
             </div>
-
-            <div class="studio-submit-row">
-              <button type="submit" id="saveCustomerBtn" class="btn-primary btn-lg btn-block">
-                <span>Müşteri Hesabını ve Lisansı Kaydet</span>
-                <svg class="btn-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M5 12h14M13 6l6 6-6 6"/>
-                </svg>
-              </button>
-            </div>
-          </form>
-
-          <!-- Saved Customer Credential & License Key Output Card -->
-          <div id="savedCredentialsBanner" class="saved-banner" hidden>
-            <div class="saved-banner-head">
-              <strong>Müşteri Hesabı ve Lisans Anahtarı Hazır</strong>
-              <div class="saved-banner-actions">
-                <button type="button" id="copyLicenseKeyBtn" class="btn-secondary btn-sm">Anahtarı Kopyala</button>
-                <button type="button" id="copyCustomerSummaryBtn" class="btn-primary btn-sm">Teslim Bilgilerini Kopyala</button>
-              </div>
-            </div>
-            <div id="savedCredentialsContent" class="saved-banner-grid"></div>
-          </div>
-        </section>
-
-        <!-- RIGHT COLUMN: Müşteri Hesapları -->
-        <section class="panel registry-panel" data-bento-card>
-          <div class="panel-head">
-            <div>
-              <h2>Müşteri Hesapları</h2>
-            </div>
-            <div class="registry-filters">
-              <input id="customerSearchInput" type="search" placeholder="Kurum, kullanıcı adı veya anahtar ara...">
-              <select id="customerPlanFilter">
-                <option value="ALL">Tüm Paketler</option>
-                <option value="PRO">PRO</option>
-                <option value="PLUS">PLUS</option>
-                <option value="ULTRA">ULTRA</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="registry-quick-pills" role="toolbar" aria-label="Hızlı Müşteri Filtreleri">
-            <button type="button" class="quick-filter-pill active" data-quick-filter="ALL">Tümü</button>
-            <button type="button" class="quick-filter-pill" data-quick-filter="ACTIVE">Aktif</button>
-            <button type="button" class="quick-filter-pill" data-quick-filter="SUSPENDED">Askıda</button>
-            <button type="button" class="quick-filter-pill" data-quick-filter="LOCAL">Bu İstasyon (8765)</button>
-            <button type="button" class="quick-filter-pill" data-quick-filter="ULTRA">ULTRA</button>
-            <button type="button" class="quick-filter-pill" data-quick-filter="PLUS">PLUS</button>
-            <button type="button" class="quick-filter-pill" data-quick-filter="PRO">PRO</button>
-          </div>
-
-          <div id="customerListContainer" class="customer-list"></div>
-        </section>
-      </main>
-
-      <!-- Collapsible Drawer: Issued License History & Audit Trail -->
-      <details class="panel bottom-drawer" open>
-        <summary>Lisans Geçmişi &amp; Denetim Kayıtları</summary>
-        <section class="bottom-grid">
-          <div class="panel-sub">
-            <div class="panel-head">
-              <h2>Üretilen Lisans Anahtarları</h2>
-            </div>
-            <div id="issuedLicensesList" class="compact-table-wrap">
-              <table class="compact-table">
-                <thead>
-                  <tr>
-                    <th>Kurum &amp; Kullanıcı</th>
-                    <th>Paket</th>
-                    <th>Kotalar</th>
-                    <th>Lisans Anahtarı</th>
-                    <th>İşlem</th>
-                  </tr>
-                </thead>
-                <tbody id="licenseTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="panel-sub">
-            <div class="panel-head">
-              <h2>Denetim Kayıtları</h2>
-              <button type="button" id="restartTelegramGlobalBtn" class="btn-secondary btn-sm">Telegram Motorunu Sıfırla</button>
-            </div>
-            <div id="auditLogContainer" class="compact-table-wrap">
-              <div id="auditLogList"></div>
-            </div>
-          </div>
-        </section>
-      </details>
+          </section>
+        </details>
+      </div>
     </div>
   </div>
 
-  <!-- Admin Command Palette Modal (Ctrl+K) -->
-  <div id="adminCmdPaletteModal" class="admin-cmdk-overlay" role="dialog" aria-modal="true" aria-label="Yönetici Hızlı Komut Merkezi" hidden>
+  <!-- Slide-over customer & station inspector -->
+  <aside id="adminInspectorDrawer" class="admin-inspector-drawer" role="dialog" aria-modal="true" aria-labelledby="inspectorOrgName" hidden>
+    <div class="admin-inspector-backdrop" data-close-inspector="1"></div>
+    <div class="admin-inspector-panel">
+      <div class="inspector-head">
+        <div class="inspector-head-main">
+          <div class="inspector-badges-row">
+            <span id="inspectorPlanBadge" class="tier-badge tier-ultra">ULTRA</span>
+            <span id="inspectorStatusBadge" class="status-pill status-pill-ok">Aktif</span>
+            <span id="inspectorLocalBadge" class="status-pill status-pill-local" hidden>Yerel istasyon (8765)</span>
+          </div>
+          <h2 id="inspectorOrgName">Kurumsal Müşteri</h2>
+          <span id="inspectorUsername" class="inspector-username">@musteri</span>
+        </div>
+        <button type="button" id="closeInspectorBtn" class="icon-btn" data-close-inspector="1" title="Kapat (Esc)" aria-label="Kapat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="inspector-body">
+        <section class="inspector-section">
+          <span class="inspector-section-title">İstasyon ve oturum</span>
+          <div class="inspector-meta-grid">
+            <div class="inspector-meta-cell">
+              <span>Son görülme</span>
+              <strong id="inspectorLastSeen">—</strong>
+            </div>
+            <div class="inspector-meta-cell">
+              <span>Cortex sürümü</span>
+              <strong id="inspectorVersion">v2.4.0</strong>
+            </div>
+            <div class="inspector-meta-cell">
+              <span>İletişim</span>
+              <strong id="inspectorContact">—</strong>
+            </div>
+            <div class="inspector-meta-cell">
+              <span>Giriş parolası</span>
+              <code id="inspectorPasswordHint">—</code>
+            </div>
+          </div>
+          <div class="inspector-health-banner">
+            <span class="status-dot is-ok"></span>
+            <span id="inspectorHealthNote">Lisans ve kullanıcı hesabı aktif</span>
+          </div>
+        </section>
+
+        <section class="inspector-section">
+          <span class="inspector-section-title">Kota kullanımı ve süre</span>
+          <div class="inspector-quota-list">
+            <div class="inspector-quota-item">
+              <div class="inspector-quota-row">
+                <span>Kamera kapasitesi</span>
+                <strong id="inspectorCamQuotaText">0 / 32 (%0)</strong>
+              </div>
+              <div class="quota-bar"><div id="inspectorCamQuotaBar" class="quota-bar-fill" style="width:0%"></div></div>
+            </div>
+            <div class="inspector-quota-item">
+              <div class="inspector-quota-row">
+                <span>AI kural motoru</span>
+                <strong id="inspectorRuleQuotaText">0 / 128 (%0)</strong>
+              </div>
+              <div class="quota-bar"><div id="inspectorRuleQuotaBar" class="quota-bar-fill" style="width:0%"></div></div>
+            </div>
+            <div class="inspector-quota-item">
+              <div class="inspector-quota-row">
+                <span>Telegram numara kotası</span>
+                <strong id="inspectorTgQuotaText">0 / 10 (%0)</strong>
+              </div>
+              <div class="quota-bar"><div id="inspectorTgQuotaBar" class="quota-bar-fill" style="width:0%"></div></div>
+            </div>
+            <div class="inspector-quota-item">
+              <div class="inspector-quota-row">
+                <span>Lisans geçerlilik süresi</span>
+                <strong id="inspectorExpiryText">365 Gün Kaldı</strong>
+              </div>
+              <div class="cust-expiry-track"><div id="inspectorExpiryBar" class="cust-expiry-fill" style="width:100%"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="inspector-section">
+          <span class="inspector-section-title">Lisans anahtarı (HMAC-SHA256)</span>
+          <div class="inspector-key-box">
+            <code id="inspectorLicenseKey" class="inspector-key-code">—</code>
+            <div class="inspector-key-actions">
+              <button type="button" id="inspectorCopyKeyBtn" class="btn-secondary btn-xs">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                <span>Anahtarı kopyala</span>
+              </button>
+              <button type="button" id="inspectorCopyPackBtn" class="btn-primary btn-xs">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/>
+                </svg>
+                <span>Teslim paketini kopyala</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="inspector-section">
+          <span class="inspector-section-title">Uzaktan müdahale</span>
+          <div class="inspector-tier-row">
+            <span>Paketi değiştir</span>
+            <div class="inline-plan-switch">
+              <button type="button" id="inspectorPlanProBtn" class="btn-ghost btn-xs" data-inspector-upgrade="PRO">PRO</button>
+              <button type="button" id="inspectorPlanPlusBtn" class="btn-ghost btn-xs" data-inspector-upgrade="PLUS">PLUS</button>
+              <button type="button" id="inspectorPlanUltraBtn" class="btn-ghost btn-xs" data-inspector-upgrade="ULTRA">ULTRA</button>
+            </div>
+          </div>
+
+          <div class="inspector-action-grid">
+            <button type="button" id="inspectorAssignLocalBtn" class="btn-secondary btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2.5"/><path d="M8 21h8M12 17v4"/>
+              </svg>
+              <span>Yerel İstasyona (8765) Ata</span>
+            </button>
+            <button type="button" id="inspectorRunDiagBtn" class="btn-secondary btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12h4l3-8 4 16 3-8h4"/>
+              </svg>
+              <span>İstasyon tanılaması</span>
+            </button>
+            <button type="button" id="inspectorRestartTgBtn" class="btn-secondary btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/>
+              </svg>
+              <span>Telegram botunu sıfırla</span>
+            </button>
+            <button type="button" id="inspectorExtendBtn" class="btn-secondary btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+              </svg>
+              <span>+30 gün uzat</span>
+            </button>
+            <button type="button" id="inspectorSuspendBtn" class="btn-secondary btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M10 15V9M14 15V9"/>
+              </svg>
+              <span id="inspectorSuspendBtnLabel">Askıya Al</span>
+            </button>
+            <button type="button" id="inspectorEditFormBtn" class="btn-primary btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              <span>Stüdyoda düzenle</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Command palette (Ctrl+K) -->
+  <div id="adminCmdPaletteModal" class="admin-cmdk-overlay" role="dialog" aria-modal="true" aria-label="Hızlı komut merkezi" hidden>
     <div class="admin-cmdk-backdrop" data-close-admin-cmdk="1"></div>
     <div class="admin-cmdk-dialog">
-      <div class="admin-cmdk-head">
-        <span class="admin-cmdk-crumb">Cortex Admin v2.3</span>
-        <span class="admin-cmdk-crumb">Komut &amp; Müşteri Arama Merkezi</span>
-      </div>
       <div class="admin-cmdk-search">
-        <input id="adminCmdkInput" type="search" autocomplete="off" spellcheck="false" placeholder="Müşteri ara, paket seç, tanılama çalıştır veya komut yaz… (Ctrl+K)">
-        <kbd class="admin-kbd-pill" data-close-admin-cmdk="1">ESC</kbd>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+        </svg>
+        <input id="adminCmdkInput" type="search" autocomplete="off" spellcheck="false" placeholder="Müşteri ara, paket seç veya komut yaz…" aria-label="Komut ara">
+        <kbd class="admin-kbd-pill" data-close-admin-cmdk="1">Esc</kbd>
       </div>
       <div id="adminCmdkList" class="admin-cmdk-list" role="listbox"></div>
       <div class="admin-cmdk-foot">
         <span><kbd>↑↓</kbd> Gezin</span>
         <span><kbd>↵</kbd> Çalıştır</span>
-        <span><kbd>ESC</kbd> Kapat</span>
+        <span><kbd>Esc</kbd> Kapat</span>
+        <span class="admin-cmdk-crumb">Cortex Admin v2.3</span>
       </div>
     </div>
   </div>
 
-  <script src="/app.js?v=2.3.0"></script>
+  <script src="/app.js?v=2.4.0"></script>
 </body>
 </html>

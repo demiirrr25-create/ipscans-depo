@@ -30,7 +30,7 @@ from cryptography.fernet import Fernet
 import forensics
 import iot_automation
 
-VERSION = "2.3.0"
+VERSION = "2.4.0"
 ROOT = pathlib.Path(getattr(sys, '_MEIPASS', pathlib.Path(__file__).parent))
 DATA = pathlib.Path(
     os.environ.get(

@@ -12,7 +12,8 @@
   --bg-subtle: #F7F8FA;
   --bg-muted: #F1F3F5;
   --surface: #FFFFFF;
-  --surface-glass: #FFFFFF;
+  --surface-glass: rgba(255, 255, 255, 0.82);
+  --hero-scrim: radial-gradient(ellipse 72% 65% at 50% 48%, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.55) 55%, rgba(255, 255, 255, 0) 100%);
 
   /* Surface Hierarchy */
   --surface-1: #F7F8FA;
@@ -101,7 +102,8 @@ html[data-theme="dark"],
   --bg-subtle: #0D0F14;
   --bg-muted: #141821;
   --surface: #0D0F14;
-  --surface-glass: #0D0F14;
+  --surface-glass: rgba(13, 15, 20, 0.82);
+  --hero-scrim: radial-gradient(ellipse 72% 65% at 50% 48%, rgba(7, 8, 11, 0.88) 0%, rgba(7, 8, 11, 0.55) 55%, rgba(7, 8, 11, 0) 100%);
 
   /* Surface Hierarchy */
   --surface-1: #0D0F14;
@@ -286,15 +288,15 @@ code {
   font-size: 12px;
 }
 
-.eyebrow {
+.eyebrow,
+.ds-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  letter-spacing: 0.08em;
-  font-size: 11px;
+  letter-spacing: -0.005em;
+  font-size: 13px;
   color: var(--ink-2);
-  font-weight: 600;
-  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .eyebrow::before {
@@ -302,8 +304,35 @@ code {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: var(--signal-gradient);
+  background: var(--signal);
+  box-shadow: 0 0 0 4px var(--signal-soft);
   flex-shrink: 0;
+}
+
+.ds-eyebrow .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--signal);
+  box-shadow: 0 0 0 4px var(--signal-soft);
+  flex-shrink: 0;
+}
+
+.ds-eyebrow .dot::after {
+  display: none;
+}
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--signal-soft);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
 .fine {
@@ -529,8 +558,10 @@ header {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--ink-3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .crumb-sep {
@@ -546,6 +577,11 @@ header b {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.header-actions button {
+  white-space: nowrap;
 }
 
 .badge {
@@ -571,10 +607,11 @@ header b {
   display: inline-flex;
   align-items: center;
   background: var(--bg-subtle);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  padding: 2px;
+  padding: 3px;
   gap: 2px;
+  height: 36px;
 }
 
 .lang-btn {
@@ -584,7 +621,9 @@ header b {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 4px 10px;
+  padding: 0 10px;
+  min-height: 28px !important;
+  height: 28px;
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
@@ -603,18 +642,19 @@ header b {
 /* Theme Toggle Button */
 .theme-toggle {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  background: var(--surface);
   color: var(--ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   overflow: hidden;
+  box-shadow: var(--shadow-soft);
 }
 
 .theme-toggle:hover {
@@ -1349,7 +1389,7 @@ footer {
 
 /* ==========================================================================
    Welcome / Login Screen (#cortexLoginGate)
-   ZERO Blur · 100% Solid 2-Column Architectural Split Stage (ipscans.com)
+   ipscans.com 1:1 Airy Full-Viewport SignalField Stage + Glass Card
    ========================================================================== */
 
 .cortex-login-gate {
@@ -1357,27 +1397,19 @@ footer {
   inset: 0;
   z-index: 9999;
   background: var(--bg);
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  min-height: 100vh;
-  width: 100vw;
-}
-
-.login-stage {
-  position: relative;
-  background: #07080B;
-  color: #F5F7FA;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: clamp(28px, 4vw, 52px);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  overflow: hidden;
+  min-height: 100vh;
+  width: 100vw;
+  overflow-y: auto;
+  overflow-x: hidden;
   isolation: isolate;
 }
 
 .login-signal-canvas {
-  position: absolute;
+  position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -1385,115 +1417,137 @@ footer {
   z-index: 0;
 }
 
-.login-stage-top,
-.login-stage-center,
-.login-stage-foot {
-  position: relative;
+.login-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--hero-scrim);
+  pointer-events: none;
   z-index: 1;
 }
 
-.login-stage-top {
+.login-topbar {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding: 20px clamp(24px, 5vw, 64px);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-glass);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .login-stage-brand {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #FFFFFF;
+  color: var(--ink);
 }
 
 .login-stage-brand img {
   border-radius: 9px;
 }
 
-.login-stage-eyebrow {
-  color: #B9BEC8;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
+.login-top-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  position: static !important;
 }
 
-.login-stage-center {
-  max-width: 540px;
-  margin: auto 0;
+.login-layout {
+  position: relative;
+  z-index: 2;
+  max-width: 1240px;
+  width: 100%;
+  margin: auto;
+  padding: clamp(32px, 5vw, 64px) clamp(24px, 5vw, 64px);
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
 }
 
-.login-stage-kicker {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  color: #7AA2FF;
-  margin-bottom: 14px;
+.login-hero {
+  max-width: 580px;
 }
 
+.login-display,
 .login-stage-headline {
   font-family: var(--font-display);
-  font-size: clamp(34px, 4.2vw, 56px);
+  font-size: clamp(38px, 4.8vw, 64px);
   line-height: 1.03;
-  letter-spacing: -0.04em;
-  font-weight: 460;
-  color: #FFFFFF;
-  margin: 0 0 18px;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 18px 0 18px;
 }
 
-.login-stage-desc {
-  color: #9BA3B8;
-  font-size: 15px;
-  line-height: 1.6;
-  margin: 0;
-  max-width: 460px;
+.login-lead {
+  color: var(--ink-2);
+  font-size: clamp(16px, 1.35vw, 18px);
+  line-height: 1.62;
+  margin: 0 0 28px;
+  max-width: 520px;
 }
 
-.login-stage-foot {
+.login-chips {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: #9BA3B8;
+  gap: 10px;
 }
 
-.login-stage-foot .spec-dot {
-  color: rgba(255, 255, 255, 0.25);
+.login-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.login-chip strong {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 12.5px;
 }
 
 .login-panel {
-  background: var(--bg);
+  background: transparent;
   color: var(--ink);
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: clamp(24px, 4vw, 48px);
+  justify-content: flex-end;
+  padding: 0;
 }
 
 .cortex-login-card {
   width: 100%;
-  max-width: 400px;
-  background: var(--surface);
+  max-width: 430px;
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   color: var(--ink);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  padding: 34px 32px 26px;
-  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 34px 32px 28px;
+  box-shadow: var(--shadow-lift);
 }
 
 .cortex-login-brand {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .cortex-login-brand img {
@@ -1501,19 +1555,22 @@ footer {
   flex-shrink: 0;
 }
 
-.cortex-login-brand h1 {
+.cortex-login-brand h1,
+.cortex-login-brand h2 {
   font-size: 22px;
   line-height: 1.2;
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   letter-spacing: -0.025em;
   font-weight: 600;
+  color: var(--ink);
 }
 
+.login-card-desc,
 .cortex-login-sub {
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--ink-2);
-  margin: 0 0 20px;
-  line-height: 1.5;
+  margin: 0 0 18px;
+  line-height: 1.55;
 }
 
 .cortex-login-error {
@@ -1527,6 +1584,7 @@ footer {
   min-height: 46px;
   font-size: 14px;
   font-weight: 600;
+  border-radius: var(--radius-pill);
 }
 
 .cortex-login-footer {
@@ -1541,23 +1599,33 @@ footer {
 }
 
 .login-admin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
   color: var(--ink-2);
   text-decoration: none;
   font-weight: 500;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
+  box-shadow: var(--shadow-soft);
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
 
 .login-admin-link:hover {
+  border-color: var(--signal);
   color: var(--signal);
 }
 
-@media (max-width: 920px) {
-  .cortex-login-gate {
+@media (max-width: 960px) {
+  .login-layout {
     grid-template-columns: 1fr;
+    gap: 28px;
   }
-  .login-stage {
-    display: none;
+  .login-panel {
+    justify-content: flex-start;
   }
 }
 
@@ -2134,17 +2202,15 @@ footer {
   padding: 7px 10px 7px 12px;
   min-height: 44px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #090D16 0%, #101A30 45%, #0D1528 75%, #090D16 100%);
-  background-size: 200% 100%;
-  animation: ultraTopSweep 12s ease infinite;
-  border: 1px solid rgba(56, 189, 248, 0.28);
-  box-shadow: 0 10px 26px -8px rgba(9, 13, 22, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px 14px;
-  color: #F8FAFC;
+  color: var(--ink);
 }
 
 .ultra-top-left {
@@ -2161,12 +2227,12 @@ footer {
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #2F6BFF 0%, #00B4FF 100%);
+  background: var(--signal);
   color: #FFFFFF;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  box-shadow: 0 2px 10px rgba(47, 107, 255, 0.45);
+  box-shadow: 0 2px 10px rgba(47, 107, 255, 0.28);
   white-space: nowrap;
 }
 
@@ -2184,9 +2250,9 @@ footer {
   letter-spacing: 0.04em;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #CBD5E1;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
   white-space: nowrap;
 }
 
@@ -2194,18 +2260,18 @@ footer {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(148, 163, 184, 0.5);
+  background: var(--ink-3);
 }
 
 .ultra-top-copy {
   font-size: 12.5px;
   font-weight: 450;
-  color: #E2E8F0;
+  color: var(--ink-2);
   letter-spacing: -0.01em;
 }
 
 .ultra-top-copy strong {
-  color: #38BDF8;
+  color: var(--signal);
   font-weight: 700;
 }
 
@@ -2222,18 +2288,18 @@ footer {
   gap: 4px;
   padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
   font-size: 11px;
   font-weight: 500;
-  color: #E2E8F0;
+  color: var(--ink-2);
   white-space: nowrap;
 }
 
 .ultra-top-pill b {
   font-family: var(--font-mono);
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--ink);
 }
 
 .ultra-top-pill em {
@@ -2241,7 +2307,7 @@ footer {
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
-  color: #38BDF8;
+  color: var(--signal);
   margin-left: 1px;
 }
 
@@ -3094,11 +3160,12 @@ footer {
    ========================================================================== */
 
 .nvr-recorder-console {
-  background: #07080B;
-  border: 1px solid #1E2536;
-  border-radius: var(--radius-md);
-  padding: 12px;
-  color: #F5F7FA;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
 }
 
 .nvr-deck-bar {
@@ -3107,11 +3174,11 @@ footer {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  background: #0D1018;
-  border: 1px solid #1E2536;
-  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 .nvr-status-group {
@@ -3127,9 +3194,9 @@ footer {
   gap: 6px;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(239, 68, 68, 0.14);
-  border: 1px solid rgba(239, 68, 68, 0.38);
-  color: #FCA5A5;
+  background: var(--bad-soft);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: var(--bad);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -3152,9 +3219,9 @@ footer {
 .nvr-clock {
   padding: 4px 9px;
   border-radius: 6px;
-  background: #07080B;
-  border: 1px solid #1E2536;
-  color: #93C5FD;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--signal);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -3163,9 +3230,9 @@ footer {
 .nvr-channel-summary {
   padding: 4px 9px;
   border-radius: 6px;
-  background: rgba(47, 107, 255, 0.12);
-  border: 1px solid rgba(76, 130, 255, 0.25);
-  color: #DBEAFE;
+  background: var(--signal-soft);
+  border: 1px solid rgba(47, 107, 255, 0.2);
+  color: var(--signal);
   font-size: 10.5px;
   font-weight: 600;
 }
@@ -3181,28 +3248,28 @@ footer {
   padding: 5px 10px;
   font-size: 11px;
   font-weight: 600;
-  border-radius: 6px;
-  background: #141926;
-  border: 1px solid #263044;
-  color: #CBD5E1;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
 }
 
 .nvr-grid-btn:hover {
-  background: #1D2538;
-  border-color: #4C82FF;
-  color: #FFFFFF;
+  background: var(--surface-hover);
+  border-color: var(--signal);
+  color: var(--ink);
 }
 
 .nvr-grid-btn.active {
-  background: #2F6BFF;
-  border-color: #4C82FF;
-  color: #FFFFFF;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
 }
 
 .nvr-fullscreen-btn {
-  background: rgba(47, 107, 255, 0.16);
-  border-color: rgba(76, 130, 255, 0.42);
-  color: #93C5FD;
+  background: var(--signal-soft);
+  border-color: rgba(47, 107, 255, 0.3);
+  color: var(--signal);
 }
 
 .nvr-wall-shell {
@@ -3211,7 +3278,7 @@ footer {
 
 .nvr-wall-grid {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -3241,22 +3308,22 @@ footer {
 }
 
 .nvr-cell {
-  background: #0B0E17;
-  border: 1px solid #1E2536;
-  border-radius: 10px;
-  padding: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 7px;
+  gap: 8px;
 }
 
 .nvr-cell:hover {
-  border-color: #3B82F6;
+  border-color: var(--signal);
 }
 
 .nvr-cell.is-online {
-  border-color: rgba(34, 197, 94, 0.35);
+  border-color: rgba(18, 183, 106, 0.35);
 }
 
 .nvr-monitor {
@@ -3457,43 +3524,43 @@ footer {
 }
 
 .nvr-dock-btn {
-  padding: 4px 9px;
+  padding: 4px 10px;
   font-size: 10.5px;
   font-weight: 600;
   font-family: var(--font-mono);
   letter-spacing: 0.03em;
-  border-radius: 6px;
-  background: #131824;
+  border-radius: 999px;
+  background: var(--surface);
   white-space: nowrap;
   flex-shrink: 0;
-  border: 1px solid #263044;
-  color: #CBD5E1;
+  border: 1px solid var(--border);
+  color: var(--ink-2);
 }
 
 .nvr-dock-btn:hover {
-  background: #1E273B;
-  border-color: #4C82FF;
-  color: #FFFFFF;
+  background: var(--surface-hover);
+  border-color: var(--signal);
+  color: var(--ink);
 }
 
 .nvr-dock-btn.active {
-  background: #2563EB;
-  border-color: #3B82F6;
-  color: #FFFFFF;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
 }
 
 .nvr-dock-danger:hover {
-  background: rgba(240, 68, 56, 0.22);
-  border-color: #EF4444;
-  color: #FCA5A5;
+  background: var(--bad-soft);
+  border-color: var(--bad);
+  color: var(--bad);
 }
 
 .nvr-event-ticker {
   margin-top: 10px;
   padding: 8px 12px;
-  background: #0B0E17;
-  border: 1px solid #1E2536;
-  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3506,11 +3573,11 @@ footer {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #60A5FA;
+  color: var(--signal);
   padding: 3px 8px;
-  border-radius: 4px;
-  background: rgba(37, 99, 235, 0.16);
-  border: 1px solid rgba(59, 130, 246, 0.32);
+  border-radius: 999px;
+  background: var(--signal-soft);
+  border: 1px solid rgba(47, 107, 255, 0.24);
   flex-shrink: 0;
 }
 
@@ -3523,7 +3590,7 @@ footer {
 }
 
 .nvr-ticker-empty {
-  color: #94A3B8;
+  color: var(--ink-3);
   font-size: 11.5px;
 }
 
@@ -3532,30 +3599,30 @@ footer {
   align-items: center;
   gap: 7px;
   padding: 3px 9px;
-  border-radius: 5px;
-  background: #131824;
-  border: 1px solid #263044;
-  color: #E2E8F0;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink);
   font-size: 11px;
 }
 
 .nvr-ticker-time {
-  color: #93C5FD;
+  color: var(--signal);
   font-size: 10.5px;
 }
 
 .nvr-ticker-link {
-  color: #60A5FA;
+  color: var(--signal);
   text-decoration: none;
   font-weight: 600;
   font-size: 10.5px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(47, 107, 255, 0.15);
+  background: var(--signal-soft);
 }
 
 .nvr-ticker-link:hover {
-  background: #2563EB;
+  background: var(--signal);
   color: #FFFFFF;
 }
 

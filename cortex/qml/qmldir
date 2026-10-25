@@ -1,0 +1,4 @@
+singleton Theme 1.0 Theme.qml
+CortexLogo3D 1.0 CortexLogo3D.qml
+CortexCore3DView 1.0 CortexCore3DView.qml
+CortexStartup3D 1.0 CortexStartup3D.qml

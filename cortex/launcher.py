@@ -11,7 +11,7 @@ import traceback
 import urllib.request
 import webbrowser
 
-VERSION = '2.3.0'
+VERSION = '2.4.0'
 
 def data_directory():
     return Path(os.environ.get('CORTEX_DATA', str(Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'IPScansCortex')))
@@ -34,7 +34,7 @@ def existing_instance(port):
 def main():
     if os.name == 'nt':
         try:
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('ipscans.cortex.desktop.2.3')
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('ipscans.cortex.desktop.2.4')
             ctypes.windll.shcore.SetProcessDpiAwareness(2)
         except Exception:
             pass
@@ -71,8 +71,12 @@ def main():
         config=directory/'config.enc'
         backup=directory/f'config.before-{VERSION}.enc'
         if config.exists() and not backup.exists(): shutil.copy2(config,backup)
-        import server
-        server.main()
+        if '--web' in sys.argv:
+            import server
+            server.main()
+        else:
+            import cortex_desktop
+            cortex_desktop.main([a for a in sys.argv[1:] if a != '--native'])
     finally:
         if handle: kernel.CloseHandle(handle)
 
