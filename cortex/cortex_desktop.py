@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-IPScans Cortex — Native PySide6 + Qt Quick/QML + Qt Quick 3D Desktop Application.
+IPScans Cortex â€” Native PySide6 + Qt Quick/QML + Qt Quick 3D Desktop Application.
 Preserves 100% of the existing Python backend (server.py, forensics.py, intelligence.py,
 access.py, stream.py, local_rules.py) while rendering a hardware-accelerated Direct3D 11
 2D/3D command center.
@@ -72,7 +72,7 @@ def ensure_backend_services_running() -> None:
 
     def _run_http_server() -> None:
         try:
-            httpd = server.ThreadingHTTPServer((host, port), server.LocalServer)
+            httpd = server.LocalServer((host, port), server.Handler)
             httpd.serve_forever()
         except Exception:
             pass
