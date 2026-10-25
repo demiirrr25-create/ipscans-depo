@@ -101,9 +101,9 @@ class IntelligenceProTests(unittest.TestCase):
         self.assertIn('Tailgating', res_tg['reason'])
 
     def test_eight_commercial_sector_packs_with_calibrated_rois(self):
-        self.assertEqual(len(intelligence.SECTOR_PACKS), 8)
+        self.assertEqual(len(intelligence.SECTOR_PACKS), 10)
         pack_ids = {p['id'] for p in intelligence.SECTOR_PACKS}
-        self.assertEqual(pack_ids, {'site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus', 'clinic'})
+        self.assertEqual(pack_ids, {'site', 'pool', 'factory', 'warehouse', 'retail', 'office', 'campus', 'clinic', 'hotel', 'home'})
         for p in intelligence.SECTOR_PACKS:
             self.assertGreaterEqual(len(p['rules']), 4)
             for r in p['rules']:
@@ -142,7 +142,7 @@ class AlertsAndTwoWayTelegramBotTests(unittest.TestCase):
 
         # Test interactive 2-way bot commands (/start, /durum, /kameralar, /olaylar, /koru, /sustur)
         snap = {'cameras': [{'id': 'c1', 'name': 'Nizamiye', 'status': 'Bağlı', 'analysis': 'Hazır'}], 'rules': [{'enabled': True}], 'events': [], 'license': {'name': 'Cortex ULTRA', 'plan': 'ULTRA', 'maxCameras': 32, 'maxRules': 128}}
-        for cmd, expected_word in [('/start', 'Komuta Botu Aktif'), ('/durum', 'Sistem Durumu'), ('/kameralar', 'Nizamiye'), ('/koru', 'TAM KORUMA'), ('/sustur', 'Güvenli Mod')]:
+        for cmd, expected_word in [('/start', 'Kontrol merkezi'), ('/durum', 'Sistem durumu'), ('/kameralar', 'Nizamiye'), ('/koru', 'TAM KORUMA'), ('/sustur', 'Güvenli Mod')]:
             out = iot_automation.process_bot_command(cmd, snap, chat_id='777888')
             self.assertIn(expected_word, out['reply'])
 
@@ -235,8 +235,8 @@ class ForensicsAdminAndCommercialApiTests(unittest.TestCase):
         c2 = json.loads(self.request('/api/cameras', {'name': 'Teras Kamerası', 'url': 'rtsp://192.0.2.11/live'})[1])['id']
         res = json.loads(self.request('/api/sector-apply', {'camera': c1, 'pack': 'pool'})[1])
         self.assertTrue(res['ok'])
-        self.assertEqual(res['added'], 5)
-        self.assertEqual(len(base.s.STATE['rules']), 5)
+        self.assertEqual(res['added'], 11)
+        self.assertEqual(len(base.s.STATE['rules']), 11)
         first_rule = base.s.STATE['rules'][0]
         self.assertEqual(first_rule['roi'], [10, 15, 80, 80])
 
@@ -345,7 +345,7 @@ class ForensicsAdminAndCommercialApiTests(unittest.TestCase):
             self.assertIn('tg://resolve?domain=intelligentcortexbot&start=phone_905415130525', res['tgProtocol'])
             send_calls = [p for m, p in tg_calls if m == 'sendMessage']
             self.assertEqual(len(send_calls), 1)
-            self.assertIn('🚀 IPScans Cortex 2.0 Pro — Gömülü Bot Otomatik Başlatıldı!', send_calls[0]['text'])
+            self.assertIn('Cortex · Bağlantınız hazır', send_calls[0]['text'])
             self.assertIn('+90 (541) 513 05 25', send_calls[0]['text'])
             bot_log = base.s.STATE.get('telegramBotLog', [])
             self.assertTrue(any(entry.get('action') == '/start (Otomatik)' for entry in bot_log))

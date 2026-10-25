@@ -2,8 +2,8 @@
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 4, 0, 0),
-    prodvers=(2, 4, 0, 0),
+    filevers=(2, 5, 0, 0),
+    prodvers=(2, 5, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -19,12 +19,12 @@ VSVersionInfo(
           [
             StringStruct('CompanyName', 'IPScans Security Technologies'),
             StringStruct('FileDescription', 'IPScans Cortex Yönetim Merkezi v2.4 — Ticari Lisans & Müşteri Kasası'),
-            StringStruct('FileVersion', '2.4.0.0'),
+            StringStruct('FileVersion', '2.5.0.0'),
             StringStruct('InternalName', 'CortexAdmin'),
             StringStruct('LegalCopyright', 'Copyright (c) 2026 IPScans Security Technologies'),
             StringStruct('OriginalFilename', 'CortexAdmin.exe'),
             StringStruct('ProductName', 'IPScans Cortex Yönetim Merkezi'),
-            StringStruct('ProductVersion', '2.4.0.0')
+            StringStruct('ProductVersion', '2.5.0.0')
           ]
         )
       ]

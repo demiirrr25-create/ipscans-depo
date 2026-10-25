@@ -11,8 +11,8 @@ function renderPlans() {
   if (!spec) return;
   const cameras = (state.cameras || []).length;
   const rules = (state.rules || []).length;
-  const phones = (state.phones || []).length;
-  const maxPhones = spec.maxPhones || (tier === 'ULTRA' ? 12 : (tier === 'PLUS' ? 6 : 2));
+  const phones = (state.telegram?.phones || []).length;
+  const maxPhones = spec.maxTelegramPhones || (tier === 'ULTRA' ? 10 : (tier === 'PLUS' ? 5 : 2));
   const key = JSON.stringify([tier, cameras, rules, phones, lic.status, currentLang, plans]);
   if (key === planRenderKey) return;
   planRenderKey = key;
@@ -32,8 +32,8 @@ function renderPlans() {
   };
   const details = {
     PRO: [t('Yerel kurallar ve geçiş kontrolü','Local rules and crossing detection'),t('Bölge çizim stüdyosu','Region drawing studio'),t('Telegram bildirimleri','Telegram alerts'),t('Site ve perakende paketleri','Residential and retail packs')],
-    PLUS: [t('PRO özelliklerinin tamamı','Everything in PRO'),t('Ollama görsel AI ve akıllı takip','Ollama vision AI and smart tracking'),t('İki yönlü Telegram ve kanıt ZIP','Two-way Telegram and evidence ZIP'),t('7 sektör paketi','7 sector packs')],
-    ULTRA: [t('PLUS özelliklerinin tamamı','Everything in PLUS'),t('Copilot arama ve gizlilik maskeleme','Copilot search and privacy masking'),t('İmzalı webhook ve denetim izi','Signed webhooks and audit trail'),t('NVR filo yönetimi ve 8 sektör','NVR fleet management and 8 sectors')]
+    PLUS: [t('PRO özelliklerinin tamamı','Everything in PRO'),t('Ollama görsel AI ve akıllı takip','Ollama vision AI and smart tracking'),t('İki yönlü Telegram ve kanıt ZIP','Two-way Telegram and evidence ZIP'),t('9 sektör paketi','9 sector packs')],
+    ULTRA: [t('PLUS özelliklerinin tamamı','Everything in PLUS'),t('Copilot arama ve gizlilik maskeleme','Copilot search and privacy masking'),t('İmzalı webhook ve denetim izi','Signed webhooks and audit trail'),t('NVR filo yönetimi ve 10 sektör','NVR fleet management and 10 sectors')]
   };
   const planCenter = document.querySelector('#planCenter');
   if (!planCenter) return;

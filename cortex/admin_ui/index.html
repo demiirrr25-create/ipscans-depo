@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>IPScans Cortex 2.4.0 — Yönetim Merkezi</title>
+  <title>IPScans Cortex 2.5.0 — Yönetim Merkezi</title>
   <!-- No-flash theme bootstrap: ipscans-theme (light|dark) → OS preference → light -->
   <script>
     (function () {
@@ -21,7 +21,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600&family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap" rel="stylesheet">
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/style.css?v=2.4.0">
+  <link rel="stylesheet" href="/style.css?v=2.5.0">
+<link rel="stylesheet" href="/premium.css?v=2.5.0">
 </head>
 <body>
   <!-- Toast Notification -->
@@ -47,15 +48,15 @@
 
   <!-- LOGIN GATE — ipscans.com hero aesthetic -->
   <section id="loginGate" class="login-gate">
-    <canvas id="adminSignalCanvas" class="login-signal-canvas" aria-hidden="true"></canvas>
+
     <div class="login-scrim" aria-hidden="true"></div>
 
     <header class="login-topbar">
       <span class="brand-lockup">
-        <svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#ipsLogo"/></svg>
+        <img class="brand-mark" src="/logo.svg" width="36" height="36" alt="Cortex">
         <span class="brand-word">IPScans</span>
         <span class="brand-divider" aria-hidden="true"></span>
-        <span class="brand-product">Cortex Yönetim Merkezi</span>
+        <span class="brand-product">Cortex · Bir ipscans.com projesi</span>
       </span>
       <div class="login-topbar-actions">
         <a href="http://127.0.0.1:8765" target="_blank" rel="noopener" class="topnav-link">Yerel istasyon</a>
@@ -71,12 +72,7 @@
         <span class="ds-eyebrow">Yetkili geliştirici erişimi</span>
         <h1 class="login-display">Merkezi lisans ve müşteri yönetimi.</h1>
         <p class="login-lead">Müşteri istasyonlarını, PRO / PLUS / ULTRA paket kotalarını ve AES-256-GCM şifreli kasayı tek bir yerel konsoldan yönetin.</p>
-        <ul class="login-chips" aria-label="Güvenlik özellikleri">
-          <li class="chip">Port 8766</li>
-          <li class="chip">PBKDF2-SHA256 · 600K</li>
-          <li class="chip">AES-256-GCM kasa</li>
-          <li class="chip">HMAC-SHA256 lisans</li>
-        </ul>
+        <p class="project-credit">Bir <a href="https://ipscans.com" target="_blank" rel="noopener">ipscans.com</a> projesi</p>
       </div>
 
       <div class="login-panel">
@@ -134,10 +130,10 @@
           </svg>
         </button>
         <span class="brand-lockup">
-          <svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#ipsLogo"/></svg>
+          <img class="brand-mark" src="/logo.svg" width="36" height="36" alt="Cortex">
           <h1 class="brand-word">IPScans</h1>
           <span class="brand-divider" aria-hidden="true"></span>
-          <span class="brand-product">Cortex Yönetim Merkezi</span>
+          <span class="brand-product">Cortex · Bir ipscans.com projesi</span>
         </span>
       </div>
       <div class="topbar-right">
@@ -193,13 +189,7 @@
               </svg>
               <span class="admin-nav-label">Genel bakış</span>
             </button>
-            <button type="button" class="admin-nav-item" data-admin-nav="infra3d" title="Altyapı topolojisi">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>
-              </svg>
-              <span class="admin-nav-label">Altyapı topolojisi</span>
-              <span id="sidebarInfraCountBadge" class="admin-nav-badge">0</span>
-            </button>
+
             <button type="button" class="admin-nav-item" data-admin-nav="customers" title="Müşteri ve lisans stüdyosu">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -252,7 +242,7 @@
 
       <div id="workspace" class="workspace">
         <section class="page-intro" aria-labelledby="pageIntroTitle">
-          <span class="ds-eyebrow">Yönetim merkezi · v2.4.0</span>
+          <span class="ds-eyebrow">Yönetim merkezi · v2.5.0</span>
           <h2 id="pageIntroTitle" class="page-title">Lisanslar, müşteriler ve istasyonlar.</h2>
           <p class="page-lead">Ticari paket kotalarını tanımlayın, lisans anahtarı üretin ve bağlı Cortex istasyonlarına uzaktan müdahale edin.</p>
         </section>
@@ -323,7 +313,7 @@
               <span class="tier-SelectHint">Seç →</span>
             </div>
             <strong>12 kamera · 32 kural · 5 Telegram</strong>
-            <span class="tier-card-sub">15 gün arşiv · Görsel AI ve akıllı takip · 7 sektör paketi</span>
+            <span class="tier-card-sub">15 gün arşiv · Görsel AI ve akıllı takip · 9 sektör paketi</span>
           </div>
           <div class="tier-card is-selected-tier tier-card-selected" data-select-plan="ULTRA" data-bento-card tabindex="0" role="button" aria-label="Cortex ULTRA paketini seç">
             <div class="tier-card-head">
@@ -331,75 +321,12 @@
               <span class="tier-SelectHint">Kurumsal tam kapasite</span>
             </div>
             <strong>32 kamera · 128 kural · 10 Telegram</strong>
-            <span class="tier-card-sub">30 gün arşiv · 8 sektör + Copilot + SHA-256 kanıt + ONVIF filo</span>
+            <span class="tier-card-sub">30 gün arşiv · 10 sektör + Copilot + SHA-256 kanıt + ONVIF filo</span>
           </div>
         </section>
 
         <!-- 3D infrastructure explorer -->
-        <section id="admin3DInfraSection" class="panel infra-3d-section" data-bento-card aria-label="Kurumsal altyapı ve istasyon topolojisi">
-          <div class="infra-3d-head">
-            <div class="infra-3d-title-wrap">
-              <span class="ds-eyebrow">Canlı istasyon topolojisi</span>
-              <div class="infra-3d-title-row">
-                <h2>Altyapı ve istasyonlar</h2>
-                <span id="adminInfraNodeBadge" class="badge-pill badge-signal">0 İstasyon</span>
-                <span id="adminInfraActiveBadge" class="badge-pill badge-ok">HMAC-SHA256 kök aktif</span>
-              </div>
-            </div>
 
-            <div class="infra-3d-controls">
-              <div class="infra-view-switch segmented" role="group" aria-label="Görünüm modu">
-                <button type="button" id="infraView3DBtn" class="infra-view-btn active" data-infra-view="3d">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>
-                  </svg>
-                  <span>3B sahne</span>
-                </button>
-                <button type="button" id="infraView2DBtn" class="infra-view-btn" data-infra-view="2d">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>
-                  </svg>
-                  <span>2B matris</span>
-                </button>
-              </div>
-
-              <div class="infra-cam-controls">
-                <button type="button" id="infraZoomOutBtn" class="icon-btn icon-btn-sm" title="Uzaklaştır" aria-label="Uzaklaştır">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
-                </button>
-                <button type="button" id="infraZoomInBtn" class="icon-btn icon-btn-sm" title="Yakınlaştır" aria-label="Yakınlaştır">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>
-                </button>
-                <button type="button" id="infraAutoRotateBtn" class="btn-secondary btn-xs toggle-pill is-active" title="Otomatik yörünge dönüşü (aç / kapat)">Yörünge</button>
-                <button type="button" id="infraResetViewBtn" class="btn-secondary btn-xs" title="Görünümü sıfırla">Sıfırla</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="infra-3d-stage-wrap">
-            <div id="infra3DCanvasWrap" class="infra-3d-canvas-wrap">
-              <canvas id="adminInfra3DCanvas" class="admin-infra-3d-canvas" aria-label="Kurumsal altyapı ve müşteri istasyonları topolojisi"></canvas>
-
-              <div class="infra-hud-legend" aria-hidden="true">
-                <span class="infra-legend-item"><i class="legend-dot is-root"></i>Kök otorite (8766)</span>
-                <span class="infra-legend-item"><i class="legend-dot is-local"></i>Yerel istasyon (8765)</span>
-                <span class="infra-legend-item"><i class="legend-dot is-active"></i>Aktif bağlantı</span>
-                <span class="infra-legend-item"><i class="legend-dot is-warn"></i>Yüksek kota</span>
-                <span class="infra-legend-item"><i class="legend-dot is-suspended"></i>Askıda</span>
-              </div>
-
-              <div class="infra-hud-hint" aria-hidden="true">
-                <span>Sürükle: yörünge · Tıkla: istasyon denetçisi · Tekerlek: yakınlaştır</span>
-              </div>
-
-              <div id="infra3DHoverTooltip" class="infra-3d-tooltip" hidden></div>
-            </div>
-
-            <div id="adminInfra2DMatrix" class="infra-2d-matrix" hidden></div>
-          </div>
-
-          <div id="adminInfraStationBar" class="infra-station-bar" role="toolbar" aria-label="İstasyon hızlı seçim çubuğu"></div>
-        </section>
 
         <!-- Customer studio + registry -->
         <main id="adminCustomersSection" class="main-grid">
@@ -626,7 +553,7 @@
             </div>
             <div class="inspector-meta-cell">
               <span>Cortex sürümü</span>
-              <strong id="inspectorVersion">v2.4.0</strong>
+              <strong id="inspectorVersion">v2.5.0</strong>
             </div>
             <div class="inspector-meta-cell">
               <span>İletişim</span>
@@ -773,6 +700,6 @@
     </div>
   </div>
 
-  <script src="/app.js?v=2.4.0"></script>
+  <script src="/app.js?v=2.5.0"></script>
 </body>
 </html>

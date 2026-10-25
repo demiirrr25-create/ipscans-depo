@@ -63,7 +63,7 @@ export function EnterpriseProductView({
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px] opacity-60 [mask-image:radial-gradient(75%_80%_at_65%_20%,#000_20%,transparent_75%)]"
         >
-          <SignalField variant="ambient" />
+          {markSrc !== "/cortex-mark.svg" && <SignalField variant="ambient" />}
         </div>
 
         <div className="ds-container">
@@ -83,9 +83,9 @@ export function EnterpriseProductView({
                 <Image
                   src={markSrc}
                   alt={markAlt}
-                  width={28}
-                  height={28}
-                  className="size-7"
+                  width={40}
+                  height={40}
+                  className="size-10"
                 />
               </span>
               <div>

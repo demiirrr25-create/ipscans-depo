@@ -1,0 +1,49 @@
+/* Cortex 2.5 — quiet surfaces, readable hierarchy, shared operator/admin system. */
+:root {--premium-accent:#396cf0;--premium-line:rgba(100,116,139,.18)}
+body {font-family:"Google Sans Flex",Inter,"Segoe UI",sans-serif;letter-spacing:-.015em}
+[hidden] {display:none!important}
+button,input,select,textarea {font:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {outline:3px solid #648cff;outline-offset:3px}
+button {transition:background .16s ease,box-shadow .16s ease;}
+.card,.panel,.stat,.sector-card,.login-card {border:1px solid var(--premium-line);box-shadow:0 3px 16px rgba(15,23,42,.025);border-radius:18px}
+.card::before,.panel::before,.stat::before,.sector-card::before {display:none!important}
+.eyebrow,.ds-eyebrow {letter-spacing:.06em;font-size:11px;font-weight:600}
+.login-stage,.login-gate {background:radial-gradient(ellipse at 20% 15%,rgba(68,112,255,.10),transparent 60%)}
+.login-scrim {display:none}
+.login-display {max-width:800px}
+.project-credit {font-size:12px;line-height:1.6;color:var(--ink2,#64748b);display:block;text-decoration:none}
+.aside-status-text {font-size:12px}
+.nvr-hud-corner,.nvr-target-reticle,.nvr-osd-bottom,.nvr-ai-badge {display:none!important}
+.nvr-monitor {background:#0b101a;border-radius:12px;overflow:hidden}
+.nvr-osd-top {background:linear-gradient(rgba(0,0,0,.58),transparent);border:0}
+.nvr-dock {gap:6px;padding:10px;flex-wrap:wrap}
+.nvr-dock-btn {border-radius:8px;font-size:11px;letter-spacing:.015em}
+.hide-roi-overlays .nvr-roi-overlay-wrap {display:none!important}
+.sonner-toaster {position:fixed!important;top:84px!important;right:24px!important;bottom:auto!important;z-index:20000;width:min(390px,calc(100vw - 32px));display:flex;flex-direction:column;gap:10px;pointer-events:none;margin:0;padding:0}
+.sonner-toast {pointer-events:auto;display:flex;align-items:flex-start;gap:12px;padding:16px!important;border:1px solid var(--premium-line)!important;background:var(--surface,#fff)!important;color:var(--ink,#172033)!important;border-radius:14px!important;box-shadow:0 12px 40px rgba(15,23,42,.13)!important;animation:cortex-notice .18s ease-out!important;transform:none!important;position:relative!important;width:100%!important}
+.sonner-toast-body {min-width:0;flex:1;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.sonner-toast-body strong,.sonner-toast-body span {display:block}
+.sonner-toast-body strong {margin-bottom:3px;font-size:12px}
+.sonner-toast-icon {width:25px;height:25px;display:grid;place-items:center;flex-shrink:0;border-radius:8px;background:#eaf5ef;color:#157347}
+.is-error .sonner-toast-icon {background:#fff0ef;color:#be3434}
+.sonner-toast-close {padding:0;width:24px;height:24px;border:0;background:transparent;color:inherit;cursor:pointer}
+.toast {top:84px!important;bottom:auto!important;right:24px!important;max-width:min(440px,calc(100vw - 32px));padding:16px 44px 16px 18px;border-radius:14px;line-height:1.5;box-shadow:0 12px 40px #0f172a22;overflow-wrap:anywhere}
+.toast-dismiss {position:absolute;right:10px;top:10px;background:transparent;border:0;color:inherit;cursor:pointer}
+[data-theme="dark"] .sonner-toast {background:#161e2c!important;color:#edf2ff!important}
+@keyframes cortex-notice {from {opacity:0;translate:0 -6px}to {opacity:1;translate:0 0}}
+@media(max-width:700px){.sonner-toaster,.toast {right:16px!important;top:72px!important}.nvr-dock-btn{min-height:36px}.project-credit{font-size:11px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after {animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+
+#planSpotlight,#ultraUpgradeBanner {display:none!important}
+.stats {gap:16px!important;border:0!important;background:transparent!important}
+.stat {padding:22px!important;border:1px solid var(--premium-line)!important;border-radius:16px!important}
+.sys-telemetry-strip {display:none!important}
+main>header {height:auto!important;min-height:72px;flex-wrap:wrap;gap:10px;padding-block:14px!important}
+.header-actions {flex-wrap:wrap;justify-content:flex-end;gap:8px!important;min-width:0}
+.header-actions .badge {max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html,body {max-width:100%;overflow-x:hidden}
+.brand small {font-size:11px!important;line-height:1.5;max-width:125px}
+.brand img {width:40px!important;height:40px!important;flex-shrink:0}
+.nvr-wall-grid {gap:14px!important}
+.nvr-wall-card {padding:16px!important}
+@media(max-width:1300px){.header-actions{gap:6px!important}.command-trigger{display:none!important}#headerTelegramBtn{max-width:150px;overflow:hidden}.header-actions .badge{max-width:150px}}
