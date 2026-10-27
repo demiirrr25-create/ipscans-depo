@@ -21,9 +21,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `https://ipscans.com/${locale}/cortex`,
       images: [
         {
-          url: "/cortex-2-5-overview.png",
-          width: 607,
-          height: 871,
+          url: "/cortex-3-overview.png",
+          width: 830,
+          height: 916,
           alt: copy.screenshotAlt,
         },
       ],
@@ -37,8 +37,14 @@ export default async function CortexPage({ params }: Props) {
   const copy = {...cortexCopy[locale],
     closing: {...cortexCopy[locale].closing, secondaryCta: locale === "tr" ? "Paketleri karşılaştır" : "Compare plans"},
     secondaryCta: locale === "tr" ? "Paketleri karşılaştır" : "Compare plans",
-    screenshotAlt: locale === "tr" ? "Cortex 2.5 genel bakış ekranı" : "Cortex 2.5 overview",
-    screenshotCaption: locale === "tr" ? "Cortex 2.5: sade gezinme, kamera durumu ve canlı izleme. Kamera eklenmemiş örnek çalışma alanı." : "Cortex 2.5: clear navigation, camera status and live monitoring. Example workspace without cameras.",
+    eyebrow: locale === "tr" ? "Cortex 3.0 · Bir ipscans.com projesi" : "Cortex 3.0 · An ipscans.com project",
+    name: "IPScans Cortex 3",
+    headline: locale === "tr" ? "Sahanın sessiz enstrümanı." : "A quiet instrument for the floor.",
+    lead: locale === "tr"
+      ? "Kameralar bu bilgisayarda kalır. Canlı izleme, kurallar ve arşiv tek bir sade masada. Yönetim merkezi de aynı dilde."
+      : "Cameras stay on this computer. Live view, rules, and archive share one quiet desk. The administration center speaks the same language.",
+    screenshotAlt: locale === "tr" ? "Cortex 3.0 giriş ekranı" : "Cortex 3.0 sign-in",
+    screenshotCaption: locale === "tr" ? "Cortex 3.0: gece stüdyosu girişi, sıcak kâğıt form, tek fosfor işaret." : "Cortex 3.0: night-studio sign-in, warm paper form, one phosphor mark.",
   };
 
   const jsonLd = {
@@ -50,7 +56,7 @@ export default async function CortexPage({ params }: Props) {
     softwareVersion: cortexRelease.version,
     downloadUrl: cortexRelease.url,
     fileSize: `${(cortexRelease.bytes / 1_000_000).toFixed(1)} MB`,
-    screenshot: "https://ipscans.com/cortex-2-5-overview.png",
+    screenshot: "https://ipscans.com/cortex-3-overview.png",
     description: copy.metaDescription,
   };
 
@@ -66,9 +72,9 @@ export default async function CortexPage({ params }: Props) {
         markSrc="/cortex-mark.svg"
         markAlt="IPScans Cortex"
         screenshot={{
-          src: "/cortex-2-5-overview.png",
-          width: 607,
-          height: 871,
+          src: "/cortex-3-overview.png",
+          width: 830,
+          height: 916,
         }}
         downloadHref={cortexRelease.url}
         secondaryHref="#plans"

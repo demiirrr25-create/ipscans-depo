@@ -116,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     app = QGuiApplication(sys.argv)
     app.setApplicationName("IPScans Cortex")
     app.setOrganizationName("IPScans")
-    app.setApplicationVersion("2.5.0")
+    app.setApplicationVersion("3.0.0")
 
     icon_path = resolve_resource_path("ui/favicon.ico")
     if icon_path.exists():

@@ -1,4 +1,4 @@
-"""IPScans Cortex 2.5.0 — Multi-technology local camera intelligence, smart tracking, forensics, 2-way Telegram bot & 3-tier admin control center."""
+"""IPScans Cortex 3.0 — local camera intelligence, evidence, Telegram, and tiered administration."""
 import base64, collections, concurrent.futures, copy, http.server, json, os, pathlib, secrets
 import shutil, socket, subprocess, sys, threading, time, urllib.parse, urllib.request, uuid, webbrowser
 import xml.etree.ElementTree as ET
@@ -15,7 +15,7 @@ import forensics
 from models import Installer, Health, VISION_TEMPLATES, RECOMMENDED_MODELS
 from stream import Stream
 
-VERSION = "2.5.0"
+VERSION = "3.0.0"
 EVIDENCE_SLOTS = threading.BoundedSemaphore(8)
 AI_SLOTS = threading.BoundedSemaphore(1)
 MODEL_HEALTH = Health()

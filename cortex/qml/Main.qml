@@ -10,7 +10,7 @@ Window {
     minimumWidth: 1240
     minimumHeight: 760
     visible: true
-    title: "IPScans Cortex · 2.5.0"
+    title: "IPScans Cortex · 3.0.0"
     color: Theme.bg
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint
 

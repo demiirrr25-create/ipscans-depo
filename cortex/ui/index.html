@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IPScans Cortex 2.5.0 · Kurumsal Kamera Zekâsı, Görsel AI &amp; 3D Komuta Merkezi</title>
+  <title>IPScans Cortex 3.0 · Saha enstrümanı</title>
   <link rel="icon" href="logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600;700&family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,560&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
     (function() {
       try {
@@ -24,9 +24,10 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=2.5.0">
-  <link rel="stylesheet" href="refinements.css?v=2.5.0">
-<link rel="stylesheet" href="premium.css?v=2.5.0">
+  <link rel="stylesheet" href="style.css?v=3.0.0">
+  <link rel="stylesheet" href="refinements.css?v=3.0.0">
+  <link rel="stylesheet" href="premium.css?v=3.0.0">
+  <link rel="stylesheet" href="atmosphere.css?v=3.0.0">
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true" focusable="false">
@@ -53,7 +54,7 @@
       <div class="login-stage-brand">
         <img src="logo.svg" alt="IPScans Cortex" width="32" height="32">
         <span>IPScans Cortex</span>
-        <span class="brand-badge">2.4 CORE</span>
+        <span class="brand-badge">3.0</span>
       </div>
       <div class="login-top-controls" aria-label="Dil ve tema seçimi">
         <div class="lang-switch" role="group" aria-label="Dil seçimi" data-i18n-aria="header.langAria" title="Dil Değiştir / Switch Language (Alt+L)">
@@ -80,8 +81,8 @@
           <span class="dot"></span>
           <span data-i18n="login.badge">KURUMSAL LİSANS &amp; MERKEZİ ERİŞİM</span>
         </span>
-        <h1 class="login-display login-stage-headline" data-i18n-html="login.title">Kameralarına bir <em>beyin</em> bağla.</h1>
-        <p class="login-lead" data-i18n="login.lead">Görüntüler bu bilgisayardan dışarı çıkmaz. Gerçek zamanlı yerel görsel AI, 10 sektörel saha paketi, NVR kamera duvarı ve @intelligentcortexbot iki yönlü Telegram komuta merkezi.</p>
+        <h1 class="login-display login-stage-headline" data-i18n-html="login.title">Sessiz bir saha. <em>Keskin</em> bir göz.</h1>
+        <p class="login-lead" data-i18n="login.lead">Kameralar bu bilgisayarda izlenir. Kurallar, arşiv ve Telegram uyarıları aynı masada kalır.</p>
         <div class="login-chips">
           <span class="login-chip" data-i18n-html="login.pillPrivacy"><strong>%100 Yerel Gizlilik</strong><span>Bulut yüklemesi yok</span></span>
           <span class="login-chip" data-i18n-html="login.pillRules"><strong>97 Hazır Kural</strong><span>10 Sektörel Paket</span></span>
@@ -92,10 +93,10 @@
       <div class="login-panel">
         <div class="cortex-login-card">
           <div class="cortex-login-brand">
-            <img src="logo.svg" alt="IPScans Cortex 2.5.0" width="40" height="40">
+            <img src="logo.svg" alt="IPScans Cortex 3.0" width="40" height="40">
             <div>
-              <span class="eyebrow" data-i18n="login.cardEyebrow">GÜVENLİ ERİŞİM KAPISI</span>
-              <h2 data-i18n="login.cardTitle">Müşteri Girişi</h2>
+              <span class="eyebrow" data-i18n="login.cardEyebrow">İSTASYON</span>
+              <h2 data-i18n="login.cardTitle">Giriş</h2>
             </div>
           </div>
           <p class="fine login-card-desc" data-i18n="login.cardDesc">Size tanımlanan kurumsal kullanıcı adı ve şifrenizle Cortex komuta merkezine giriş yapın.</p>
@@ -126,7 +127,7 @@
     <div class="aside-brand-row">
       <a class="brand" href="#">
         <img src="logo.svg" alt="" width="38" height="38">
-        <span class="brand-text">Cortex<small>ipscans.com projesi · 2.5.0</small></span>
+        <span class="brand-text">Cortex<small>ipscans.com · saha</small></span>
       </a>
       <button type="button" id="sidebarCollapseBtn" class="sidebar-collapse-btn" aria-label="Kenar çubuğunu daralt veya genişlet" title="Kenar Çubuğunu Daralt / Genişlet (Ctrl+B)">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5L5.5 8 10 12.5"/></svg>
@@ -137,7 +138,7 @@
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
         </span>
-        <span class="nav-label" data-i18n="nav.overview">Genel bakış</span>
+        <span class="nav-label" data-i18n="nav.overview">Bugün</span>
       </button>
       <button type="button" data-tab="cameras" title="Kameralar & ONVIF Keşfi">
         <span class="nav-glyph" aria-hidden="true">
@@ -149,19 +150,19 @@
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5V3a1 1 0 0 1 1-1h2M11 2h2a1 1 0 0 1 1 1v2M14 11v2a1 1 0 0 1-1 1h-2M5 14H3a1 1 0 0 1-1-1v-2"/><rect x="5" y="5" width="6" height="6" rx="1"/></svg>
         </span>
-        <span class="nav-label" data-i18n="nav.rules">Olay kuralları</span>
+        <span class="nav-label" data-i18n="nav.rules">Kurallar</span>
       </button>
       <button type="button" data-tab="events" title="Olay Arşivi & Adli İnceleme">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>
         </span>
-        <span class="nav-label" data-i18n="nav.events">Olay arşivi</span>
+        <span class="nav-label" data-i18n="nav.events">Arşiv</span>
       </button>
       <button type="button" data-tab="settings" title="Ayarlar, Lisans & Yerel AI">
         <span class="nav-glyph" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="5" cy="4" r="1.5" fill="var(--bg)"/><circle cx="11" cy="8" r="1.5" fill="var(--bg)"/><circle cx="7" cy="12" r="1.5" fill="var(--bg)"/></svg>
         </span>
-        <span class="nav-label" data-i18n="nav.settings">Ayarlar &amp; Lisans</span>
+        <span class="nav-label" data-i18n="nav.settings">Ayarlar</span>
       </button>
       <button type="button" data-tab="plans" title="Paketler & Kapasite">
         <span class="nav-glyph" aria-hidden="true">
@@ -177,7 +178,7 @@
       </div>
       <div class="aside-foot-actions">
 
-        <a class="project-credit" href="https://ipscans.com" target="_blank" rel="noopener">Bir ipscans.com projesi</a><span id="version" class="mono aside-version-pill" data-version="2.5.0">2.5.0</span>
+        <a class="project-credit" href="https://ipscans.com" target="_blank" rel="noopener">Bir ipscans.com projesi</a><span id="version" class="mono aside-version-pill" data-version="3.0.0">3.0.0</span>
       </div>
     </div>
   </aside>
@@ -187,8 +188,8 @@
 
     <header>
       <div class="header-crumb">
-        <b id="crumb">Genel bakış</b>
-        <span id="pageTitle" hidden>Genel bakış</span>
+        <b id="crumb">Bugün</b>
+        <span id="pageTitle" hidden>Bugün</span>
       </div>
       <div class="header-actions">
         <button type="button" id="openCmdPaletteBtn" class="cmdk-trigger-btn" title="Hızlı Komut ve Arama Merkezi (Ctrl+K)" data-i18n-title="header.cmdkTitle">
@@ -198,7 +199,7 @@
         </button>
         <button type="button" id="openMatrixWall" class="wall-trigger-btn" title="Tam Ekran NVR Kayıt Cihazı Duvarı (Matrix Wall)" data-i18n-title="header.nvrWallTitle">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
-          <span data-i18n="header.nvrWall">NVR Kamera Duvarı</span>
+          <span data-i18n="header.nvrWall">Duvar</span>
         </button>
         <button type="button" id="headerTelegramBtn" class="sector-mini-btn tg-header-pill" title="Ayarlar > Tek Tıkla Telegram Bot Bağlantısı" data-i18n-title="header.tgTitle">
           <span class="dot"></span>
@@ -1380,11 +1381,11 @@
     <div id="cortexToaster" class="sonner-toaster" aria-live="polite"></div>
 
     <footer>
-      <span>IPScans Cortex 2.5.0</span>
+      <span>IPScans Cortex 3.0</span>
       <span data-i18n="footer.tagline">Yerel görsel zekâ. Profesyonel saha analitiği. Senin kontrolün.</span>
     </footer>
   </main>
-  <script src="plans.js?v=2.5.0"></script>
-  <script src="app.js?v=2.5.0"></script>
+  <script src="plans.js?v=3.0.0"></script>
+  <script src="app.js?v=3.0.0"></script>
 </body>
 </html>

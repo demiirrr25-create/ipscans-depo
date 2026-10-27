@@ -1,4 +1,4 @@
-/* IPScans Cortex 2.5.0 — Bağımsız Geliştirici & Müşteri Yönetim Merkezi (Port 8766) */
+/* IPScans Cortex 3.0 — Yönetim merkezi (Port 8766) */
 (() => {
   'use strict';
 
@@ -1448,7 +1448,7 @@
     if ($('#inspectorOrgName')) $('#inspectorOrgName').textContent = cust.organization || 'Kurumsal Müşteri';
     if ($('#inspectorUsername')) $('#inspectorUsername').textContent = `@${cust.username || 'musteri'}`;
     if ($('#inspectorLastSeen')) $('#inspectorLastSeen').textContent = formatTimestamp(cust.lastSeen || cust.lastHeartbeat);
-    if ($('#inspectorVersion')) $('#inspectorVersion').textContent = `v${cust.version || '2.5.0'}`;
+    if ($('#inspectorVersion')) $('#inspectorVersion').textContent = `v${cust.version || '3.0.0'}`;
     if ($('#inspectorContact')) $('#inspectorContact').textContent = cust.contact || 'Belirtilmedi';
     if ($('#inspectorPasswordHint')) $('#inspectorPasswordHint').textContent = cust.passwordHint || 'Cortex2026!';
     if ($('#inspectorHealthNote')) $('#inspectorHealthNote').textContent = cust.healthNote || cust.health || 'Lisans ve kullanıcı hesabı aktif';

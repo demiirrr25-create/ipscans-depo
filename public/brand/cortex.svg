@@ -1,1 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none"><title>Cortex — bir ipscans.com projesi</title><defs><radialGradient id="planet" cx=".3" cy=".25" r=".8"><stop stop-color="#91c9ff"/><stop offset=".45" stop-color="#4579ed"/><stop offset="1" stop-color="#172e65"/></radialGradient><linearGradient id="orbit"><stop stop-color="#96caff"/><stop offset="1" stop-color="#776af5"/></linearGradient></defs><style>.orbit{transform-origin:64px 64px;animation:orbit 22s linear infinite}@keyframes orbit{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.orbit{animation:none}}</style><circle cx="64" cy="64" r="38" fill="url(#planet)"/><path d="M80 43a27 27 0 1 0 0 42" stroke="#eef6ff" stroke-width="9" stroke-linecap="round"/><circle cx="83" cy="64" r="5" fill="#b6e3ff"/><g class="orbit"><ellipse cx="64" cy="64" rx="58" ry="23" transform="rotate(-32 64 64)" stroke="url(#orbit)" stroke-width="2.5"/><circle cx="113" cy="33" r="5" fill="#94caff" stroke="#eaf3ff" stroke-width="1.5"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>Cortex — bir ipscans.com projesi</title>
+  <rect width="64" height="64" rx="18" fill="#12130F"/>
+  <path d="M16 42c7.2-16 16.2-22 24.5-16.5 6.2 4.1 8.8 11.2 7.2 18" stroke="#F4F1E8" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M18 34c8-14 18-16 28-6" stroke="#C6F24E" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="46" cy="28" r="3.2" fill="#C6F24E"/>
+</svg>

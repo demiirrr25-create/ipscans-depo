@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>IPScans Cortex 2.5.0 — Yönetim Merkezi</title>
+  <title>IPScans Cortex 3.0 — Yönetim</title>
   <!-- No-flash theme bootstrap: ipscans-theme (light|dark) → OS preference → light -->
   <script>
     (function () {
@@ -19,10 +19,11 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600&family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,560&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/style.css?v=2.5.0">
-<link rel="stylesheet" href="/premium.css?v=2.5.0">
+  <link rel="stylesheet" href="/style.css?v=3.0.0">
+  <link rel="stylesheet" href="/premium.css?v=3.0.0">
+  <link rel="stylesheet" href="/atmosphere.css?v=3.0.0">
 </head>
 <body>
   <!-- Toast Notification -->
@@ -56,7 +57,7 @@
         <img class="brand-mark" src="/logo.svg" width="36" height="36" alt="Cortex">
         <span class="brand-word">IPScans</span>
         <span class="brand-divider" aria-hidden="true"></span>
-        <span class="brand-product">Cortex · Bir ipscans.com projesi</span>
+        <span class="brand-product">Yönetim · 3.0</span>
       </span>
       <div class="login-topbar-actions">
         <a href="http://127.0.0.1:8765" target="_blank" rel="noopener" class="topnav-link">Yerel istasyon</a>
@@ -70,8 +71,8 @@
     <div class="login-layout">
       <div class="login-hero">
         <span class="ds-eyebrow">Yetkili geliştirici erişimi</span>
-        <h1 class="login-display">Merkezi lisans ve müşteri yönetimi.</h1>
-        <p class="login-lead">Müşteri istasyonlarını, PRO / PLUS / ULTRA paket kotalarını ve AES-256-GCM şifreli kasayı tek bir yerel konsoldan yönetin.</p>
+        <h1 class="login-display">Müşteriler, lisanslar, tek masa.</h1>
+        <p class="login-lead">İstasyonlar, PRO / PLUS / ULTRA kotaları ve şifreli kasa bu bilgisayarda kalır.</p>
         <p class="project-credit">Bir <a href="https://ipscans.com" target="_blank" rel="noopener">ipscans.com</a> projesi</p>
       </div>
 
@@ -90,7 +91,7 @@
             <div class="field">
               <label for="adminPassword">Parola</label>
               <div class="password-input-wrap">
-                <input id="adminPassword" name="password" type="password" value="Kingofthegame0714*" required placeholder="••••••••••••">
+                <input id="adminPassword" name="password" type="password" required placeholder="••••••••••••" autocomplete="current-password">
                 <button type="button" id="toggleLoginPwBtn" class="btn-ghost btn-xs" title="Parolayı göster / gizle">Göster</button>
               </div>
             </div>
@@ -133,7 +134,7 @@
           <img class="brand-mark" src="/logo.svg" width="36" height="36" alt="Cortex">
           <h1 class="brand-word">IPScans</h1>
           <span class="brand-divider" aria-hidden="true"></span>
-          <span class="brand-product">Cortex · Bir ipscans.com projesi</span>
+          <span class="brand-product">Yönetim · 3.0</span>
         </span>
       </div>
       <div class="topbar-right">
@@ -242,7 +243,7 @@
 
       <div id="workspace" class="workspace">
         <section class="page-intro" aria-labelledby="pageIntroTitle">
-          <span class="ds-eyebrow">Yönetim merkezi · v2.5.0</span>
+          <span class="ds-eyebrow">Yönetim · 3.0</span>
           <h2 id="pageIntroTitle" class="page-title">Lisanslar, müşteriler ve istasyonlar.</h2>
           <p class="page-lead">Ticari paket kotalarını tanımlayın, lisans anahtarı üretin ve bağlı Cortex istasyonlarına uzaktan müdahale edin.</p>
         </section>
@@ -553,7 +554,7 @@
             </div>
             <div class="inspector-meta-cell">
               <span>Cortex sürümü</span>
-              <strong id="inspectorVersion">v2.5.0</strong>
+              <strong id="inspectorVersion">v3.0.0</strong>
             </div>
             <div class="inspector-meta-cell">
               <span>İletişim</span>
@@ -700,6 +701,6 @@
     </div>
   </div>
 
-  <script src="/app.js?v=2.5.0"></script>
+  <script src="/app.js?v=3.0.0"></script>
 </body>
 </html>

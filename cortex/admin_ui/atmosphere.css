@@ -1,0 +1,484 @@
+/* Cortex 3.0 — Atelier. Warm paper by day, night studio by dark. One phosphor signal. */
+
+:root,
+[data-theme="light"] {
+  --bg: #e7e2d6;
+  --bg-subtle: #ddd7c9;
+  --bg-muted: #d3ccbc;
+  --surface: #f6f3eb;
+  --surface-glass: rgba(246, 243, 235, 0.88);
+  --hero-scrim: none;
+  --surface-1: #f6f3eb;
+  --surface-2: #efeae0;
+  --surface-3: #e4deD2;
+  --surface-hover: #ebe6da;
+  --ink: #16140f;
+  --ink-2: #5c564c;
+  --ink-3: #8a8376;
+  --ink-4: #a39c90;
+  --ink-disabled: #b3ac9f;
+  --text: #16140f;
+  --text-secondary: #5c564c;
+  --text-tertiary: #8a8376;
+  --text-muted: #a39c90;
+  --accent: #16140f;
+  --accent-hover: #2a261f;
+  --accent-text: #f6f3eb;
+  --signal: #0c6b52;
+  --signal-hover: #095743;
+  --signal-strong: #095743;
+  --signal-soft: rgba(12, 107, 82, 0.12);
+  --ok: #0c6b52;
+  --warn: #b86a12;
+  --bad: #c23b32;
+  --ok-soft: rgba(12, 107, 82, 0.12);
+  --warn-soft: rgba(184, 106, 18, 0.14);
+  --bad-soft: rgba(194, 59, 50, 0.12);
+  --border: rgba(22, 20, 15, 0.1);
+  --border-strong: rgba(22, 20, 15, 0.18);
+  --border-solid: #d5cec0;
+  --border-strong-solid: #c4bcae;
+  --border-focus: #0c6b52;
+  --stage: #10110e;
+  --stage-card: #1a1c17;
+  --stage-border: #2a2d26;
+  --on-stage: #f4f1e8;
+  --on-stage-secondary: #c9c3b6;
+  --shadow-card: none;
+  --shadow-soft: none;
+  --shadow-lift: 0 24px 60px -36px rgba(22, 20, 15, 0.45);
+  --shadow-float: 0 28px 70px -32px rgba(22, 20, 15, 0.4);
+  --shadow-popover: 0 18px 50px -24px rgba(22, 20, 15, 0.35);
+  --overlay: rgba(16, 17, 14, 0.62);
+  --scrollbar-thumb: #c4bcae;
+  --scrollbar-thumb-hover: #8a8376;
+  --signal-gradient: #0c6b52;
+  --signal-gradient-soft: rgba(12, 107, 82, 0.12);
+  --font-sans: "Outfit", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --sidebar-width: 232px;
+  --premium-accent: #0c6b52;
+  --premium-line: rgba(22, 20, 15, 0.1);
+  --primary-bg: #16140f;
+  --primary-fg: #f6f3eb;
+  --primary-hover: #2a261f;
+  --secondary-bg: transparent;
+  --secondary-hover: #efeae0;
+  --segment-active: #f6f3eb;
+  --scrim: rgba(16, 17, 14, 0.46);
+  --violet: #0c6b52;
+  --cyan: #0c6b52;
+  --header-h: 72px;
+}
+
+html[data-theme="dark"],
+[data-theme="dark"] {
+  --bg: #10110e;
+  --bg-subtle: #161814;
+  --bg-muted: #1e211b;
+  --surface: #191b16;
+  --surface-glass: rgba(25, 27, 22, 0.88);
+  --surface-1: #191b16;
+  --surface-2: #1e211b;
+  --surface-3: #272b24;
+  --surface-hover: #2a2e27;
+  --ink: #f4f1e8;
+  --ink-2: #c9c3b6;
+  --ink-3: #8d877b;
+  --ink-4: #6e685c;
+  --ink-disabled: #6e685c;
+  --text: #f4f1e8;
+  --text-secondary: #c9c3b6;
+  --text-tertiary: #8d877b;
+  --text-muted: #6e685c;
+  --accent: #f4f1e8;
+  --accent-hover: #ffffff;
+  --accent-text: #12130f;
+  --signal: #c6f24e;
+  --signal-hover: #d8ff74;
+  --signal-strong: #c6f24e;
+  --signal-soft: rgba(198, 242, 78, 0.14);
+  --ok: #c6f24e;
+  --warn: #f0b429;
+  --bad: #ff6b5c;
+  --ok-soft: rgba(198, 242, 78, 0.12);
+  --warn-soft: rgba(240, 180, 41, 0.14);
+  --bad-soft: rgba(255, 107, 92, 0.14);
+  --border: rgba(244, 241, 232, 0.1);
+  --border-strong: rgba(244, 241, 232, 0.18);
+  --border-solid: #2c3028;
+  --border-strong-solid: #3a3f34;
+  --border-focus: #c6f24e;
+  --shadow-lift: 0 24px 60px -36px rgba(0, 0, 0, 0.7);
+  --scrollbar-thumb: #3a3f34;
+  --scrollbar-thumb-hover: #6e685c;
+  --signal-gradient: #c6f24e;
+  --signal-gradient-soft: rgba(198, 242, 78, 0.14);
+  --premium-accent: #c6f24e;
+  --premium-line: rgba(244, 241, 232, 0.12);
+  --primary-bg: #f4f1e8;
+  --primary-fg: #12130f;
+  --primary-hover: #ffffff;
+  --secondary-bg: transparent;
+  --secondary-hover: #1e211b;
+  --segment-active: #272b24;
+  --scrim: rgba(0, 0, 0, 0.55);
+}
+
+html, body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+}
+
+h1, h2, .login-display, .login-stage-headline, .page-title {
+  font-family: var(--font-display);
+  font-weight: 520;
+  letter-spacing: -0.04em;
+}
+
+h1 em,
+.login-stage-headline em {
+  background: none !important;
+  -webkit-text-fill-color: currentColor;
+  color: var(--signal) !important;
+  font-style: italic;
+  font-weight: 560;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+/* ---------- Operator station ---------- */
+
+body:has(#cortexSidebar) {
+  background:
+    radial-gradient(900px 420px at 100% -8%, rgba(12, 107, 82, 0.08), transparent 55%),
+    var(--bg);
+}
+
+#cortexSidebar {
+  --ink: #f4f1e8;
+  --ink-2: #c9c3b6;
+  --ink-3: #8d877b;
+  --bg: #12130f;
+  --bg-subtle: #12130f;
+  --surface: transparent;
+  --surface-hover: rgba(244, 241, 232, 0.06);
+  --border: rgba(244, 241, 232, 0.1);
+  --signal: #c6f24e;
+  --signal-soft: rgba(198, 242, 78, 0.14);
+  background: #12130f !important;
+  color: #f4f1e8;
+  border-right: 0 !important;
+  padding: 22px 14px 16px !important;
+}
+
+#cortexSidebar .brand,
+#cortexSidebar .brand small,
+#cortexSidebar .project-credit {
+  color: #f4f1e8;
+}
+
+#cortexSidebar .brand small,
+#cortexSidebar .project-credit {
+  color: #8d877b;
+}
+
+#cortexSidebar nav button {
+  border-radius: 12px;
+  min-height: 42px;
+}
+
+#cortexSidebar nav button.active {
+  background: rgba(198, 242, 78, 0.12) !important;
+  color: #c6f24e !important;
+  border-color: transparent !important;
+}
+
+#cortexSidebar nav button.active::before {
+  left: -14px;
+  width: 2px;
+  background: #c6f24e;
+}
+
+#cortexSidebar .asidefoot {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 14px 6px 4px !important;
+}
+
+#cortexSidebar .aside-version-pill {
+  color: #c6f24e;
+}
+
+body:has(#cortexSidebar) main > header {
+  background: color-mix(in srgb, var(--bg) 78%, transparent) !important;
+  backdrop-filter: blur(18px);
+  border-bottom: 0 !important;
+  height: auto !important;
+  min-height: 72px;
+}
+
+body:has(#cortexSidebar) .card,
+body:has(#cortexSidebar) .panel,
+body:has(#cortexSidebar) .stat,
+body:has(#cortexSidebar) .sector-card,
+body:has(#cortexSidebar) .login-card {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+}
+
+body:has(#cortexSidebar) button.primary,
+body:has(#cortexSidebar) .btn-primary {
+  background: var(--ink) !important;
+  color: var(--bg) !important;
+  border-color: var(--ink) !important;
+  border-radius: 999px !important;
+}
+
+body:has(#cortexSidebar) button.primary:hover {
+  background: var(--signal) !important;
+  border-color: var(--signal) !important;
+  color: #12130f !important;
+}
+
+[data-theme="light"] body:has(#cortexSidebar) button.primary:hover {
+  color: #f6f3eb !important;
+}
+
+body:has(#cortexSidebar) .cmdk-trigger-btn,
+body:has(#cortexSidebar) .wall-trigger-btn,
+body:has(#cortexSidebar) .sector-mini-btn,
+body:has(#cortexSidebar) .theme-toggle,
+body:has(#cortexSidebar) .lang-switch {
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.cortex-login-gate {
+  background:
+    radial-gradient(720px 480px at 12% 18%, rgba(198, 242, 78, 0.16), transparent 60%),
+    radial-gradient(500px 380px at 80% 100%, rgba(12, 107, 82, 0.28), transparent 55%),
+    #10110e !important;
+  color: #f4f1e8 !important;
+}
+
+.cortex-login-gate .login-topbar {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  backdrop-filter: none !important;
+  color: #f4f1e8;
+}
+
+.cortex-login-gate .login-stage-brand,
+.cortex-login-gate .login-display,
+.cortex-login-gate .login-lead,
+.cortex-login-gate .login-admin-link {
+  color: #f4f1e8 !important;
+}
+
+.cortex-login-gate .login-lead {
+  color: #c9c3b6 !important;
+  max-width: 34rem;
+}
+
+.cortex-login-gate .ds-eyebrow,
+.cortex-login-gate .brand-badge {
+  color: #c6f24e !important;
+  background: transparent;
+}
+
+.cortex-login-gate .login-chip {
+  background: rgba(244, 241, 232, 0.04) !important;
+  border: 1px solid rgba(244, 241, 232, 0.1) !important;
+  box-shadow: none !important;
+  color: #c9c3b6 !important;
+  border-radius: 16px !important;
+}
+
+.cortex-login-gate .login-chip strong {
+  color: #f4f1e8 !important;
+}
+
+.cortex-login-gate .login-admin-link {
+  border-color: rgba(244, 241, 232, 0.16) !important;
+  background: transparent !important;
+}
+
+.cortex-login-gate .cortex-login-card {
+  background: #f6f3eb !important;
+  color: #16140f !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  box-shadow: none !important;
+  padding: 36px 32px 28px !important;
+}
+
+.cortex-login-gate .cortex-login-card h2,
+.cortex-login-gate .cortex-login-card .eyebrow,
+.cortex-login-gate .cortex-login-card label,
+.cortex-login-gate .cortex-login-card .fine {
+  color: #16140f !important;
+}
+
+.cortex-login-gate .cortex-login-card .eyebrow,
+.cortex-login-gate .cortex-login-card .fine {
+  color: #5c564c !important;
+}
+
+.cortex-login-gate .cortex-login-card input {
+  background: #fffdf8 !important;
+  border: 1px solid rgba(22, 20, 15, 0.12) !important;
+  color: #16140f !important;
+  border-radius: 12px !important;
+}
+
+.cortex-login-gate .login-display em {
+  color: #c6f24e !important;
+}
+
+.nvr-monitor {
+  background: #10110e !important;
+  border-radius: 18px !important;
+}
+
+.sonner-toast,
+.toast {
+  border-radius: 16px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Administration ---------- */
+
+html:has(#loginGate) {
+  --font-sans: "Outfit", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+}
+
+html:has(#loginGate) body {
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(800px 360px at 100% 0%, rgba(12, 107, 82, 0.08), transparent 50%),
+    var(--bg);
+}
+
+html:has(#loginGate) .login-gate {
+  background:
+    radial-gradient(720px 480px at 12% 18%, rgba(198, 242, 78, 0.16), transparent 60%),
+    #10110e !important;
+  color: #f4f1e8;
+}
+
+html:has(#loginGate) .login-topbar,
+html:has(#loginGate) .login-hero,
+html:has(#loginGate) .login-display,
+html:has(#loginGate) .brand-word,
+html:has(#loginGate) .brand-product {
+  color: #f4f1e8 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+html:has(#loginGate) .login-lead,
+html:has(#loginGate) .project-credit,
+html:has(#loginGate) .ds-eyebrow {
+  color: #c9c3b6 !important;
+}
+
+html:has(#loginGate) .ds-eyebrow {
+  color: #c6f24e !important;
+}
+
+html:has(#loginGate) .login-display {
+  font-family: "Fraunces", serif !important;
+  font-size: clamp(48px, 5.4vw, 76px) !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.045em !important;
+  max-width: 12ch;
+}
+
+html:has(#loginGate) .login-card {
+  background: #f6f3eb !important;
+  color: #16140f !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  box-shadow: none !important;
+}
+
+html:has(#loginGate) .login-card h2,
+html:has(#loginGate) .login-card label,
+html:has(#loginGate) .login-card p {
+  color: #16140f;
+}
+
+html:has(#loginGate) .login-card .btn-primary {
+  background: #16140f !important;
+  color: #f6f3eb !important;
+  border-radius: 999px !important;
+}
+
+html:has(#loginGate) .admin-sidebar {
+  background: #12130f !important;
+  border-right: 0 !important;
+  color: #f4f1e8;
+}
+
+html:has(#loginGate) .admin-sidebar .admin-nav-item,
+html:has(#loginGate) .admin-sidebar .admin-sidebar-heading,
+html:has(#loginGate) .admin-sidebar .sidebar-vault-meta {
+  color: #c9c3b6 !important;
+}
+
+html:has(#loginGate) .admin-nav-item.active,
+html:has(#loginGate) .admin-nav-item:hover {
+  background: rgba(244, 241, 232, 0.06) !important;
+  color: #f4f1e8 !important;
+}
+
+html:has(#loginGate) .admin-nav-item.active::before {
+  background: #c6f24e !important;
+  width: 2px;
+}
+
+html:has(#loginGate) .workspace,
+html:has(#loginGate) .telemetry-ribbon,
+html:has(#loginGate) .main-grid {
+  background: transparent;
+}
+
+html:has(#loginGate) .page-title {
+  font-family: "Fraunces", serif;
+  letter-spacing: -0.04em;
+}
+
+html:has(#loginGate) .btn-primary {
+  border-radius: 999px;
+}
+
+html:has(#loginGate) .card,
+html:has(#loginGate) .panel,
+html:has(#loginGate) .metric,
+html:has(#loginGate) .studio-form,
+html:has(#loginGate) .login-card {
+  box-shadow: none !important;
+}

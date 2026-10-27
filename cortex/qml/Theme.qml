@@ -26,24 +26,24 @@ QtObject {
     function tight(px) { return -0.02 * px }
 
     // ---------------------------------------------------------------- colors
-    readonly property color bg: dark ? "#07080B" : "#FFFFFF"
-    readonly property color bgSubtle: dark ? "#0D0F14" : "#F7F8FA"
-    readonly property color bgMuted: dark ? "#141821" : "#F1F3F5"
-    readonly property color surface: dark ? "#0D0F14" : "#FFFFFF"
-    readonly property color surface2: dark ? "#141821" : "#F7F8FA"
+    readonly property color bg: dark ? "#10110E" : "#E7E2D6"
+    readonly property color bgSubtle: dark ? "#161814" : "#DDD7C9"
+    readonly property color bgMuted: dark ? "#1E211B" : "#D3CCBC"
+    readonly property color surface: dark ? "#191B16" : "#F6F3EB"
+    readonly property color surface2: dark ? "#1E211B" : "#EFEAE0"
     readonly property color glass: dark ? "#C70D0F14" : "#D1FFFFFF"
     readonly property color segActive: dark ? "#222838" : "#FFFFFF"
 
-    readonly property color ink: dark ? "#F5F7FA" : "#0B0D12"
-    readonly property color ink2: dark ? "#A8B0C2" : "#464A53"
-    readonly property color ink3: dark ? "#6E778C" : "#777C86"
-    readonly property color ink4: dark ? "#454C5E" : "#A3A8B1"
+    readonly property color ink: dark ? "#F4F1E8" : "#16140F"
+    readonly property color ink2: dark ? "#C9C3B6" : "#5C564C"
+    readonly property color ink3: dark ? "#8D877B" : "#8A8376"
+    readonly property color ink4: dark ? "#6E685C" : "#A39C90"
 
     readonly property color border: dark ? "#14FFFFFF" : "#140B0D12"
     readonly property color borderStrong: dark ? "#29FFFFFF" : "#240B0D12"
 
-    readonly property color signal: dark ? "#4C82FF" : "#2F6BFF"
-    readonly property color signalSoft: dark ? "#244C82FF" : "#E9F0FF"
+    readonly property color signal: dark ? "#C6F24E" : "#0C6B52"
+    readonly property color signalSoft: dark ? "#24C6F24E" : "#1A0C6B52"
 
     readonly property color ok: dark ? "#22C55E" : "#12B76A"
     readonly property color warn: dark ? "#F59E0B" : "#F79009"
@@ -53,14 +53,14 @@ QtObject {
     readonly property color badSoft: dark ? "#24EF4444" : "#FEEDEC"
 
     // Brand gradient stops: linear-gradient(100deg, #2f6bff, #00c2ff 48%, #7a5cff)
-    readonly property color brandA: "#2F6BFF"
-    readonly property color brandB: "#00C2FF"
-    readonly property color brandC: "#7A5CFF"
+    readonly property color brandA: "#0C6B52"
+    readonly property color brandB: "#C6F24E"
+    readonly property color brandC: "#16140F"
 
     // Primary ink pill (inverted in dark)
-    readonly property color primaryBg: dark ? "#F5F7FA" : "#0B0D12"
-    readonly property color primaryHover: dark ? "#DCE1EA" : "#262A33"
-    readonly property color primaryFg: dark ? "#07080B" : "#FFFFFF"
+    readonly property color primaryBg: dark ? "#F4F1E8" : "#16140F"
+    readonly property color primaryHover: dark ? "#FFFFFF" : "#2A261F"
+    readonly property color primaryFg: dark ? "#12130F" : "#F6F3EB"
 
     readonly property color scrollThumb: dark ? "#2C3242" : "#D1D5DB"
     readonly property color scrim: dark ? "#99000000" : "#520B0D12"
