@@ -4,12 +4,12 @@ import type { EnterpriseProductCopy } from "./lpr-copy";
 export const cortexRelease = {
   version: "3.0.0",
   platform: "Windows 10/11 · x64",
-  fileName: "IPScans-Cortex-3.0.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/IPScans-Cortex-3.0.0.exe",
+  fileName: "IPScans-Cortex-Setup-3.0.0.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/IPScans-Cortex-Setup-3.0.0.exe",
   guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/Cortex-3.0.0-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "c00aa99968f9dbb3b8d74b472b6f2ced1ab20fb3f7038680b3c183c37673f84d",
-  bytes: 108452392,
+  sha256: "c95ba7c3cf8b340e006d6a9253109e3a4438bcb5d9b93b7ca19086f5bfcd95bd",
+  bytes: 123028806,
 } as const;
 
 export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {

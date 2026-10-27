@@ -9,6 +9,6 @@ Bir ipscans.com projesi · 27 Ekim 2026
 - Kamera analizi, kurallar, Telegram, lisans ve arşiv davranışı 2.5 ile aynıdır.
 
 ## Kurulum
-1. IPScans-Cortex-3.0.0.exe dosyasını çalıştırın. Bu sürüm taşınabilir çalışır; ayrı kurulum sihirbazı bu derlemede yoktur.
-2. Önceki Cortex sürecini kapatın. Masaüstü kısayolu eski kurulumu açıyorsa yeni dosyayı çalıştırın.
-3. Yönetim merkezi CortexAdmin-3.0.0.exe dosyasıdır. Cortex 8765, yönetim 8766 portunda ve yalnızca bu bilgisayarda dinler.
+1. IPScans-Cortex-Setup-3.0.0.exe dosyasını çalıştırın. Kurulum istasyonu ve yönetim merkezini birlikte yerleştirir.
+2. Önceki Cortex sürecini kapatın. Masaüstü kısayolundan yeni istasyonu açın.
+3. Yönetim merkezi Başlat menüsündedir. Cortex 8765, yönetim 8766 portunda ve yalnızca bu bilgisayarda dinler.
