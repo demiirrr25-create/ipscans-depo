@@ -1,0 +1,107 @@
+name: Windows Rust workspace
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - "design/**"
+      - "public/desktop/**"
+      - ".github/workflows/windows-rust.yml"
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - "design/**"
+      - "public/desktop/**"
+      - ".github/workflows/windows-rust.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test workspace
+        run: cargo test --workspace --locked
+      - name: Build optimized Windows binaries
+        run: cargo build --workspace --release --locked
+      - name: Exercise every desktop binary, installed copy, embedded PE icon and local screen
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $desktop = [Environment]::GetFolderPath('DesktopDirectory', 'Create')
+          $apps = [ordered]@{
+            'IPscans-Plus' = 'scanner'
+            'IPScans-Sentinel' = 'sentinel'
+            'IPCast' = 'ipcast'
+            'IPScans-LPR-Pro' = 'lpr'
+            'IPScans-Cortex' = 'cortex'
+            'CortexAdmin' = 'admin'
+            'ipscans-network-health-pro' = 'health'
+            'ipscans-network-scanner' = 'cli'
+          }
+          $out = New-Item -ItemType Directory -Path "target/verified-desktop" -Force
+          $manifest = foreach ($name in $apps.Keys) {
+            $path = (Resolve-Path "target/release/$name.exe").Path
+            $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+            $peBytes = [System.IO.File]::ReadAllBytes($path)
+            $hasRsrc = $false
+            for ($idx = 0; $idx -lt ($peBytes.Length - 8); $idx++) {
+              if ($peBytes[$idx] -eq 0x2E -and $peBytes[$idx+1] -eq 0x72 -and $peBytes[$idx+2] -eq 0x73 -and $peBytes[$idx+3] -eq 0x72 -and $peBytes[$idx+4] -eq 0x63) {
+                $hasRsrc = $true; break
+              }
+            }
+            if (-not $hasRsrc) { throw "Missing .rsrc PE icon resource section in $name.exe" }
+            foreach ($flag in @('--selftest', '--install-desktop')) {
+              $process = Start-Process -FilePath $path -ArgumentList $flag -PassThru -WindowStyle Hidden
+              if (-not $process.WaitForExit(20000)) {
+                $process.Kill()
+                throw "$name $flag timed out"
+              }
+              if ($process.ExitCode -ne 0) { throw "$name $flag exited $($process.ExitCode)" }
+            }
+            $installed = Join-Path $desktop "$name.exe"
+            if ((Get-FileHash -LiteralPath $installed -Algorithm SHA256).Hash -ne $hash) {
+              throw "Desktop copy differs for $name"
+            }
+            $server = Start-Process -FilePath $installed -ArgumentList '--headless' -PassThru -WindowStyle Hidden
+            try {
+              $url = $null
+              for ($i = 0; $i -lt 40; $i++) {
+                if ($server.HasExited) { throw "$name exited before opening a loopback socket" }
+                $socket = Get-NetTCPConnection -State Listen -OwningProcess $server.Id -ErrorAction SilentlyContinue |
+                  Where-Object LocalAddress -eq '127.0.0.1' | Select-Object -First 1
+                if ($socket) { $url = "http://127.0.0.1:$($socket.LocalPort)"; break }
+                Start-Sleep -Milliseconds 150
+              }
+              if (-not $url) { throw "No loopback server for $name" }
+              $homePage = Invoke-WebRequest -Uri "$url/" -TimeoutSec 8
+              $brand = "/brand/$($apps[$name]).png"
+              if ($homePage.StatusCode -ne 200 -or -not $homePage.Content.Contains($brand)) {
+                throw "$name did not render its product screen"
+              }
+              $icon = Invoke-WebRequest -Uri "$url$brand" -TimeoutSec 8
+              if ($icon.Headers.'Content-Type' -notcontains 'image/png' -or $icon.RawContentLength -lt 16) {
+                throw "$name did not serve its PNG icon"
+              }
+            } finally {
+              if (-not $server.HasExited) { $server.Kill(); $server.WaitForExit() }
+            }
+            Copy-Item -LiteralPath $path -Destination $out.FullName -Force
+            [ordered]@{ file = "$name.exe"; bytes = (Get-Item $path).Length; sha256 = $hash.ToLowerInvariant() }
+          }
+          [ordered]@{ commit = $env:GITHUB_SHA; files = @($manifest) } |
+            ConvertTo-Json -Depth 5 | Set-Content "$($out.FullName)/manifest.json" -Encoding utf8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-rust-desktop-${{ github.sha }}
+          path: target/verified-desktop/
+          if-no-files-found: error

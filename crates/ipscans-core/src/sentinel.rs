@@ -159,6 +159,7 @@ pub fn purge_modem_upnp_port_mappings(gateway: &str, target: &str) -> (bool, Vec
 }
 
 /// Apply only this computer's firewall rules for a specific remote IPv4.
+/// Includes transactional rollback if the outbound rule fails after the inbound rule succeeds.
 pub fn quarantine_device_now(
     target_ip: &str,
     target_mac: &str,
@@ -200,9 +201,52 @@ pub fn quarantine_device_now(
         ],
     );
 
-    let success = code_in == 0 && code_out == 0;
+    if code_in == 0 && code_out != 0 {
+        let _ = run_hidden_command(
+            "netsh",
+            &[
+                "advfirewall",
+                "firewall",
+                "delete",
+                "rule",
+                &format!("name={}", rule_in),
+            ],
+        );
+        logs.push(format!(
+            "Giden kural başarısız olduğu için gelen kural ({}) otomatik geri alındı.",
+            rule_in
+        ));
+    }
+
+    let verified = if code_in == 0 && code_out == 0 {
+        let (v_in, _, _) = run_hidden_command(
+            "netsh",
+            &[
+                "advfirewall",
+                "firewall",
+                "show",
+                "rule",
+                &format!("name={}", rule_in),
+            ],
+        );
+        let (v_out, _, _) = run_hidden_command(
+            "netsh",
+            &[
+                "advfirewall",
+                "firewall",
+                "show",
+                "rule",
+                &format!("name={}", rule_out),
+            ],
+        );
+        v_in == 0 && v_out == 0
+    } else {
+        false
+    };
+
+    let success = code_in == 0 && code_out == 0 && verified;
     logs.push(format!(
-        "Yerel Windows güvenlik duvarı · gelen kod {code_in}, giden kod {code_out}, {} ms.",
+        "Yerel Windows güvenlik duvarı · gelen kod {code_in}, giden kod {code_out}, doğrulama {verified}, {} ms.",
         t0.elapsed().as_millis()
     ));
     let _ = gateway_ip;
@@ -220,6 +264,188 @@ pub fn quarantine_device_now(
 
     save_quarantine_entry(&entry);
     (entry, logs)
+}
+
+/// Isolated / Virtualized Firewall Rule Engine for deterministic VM & non-elevated transactional testing.
+#[derive(Clone, Debug, Default)]
+pub struct VirtualFirewallEngine {
+    pub active_rules: std::collections::BTreeMap<String, (String, String)>, // rule_name -> (dir, remoteip)
+    pub fail_outbound_once: bool,
+}
+
+impl VirtualFirewallEngine {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn exec_netsh(&mut self, args: &[&str]) -> (i32, String, String) {
+        if args.len() < 4 || args[0] != "advfirewall" || args[1] != "firewall" {
+            return (1, String::new(), "Invalid netsh syntax".into());
+        }
+        let op = args[2];
+        let sub = args[3];
+        if sub != "rule" {
+            return (1, String::new(), "Expected rule".into());
+        }
+        let mut name = String::new();
+        let mut dir = String::new();
+        let mut remoteip = String::new();
+        for &a in &args[4..] {
+            if let Some(v) = a.strip_prefix("name=") {
+                name = v.to_string();
+            } else if let Some(v) = a.strip_prefix("dir=") {
+                dir = v.to_string();
+            } else if let Some(v) = a.strip_prefix("remoteip=") {
+                remoteip = v.to_string();
+            }
+        }
+        match op {
+            "add" => {
+                if dir == "out" && self.fail_outbound_once {
+                    self.fail_outbound_once = false;
+                    return (1, String::new(), "Simulated OUT rule failure".into());
+                }
+                self.active_rules.insert(name, (dir, remoteip));
+                (0, "Ok.".into(), String::new())
+            }
+            "delete" => {
+                if self.active_rules.remove(&name).is_some() {
+                    (0, "Deleted 1 rule(s).".into(), String::new())
+                } else {
+                    (1, String::new(), "No rules match the specified criteria.".into())
+                }
+            }
+            "show" => {
+                if let Some((d, ip)) = self.active_rules.get(&name) {
+                    (
+                        0,
+                        format!("Rule Name: {}\nDirection: {}\nRemoteIP: {}", name, d, ip),
+                        String::new(),
+                    )
+                } else {
+                    (1, String::new(), "No rules match".into())
+                }
+            }
+            _ => (1, String::new(), "Unsupported op".into()),
+        }
+    }
+}
+
+/// Executes target-specific firewall rule addition + verification + transactional rollback using a pluggable runner.
+pub fn quarantine_ip_with_runner<F>(
+    target_ip: &str,
+    ctx: &GatewayContext,
+    mut runner: F,
+) -> Result<Vec<String>, String>
+where
+    F: FnMut(&[&str]) -> (i32, String, String),
+{
+    if !valid_target(target_ip, ctx) {
+        return Err(format!("Hedef IPv4 ({}) güvenlik politikası tarafından reddedildi (loopback, yerel IP veya ağ geçidi engellenemez).", target_ip));
+    }
+    let rule_in = format!("IPScans_Sentinel_Quarantine_IN_{}", target_ip);
+    let rule_out = format!("IPScans_Sentinel_Quarantine_OUT_{}", target_ip);
+    let mut logs = Vec::new();
+
+    let (c_in, _, e_in) = runner(&[
+        "advfirewall",
+        "firewall",
+        "add",
+        "rule",
+        &format!("name={}", rule_in),
+        "dir=in",
+        "action=block",
+        &format!("remoteip={}", target_ip),
+        "enable=yes",
+    ]);
+    if c_in != 0 {
+        return Err(format!("Gelen kural eklenemedi: {}", e_in));
+    }
+    logs.push(format!("ADD {} -> OK", rule_in));
+
+    let (c_out, _, e_out) = runner(&[
+        "advfirewall",
+        "firewall",
+        "add",
+        "rule",
+        &format!("name={}", rule_out),
+        "dir=out",
+        "action=block",
+        &format!("remoteip={}", target_ip),
+        "enable=yes",
+    ]);
+    if c_out != 0 {
+        let _ = runner(&[
+            "advfirewall",
+            "firewall",
+            "delete",
+            "rule",
+            &format!("name={}", rule_in),
+        ]);
+        return Err(format!(
+            "Giden kural başarısız oldu ({}); gelen kural ({}) otomatik geri alındı.",
+            e_out, rule_in
+        ));
+    }
+    logs.push(format!("ADD {} -> OK", rule_out));
+
+    let (v_in, _, _) = runner(&[
+        "advfirewall",
+        "firewall",
+        "show",
+        "rule",
+        &format!("name={}", rule_in),
+    ]);
+    let (v_out, _, _) = runner(&[
+        "advfirewall",
+        "firewall",
+        "show",
+        "rule",
+        &format!("name={}", rule_out),
+    ]);
+    if v_in != 0 || v_out != 0 {
+        return Err("Güvenlik duvarı kural doğrulaması (show rule) başarısız.".into());
+    }
+    logs.push(format!("VERIFY {} & {} -> ACTIVE", rule_in, rule_out));
+    Ok(logs)
+}
+
+/// Rolls back target-specific firewall rules and verifies their removal (`show rule != 0`).
+pub fn unquarantine_ip_with_runner<F>(
+    target_ip: &str,
+    mut runner: F,
+) -> Result<Vec<String>, String>
+where
+    F: FnMut(&[&str]) -> (i32, String, String),
+{
+    let rule_in = format!("IPScans_Sentinel_Quarantine_IN_{}", target_ip);
+    let rule_out = format!("IPScans_Sentinel_Quarantine_OUT_{}", target_ip);
+    let mut logs = Vec::new();
+
+    for rule in [&rule_in, &rule_out] {
+        let (c_del, _, e_del) = runner(&[
+            "advfirewall",
+            "firewall",
+            "delete",
+            "rule",
+            &format!("name={}", rule),
+        ]);
+        if c_del != 0 {
+            return Err(format!("Kural silinemedi ({}): {}", rule, e_del));
+        }
+        let (c_show, _, _) = runner(&[
+            "advfirewall",
+            "firewall",
+            "show",
+            "rule",
+            &format!("name={}", rule),
+        ]);
+        if c_show == 0 {
+            return Err(format!("Kural silindikten sonra hâlâ aktif görünüyor: {}", rule));
+        }
+        logs.push(format!("ROLLBACK {} -> REMOVED_VERIFIED", rule));
+    }
+    Ok(logs)
 }
 
 /// Remove only firewall rules created by this application for this address.
@@ -331,4 +557,44 @@ pub fn execute_autonomous_incident_pipeline(
         json_str(&rtsp),
         total_t0.elapsed().as_millis()
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sentinel_target_firewall_add_verify_and_transactional_rollback() {
+        let ctx = GatewayContext {
+            local_ip: "192.168.0.17".into(),
+            subnet_prefix: "192.168.0".into(),
+            scan_cidr: "192.168.0.0/24".into(),
+            gateway_ip: "192.168.0.1".into(),
+            gateway_mac: "54:A7:03:AA:BB:CC".into(),
+            interface_index: "12".into(),
+            dns_servers: vec!["1.1.1.1".into()],
+        };
+
+        // 1. Rejects loopback, local_ip, and gateway_ip
+        let mut fw = VirtualFirewallEngine::new();
+        assert!(quarantine_ip_with_runner("127.0.0.1", &ctx, |a| fw.exec_netsh(a)).is_err());
+        assert!(quarantine_ip_with_runner("192.168.0.17", &ctx, |a| fw.exec_netsh(a)).is_err());
+        assert!(quarantine_ip_with_runner("192.168.0.1", &ctx, |a| fw.exec_netsh(a)).is_err());
+
+        // 2. Partial failure (OUT fails after IN succeeds) automatically rolls back IN
+        fw.fail_outbound_once = true;
+        let err = quarantine_ip_with_runner("192.168.0.212", &ctx, |a| fw.exec_netsh(a));
+        assert!(err.is_err());
+        assert!(fw.active_rules.is_empty());
+
+        // 3. Full quarantine add + show rule verification + full rollback
+        let add_logs =
+            quarantine_ip_with_runner("192.168.0.212", &ctx, |a| fw.exec_netsh(a)).unwrap();
+        assert_eq!(add_logs.len(), 3);
+        assert_eq!(fw.active_rules.len(), 2);
+
+        let del_logs = unquarantine_ip_with_runner("192.168.0.212", |a| fw.exec_netsh(a)).unwrap();
+        assert_eq!(del_logs.len(), 2);
+        assert!(fw.active_rules.is_empty());
+    }
 }

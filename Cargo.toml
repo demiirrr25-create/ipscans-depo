@@ -11,18 +11,9 @@ members = [
     "crates/ipscans-cli",
     "crates/ipscans-web",
 ]
-exclude = [
-    "sentinel",
-    "desktop-app",
-    "desktop-app-pro",
-    "ipcast",
-    "lpr",
-    "cortex",
-    "tools/scanner",
-]
 
 [workspace.package]
-version = "5.1.0-preview.1"
+version = "5.1.0-preview.2"
 edition = "2021"
 authors = ["IPScans Engineering <security@ipscans.com>"]
 license = "LicenseRef-IPScans-Commercial"

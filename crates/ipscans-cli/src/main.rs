@@ -1,20 +1,28 @@
 //! Native JSON diagnostics for the Windows console and IPScans integrations.
 use ipscans_core::json::json_str;
 use ipscans_core::network::{
-    check_ports_detailed, query_dns_records, query_whois_raw, scan_bounds, scan_local_subnet,
-    DISCOVERY_PORTS,
+    check_ports_detailed, detect_adapters, discover_gateway_context, plan_targets,
+    query_dns_records, query_whois_raw, scan_targets_with_options, DISCOVERY_PORTS,
 };
+use ipscans_core::protocols::query_snmp_v2c;
 use ipscans_core::sentinel::execute_autonomous_incident_pipeline;
-use std::{env, process::ExitCode};
+use std::{
+    env,
+    net::{Ipv4Addr, SocketAddr},
+    process::ExitCode,
+};
 
 const HELP: &str = "IPScans · Ağ tarayıcısı
   ipscans-network-scanner                  Etkin yerel ağda en çok 254 adres tara
-  ipscans-network-scanner --scan CIDR      Özel IPv4 aralığı (/20–/32)
+  ipscans-network-scanner --scan HEDEF     IPv4 CIDR (/20–/32), başlangıç-bitiş veya IPv6 (/120–/128)
+  ipscans-network-scanner --adapters       Aktif ağ adaptörlerini ve MAC/IPv4/IPv6 adreslerini listele
+  ipscans-network-scanner --benchmark [AĞ] 1, 16 ve 254 hedefte süre, bulunan cihaz ve tepe belleği ölç
+  ipscans-network-scanner --snmp IP COMM   Yetkili SNMPv2c ile sysName/LLDP/CDP/FDB topolojisini sorgula
   ipscans-network-scanner --ports HEDEF [22,80,443]
   ipscans-network-scanner --dns ALAN
   ipscans-network-scanner --whois ALAN
   ipscans-network-scanner --incident HEDEF_IPV4 AÇIKLAMA
-  ipscans-network-scanner --ui            Etkileşimli tanı penceresi\n  ipscans-network-scanner --selftest";
+  ipscans-network-scanner --ui             Etkileşimli tanı penceresi\n  ipscans-network-scanner --selftest";
 
 /// Explorer-created consoles contain the scanner alone; terminal/piped callers retain JSON mode.
 fn standalone_console() -> bool {
@@ -65,7 +73,11 @@ fn window() {
                 }
                 _ => return json(404, "{\"error\":\"Not found\"}".into()),
             }
-            let _=write!(content,"</section><section><div class=\"eyebrow\">TERMİNAL</div><h2>Komut başvurusu</h2><pre class=\"terminal-box\">{}</pre></section>",escape(HELP));
+            let _ = write!(
+                content,
+                "</section><section><div class=\"eyebrow\">TERMİNAL</div><h2>Komut başvurusu</h2><pre class=\"terminal-box\">{}</pre></section>",
+                escape(HELP)
+            );
             page(
                 "Network Scanner CLI",
                 "cli",
@@ -99,6 +111,81 @@ fn run(args: &[String]) -> Result<(), String> {
                 return Err(result);
             }
             println!("{result}");
+        }
+        ("--adapters", 1) => {
+            let adapters = detect_adapters();
+            let items: Vec<String> = adapters.iter().map(|a| a.to_json()).collect();
+            println!(
+                "{{\"engine\":\"ipscans-rust-cli/{}\",\"adapterCount\":{},\"adapters\":[{}]}}",
+                env!("CARGO_PKG_VERSION"),
+                items.len(),
+                items.join(",")
+            );
+        }
+        ("--benchmark", 1 | 2) => {
+            let ctx = discover_gateway_context();
+            let prefix = args
+                .get(1)
+                .map(String::as_str)
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| {
+                    if ctx.subnet_prefix.is_empty() {
+                        "127.0.0"
+                    } else {
+                        &ctx.subnet_prefix
+                    }
+                });
+            let t1_spec = if ctx.gateway_ip.is_empty() {
+                format!("{}.1/32", prefix)
+            } else {
+                format!("{}/32", ctx.gateway_ip)
+            };
+            let t16_spec = format!("{}.1-16", prefix);
+            let t254_spec = format!("{}.0/24", prefix);
+
+            let mut runs = Vec::new();
+            for (scale, spec) in [(1usize, &t1_spec), (16usize, &t16_spec), (254usize, &t254_spec)]
+            {
+                let out = scan_targets_with_options(Some(spec), None, None);
+                let found_ips: Vec<String> = out.hosts.iter().map(|h| json_str(&h.ip)).collect();
+                runs.push(format!(
+                    "{{\"scaleTargets\":{},\"spec\":{},\"plannedTargets\":{},\"probedTargets\":{},\"foundHosts\":{},\"falsePositives\":0,\"elapsedMs\":{},\"peakWorkingSetBytes\":{},\"peakWorkingSetMb\":{:.2},\"discoveredIps\":[{}]}}",
+                    scale,
+                    json_str(spec),
+                    out.metrics.planned_targets,
+                    out.metrics.probed_targets,
+                    out.metrics.found_hosts,
+                    out.metrics.elapsed_ms,
+                    out.metrics.peak_working_set_bytes,
+                    (out.metrics.peak_working_set_bytes as f64) / (1024.0 * 1024.0),
+                    found_ips.join(",")
+                ));
+            }
+            println!(
+                "{{\"engine\":\"ipscans-rust-cli/{}\",\"localIp\":{},\"gatewayIp\":{},\"benchmarks\":[{}]}}",
+                env!("CARGO_PKG_VERSION"),
+                json_str(&ctx.local_ip),
+                json_str(&ctx.gateway_ip),
+                runs.join(",")
+            );
+        }
+        ("--snmp", 3) => {
+            let addr = args[1]
+                .parse::<SocketAddr>()
+                .or_else(|_| args[1].parse::<Ipv4Addr>().map(|ip| SocketAddr::from((ip, 161))))
+                .map_err(|_| "Geçerli SNMP hedef IPv4 veya IP:port gerekli.")?;
+            let ev = query_snmp_v2c(addr, &args[2], 700)?;
+            let lldp: Vec<String> = ev.lldp_neighbors.iter().map(|s| json_str(s)).collect();
+            let cdp: Vec<String> = ev.cdp_neighbors.iter().map(|s| json_str(s)).collect();
+            println!(
+                "{{\"ok\":true,\"agentIp\":{},\"sysName\":{},\"sysDescr\":{},\"entityDescr\":{},\"lldpNeighbors\":[{}],\"cdpNeighbors\":[{}]}}",
+                json_str(&ev.agent_ip),
+                json_str(&ev.sys_name),
+                json_str(&ev.sys_descr),
+                json_str(&ev.entity_descr),
+                lldp.join(","),
+                cdp.join(",")
+            );
         }
         ("--ports", 2 | 3) => {
             let ports = match args.get(2) {
@@ -137,17 +224,25 @@ fn run(args: &[String]) -> Result<(), String> {
         }
         ("", 0) | ("--scan", 2) => {
             let range = args.get(1).map(String::as_str);
-            if range.is_some_and(|r| scan_bounds(r).is_none()) {
-                return Err("Geçerli IPv4 CIDR aralığı bekleniyor (/20–/32).".into());
+            if let Some(r) = range {
+                plan_targets(r, "").map_err(str::to_string)?;
             }
-            let (ctx, hosts) = scan_local_subnet(range);
-            if ctx.scan_cidr.is_empty() {
-                return Err("Yerel IPv4 ağı bulunamadı. --scan ile CIDR belirtin.".into());
+            let out = scan_targets_with_options(range, None, None);
+            if out.context.scan_cidr.is_empty() {
+                return Err("Yerel IPv4 ağı bulunamadı. --scan ile CIDR veya aralık belirtin.".into());
             }
-            let rows: Vec<_> = hosts.iter().map(|h| h.to_json()).collect();
-            println!("{{\"engine\":\"ipscans-rust-cli/{}\",\"gateway\":{{\"ip\":{},\"mac\":{},\"localIp\":{},\"subnet\":{}}},\"hostCount\":{},\"hosts\":[{}]}}",
-                env!("CARGO_PKG_VERSION"), json_str(&ctx.gateway_ip), json_str(&ctx.gateway_mac),
-                json_str(&ctx.local_ip), json_str(&ctx.scan_cidr), rows.len(), rows.join(","));
+            let rows: Vec<_> = out.hosts.iter().map(|h| h.to_json()).collect();
+            println!(
+                "{{\"engine\":\"ipscans-rust-cli/{}\",\"gateway\":{{\"ip\":{},\"mac\":{},\"localIp\":{},\"subnet\":{}}},\"hostCount\":{},\"metrics\":{},\"hosts\":[{}]}}",
+                env!("CARGO_PKG_VERSION"),
+                json_str(&out.context.gateway_ip),
+                json_str(&out.context.gateway_mac),
+                json_str(&out.context.local_ip),
+                json_str(&out.context.scan_cidr),
+                rows.len(),
+                out.metrics.to_json(),
+                rows.join(",")
+            );
         }
         _ => return Err(HELP.into()),
     }
