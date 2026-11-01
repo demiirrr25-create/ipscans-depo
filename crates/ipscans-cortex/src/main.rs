@@ -203,15 +203,21 @@ fn roi_result(body: &str) -> Result<String, &'static str> {
 }
 
 fn screen(camera_info: &str, roi_info: &str, stream_info: &str, license_info: &str) -> Reply {
-    let packs =
+    let packs = format!(
+        r#"<div class="sector-grid">{}</div>"#,
         cortex_sector_packs()
             .into_iter()
             .map(|p| {
                 format!(
-        "<details><summary>{} · {} kural</summary><p>{}</p><p class=mono>{}</p></details>",
-        escape(p.name_tr),p.rule_ids.len(),escape(p.description_tr),p.rule_ids.join(" · "))
+                    r#"<div class="sector-card"><div><div class="eyebrow">{} KURAL</div><strong style="font-size:14.5px">{}</strong><p style="font-size:12px;margin:4px 0">{}</p></div><div class="mono" style="font-size:11px;color:var(--signal)">{}</div></div>"#,
+                    p.rule_ids.len(),
+                    escape(p.name_tr),
+                    escape(p.description_tr),
+                    p.rule_ids.join(" · ")
+                )
             })
-            .collect::<String>();
+            .collect::<String>()
+    );
     let coords = [("Sol","left",20),("Üst","top",20),("Sağ","right",80),("Alt","bottom",80),("Nokta X","x",50),("Nokta Y","y",50)]
         .iter().map(|(s,k,v)|format!(r#"<label>{s}<input class="input mono" type="number" name="{k}" value="{v}" min="0" max="100" required></label>"#)).collect::<String>();
     page(
@@ -220,6 +226,7 @@ fn screen(camera_info: &str, roi_info: &str, stream_info: &str, license_info: &s
         "Kamera keşfi, kayıtlı video akışı çözme, olay üretimi ve açık anahtarlı lisans doğrulama",
         &format!(
             r#"
+      <div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">KEŞİF VE ÇÖZME</div><div class="kpi-value mono">ONVIF · PGM/BMP</div><div class="kpi-sub">WS-Discovery UDP 3702 + RTSP/HTTP</div></div><div class="kpi-box"><div class="kpi-label">GEOMETRİ MOTORU</div><div class="kpi-value mono">Ray-Cast + 8 Tutamaç</div><div class="kpi-sub">Köşe/kenar toleranslı poligon ROI</div></div><div class="kpi-box"><div class="kpi-label">SEKTÖR KÜTÜPHANESİ</div><div class="kpi-value mono" style="color:var(--signal)">8 Paket · 24 Kural</div><div class="kpi-sub">İSG, Lojistik, Perakende, Kritik Tesis</div></div><div class="kpi-box"><div class="kpi-label">KRİPTOGRAFİK LİSANS</div><div class="kpi-value mono" style="color:var(--ok)">RSA-512 Açık Anahtar</div><div class="kpi-sub">İstemcide imzalama sırrı bulunmaz</div></div></div>
       <section><div class="eyebrow">01 / KAMERA ENVANTERİ</div><h2>Ağdaki kameraları bul</h2><p>ONVIF keşif yanıtlarını ve yerel alt ağdaki kamera adaylarını listeler. Akış adresi yalnızca cihazdan alındığında gösterilir.</p>
       <form method="post" action="/discover"><button class="btn btn-signal">Yerel ağı tara</button></form>{camera_info}</section>
       <section><div class="eyebrow">02 / GEOMETRİ STÜDYOSU</div><h2>İlgi bölgesini sınayın</h2><p>Görüntü genişliği ve yüksekliğinin yüzdesiyle bir dikdörtgen tanımlayın ve test noktasını yerleştirin.</p>
@@ -255,7 +262,11 @@ fn main() {
         "ipscans-cortex",
         17944,
         Arc::new(|method, path, body| match (method, path) {
-            ("GET", "/" | "/index.html") => screen("", "", "", ""),
+            ("GET", "/" | "/index.html") => {
+                let (_, _, default_stream_html) = run_stream_decode_and_event_pipeline();
+                let default_roi_html = roi_result("left=20&top=20&right=80&bottom=80&x=50&y=50").unwrap_or_default();
+                screen("", &default_roi_html, &default_stream_html, "")
+            }
             ("POST", "/roi") => screen(
                 "",
                 &roi_result(body).unwrap_or_else(|e| format!("<output>{e}</output>")),

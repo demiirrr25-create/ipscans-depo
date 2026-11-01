@@ -192,7 +192,10 @@ fn main() {
         "cortex-admin",
         17945,
         Arc::new(|method, path, body| match (method, path) {
-            ("GET", "/" | "/index.html") => screen(""),
+            ("GET", "/" | "/index.html") => {
+                let (_, _, html_out) = run_full_license_lifecycle_verification();
+                screen(&html_out)
+            }
             ("POST", "/lifecycle-verify" | "/api/lifecycle-verify") => {
                 let (ok, json_out, html_out) = run_full_license_lifecycle_verification();
                 if path == "/api/lifecycle-verify" {

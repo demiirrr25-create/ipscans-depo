@@ -4,8 +4,8 @@ import type { EnterpriseProductCopy } from "./lpr-copy";
 export const cortexRelease = {
   version: "3.0.0",
   platform: "Windows 10/11 · x64 (Rust Native)",
-  fileName: "IPScans-Cortex-Setup-3.0.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/IPScans-Cortex-Setup-3.0.0.exe",
+  fileName: "IPScans-Cortex.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPScans-Cortex.exe",
   guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/Cortex-3.0.0-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
   sha256: "0835283a2a2079f7a4f4b54e44ebf7ecc12aa1bd83bff3b76c05d6c3750a9610",

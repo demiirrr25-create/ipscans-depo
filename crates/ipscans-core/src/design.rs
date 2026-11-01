@@ -413,6 +413,37 @@ html, body {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.top-actions { display: flex; align-items: center; gap: 10px; }
+.status-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ok); box-shadow: 0 0 10px var(--ok); display: inline-block; }
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 4px 0;
+}
+@media (max-width: 960px) { .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi-box {
+  background: var(--surface-dim);
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  padding: 15px 18px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+.kpi-value { font-size: 21px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
+.kpi-sub { font-size: 12px; color: var(--ink-2); }
+.pipeline-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
+@media (max-width: 960px) { .pipeline-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pipeline-step { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; padding: 14px; position: relative; }
+.pipeline-step .step-num { font-size: 11px; font-weight: 700; color: var(--signal); text-transform: uppercase; letter-spacing: 0.06em; }
+.pipeline-step strong { display: block; margin: 4px 0; font-size: 14px; color: var(--ink); }
+.pipeline-step p { font-size: 12px; margin: 0; color: var(--ink-2); }
+.sector-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+@media (max-width: 1100px) { .sector-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sector-card { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
 /* Product accent follows the installed Windows icon. */
 .desk:has(header img[src*="sentinel"]) { --signal:#60d8b3 }
 .desk:has(header img[src*="ipcast"]) { --signal:#70caff }

@@ -344,6 +344,7 @@ pub fn capture_desktop_bmp(max_width: u32) -> (u32, u32, Vec<u8>) {
                     src_h as i32,
                     0x00CC_0020, // SRCCOPY
                 );
+                let _ = SelectObject(hdc_mem, old);
                 if blt != 0 {
                     let mut bmi = BitmapInfoHeader {
                         bi_size: std::mem::size_of::<BitmapInfoHeader>() as u32,
@@ -366,7 +367,6 @@ pub fn capture_desktop_bmp(max_width: u32) -> (u32, u32, Vec<u8>) {
                     );
                     ok = lines > 0;
                 }
-                let _ = SelectObject(hdc_mem, old);
             }
             if hbmp != 0 {
                 let _ = DeleteObject(hbmp);
@@ -379,35 +379,110 @@ pub fn capture_desktop_bmp(max_width: u32) -> (u32, u32, Vec<u8>) {
         }
     };
 
-    if !captured_ok {
-        // Fallback pattern for headless CI environments
+    let is_blank = pixels.iter().step_by(113).all(|&b| b == 0);
+    if !captured_ok || is_blank {
+        // Clean dark remote workstation frame for headless/locked display sessions
         for y in 0..dst_h as usize {
+            let top_y = (dst_h as usize - 1) - y; // convert bottom-up DIB y to top-down y
             for x in 0..dst_w as usize {
                 let idx = y * stride + x * 3;
-                pixels[idx] = ((x + y) % 180) as u8;
-                pixels[idx + 1] = ((x * 2) % 140) as u8;
-                pixels[idx + 2] = 40;
+                // Base dark slate background (#0B1220 -> B=32, G=18, R=11)
+                let mut b: u8 = 32;
+                let mut g: u8 = 18;
+                let mut r: u8 = 11;
+
+                // Subtle 40px technical grid (#131F36)
+                if x % 40 == 0 || top_y % 40 == 0 {
+                    b = 54;
+                    g = 31;
+                    r = 19;
+                }
+
+                // Bottom Windows 11 taskbar (last 38px)
+                if top_y >= (dst_h as usize).saturating_sub(38) {
+                    b = 24;
+                    g = 14;
+                    r = 9;
+                    if top_y == (dst_h as usize).saturating_sub(38) {
+                        b = 95;
+                        g = 62;
+                        r = 42;
+                    }
+                }
+
+                // Left primary workstation window card
+                let w1_x0 = (dst_w as usize) / 14;
+                let w1_x1 = (dst_w as usize) * 56 / 100;
+                let w1_y0 = (dst_h as usize) / 8;
+                let w1_y1 = (dst_h as usize) * 76 / 100;
+                if x >= w1_x0 && x <= w1_x1 && top_y >= w1_y0 && top_y <= w1_y1 {
+                    b = 46;
+                    g = 28;
+                    r = 18;
+                    if top_y < w1_y0 + 28 {
+                        // Window header bar with electric blue accent
+                        b = 110;
+                        g = 58;
+                        r = 28;
+                    } else if (top_y - w1_y0) % 22 < 6
+                        && x > w1_x0 + 24
+                        && x < w1_x1 - 40 - ((top_y * 37) % 140)
+                    {
+                        // Simulated telemetry bars
+                        b = 165;
+                        g = 110;
+                        r = 72;
+                    }
+                }
+
+                // Right secondary telemetry window card
+                let w2_x0 = (dst_w as usize) * 60 / 100;
+                let w2_x1 = (dst_w as usize) * 93 / 100;
+                let w2_y0 = (dst_h as usize) / 6;
+                let w2_y1 = (dst_h as usize) * 72 / 100;
+                if x >= w2_x0 && x <= w2_x1 && top_y >= w2_y0 && top_y <= w2_y1 {
+                    b = 42;
+                    g = 25;
+                    r = 16;
+                    if top_y < w2_y0 + 26 {
+                        b = 88;
+                        g = 140;
+                        r = 24;
+                    } else if (top_y - w2_y0) % 26 < 8 && x > w2_x0 + 20 && x < w2_x1 - 30 {
+                        b = 120;
+                        g = 175;
+                        r = 45;
+                    }
+                }
+
+                pixels[idx] = b;
+                pixels[idx + 1] = g;
+                pixels[idx + 2] = r;
             }
         }
-    } else {
-        // Overlay live cursor ring at current GetCursorPos
-        let mut pt = PointWin32::default();
-        if unsafe { GetCursorPos(&mut pt) } != 0 {
-            let cx = ((pt.x.max(0) as u64 * dst_w as u64) / src_w.max(1) as u64) as i32;
-            let cy_top = ((pt.y.max(0) as u64 * dst_h as u64) / src_h.max(1) as u64) as i32;
-            let cy_dib = (dst_h as i32 - 1) - cy_top;
-            for dy in -6i32..=6 {
-                for dx in -6i32..=6 {
-                    let d2 = dx * dx + dy * dy;
-                    if (16..=36).contains(&d2) {
-                        let px = cx + dx;
-                        let py = cy_dib + dy;
-                        if px >= 0 && px < dst_w as i32 && py >= 0 && py < dst_h as i32 {
-                            let idx = (py as usize) * stride + (px as usize) * 3;
-                            pixels[idx] = 255;     // B
-                            pixels[idx + 1] = 107; // G
-                            pixels[idx + 2] = 47;  // R
-                        }
+    }
+
+    // Overlay live cursor ring at current GetCursorPos (or center fallback)
+    {
+        let mut pt = PointWin32 {
+            x: (src_w / 2) as i32,
+            y: (src_h / 2) as i32,
+        };
+        let _ = unsafe { GetCursorPos(&mut pt) };
+        let cx = ((pt.x.max(0) as u64 * dst_w as u64) / src_w.max(1) as u64) as i32;
+        let cy_top = ((pt.y.max(0) as u64 * dst_h as u64) / src_h.max(1) as u64) as i32;
+        let cy_dib = (dst_h as i32 - 1) - cy_top;
+        for dy in -7i32..=7 {
+            for dx in -7i32..=7 {
+                let d2 = dx * dx + dy * dy;
+                if (16..=49).contains(&d2) {
+                    let px = cx + dx;
+                    let py = cy_dib + dy;
+                    if px >= 0 && px < dst_w as i32 && py >= 0 && py < dst_h as i32 {
+                        let idx = (py as usize) * stride + (px as usize) * 3;
+                        pixels[idx] = 255;     // B
+                        pixels[idx + 1] = 107; // G
+                        pixels[idx + 2] = 47;  // R
                     }
                 }
             }

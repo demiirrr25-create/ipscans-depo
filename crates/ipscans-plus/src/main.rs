@@ -210,8 +210,8 @@ impl Inventory {
         let theme = if self.dark { "dark" } else { "light" };
         let mut out = format!(
             r#"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IPScans+ · Ağ envanteri</title><link rel="icon" href="/brand/scanner.png"><link rel="stylesheet" href="/design/v2.css"><style>
-        .topbar{{position:static;min-height:68px;gap:12px;flex-wrap:wrap}}.flow,.bar{{display:flex;gap:10px;align-items:center;flex-wrap:wrap}}.workspace{{display:grid;gap:16px}}.scope{{background:var(--surface-dim);padding:22px;border-left:4px solid var(--signal);border-radius:14px}}.scope h1{{font-size:clamp(25px,4vw,46px);letter-spacing:-.055em}}.bar .input,.bar .select{{width:auto;max-width:100%}}a{{color:var(--signal)}}small{{color:var(--ink-2)}}.map{{display:flex;flex-wrap:wrap;gap:8px}}.map span{{padding:6px 12px;border:1px dashed var(--line-3);border-radius:8px}}td details{{min-width:100px}}@media print{{.no-print,details,form,header button{{display:none!important}}.workspace,.bento-card,.data-table-wrap{{overflow:visible;padding:0;box-shadow:none;border:none}}table{{font-size:10px}}thead{{display:table-header-group}}tr{{break-inside:avoid}}}}</style></head><body>
-        <header class="topbar"><div class="brand-cluster"><img class="brand-logo" alt="" src="/brand/scanner.png"><div><strong>IPScans+</strong><div class="brand-sub">Ağ keşfi, çoklu adaptör ve L2 topoloji · v{}</div></div></div><form class="no-print" method="post" action="/theme"><button class="btn btn-secondary">Temayı değiştir</button></form></header><main class="workspace">"#,
+        .flow,.bar{{display:flex;gap:10px;align-items:center;flex-wrap:wrap}}.workspace{{display:grid;gap:16px}}.scope{{background:linear-gradient(135deg,var(--surface) 0%,var(--surface-dim) 100%);padding:22px 26px;border-left:4px solid var(--signal);border-radius:18px;border-top:1px solid var(--line-2);border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);box-shadow:var(--shadow-sm)}}.scope h1{{font-size:clamp(25px,4vw,42px);letter-spacing:-.05em}}.bar .input,.bar .select{{width:auto;max-width:100%}}a{{color:var(--signal)}}small{{color:var(--ink-2)}}.map{{display:flex;flex-wrap:wrap;gap:8px}}.map span{{padding:6px 12px;border:1px dashed var(--line-3);border-radius:8px}}td details{{min-width:100px}}@media print{{.no-print,details,form,header button{{display:none!important}}.workspace,.bento-card,.data-table-wrap{{overflow:visible;padding:0;box-shadow:none;border:none}}table{{font-size:10px}}thead{{display:table-header-group}}tr{{break-inside:avoid}}}}</style></head><body><div class="app-shell">
+        <header class="topbar"><div class="brand-cluster"><img class="brand-logo" alt="" src="/brand/scanner.png"><div><div style="display:flex;align-items:center;gap:8px"><strong>IPScans+</strong><span class="badge badge-signal mono">v{}</span></div><div class="brand-sub">Ağ keşfi, çoklu adaptör, L2 topoloji, ONVIF ve TCP servis denetimi</div></div></div><div class="top-actions"><span class="badge badge-ok mono"><span class="status-dot"></span>YEREL RUST MOTORU AKTİF</span><form class="no-print" method="post" action="/theme"><button class="btn btn-secondary">Temayı değiştir</button></form></div></header><main class="workspace">"#,
             env!("CARGO_PKG_VERSION")
         );
         let range = self
@@ -224,12 +224,17 @@ impl Inventory {
         let peak_mb = (self.metrics.peak_working_set_bytes as f64) / (1024.0 * 1024.0);
         let _ = write!(
             out,
-            r#"<section class="scope"><div class="eyebrow">AĞ ENVANTERİ · DOĞRULANMIŞ KEŞİF</div><h1>{}</h1><p>{} bulunan cihaz ({} yoklanan / {} planlanan hedef) · {} görünür · {:.2} sn · Tepe bellek {:.1} MB</p></section>"#,
+            r#"<section class="scope"><div class="eyebrow">AĞ ENVANTERİ · DOĞRULANMIŞ KEŞİF</div><h1>{}</h1><p>{} bulunan cihaz ({} yoklanan / {} planlanan hedef) · {} görünür · {:.2} sn · Tepe bellek {:.1} MB</p></section><div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">AKTİF CİHAZ</div><div class="kpi-value mono">{}</div><div class="kpi-sub">Yoklanan: {} / {} hedef</div></div><div class="kpi-box"><div class="kpi-label">KEŞİF SÜRESİ</div><div class="kpi-value mono">{:.2} sn</div><div class="kpi-sub">SendARP + Winsock2 paralel</div></div><div class="kpi-box"><div class="kpi-label">TEPE BELLEK</div><div class="kpi-value mono">{:.1} MB</div><div class="kpi-sub">Sıfır çalışma zamanı bağımlılığı</div></div><div class="kpi-box"><div class="kpi-label">YANLIŞ POZİTİF</div><div class="kpi-value mono" style="color:var(--ok)">0</div><div class="kpi-sub">Tahminsiz OUI + NetBIOS</div></div></div>"#,
             html(range),
             self.hosts.len(),
             self.metrics.probed_targets,
             self.metrics.planned_targets,
             rows.len(),
+            self.elapsed_ms as f64 / 1000.0,
+            peak_mb,
+            self.hosts.len(),
+            self.metrics.probed_targets,
+            self.metrics.planned_targets,
             self.elapsed_ms as f64 / 1000.0,
             peak_mb
         );
@@ -391,7 +396,7 @@ impl Inventory {
         } else {
             out.push_str("<p class=\"no-print\">PDF kaydetmek için Ctrl+P ile yazdırma iletişim kutusunu açın.</p>");
         }
-        out.push_str("</main></body></html>");
+        out.push_str("</main></div><script src=\"/design/v2.js\"></script></body></html>");
         out
     }
 }

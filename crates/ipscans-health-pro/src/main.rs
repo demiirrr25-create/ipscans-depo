@@ -193,7 +193,7 @@ impl Monitor {
         };
         let rep = self.tracker.report();
         let mut page = format!(
-            r#"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8">{refresh}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Network Health Pro · Bağlantı ölçümleri</title><link rel="icon" href="/brand/health.png"><link rel="stylesheet" href="/design/v2.css"><style>.topbar{{position:static;min-height:68px;gap:10px;flex-wrap:wrap}}.hero{{margin-bottom:20px;border-left:4px solid var(--signal);padding:10px 18px}}.hero h1{{font-size:clamp(26px,4vw,46px);letter-spacing:-.055em}}.actions{{display:flex;gap:8px;flex-wrap:wrap}}.metric{{font-size:1.8rem;font-weight:600;letter-spacing:-.045em}}.bars{{display:flex;align-items:end;height:42px;gap:3px;margin-top:10px}}.bars i{{display:block;width:8px;min-height:3px;background:var(--signal);border-radius:3px}}.bars i.miss{{height:3px;background:var(--warn)}}.note{{margin-top:12px}}.tablebox{{max-height:420px;overflow:auto}}</style></head><body><header class="topbar"><div class="brand-cluster"><img class="brand-logo" src="/brand/health.png" alt=""><div><strong>Network Health Pro</strong><div class="brand-sub">Bağlantı telemetrisi · v{}</div></div></div><div class="actions"><form action="/theme" method="post"><button class="btn btn-secondary">Temayı değiştir</button></form><form action="/sample" method="post"><button class="btn btn-secondary">Şimdi ölç</button></form><form action="/simulate-test" method="post"><button class="btn btn-secondary">Kesinti ve adaptör geçişini sına</button></form><form action="/{}" method="post"><button class="btn btn-signal">{}</button></form></div></header><main class="workspace"><section class="hero"><span class="eyebrow">BAĞLANTI GÖZLEMİ</span><h1>Ağ sağlığı</h1><p>{} · Son {} ölçüm / {} örneklik pencere · Kesinti: {} · Adaptör geçişi: {}</p></section><div class="bento-grid">"#,
+            r#"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8">{refresh}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Network Health Pro · Bağlantı ölçümleri</title><link rel="icon" href="/brand/health.png"><link rel="stylesheet" href="/design/v2.css"><style>.hero{{margin-bottom:20px;border-left:4px solid var(--signal);padding:18px 24px;background:linear-gradient(135deg,var(--surface) 0%,var(--surface-dim) 100%);border-radius:18px;border-top:1px solid var(--line-2);border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);box-shadow:var(--shadow-sm)}}.hero h1{{font-size:clamp(26px,4vw,42px);letter-spacing:-.05em}}.actions{{display:flex;gap:8px;flex-wrap:wrap}}.metric{{font-size:1.8rem;font-weight:700;letter-spacing:-.045em}}.bars{{display:flex;align-items:end;height:46px;gap:4px;margin-top:12px}}.bars i{{display:block;width:9px;min-height:4px;background:var(--signal);border-radius:3px}}.bars i.miss{{height:4px;background:var(--warn)}}.note{{margin-top:12px}}.tablebox{{max-height:420px;overflow:auto}}</style></head><body><div class="app-shell"><header class="topbar"><div class="brand-cluster"><img class="brand-logo" src="/brand/health.png" alt=""><div><div style="display:flex;align-items:center;gap:8px"><strong>Network Health Pro</strong><span class="badge badge-signal mono">v{}</span></div><div class="brand-sub">Sürekli ağ geçidi/WAN gecikme, kesinti, adaptör değişimi ve L2 ARP telemetrisi</div></div></div><div class="actions"><span class="badge badge-ok mono"><span class="status-dot"></span>TELEMETRİ AKTİF</span><form action="/theme" method="post"><button class="btn btn-secondary">Temayı değiştir</button></form><form action="/sample" method="post"><button class="btn btn-secondary">Şimdi ölç</button></form><form action="/simulate-test" method="post"><button class="btn btn-secondary">Kesinti ve adaptör geçişini sına</button></form><form action="/{}" method="post"><button class="btn btn-signal">{}</button></form></div></header><main class="workspace"><section class="hero"><span class="eyebrow">BAĞLANTI GÖZLEMİ VE DAYANIKLILIK</span><h1>Ağ sağlığı ve kesintisiz telemetri</h1><p>{} · Son {} ölçüm / {} örneklik pencere · Kesinti: {} · Adaptör geçişi: {}</p></section><div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">GÖZLEM PENCERESİ</div><div class="kpi-value mono">{} / {}</div><div class="kpi-sub">JSONL kalıcı günlük kaydı</div></div><div class="kpi-box"><div class="kpi-label">AĞ GEÇİDİ P95 RTT</div><div class="kpi-value mono">{} ms</div><div class="kpi-sub">Kayıp oranı: {:.1}%</div></div><div class="kpi-box"><div class="kpi-label">WAN (1.1.1.1) P95 RTT</div><div class="kpi-value mono">{} ms</div><div class="kpi-sub">Kayıp oranı: {:.1}%</div></div><div class="kpi-box"><div class="kpi-label">ADAPTÖR / ARP OLAYI</div><div class="kpi-value mono" style="color:var(--ok)">{} / {}</div><div class="kpi-sub">Adaptör geçişi / ARP uyuşmazlığı</div></div></div><div class="bento-grid">"#,
             env!("CARGO_PKG_VERSION"),
             if self.active { "stop" } else { "start" },
             if self.active {
@@ -210,6 +210,14 @@ impl Monitor {
             WINDOW,
             rep.outage_count,
             rep.adapter_switch_count,
+            self.samples.len(),
+            WINDOW,
+            rep.gateway_p95_ms,
+            rep.gateway_loss_pct,
+            rep.wan_p95_ms,
+            rep.wan_loss_pct,
+            rep.adapter_switch_count,
+            rep.arp_conflict_count,
         );
         if let Some(sim) = &self.last_sim_summary {
             let _ = write!(
@@ -315,7 +323,7 @@ impl Monitor {
                 "<tr><td colspan=\"6\">İlk örnek için Şimdi ölç düğmesini kullanın.</td></tr>",
             );
         }
-        page.push_str("</tbody></table></div><p class=\"card-desc note\">TCP bağlantı süresi ve ICMP yanıt süresi farklı ölçümlerdir. ICMP engellenebilir. Pencere kapatıldıktan sonra izleme en geç bir dakika içinde durur.</p></section></div></main></body></html>");
+        page.push_str("</tbody></table></div><p class=\"card-desc note\">TCP bağlantı süresi ve ICMP yanıt süresi farklı ölçümlerdir. ICMP engellenebilir. Pencere kapatıldıktan sonra izleme en geç bir dakika içinde durur.</p></section></div></main></div><script src=\"/design/v2.js\"></script></body></html>");
         page
     }
 }

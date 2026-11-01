@@ -39,10 +39,80 @@ pub fn field(body: &str, name: &str) -> Option<String> {
 pub fn page(title: &str, icon: &str, subtitle: &str, body: &str) -> Reply {
     let version = env!("CARGO_PKG_VERSION");
     let html = format!(
-        r#"<!doctype html><html lang="tr" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><link rel="icon" href="/brand/{icon}.png"><link rel="stylesheet" href="/design/v2.css"><style>
-      .desk{{max-width:1080px;margin:clamp(16px,4vw,50px) auto;padding:0 18px}}.desk header,.desk section{{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,3vw,30px);margin-bottom:16px}}.desk header{{display:flex;align-items:center;gap:16px;background:var(--surface-dim)}}.desk header img{{width:64px;height:64px}}.desk h1{{margin:4px 0;font-size:clamp(24px,4vw,38px)}}.desk h2{{font-size:21px;margin:.25em 0 .7em}}.desk p{{color:var(--ink-2);margin:.5em 0 1em}}.desk label{{display:grid;gap:5px;color:var(--ink-2);font-weight:550}}.desk form{{display:flex;flex-wrap:wrap;gap:12px;align-items:end}}.desk .data-table-wrap{{overflow:auto}}.desk output{{display:block;overflow-wrap:anywhere;background:var(--surface-dim);padding:14px;border-left:3px solid var(--signal);margin:12px 0}}.desk details{{margin:10px 0}}.desk summary{{cursor:pointer;color:var(--signal);font-weight:600}}.desk .eyebrow{{color:var(--signal)}}.desk .btn-signal{{color:#07111c}}.desk .btn-signal:hover{{color:#fff}}.desk a{{color:var(--signal)}}
-      @media(prefers-color-scheme:dark){{html{{color-scheme:dark}}}}
-    </style></head><body><main class="desk"><header><img src="/brand/{icon}.png" alt=""><div><div class="eyebrow">IPSCANS / WINDOWS · {version}</div><h1>{title}</h1><p>{subtitle}</p></div></header>{body}</main></body></html>"#
+        r#"<!doctype html><html lang="tr" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} · IPScans Rust Suite</title><link rel="icon" href="/brand/{icon}.png"><link rel="stylesheet" href="/design/v2.css"><style>
+      .desk-workspace{{max-width:1420px;margin:0 auto;padding:24px}}
+      .desk-grid{{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}}
+      .desk-grid > section{{grid-column:span 12;position:relative;background:var(--surface-dim);border:1px solid var(--line);border-radius:20px;padding:22px 24px;box-shadow:var(--shadow-card);overflow:hidden;transition:border-color 220ms var(--ease-out-quart)}}
+      .desk-grid > section:hover{{border-color:var(--line-2)}}
+      .desk-grid h2{{font-size:18px;font-weight:650;letter-spacing:-0.02em;margin:4px 0 10px;color:var(--ink)}}
+      .desk-grid p{{color:var(--ink-2);margin:6px 0 14px;font-size:13.5px;line-height:1.55}}
+      .desk-grid label{{display:grid;gap:6px;color:var(--ink-2);font-weight:550;font-size:13px}}
+      .desk-grid form{{display:flex;flex-wrap:wrap;gap:12px;align-items:end}}
+      .desk-grid .data-table-wrap{{overflow:auto;margin-top:12px}}
+      .desk-grid output{{display:block;overflow-wrap:anywhere;background:var(--surface);padding:14px 16px;border-radius:12px;border:1px solid var(--line-2);border-left:4px solid var(--signal);margin:14px 0;font-size:13px}}
+      .desk-grid details{{margin:10px 0;padding:12px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}}
+      .desk-grid summary{{cursor:pointer;color:var(--signal);font-weight:600}}
+      .kpi-strip{{grid-column:span 12;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}}
+      @media(max-width:980px){{.kpi-strip{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
+      .kpi-box{{background:var(--surface-dim);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow-card)}}
+      .kpi-label{{font-size:11px;font-weight:650;letter-spacing:0.06em;text-transform:uppercase;color:var(--signal)}}
+      .kpi-val{{font-size:21px;font-weight:700;color:var(--ink);margin-top:4px;letter-spacing:-0.03em}}
+      .kpi-sub{{font-size:12px;color:var(--ink-3);margin-top:2px}}
+      .stage-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}}
+      @media(max-width:980px){{.stage-grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
+      .stage-card{{background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:14px}}
+      .sector-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}}
+      @media(max-width:980px){{.sector-grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
+      .sector-card{{background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:15px;display:flex;flex-direction:column;justify-content:space-between;gap:10px}}
+    </style></head><body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-cluster">
+          <img class="brand-logo" src="/brand/{icon}.png" alt="">
+          <div>
+            <div class="brand-title">{title} <span class="badge badge-signal mono">RUST {version}</span></div>
+            <div class="brand-sub">{subtitle}</div>
+          </div>
+        </div>
+        <nav class="nav-pills" id="autoNavPills" role="tablist">
+          <button type="button" class="nav-tab active" onclick="window.filterDeskSection(-1, this)">Tüm Modüller</button>
+        </nav>
+        <div class="top-actions">
+          <span class="badge badge-ok mono"><span class="pulse-dot"></span>YEREL RUST MOTORU AKTİF</span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.toggleIpScansTheme()"><span id="themeBtnLabel">Açık Tema</span></button>
+        </div>
+      </header>
+      <main class="desk-workspace">
+        <div class="desk-grid" id="deskGridContainer">{body}</div>
+      </main>
+    </div>
+    <script src="/design/v2.js"></script>
+    <script>
+    (function(){{
+      const nav = document.getElementById('autoNavPills');
+      const sections = Array.from(document.querySelectorAll('#deskGridContainer > section'));
+      if (nav && sections.length > 1) {{
+        sections.forEach((sec, idx) => {{
+          const h2 = sec.querySelector('h2');
+          const label = h2 ? h2.textContent.trim().slice(0, 26) : ('Modül ' + (idx + 1));
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'nav-tab';
+          btn.textContent = label;
+          btn.onclick = function() {{ window.filterDeskSection(idx, btn); }};
+          nav.appendChild(btn);
+        }});
+      }}
+      window.filterDeskSection = function(idx, activeBtn) {{
+        document.querySelectorAll('#autoNavPills .nav-tab').forEach(b => b.classList.remove('active'));
+        if (activeBtn) activeBtn.classList.add('active');
+        sections.forEach((sec, i) => {{
+          sec.style.display = (idx === -1 || idx === i) ? '' : 'none';
+        }});
+      }};
+    }})();
+    </script>
+    </body></html>"#
     );
     (200, "text/html; charset=utf-8", html.into_bytes())
 }
@@ -54,7 +124,7 @@ pub fn json(status: u16, body: String) -> Reply {
 pub fn serve(slug: &str, port: u16, handler: Arc<RouteHandler>) {
     let (listener, port) = bind_app_server(port);
     if !std::env::args().any(|arg| arg == "--headless") {
-        let _ = launch_desktop_app_window(slug, &format!("http://127.0.0.1:{port}"), 1280, 820);
+        let _ = launch_desktop_app_window(slug, &format!("http://127.0.0.1:{port}"), 1380, 880);
     } else {
         println!("http://127.0.0.1:{port}");
     }

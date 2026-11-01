@@ -449,8 +449,9 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
     let mut transfer_rows = String::new();
     for t in &st.transfers {
         transfer_rows.push_str(&format!(
-            "<tr><td class=\"mono\">{}</td><td><strong>{}</strong></td><td class=\"mono\">{} B</td><td>{}</td><td class=\"mono\">{}</td><td><span class=\"badge badge-ok\">{}</span></td></tr>",
+            "<tr><td class=\"mono\">{} · {}</td><td><strong>{}</strong></td><td class=\"mono\">{} B</td><td>{}</td><td class=\"mono\">{}</td><td><span class=\"badge badge-ok\">{}</span></td></tr>",
             escape(&t.id),
+            escape(&t.timestamp),
             escape(&t.filename),
             t.size_bytes,
             escape(&t.direction),
@@ -507,6 +508,12 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
 
     let body = format!(
         r#"
+        <div class="kpi-strip">
+          <div class="kpi-box"><div class="kpi-label">İSTASYON KİMLİĞİ (9-HANELİ)</div><div class="kpi-value mono" style="color:var(--signal)">{formatted_id}</div><div class="kpi-sub">{hostname} · {local_ip}</div></div>
+          <div class="kpi-box"><div class="kpi-label">OTURUM PIN &amp; P2P PORT</div><div class="kpi-value mono" style="color:var(--ok)">{session_pin} · :{p2p_port}</div><div class="kpi-sub">UDP 17949 Keşif + TCP {p2p_port} Akış</div></div>
+          <div class="kpi-box"><div class="kpi-label">CANLI EKRAN AKIŞ PROFİLİ</div><div class="kpi-value mono">{res_w}×{res_h} · {fps} FPS</div><div class="kpi-sub">{profile} (Kalite %{quality})</div></div>
+          <div class="kpi-box"><div class="kpi-label">SHA-256 AKTARIM &amp; SOHBET</div><div class="kpi-value mono">AKTİF</div><div class="kpi-sub">Uçtan uca bütünlük doğrulamalı</div></div>
+        </div>
         <section>
           <div class="eyebrow">01 / BU İSTASYON · {hostname} · CANLI P2P HOST AKTİF</div>
           <h2>İstasyon Kimliği ve Güvenlik İzinleri</h2>

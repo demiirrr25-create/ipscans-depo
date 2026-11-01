@@ -8,20 +8,20 @@ export const ipcastRelease = {
   bytes: 2701312,
   sha256: "b7746cc68d5bd436f90fd0763c4c3af27e1cc7212271e74db83e587976820481",
   fileName: "IPCast-3.0.0.exe",
-  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v3.0.0/IPCast-3.0.0.exe",
+  url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPCast.exe",
   publishedAt: "2026-11-01T06:40:00Z",
-  installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v3.0.0/IPCast-3.0.0-Setup.exe",
+  installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPCast.exe",
   installerBytes: 2701312,
   installerSha256: "b7746cc68d5bd436f90fd0763c4c3af27e1cc7212271e74db83e587976820481",
-  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v3.0.0",
+  releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/desktop-audit-2026.11.01-r2",
 } as const;
 
 export const desktopRelease = {
   scanner: {
     version: "5.0.0",
-    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipscans-plus-v5.0.0",
-    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v5.0.0/IPscans-Plus-Setup.exe",
-    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v5.0.0/IPscans-Plus.exe",
+    releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/desktop-audit-2026.11.01-r2",
+    installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPscans-Plus.exe",
+    portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPscans-Plus.exe",
     installerBytes: 2707968,
     installerSha256: "62304fa2dead50fedec31d3c65b383f8a139e7fa0087d66d4fe798349760a558",
     portableBytes: 2707968,

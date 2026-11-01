@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApplicationsSection } from "@/components/ApplicationsSection";
 import { PageShell } from "@/components/PageShell";
-import apps from "../../../../public/desktop/apps.json";
-import { downloadHubCopy } from "@/components/catalog/copy";
+import { cortexRelease, downloadHubCopy } from "@/components/catalog/copy";
+import { desktopRelease, ipcastRelease } from "@/content/applications";
+import { lprRelease } from "@/content/lpr-release";
 import { isLocale } from "@/i18n/config";
 import { getPublicDictionary } from "@/i18n/dictionaries";
 import { localizedAlternates } from "@/lib/seo";
@@ -43,18 +44,48 @@ export default async function DownloadPage({
     "@type": "ItemList",
     name: copy.title,
     description: copy.subtitle,
-    itemListElement: apps.map((app, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      item: {
+    itemListElement: [
+      {
         "@type": "SoftwareApplication",
-        name: app.name,
-        operatingSystem: "Windows x64",
-        softwareVersion: app.version,
-        ...(app.download ? { downloadUrl: app.download } : {}),
-        url: `https://ipscans.com/desktop/${locale === "tr" ? "tr" : "en"}.html#${app.id}`,
+        position: 1,
+        name: "IPscans+",
+        operatingSystem: "Windows 10/11 x64",
+        applicationCategory: "UtilitiesApplication",
+        softwareVersion: desktopRelease.scanner.version,
+        downloadUrl: desktopRelease.scanner.installerUrl,
+        url: `https://ipscans.com/${locale}/applications/scanner`,
       },
-    })),
+      {
+        "@type": "SoftwareApplication",
+        position: 2,
+        name: "IPCast",
+        operatingSystem: "Windows 10/11 x64",
+        applicationCategory: "CommunicationApplication",
+        softwareVersion: ipcastRelease.version,
+        downloadUrl: ipcastRelease.installerUrl,
+        url: `https://ipscans.com/${locale}/applications/ipcast`,
+      },
+      {
+        "@type": "SoftwareApplication",
+        position: 3,
+        name: "IPScans LPR Pro",
+        operatingSystem: "Windows 10/11 x64",
+        applicationCategory: "SecurityApplication",
+        softwareVersion: lprRelease.version,
+        downloadUrl: lprRelease.url,
+        url: `https://ipscans.com/${locale}/lpr-pro`,
+      },
+      {
+        "@type": "SoftwareApplication",
+        position: 4,
+        name: "IPScans Cortex",
+        operatingSystem: "Windows 10/11 x64",
+        applicationCategory: "SecurityApplication",
+        softwareVersion: cortexRelease.version,
+        downloadUrl: cortexRelease.url,
+        url: `https://ipscans.com/${locale}/cortex`,
+      },
+    ],
   };
 
   return (
@@ -68,9 +99,6 @@ export default async function DownloadPage({
         title={copy.title}
         subtitle={copy.subtitle}
       >
-        <a className="btn btn-primary mb-8" href={`/desktop/${locale === "tr" ? "tr" : "en"}.html`}>
-          {locale === "tr" ? "Rust ön sürümü · 8 Windows uygulaması" : "Rust prerelease · 8 Windows applications"}
-        </a>
         <ApplicationsSection locale={locale} dict={dict} primary />
       </PageShell>
     </>

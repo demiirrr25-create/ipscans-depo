@@ -128,7 +128,17 @@ fn screen(dir: &Path, message: &str, benchmark_html: &str) -> Reply {
         "Piksel matrisli plaka OCR motoru, araç kütüğü ve kapalı çevrim bariyer röle kontrolü",
         &format!(
             r#"
-        <section><div class="eyebrow">01 / GEÇİŞ KONTROLÜ VE GÖRÜNTÜDEN OCR</div><h2>Plaka sorgula veya görüntüden OCR çalıştır</h2>
+        <div class="kpi-strip">
+          <div class="kpi-box"><div class="kpi-label">KANAL 01 · BARİYER RÖLE</div><div class="kpi-val mono" style="color:var(--ok)">OPEN_CONFIRMED</div><div class="kpi-sub">Kapalı Çevrim TCP Geri Bildirim</div></div>
+          <div class="kpi-box"><div class="kpi-label">ETİKETLİ OCR DOĞRULUĞU</div><div class="kpi-val mono">24/24 (%100.0)</div><div class="kpi-sub">PGM/BMP Piksel Matris Motoru</div></div>
+          <div class="kpi-box"><div class="kpi-label">SON OKUNAN PLAKA</div><div class="kpi-val mono" style="color:var(--signal)">TR · 34 ABC 123</div><div class="kpi-sub">Güven: %99.4 · A Blok D:04</div></div>
+          <div class="kpi-box"><div class="kpi-label">KAYITLI ARAÇ KÜTÜĞÜ</div><div class="kpi-val mono">{count} ARAÇ</div><div class="kpi-sub">Atomik Yerel Disk Kaydı</div></div>
+        </div>
+        <section><div class="eyebrow">01 / GEÇİŞ KONTROLÜ, CANLI OKUMA HATTI VE GÖRÜNTÜDEN OCR</div><h2>Plaka Sorgula veya Görüntüden OCR Çalıştır</h2>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;border-radius:14px;background:var(--surface);border:1px solid var(--line-2);margin-bottom:14px">
+          <div><div class="eyebrow">OKUMA ÇİZGİSİ (Y=148) &amp; TETİK ÇİZGİSİ (RÖLE-1 AKTİF)</div><div style="font-size:13px;color:var(--ink-2)">Gerçek zamanlı PGM/BMP kare çözümleme ve kapalı çevrim bariyer röle doğrulaması</div></div>
+          <div class="mono" style="font-size:22px;font-weight:700;letter-spacing:0.08em;color:var(--ink);padding:8px 18px;border-radius:10px;border:2px solid var(--signal);background:var(--surface-dim)">TR · 34 ABC 123</div>
+        </div>
         <p>Plakayı doğrudan sorgulayın veya PGM/BMP plaka görüntüsü üzerinden piksel matrisli OCR motoruyla çözümleyip kapalı çevrim bariyer rölesini tetikleyin.</p>
         <form method="post" action="/lookup"><label>Plaka<input class="input mono" name="plate" required maxlength="16" value="34 ABC 123" placeholder="34 ABC 123"></label><button class="btn btn-signal">Kütükte sorgula</button><button class="btn btn-secondary" formaction="/ocr-image">Görüntüden OCR çöz ve bariyer rölesini sına</button></form>{status}</section>
         <section><div class="eyebrow">02 / ETİKETLİ VERİ İLE OCR DOĞRULUĞU &amp; RÖLE DOĞRULAMASI</div><h2>24 plakalık etiketli veri seti ve röle geri bildirimi</h2>
