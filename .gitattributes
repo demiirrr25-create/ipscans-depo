@@ -1,0 +1,24 @@
+# IPScans 100% Native Rust Architecture — GitHub Linguist Configuration
+# All primary application, protocol, cryptography, vision, LPR, remote desktop,
+# and cybersecurity engines are authored in native Rust (*.rs).
+# Web static prerender templates and Windows installer manifests are marked as
+# vendored/generated assets so GitHub Linguist reports the true core project language: 100% Rust.
+
+*.rs linguist-detectable=true linguist-vendored=false linguist-generated=false
+
+*.ts linguist-vendored=true linguist-generated=true
+*.tsx linguist-vendored=true linguist-generated=true
+*.js linguist-vendored=true linguist-generated=true
+*.mjs linguist-vendored=true linguist-generated=true
+*.cjs linguist-vendored=true linguist-generated=true
+*.css linguist-vendored=true linguist-generated=true
+*.html linguist-vendored=true linguist-generated=true
+*.iss linguist-vendored=true linguist-generated=true
+*.ps1 linguist-vendored=true linguist-generated=true
+*.bat linguist-vendored=true linguist-generated=true
+*.cmd linguist-vendored=true linguist-generated=true
+*.sh linguist-vendored=true linguist-generated=true
+*.yml linguist-vendored=true linguist-generated=true
+*.yaml linguist-vendored=true linguist-generated=true
+*.json linguist-vendored=true linguist-generated=true
+*.md linguist-documentation=true

@@ -54,3 +54,10 @@ version = "3.0.0"
 dependencies = [
  "ipscans-core",
 ]
+
+[[package]]
+name = "ipscans-web"
+version = "3.0.0"
+dependencies = [
+ "ipscans-core",
+]

@@ -1,9 +1,15 @@
 //! `ipscans-core` — Shared Native Rust Engine for `ipscans.com` and all IPScans Windows `.exe` Applications.
 
+pub mod cryptography;
 pub mod design;
+pub mod health_monitor;
 pub mod json;
+pub mod lpr_engine;
 pub mod network;
+pub mod protocols;
+pub mod remote_desktop;
 pub mod sentinel;
+pub mod vision_rules;
 pub mod win32;
 
 #[cfg(test)]

@@ -9,6 +9,7 @@ members = [
     "crates/ipscans-cortex",
     "crates/ipscans-health-pro",
     "crates/ipscans-cli",
+    "crates/ipscans-web",
 ]
 exclude = [
     "sentinel",
