@@ -62,6 +62,7 @@ pub fn discover_onvif_cameras(timeout_ms: u64) -> Vec<OnvifDeviceEndpoint> {
             Ok((len, peer)) => {
                 let xml = String::from_utf8_lossy(&buf[..len]).to_string();
                 let xaddrs = extract_xml_tag(&xml, "XAddrs").unwrap_or_default();
+                if !xml.contains("ProbeMatch") || xaddrs.is_empty() { continue; }
                 let scopes = extract_xml_tag(&xml, "Scopes").unwrap_or_default();
                 let model = if scopes.to_lowercase().contains("dahua") {
                     "Dahua IP Camera".to_string()
@@ -87,10 +88,9 @@ fn extract_xml_tag(xml: &str, local_name: &str) -> Option<String> {
     let open_idx = xml.find(&format!("{}>", local_name))?;
     let content_start = open_idx + local_name.len() + 1;
     let rest = &xml[content_start..];
-    let close_idx = rest.find(&format!("{}>", local_name))?;
-    let raw = &rest[..close_idx];
-    let cleaned = raw.trim_end_matches("</").trim_end_matches(|c: char| c.is_alphanumeric() || c == ':' || c == '/');
-    Some(cleaned.trim().to_string())
+    let (value, closing) = rest.split_once("</")?;
+    let closing_tag = closing.split_once('>')?.0.rsplit(':').next()?;
+    (closing_tag == local_name).then(|| value.trim().to_owned())
 }
 
 /// Probes an RTSP camera endpoint (`TCP 554`) with an `OPTIONS` request to verify stream readiness and server vendor.

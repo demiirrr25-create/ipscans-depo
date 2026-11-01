@@ -1,183 +1,136 @@
-﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::env;
-use std::sync::Arc;
+use ipscans_core::console::{escape, field, json, page, serve, Reply};
+use ipscans_core::lpr_engine::parse_and_validate_plate;
+use ipscans_core::win32::app_data_dir;
+use std::{fs, io, path::Path, sync::Arc};
 
-use ipscans_core::design::{bind_app_server, run_http_loop};
-use ipscans_core::json::{extract_json_string, json_str};
-use ipscans_core::win32::launch_desktop_app_window;
-
-const LPR_HTML: &str = r###"<!DOCTYPE html>
-<html lang="tr" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IPScans LPR Pro v2.0 — Plaka Tanıma ve Bariyer Operatör Konsolu (Rust Native)</title>
-  <link rel="icon" href="/favicon.ico" />
-  <link rel="stylesheet" href="/design/v2.css" />
-</head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand-cluster">
-        <img src="/brand/lpr.png" alt="IPScans LPR Pro" class="brand-logo" />
-        <div>
-          <div class="brand-title">
-            IPScans LPR Pro
-            <span class="badge badge-signal mono">RUST 2.0</span>
-          </div>
-          <div class="brand-sub">Yerel ONNX Plaka Tanıma · Tetik/Okuma Çizgileri ve Sakin Araç Kütüğü</div>
-        </div>
-      </div>
-
-      <nav class="nav-pills" role="tablist">
-        <button class="nav-tab active" data-tab="live" onclick="switchTab('live')">Canlı Operatör Duvarı</button>
-        <button class="nav-tab" data-tab="registry" onclick="switchTab('registry')">Blok / Daire Araç Kütüğü</button>
-      </nav>
-
-      <div class="top-actions">
-        <span class="badge badge-ok mono"><span class="pulse-dot"></span>BARİYER RÖLE: HAZIR</span>
-        <button class="btn btn-signal btn-sm" onclick="simulatePlateRead()">Plaka Okuma Simüle Et</button>
-        <button class="btn btn-secondary btn-sm" onclick="toggleIpScansTheme()"><span id="themeBtnLabel">Koyu Tema</span></button>
-      </div>
-    </header>
-
-    <main class="workspace">
-      <section id="pane-live" class="view-pane active">
-        <div class="bento-grid">
-          <div class="bento-card col-7">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">KANAL 01 · ANA GİRİŞ BARİYERİ (RTSP 1080P)</div>
-                <h2 class="card-title">Tetik ve Plaka Okuma Bölgesi</h2>
-              </div>
-              <button class="btn btn-ok btn-sm" onclick="triggerBarrier()">Bariyeri Şimdi Aç (Röle 1)</button>
-            </div>
-            <div style="background:var(--surface);border:1px solid var(--line-2);border-radius:16px;padding:18px;position:relative;height:320px;display:flex;flex-direction:column;justify-content:space-between">
-              <div style="display:flex;justify-content:space-between">
-                <span class="badge badge-ok mono">RTSP CANLI · 25 FPS</span>
-                <span class="badge badge-signal mono" id="lastPlateBadge">34 IPS 2026 · %99.4</span>
-              </div>
-              <div style="border-top:2px dashed var(--signal);padding-top:6px;font-size:11.5px;font-weight:600;color:var(--signal)" class="mono">OKUMA ÇİZGİSİ (RECOGNITION LINE · Y=148)</div>
-              <div style="display:flex;align-items:center;justify-content:center;padding:14px;border-radius:12px;background:var(--surface-dim);border:1px solid var(--line)">
-                <div class="mono" style="font-size:24px;font-weight:700;letter-spacing:0.08em;color:var(--ink);padding:8px 20px;border-radius:8px;border:2px solid var(--signal);background:var(--surface)">TR · 34 IPS 2026</div>
-              </div>
-              <div style="border-top:2px solid var(--ok);padding-top:6px;font-size:11.5px;font-weight:600;color:var(--ok)" class="mono">TETİK ÇİZGİSİ (TRIGGER LINE · RÖLE-1 AKTİF)</div>
-            </div>
-          </div>
-
-          <div class="bento-card col-5">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">GERÇEK ZAMANLI PLAKA GÜNLÜĞÜ</div>
-                <h2 class="card-title">Son Geçiş Kayıtları</h2>
-              </div>
-            </div>
-            <div class="data-table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Saat</th><th>Plaka</th><th>Blok/Daire</th><th>Güven</th><th>Durum</th></tr>
-                </thead>
-                <tbody id="readsBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pane-registry" class="view-pane">
-        <div class="bento-grid">
-          <div class="bento-card col-12">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">SAKİN VE MİSAFİR ARAÇ VERİTABANI</div>
-                <h2 class="card-title">Yetkili Plaka Ekle</h2>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:180px 180px 1fr auto;gap:10px">
-              <input id="plateInput" class="input mono" placeholder="Plaka (örn. 34 ABC 123)" />
-              <input id="unitInput" class="input" placeholder="Blok / Daire (örn. A-14)" />
-              <input id="ownerInput" class="input" placeholder="Araç Sahibi Adı Soyadı" />
-              <button class="btn btn-signal" onclick="addPlate()">Kütüğe Kaydet</button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script src="/design/v2.js"></script>
-  <script>
-    const plates = [
-      { time: '08:45:12', plate: '34 IPS 2026', unit: 'A Blok D:12', conf: '99.4%', status: 'İZİNLİ (BARİYER AÇILDI)' },
-      { time: '08:41:03', plate: '06 RST 001', unit: 'B Blok D:04', conf: '98.8%', status: 'İZİNLİ (BARİYER AÇILDI)' },
-      { time: '08:32:50', plate: '35 KMR 908', unit: 'Misafir', conf: '97.9%', status: 'OPERATÖR ONAYLI' }
-    ];
-    function renderReads() {
-      document.getElementById('readsBody').innerHTML = plates.map(p => `
-        <tr>
-          <td class="mono">${p.time}</td>
-          <td class="mono" style="font-weight:700;color:var(--signal)">${p.plate}</td>
-          <td>${p.unit}</td>
-          <td class="mono">${p.conf}</td>
-          <td><span class="badge badge-ok mono">${p.status}</span></td>
-        </tr>
-      `).join('');
+fn plate_id(raw: &str) -> Result<String, &'static str> {
+    if !raw
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == ' ' || c == '-')
+    {
+        return Err("Plakada yalnızca harf, rakam, boşluk ve tire kullanın.");
     }
-    function simulatePlateRead() {
-      const sample = '34 R' + Math.floor(100 + Math.random() * 899);
-      const now = new Date().toLocaleTimeString('tr-TR');
-      plates.unshift({ time: now, plate: sample, unit: 'A Blok D:08', conf: '99.2%', status: 'İZİNLİ (BARİYER AÇILDI)' });
-      document.getElementById('lastPlateBadge').textContent = sample + ' · %99.2';
-      renderReads();
-    }
-    function triggerBarrier() {
-      const now = new Date().toLocaleTimeString('tr-TR');
-      plates.unshift({ time: now, plate: 'MANUEL RÖLE', unit: 'Operatör', conf: '100%', status: 'BARİYER AÇILDI' });
-      renderReads();
-    }
-    function addPlate() {
-      const plate = document.getElementById('plateInput').value.trim().toUpperCase();
-      const unit = document.getElementById('unitInput').value.trim() || 'Genel';
-      if (!plate) return;
-      plates.unshift({ time: new Date().toLocaleTimeString('tr-TR'), plate, unit, conf: '100%', status: 'KÜTÜĞE EKLENDİ' });
-      renderReads();
-      switchTab('live');
-    }
-    renderReads();
-  </script>
-</body>
-</html>
-"###;
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
-        println!("IPScans-LPR-Pro 2.0.0 (Rust Native License Plate Recognition Engine)");
-        return;
-    }
-
-    let (listener, port) = bind_app_server(17943);
-    let url = format!("http://127.0.0.1:{}", port);
-    if !args.iter().any(|a| a == "--headless") {
-        let _ = launch_desktop_app_window("ipscans-lpr", &url, 1400, 900);
-    }
-
-    let handler = Arc::new(|method: &str, path: &str, _body: &str| -> (u16, &'static str, Vec<u8>) {
-        match (method, path) {
-            ("GET", "/") | ("GET", "/index.html") => (
-                200,
-                "text/html; charset=utf-8",
-                LPR_HTML.as_bytes().to_vec(),
-            ),
-            _ => {
-                let msg = format!("{{\"ok\":true,\"engine\":{}}}", json_str("ipscans-lpr-rust/2.0"));
-                (200, "application/json; charset=utf-8", msg.into_bytes())
-            }
-        }
-    });
-
-    let _ = extract_json_string;
-    run_http_loop(listener, handler);
+    parse_and_validate_plate(raw)
+        .map(|(plate, _)| plate)
+        .ok_or("5–10 harf veya rakam içeren plaka girin.")
 }
 
+fn register(dir: &Path, plate: &str, unit: &str, owner: &str) -> Result<(), String> {
+    if [owner, unit]
+        .iter()
+        .any(|s| s.trim().is_empty() || s.len() > 160 || s.chars().any(char::is_control))
+    {
+        return Err("Daire ve araç sahibi alanlarını doldurun (en fazla 160 bayt).".into());
+    }
+    // The target only becomes visible after the complete record has been written.
+    let path = dir.join(format!("plate-{plate}.txt"));
+    let tmp = dir.join(format!("stage-{}-{}", std::process::id(), plate));
+    let data = format!("{plate}\t{}\t{}", unit.trim(), owner.trim());
+    fs::write(&tmp, data).map_err(|e| e.to_string())?;
+    let result = fs::hard_link(&tmp, path);
+    let _ = fs::remove_file(tmp);
+    match result {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == io::ErrorKind::AlreadyExists => Err("Plaka zaten kütükte.".into()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+fn screen(dir: &Path, message: &str) -> Reply {
+    let mut rows = Vec::new();
+    let mut status = message.to_owned();
+    match fs::read_dir(dir) {
+        Ok(entries) => {
+            for entry in entries
+                .flatten()
+                .filter(|e| e.file_name().to_string_lossy().starts_with("plate-"))
+            {
+                match fs::read_to_string(entry.path()) {
+                    Ok(record) => {
+                        let cells: Vec<_> = record.split('\t').map(escape).collect();
+                        if let [plate, unit, owner] = &cells[..] {
+                            rows.push(format!("<tr><td class=mono>{plate}</td><td>{unit}</td><td>{owner}</td></tr>"));
+                        }
+                    }
+                    Err(e) => status = format!("Kayıt okunamadı. {e}"),
+                }
+            }
+        }
+        Err(e) => status = format!("Kütük okunamadı. {e}"),
+    }
+    rows.sort();
+    let count = rows.len();
+    if count == 0 {
+        rows.push("<tr><td colspan=3>Henüz kayıtlı araç yok.</td></tr>".into());
+    }
+    let status = if status.is_empty() {
+        String::new()
+    } else {
+        format!("<output>{}</output>", escape(&status))
+    };
+    page(
+        "IPScans LPR Pro",
+        "lpr",
+        "Araç kütüğü ve manuel geçiş kontrolü",
+        &format!(
+            r#"
+        <section><div class="eyebrow">01 / GEÇİŞ KONTROLÜ</div><h2>Plaka sorgula</h2>
+        <p>Plakayı girerek bu bilgisayardaki araç kütüğüyle karşılaştırın. Kamera OCR ve fiziksel bariyer rölesi bağlı değil.</p>
+        <form method="post" action="/lookup"><label>Plaka<input class="input mono" name="plate" required maxlength="16" placeholder="34 ABC 123"></label><button class="btn btn-signal">Kütükte sorgula</button></form>{status}</section>
+        <section><div class="eyebrow">02 / ARAÇ KÜTÜĞÜ · {count} KAYIT</div><h2>Yetkili araç ekle</h2>
+        <form method="post" action="/register"><label>Plaka<input class="input mono" name="plate" required maxlength="16"></label><label>Blok / Daire<input class="input" name="unit" required maxlength="80"></label><label>Araç sahibi<input class="input" name="owner" required maxlength="80"></label><button class="btn btn-signal">Kaydet</button></form>
+        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Plaka</th><th>Blok / Daire</th><th>Araç sahibi</th></tr></thead><tbody>{}</tbody></table></div></section>"#,
+            rows.join("")
+        ),
+    )
+}
+
+fn main() {
+    ipscans_core::win32::handle_desktop_install("IPScans-LPR-Pro.exe");
+    let args: Vec<_> = std::env::args().collect();
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        println!("IPScans LPR Pro {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+    if args.iter().any(|a| a == "--selftest" || a == "--self-test") {
+        assert_eq!(plate_id("34abc123"), Ok("34 ABC 123".into()));
+        return;
+    }
+    let dir = app_data_dir("lpr-registry");
+    let writes = std::sync::Mutex::new(());
+    serve(
+        "ipscans-lpr",
+        17943,
+        Arc::new(move |method, path, body| match (method, path) {
+            ("GET", "/" | "/index.html") => screen(&dir, ""),
+            ("POST", "/register" | "/lookup") => {
+                let msg = match plate_id(&field(body, "plate").unwrap_or_default()) {
+                    Err(err) => err.to_owned(),
+                    Ok(plate) if path == "/register" => {
+                        let _guard = writes.lock().unwrap_or_else(|e| e.into_inner());
+                        match register(
+                            &dir,
+                            &plate,
+                            &field(body, "unit").unwrap_or_default(),
+                            &field(body, "owner").unwrap_or_default(),
+                        ) {
+                            Ok(()) => format!("{plate} kütüğe kaydedildi."),
+                            Err(err) => err,
+                        }
+                    }
+                    Ok(plate) => match fs::metadata(dir.join(format!("plate-{plate}.txt"))) {
+                        Ok(_) => format!("{plate} · Yetkili araç."),
+                        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                            format!("{plate} · Kütükte bulunamadı.")
+                        }
+                        Err(e) => format!("Kütük okunamadı. {e}"),
+                    },
+                };
+                screen(&dir, &msg)
+            }
+            _ => json(404, r#"{"error":"Bulunamadı"}"#.into()),
+        }),
+    );
+}

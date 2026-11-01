@@ -64,7 +64,7 @@ export default async function LprProPage({ params }: Props) {
       <EnterpriseProductView
         locale={locale}
         copy={copy}
-        markSrc="/lpr-mark.png"
+        markSrc="/brand/lpr-logo.png"
         markAlt="IPScans LPR Pro"
         screenshot={{
           src: "/lpr-1-1-light.png",

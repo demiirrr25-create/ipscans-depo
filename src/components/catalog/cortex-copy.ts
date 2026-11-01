@@ -8,7 +8,7 @@ export const cortexRelease = {
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/IPScans-Cortex-Setup-3.0.0.exe",
   guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/Cortex-3.0.0-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "9c3fe54713d1858a5113c90b0ca65456d1feb46dac3fec390c3f49a4d9a0a2c6",
+  sha256: "0835283a2a2079f7a4f4b54e44ebf7ecc12aa1bd83bff3b76c05d6c3750a9610",
   bytes: 2705920,
 } as const;
 

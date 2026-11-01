@@ -69,7 +69,7 @@ export default async function CortexPage({ params }: Props) {
       <EnterpriseProductView
         locale={locale}
         copy={copy}
-        markSrc="/cortex-mark.png"
+        markSrc="/brand/cortex-logo.png"
         markAlt="IPScans Cortex"
         screenshot={{
           src: "/cortex-2-1-plans.png",

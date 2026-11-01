@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { platformCopy, scannerApplication } from "@/content/applications";
+import { platformCopy } from "@/content/applications";
 import { Icon } from "@/components/ds/Icon";
 import { DownloadStage } from "@/components/ds/product";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -40,11 +40,11 @@ export default async function HomePage({
             note={copy.closingNote}
           >
             <a
-              href={scannerApplication.downloadUrl}
+              href={`/desktop/${locale === "tr" ? "tr" : "en"}.html#scanner`}
               className="btn btn-inverse btn-lg"
             >
               <Icon name="windows" size={18} />
-              <span>{copy.downloadScannerCta}</span>
+              <span>IPscans+ · {platform.details}</span>
               <Icon name="download" size={18} />
             </a>
             <Link

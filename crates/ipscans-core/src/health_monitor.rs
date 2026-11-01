@@ -29,7 +29,7 @@ pub fn summarize_rtt_samples(samples_ms: &[u64]) -> TelemetrySummary {
             avg_rtt_ms: 0.0,
             max_rtt_ms: 0,
             jitter_ms: 0.0,
-            stability_grade: "A+",
+            stability_grade: "—",
         };
     }
 
@@ -76,7 +76,8 @@ pub fn detect_arp_mac_conflicts(
     let mut alerts = Vec::new();
     for (ip, mac) in current {
         if let Some(prev_mac) = baseline.get(ip) {
-            if !prev_mac.eq_ignore_ascii_case(mac) && prev_mac != "LOCAL-NIC" && mac != "LOCAL-NIC" {
+            if !prev_mac.eq_ignore_ascii_case(mac) && prev_mac != "LOCAL-NIC" && mac != "LOCAL-NIC"
+            {
                 alerts.push(ArpConflictAlert {
                     ip: ip.clone(),
                     previous_mac: prev_mac.clone(),

@@ -31,7 +31,7 @@ export default async function CortexAdminPage({ params }: { params: Promise<{loc
           <p className="mt-4 text-sm text-muted">{tr?"Önce Başlat menüsünden Cortex Yönetim Merkezi’ni çalıştırın. Yönetici girişi yerel uygulamada yapılır.":"First launch Cortex Administration from the Start menu. Sign in within the local application."}</p>
         </div>
         <div className="flex flex-col items-center gap-6 rounded-3xl border border-line bg-surface p-10">
-          <Image src="/cortex-mark.svg" alt="Cortex" width={180} height={180} unoptimized priority />
+          <Image src="/brand/admin-logo.png" alt="Cortex" width={180} height={180} unoptimized priority />
           <span className="text-sm text-muted">{tr?"Bir ipscans.com projesi":"A project by ipscans.com"}</span>
         </div>
       </div>

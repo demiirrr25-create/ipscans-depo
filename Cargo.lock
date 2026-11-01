@@ -4,60 +4,60 @@ version = 4
 
 [[package]]
 name = "ipcast"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]
 
 [[package]]
 name = "ipscans-cli"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]
 
 [[package]]
 name = "ipscans-core"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 
 [[package]]
 name = "ipscans-cortex"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]
 
 [[package]]
 name = "ipscans-health-pro"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]
 
 [[package]]
 name = "ipscans-lpr"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]
 
 [[package]]
 name = "ipscans-plus"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]
 
 [[package]]
 name = "ipscans-sentinel"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]
 
 [[package]]
 name = "ipscans-web"
-version = "3.0.0"
+version = "5.1.0-preview.1"
 dependencies = [
  "ipscans-core",
 ]

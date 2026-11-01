@@ -1,5 +1,7 @@
 # IPScans Network Scanner CLI v3.0 (`ipscans-network-scanner.exe`) — Native Rust
 
+> Historical snapshot. The current Windows implementation is in [ipscans-cli](../../crates/ipscans-cli). Build and test from the [root Cargo workspace](../../README.md#windows-applications).
+
 `ipscans-network-scanner.exe`, hem komut satırı (CLI) ağ denetimlerini hem de `ipscans.com` web araçlarını besleyen **%100 Native Rust** alt ağ, TCP port, DNS, WHOIS ve otonom siber güvenlik olay müdahale motorudur.
 
 ## Kullanım

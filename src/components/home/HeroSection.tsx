@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
-import { platformCopy, scannerApplication } from "@/content/applications";
+import { platformCopy } from "@/content/applications";
 import { toolPath } from "@/lib/tool-routes";
 import { LiveIp } from "@/components/LiveIp";
 import { Icon } from "@/components/ds/Icon";
@@ -20,6 +20,7 @@ export function HeroSection({
   const platform = platformCopy[locale];
 
   const suiteLinks = [
+    { name: locale === "tr" ? "Rust ön sürümü · 8 uygulama" : "Rust preview · 8 apps", href: `/desktop/${locale === "tr" ? "tr" : "en"}.html` },
     { name: "IPscans+", href: `/${locale}/applications/scanner` },
     { name: "IPCast", href: `/${locale}/applications/ipcast` },
     { name: "LPR Pro", href: `/${locale}/lpr-pro` },
@@ -61,11 +62,11 @@ export function HeroSection({
             style={{ animationDelay: "280ms" }}
           >
             <a
-              href={scannerApplication.downloadUrl}
+              href={`/desktop/${locale === "tr" ? "tr" : "en"}.html#scanner`}
               className="btn btn-primary btn-lg"
             >
               <Icon name="windows" size={18} />
-              <span>{copy.downloadScannerCta}</span>
+              <span>IPscans+ · {platform.details}</span>
               <Icon name="download" size={18} />
             </a>
 
