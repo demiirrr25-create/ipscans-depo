@@ -4,7 +4,7 @@ use std::{fmt::Write, fs, io, path::Path};
 const TAG: &str = "desktop-audit-2026.11.01";
 const RELEASES: &str = "https://github.com/demiirrr25-create/ipscans-depo/releases";
 // Enable downloads only after verifying the public release and all eight assets.
-pub const PUBLISHED: bool = false;
+pub const PUBLISHED: bool = true;
 
 struct App {
     key: &'static str,
