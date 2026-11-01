@@ -337,7 +337,13 @@ fn main() {
         return;
     }
     let (listener, port) = bind_app_server(17946);
-    let state = Arc::new(Mutex::new(Monitor::default()));
+    let state = Arc::new(Mutex::new(Monitor {
+        active: true,
+        dark: true,
+        last_visit: Some(Instant::now()),
+        ..Monitor::default()
+    }));
+    measure(&state);
     measure(&state);
     let sampling = Arc::new(Mutex::new(()));
     let worker = state.clone();

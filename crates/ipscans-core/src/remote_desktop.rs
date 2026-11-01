@@ -229,6 +229,300 @@ impl RdpSessionManager {
     }
 }
 
+
+// ============================================================================
+// Native Win32 GDI Screen Capture, Mouse/Keyboard Input Injection & LAN P2P
+// ============================================================================
+
+#[repr(C)]
+#[derive(Default, Copy, Clone)]
+struct PointWin32 {
+    x: i32,
+    y: i32,
+}
+
+#[repr(C)]
+#[derive(Default, Copy, Clone)]
+struct BitmapInfoHeader {
+    bi_size: u32,
+    bi_width: i32,
+    bi_height: i32,
+    bi_planes: u16,
+    bi_bit_count: u16,
+    bi_compression: u32,
+    bi_size_image: u32,
+    bi_x_pels_per_meter: i32,
+    bi_y_pels_per_meter: i32,
+    bi_clr_used: u32,
+    bi_clr_important: u32,
+}
+
+#[link(name = "user32")]
+extern "system" {
+    fn GetSystemMetrics(n_index: i32) -> i32;
+    fn GetDC(hwnd: isize) -> isize;
+    fn ReleaseDC(hwnd: isize, hdc: isize) -> i32;
+    fn GetCursorPos(lp_point: *mut PointWin32) -> i32;
+    fn SetCursorPos(x: i32, y: i32) -> i32;
+    fn mouse_event(dw_flags: u32, dx: u32, dy: u32, dw_data: i32, dw_extra_info: usize);
+    fn keybd_event(b_vk: u8, b_scan: u8, dw_flags: u32, dw_extra_info: usize);
+}
+
+#[link(name = "gdi32")]
+extern "system" {
+    fn CreateCompatibleDC(hdc: isize) -> isize;
+    fn CreateCompatibleBitmap(hdc: isize, cx: i32, cy: i32) -> isize;
+    fn SelectObject(hdc: isize, h: isize) -> isize;
+    fn SetStretchBltMode(hdc: isize, mode: i32) -> i32;
+    fn StretchBlt(
+        hdc_dest: isize,
+        x_dest: i32,
+        y_dest: i32,
+        w_dest: i32,
+        h_dest: i32,
+        hdc_src: isize,
+        x_src: i32,
+        y_src: i32,
+        w_src: i32,
+        h_src: i32,
+        rop: u32,
+    ) -> i32;
+    fn GetDIBits(
+        hdc: isize,
+        hbm: isize,
+        start: u32,
+        c_lines: u32,
+        lpv_bits: *mut u8,
+        lpbmi: *mut BitmapInfoHeader,
+        usage: u32,
+    ) -> i32;
+    fn DeleteObject(ho: isize) -> i32;
+    fn DeleteDC(hdc: isize) -> i32;
+}
+
+/// Returns the primary display resolution `(width, height)` via Win32 `GetSystemMetrics`.
+pub fn primary_screen_resolution() -> (u32, u32) {
+    unsafe {
+        let w = GetSystemMetrics(0).max(640) as u32;
+        let h = GetSystemMetrics(1).max(360) as u32;
+        (w, h)
+    }
+}
+
+/// Captures the live Windows desktop screen via Win32 GDI (`StretchBlt` + `GetDIBits`),
+/// overlays a visible cursor indicator at the current `GetCursorPos`, and encodes a 24-bit BMP image.
+/// Falls back to a deterministic synthetic frame only when running in a headless session without GDI access.
+pub fn capture_desktop_bmp(max_width: u32) -> (u32, u32, Vec<u8>) {
+    let (src_w, src_h) = primary_screen_resolution();
+    let dst_w = max_width.clamp(320, src_w.min(1600));
+    let dst_h = ((src_h as u64 * dst_w as u64) / src_w.max(1) as u64).max(180) as u32;
+    let stride = ((dst_w * 3 + 3) & !3) as usize;
+    let image_size = stride * (dst_h as usize);
+    let mut pixels = vec![0u8; image_size];
+
+    let captured_ok = unsafe {
+        let hdc_screen = GetDC(0);
+        if hdc_screen == 0 {
+            false
+        } else {
+            let hdc_mem = CreateCompatibleDC(hdc_screen);
+            let hbmp = CreateCompatibleBitmap(hdc_screen, dst_w as i32, dst_h as i32);
+            let mut ok = false;
+            if hdc_mem != 0 && hbmp != 0 {
+                let old = SelectObject(hdc_mem, hbmp);
+                let _ = SetStretchBltMode(hdc_mem, 4); // HALFTONE
+                let blt = StretchBlt(
+                    hdc_mem,
+                    0,
+                    0,
+                    dst_w as i32,
+                    dst_h as i32,
+                    hdc_screen,
+                    0,
+                    0,
+                    src_w as i32,
+                    src_h as i32,
+                    0x00CC_0020, // SRCCOPY
+                );
+                if blt != 0 {
+                    let mut bmi = BitmapInfoHeader {
+                        bi_size: std::mem::size_of::<BitmapInfoHeader>() as u32,
+                        bi_width: dst_w as i32,
+                        bi_height: dst_h as i32, // bottom-up DIB
+                        bi_planes: 1,
+                        bi_bit_count: 24,
+                        bi_compression: 0,
+                        bi_size_image: image_size as u32,
+                        ..Default::default()
+                    };
+                    let lines = GetDIBits(
+                        hdc_mem,
+                        hbmp,
+                        0,
+                        dst_h,
+                        pixels.as_mut_ptr(),
+                        &mut bmi,
+                        0,
+                    );
+                    ok = lines > 0;
+                }
+                let _ = SelectObject(hdc_mem, old);
+            }
+            if hbmp != 0 {
+                let _ = DeleteObject(hbmp);
+            }
+            if hdc_mem != 0 {
+                let _ = DeleteDC(hdc_mem);
+            }
+            let _ = ReleaseDC(0, hdc_screen);
+            ok
+        }
+    };
+
+    if !captured_ok {
+        // Fallback pattern for headless CI environments
+        for y in 0..dst_h as usize {
+            for x in 0..dst_w as usize {
+                let idx = y * stride + x * 3;
+                pixels[idx] = ((x + y) % 180) as u8;
+                pixels[idx + 1] = ((x * 2) % 140) as u8;
+                pixels[idx + 2] = 40;
+            }
+        }
+    } else {
+        // Overlay live cursor ring at current GetCursorPos
+        let mut pt = PointWin32::default();
+        if unsafe { GetCursorPos(&mut pt) } != 0 {
+            let cx = ((pt.x.max(0) as u64 * dst_w as u64) / src_w.max(1) as u64) as i32;
+            let cy_top = ((pt.y.max(0) as u64 * dst_h as u64) / src_h.max(1) as u64) as i32;
+            let cy_dib = (dst_h as i32 - 1) - cy_top;
+            for dy in -6i32..=6 {
+                for dx in -6i32..=6 {
+                    let d2 = dx * dx + dy * dy;
+                    if (16..=36).contains(&d2) {
+                        let px = cx + dx;
+                        let py = cy_dib + dy;
+                        if px >= 0 && px < dst_w as i32 && py >= 0 && py < dst_h as i32 {
+                            let idx = (py as usize) * stride + (px as usize) * 3;
+                            pixels[idx] = 255;     // B
+                            pixels[idx + 1] = 107; // G
+                            pixels[idx + 2] = 47;  // R
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let file_size = 54 + image_size as u32;
+    let mut bmp = Vec::with_capacity(file_size as usize);
+    // BITMAPFILEHEADER (14 bytes)
+    bmp.extend_from_slice(b"BM");
+    bmp.extend_from_slice(&file_size.to_le_bytes());
+    bmp.extend_from_slice(&0u32.to_le_bytes());
+    bmp.extend_from_slice(&54u32.to_le_bytes());
+    // BITMAPINFOHEADER (40 bytes)
+    bmp.extend_from_slice(&40u32.to_le_bytes());
+    bmp.extend_from_slice(&(dst_w as i32).to_le_bytes());
+    bmp.extend_from_slice(&(dst_h as i32).to_le_bytes());
+    bmp.extend_from_slice(&1u16.to_le_bytes());
+    bmp.extend_from_slice(&24u16.to_le_bytes());
+    bmp.extend_from_slice(&0u32.to_le_bytes());
+    bmp.extend_from_slice(&(image_size as u32).to_le_bytes());
+    bmp.extend_from_slice(&2835i32.to_le_bytes());
+    bmp.extend_from_slice(&2835i32.to_le_bytes());
+    bmp.extend_from_slice(&0u32.to_le_bytes());
+    bmp.extend_from_slice(&0u32.to_le_bytes());
+    bmp.extend_from_slice(&pixels);
+
+    (dst_w, dst_h, bmp)
+}
+
+/// Moves the Windows cursor and optionally triggers a mouse button or wheel event via Win32 `user32.dll`.
+pub fn inject_remote_mouse(
+    norm_x: f64,
+    norm_y: f64,
+    action: &str,
+    button: u8,
+) -> (i32, i32) {
+    let (w, h) = primary_screen_resolution();
+    let x = (norm_x.clamp(0.0, 1.0) * (w.saturating_sub(1) as f64)).round() as i32;
+    let y = (norm_y.clamp(0.0, 1.0) * (h.saturating_sub(1) as f64)).round() as i32;
+    unsafe {
+        let _ = SetCursorPos(x, y);
+        match (action, button) {
+            ("click", 2) => {
+                mouse_event(0x0008, 0, 0, 0, 0);
+                mouse_event(0x0010, 0, 0, 0, 0);
+            }
+            ("click", _) => {
+                mouse_event(0x0002, 0, 0, 0, 0);
+                mouse_event(0x0004, 0, 0, 0, 0);
+            }
+            ("dblclick", _) => {
+                mouse_event(0x0002, 0, 0, 0, 0);
+                mouse_event(0x0004, 0, 0, 0, 0);
+                mouse_event(0x0002, 0, 0, 0, 0);
+                mouse_event(0x0004, 0, 0, 0, 0);
+            }
+            ("down", 2) => mouse_event(0x0008, 0, 0, 0, 0),
+            ("down", _) => mouse_event(0x0002, 0, 0, 0, 0),
+            ("up", 2) => mouse_event(0x0010, 0, 0, 0, 0),
+            ("up", _) => mouse_event(0x0004, 0, 0, 0, 0),
+            _ => {}
+        }
+    }
+    (x, y)
+}
+
+/// Injects a virtual key press (`key_down` + `key_up`) via Win32 `keybd_event`.
+pub fn inject_remote_key(vk_code: u8) {
+    if vk_code == 0 {
+        return;
+    }
+    unsafe {
+        keybd_event(vk_code, 0, 0, 0);
+        keybd_event(vk_code, 0, 0x0002, 0);
+    }
+}
+
+/// Resolves a 9-digit IPCast station ID on the local broadcast domain via UDP port 17949.
+/// Returns `Some((ip, p2p_port, hostname))` if a matching station responds within `timeout_ms`.
+pub fn discover_ipcast_peer_by_id(compact_id: &str, timeout_ms: u64) -> Option<(String, u16, String)> {
+    let digits: String = compact_id.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.len() != 9 {
+        return None;
+    }
+    let sock = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    let _ = sock.set_broadcast(true);
+    let _ = sock.set_read_timeout(Some(Duration::from_millis(timeout_ms.max(80))));
+    let msg = format!("IPCAST_WHOIS|{}", digits);
+    let _ = sock.send_to(msg.as_bytes(), "255.255.255.255:17949");
+    let _ = sock.send_to(msg.as_bytes(), "127.0.0.1:17949");
+
+    let deadline = Instant::now() + Duration::from_millis(timeout_ms.max(80));
+    let mut buf = [0u8; 512];
+    while Instant::now() < deadline {
+        if let Ok((n, src)) = sock.recv_from(&mut buf) {
+            let reply = String::from_utf8_lossy(&buf[..n]);
+            let parts: Vec<&str> = reply.trim().split('|').collect();
+            if parts.len() >= 5 && parts[0] == "IPCAST_HERE" && parts[1] == digits {
+                let ip = if parts[2].is_empty() {
+                    src.ip().to_string()
+                } else {
+                    parts[2].to_string()
+                };
+                let port = parts[3].parse::<u16>().unwrap_or(17948);
+                let host = parts[4].to_string();
+                return Some((ip, port, host));
+            }
+        } else {
+            break;
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -412,8 +412,14 @@ fn main() {
         return;
     }
     let file = app_data_dir("scanner").join("labels.tsv");
+    let startup_scan = scan_targets_with_options(None, None, None);
     let mut initial = Inventory {
+        context: Some(startup_scan.context),
+        hosts: startup_scan.hosts,
+        metrics: startup_scan.metrics.clone(),
+        elapsed_ms: startup_scan.metrics.elapsed_ms,
         adapters: detect_adapters(),
+        dark: true,
         ..Default::default()
     };
     if let Ok(saved) = fs::read_to_string(&file) {

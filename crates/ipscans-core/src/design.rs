@@ -532,13 +532,14 @@ fn response(stream: &mut TcpStream, status: u16, kind: &str, body: &[u8]) {
         503 => "Service Unavailable",
         _ => "Error",
     };
-    let _ = write!(stream, "HTTP/1.1 {status} {reason}\r\nContent-Type: {kind}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\nContent-Security-Policy: frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\nReferrer-Policy: no-referrer\r\nConnection: close\r\n\r\n", body.len());
+    let _ = write!(stream, "HTTP/1.1 {status} {reason}\r\nContent-Type: {kind}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\nContent-Security-Policy: frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\nReferrer-Policy: same-origin\r\nConnection: close\r\n\r\n", body.len());
     let _ = stream.write_all(body);
 }
 
 fn local_headers(headers: &str, port: u16, write: bool) -> Result<usize, u16> {
     let mut host = None;
     let mut origin = None;
+    let mut sec_fetch_site = None;
     let mut length = None;
     for line in headers.lines().skip(1) {
         let (key, value) = line.split_once(':').ok_or(400u16)?;
@@ -553,7 +554,12 @@ fn local_headers(headers: &str, port: u16, write: bool) -> Result<usize, u16> {
                 }
                 length = Some(value.parse::<usize>().map_err(|_| 400u16)?);
             }
-            "sec-fetch-site" if !matches!(value, "none" | "same-origin") => return Err(403),
+            "sec-fetch-site" => {
+                if !matches!(value, "none" | "same-origin") {
+                    return Err(403);
+                }
+                sec_fetch_site = Some(value);
+            }
             _ => {}
         }
     }
@@ -561,8 +567,12 @@ fn local_headers(headers: &str, port: u16, write: bool) -> Result<usize, u16> {
     if host != format!("127.0.0.1:{port}") && host != format!("localhost:{port}") {
         return Err(403);
     }
+    let expected_origin = format!("http://{host}");
     if origin.is_some() || write {
-        if origin != Some(format!("http://{host}").as_str()) {
+        let same_origin_header = origin == Some(expected_origin.as_str());
+        let same_origin_fetch =
+            sec_fetch_site == Some("same-origin") && matches!(origin, None | Some("null"));
+        if !same_origin_header && !same_origin_fetch {
             return Err(403);
         }
     }
@@ -672,7 +682,15 @@ mod http_tests {
         let base = "POST / HTTP/1.1\r\nHost: 127.0.0.1:18000";
         let check = |extra: &str| local_headers(&format!("{base}\r\n{extra}"), 18000, true);
         assert_eq!(check("Origin: http://127.0.0.1:18000"), Ok(0));
+        assert_eq!(
+            check("Origin: null\r\nSec-Fetch-Site: same-origin"),
+            Ok(0)
+        );
         assert_eq!(check("Origin: https://example.org"), Err(403));
+        assert_eq!(
+            check("Origin: https://example.org\r\nSec-Fetch-Site: same-origin"),
+            Err(403)
+        );
         assert_eq!(check("Origin: null"), Err(403));
         assert_eq!(check(""), Err(403));
         assert_eq!(check("Host: example.org"), Err(400));

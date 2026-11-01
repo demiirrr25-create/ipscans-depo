@@ -35,6 +35,7 @@ extern "system" {
 #[link(name = "kernel32")]
 extern "system" {
     fn MoveFileW(existing: *const u16, new: *const u16) -> i32;
+    fn MoveFileExW(existing: *const u16, new: *const u16, flags: u32) -> i32;
     fn GetSystemDirectoryW(buffer: *mut u16, length: u32) -> u32;
     fn GetCurrentProcess() -> isize;
     fn K32GetProcessMemoryInfo(
@@ -136,8 +137,10 @@ fn copy_desktop_exe(src: &std::path::Path, dest: &std::path::Path) -> std::io::R
                 .chain(Some(0))
                 .collect::<Vec<_>>()
         };
-        // MoveFileW publishes a complete file and never replaces an existing file.
-        if unsafe { MoveFileW(wide(&temp).as_ptr(), wide(dest).as_ptr()) } == 0 {
+        // First try non-replacing MoveFileW; if target exists and is unlocked, replace atomically via MoveFileExW.
+        if unsafe { MoveFileW(wide(&temp).as_ptr(), wide(dest).as_ptr()) } == 0
+            && unsafe { MoveFileExW(wide(&temp).as_ptr(), wide(dest).as_ptr(), 0x0000_0001) } == 0
+        {
             return Err(io::Error::last_os_error());
         }
         Ok(())
@@ -370,11 +373,12 @@ pub fn launch_desktop_app_window(
                     &app_arg,
                     &size_arg,
                     &data_arg,
+                    "--new-window",
                     "--no-first-run",
                     "--no-default-browser-check",
+                    "--disable-background-mode",
                     "--disable-features=TranslateUI",
                 ])
-                .creation_flags(CREATE_NO_WINDOW)
                 .spawn()
             {
                 return Some(child);

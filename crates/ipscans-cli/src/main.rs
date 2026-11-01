@@ -40,15 +40,41 @@ fn standalone_console() -> bool {
 fn window() {
     use ipscans_core::console::{escape, field, json, page, serve};
     use std::fmt::Write;
+    use std::sync::{Arc, Mutex};
+
+    let initial_scan = scan_targets_with_options(None, None, None);
+    let last_scan = Arc::new(Mutex::new(initial_scan));
+
     serve(
         "ipscans-cli",
         17947,
-        std::sync::Arc::new(|method, path, body| {
-            let mut content = String::from(
-                r#"<section><div class="eyebrow">TCP / SERVİS DENETİMİ</div><h2>Bir hedefi yokla</h2><form action="/probe" method="post"><label>IPv4, IPv6 veya alan adı<input class="input mono" name="target" value="127.0.0.1" required></label><label>TCP portu<input class="input mono" type="number" name="port" min="1" max="65535" value="443" required></label><button class="btn btn-signal">Bağlantıyı ölç</button></form>"#,
-            );
+        Arc::new(move |method, path, body| {
+            let mut probe_output = String::new();
+            let mut dns_output = String::new();
+            let mut scan_banner = String::new();
+
             match (method, path) {
                 ("GET", "/" | "/index.html") => {}
+                ("POST", "/scan") => {
+                    let range = field(body, "range").unwrap_or_default();
+                    let range_trim = range.trim();
+                    if !range_trim.is_empty() && plan_targets(range_trim, "").is_err() {
+                        scan_banner = "<output>Geçerli bir IPv4 CIDR (/20–/32), başlangıç-bitiş aralığı veya IPv6 (/120–/128) girin.</output>".into();
+                    } else {
+                        let out = scan_targets_with_options(
+                            (!range_trim.is_empty()).then_some(range_trim),
+                            None,
+                            None,
+                        );
+                        scan_banner = format!(
+                            "<output>Tarama tamamlandı · {} hedef yoklandı · {} aktif cihaz bulundu ({} ms).</output>",
+                            out.metrics.probed_targets,
+                            out.hosts.len(),
+                            out.metrics.elapsed_ms
+                        );
+                        *last_scan.lock().unwrap() = out;
+                    }
+                }
                 ("POST", "/probe") => {
                     let target = field(body, "target").unwrap_or_default();
                     let port = field(body, "port")
@@ -61,27 +87,101 @@ fn window() {
                             .all(|c| c.is_ascii_alphanumeric() || ".-:".contains(c))
                         || port.is_none()
                     {
-                        content.push_str("<output>Geçerli bir ana bilgisayar ve 1–65535 arasında port girin.</output>");
+                        probe_output.push_str("<output>Geçerli bir ana bilgisayar ve 1–65535 arasında port girin.</output>");
                     } else {
                         let result = check_ports_detailed(&target, &[port.unwrap()], 850);
                         let _ = write!(
-                            content,
+                            probe_output,
                             "<output class=\"mono\">{}</output>",
                             escape(&result)
                         );
                     }
                 }
+                ("POST", "/dns") => {
+                    let domain = field(body, "domain").unwrap_or_default();
+                    let result = query_dns_records(domain.trim());
+                    let _ = write!(
+                        dns_output,
+                        "<output class=\"mono\">{}</output>",
+                        escape(&result)
+                    );
+                }
+                ("POST", "/whois") => {
+                    let domain = field(body, "domain").unwrap_or_default();
+                    let result = query_whois_raw(domain.trim());
+                    let _ = write!(
+                        dns_output,
+                        "<output class=\"mono\">{}</output>",
+                        escape(&result)
+                    );
+                }
                 _ => return json(404, "{\"error\":\"Not found\"}".into()),
             }
+
+            let scan = last_scan.lock().unwrap();
+            let default_cidr = if scan.context.scan_cidr.is_empty() {
+                "192.168.0.0/24".to_string()
+            } else {
+                scan.context.scan_cidr.clone()
+            };
+            let mut rows = String::new();
+            for h in &scan.hosts {
+                let ports = if h.open_ports.is_empty() {
+                    "-".to_string()
+                } else {
+                    h.open_ports
+                        .iter()
+                        .map(u16::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                };
+                let _ = write!(
+                    rows,
+                    "<tr><td class=\"mono\"><strong>{}</strong></td><td class=\"mono\">{}</td><td>{}</td><td>{}</td><td>{}</td><td class=\"mono\">{}</td><td class=\"mono\">{} ms</td></tr>",
+                    escape(&h.ip),
+                    escape(&h.mac),
+                    escape(&h.vendor),
+                    escape(&h.hostname),
+                    escape(&h.device_type),
+                    escape(&ports),
+                    h.latency_ms.unwrap_or(0)
+                );
+            }
+            if rows.is_empty() {
+                rows.push_str("<tr><td colspan=\"7\">Aktif cihaz bulunamadı.</td></tr>");
+            }
+
+            let mut content = String::new();
             let _ = write!(
                 content,
-                "</section><section><div class=\"eyebrow\">TERMİNAL</div><h2>Komut başvurusu</h2><pre class=\"terminal-box\">{}</pre></section>",
+                r#"<section><div class="eyebrow">01 / YEREL AĞ KEŞFİ VE CİHAZ ENVANTERİ ({} CİHAZ · {} MS)</div><h2>Alt Ağı veya Özel IP Aralığını Tara</h2><form action="/scan" method="post"><label style="flex:1;min-width:240px">IPv4 CIDR (/20–/32), Aralık veya IPv6<input class="input mono" name="range" value="{}" placeholder="192.168.0.0/24"></label><button class="btn btn-signal">Ağı Şimdi Tara</button></form>{}<div class="data-table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr><th>IPv4</th><th>MAC Adresi</th><th>Üretici (IEEE OUI)</th><th>Cihaz Adı</th><th>Tür</th><th>Açık Portlar</th><th>Gecikme</th></tr></thead><tbody>{}</tbody></table></div></section>"#,
+                scan.hosts.len(),
+                scan.metrics.elapsed_ms,
+                escape(&default_cidr),
+                scan_banner,
+                rows
+            );
+            drop(scan);
+
+            let _ = write!(
+                content,
+                r#"<section><div class="eyebrow">02 / TCP SERVİS DENETİMİ</div><h2>Bir hedefi yokla</h2><form action="/probe" method="post"><label>IPv4, IPv6 veya alan adı<input class="input mono" name="target" value="127.0.0.1" required></label><label>TCP portu<input class="input mono" type="number" name="port" min="1" max="65535" value="443" required></label><button class="btn btn-signal">Bağlantıyı ölç</button></form>{}</section>"#,
+                probe_output
+            );
+            let _ = write!(
+                content,
+                r#"<section><div class="eyebrow">03 / DNS &amp; WHOIS SORGULAMA</div><h2>Alan Adı veya IP İstihbaratı</h2><form action="/dns" method="post"><label style="flex:1;min-width:240px">Alan adı veya IPv4<input class="input mono" name="domain" value="ipscans.com" required></label><button class="btn btn-secondary">DNS Kayıtlarını Sorgula</button><button class="btn btn-secondary" formaction="/whois">WHOIS Sorgula</button></form>{}</section>"#,
+                dns_output
+            );
+            let _ = write!(
+                content,
+                "<section><div class=\"eyebrow\">04 / TERMİNAL</div><h2>Komut başvurusu</h2><pre class=\"terminal-box\">{}</pre></section>",
                 escape(HELP)
             );
             page(
                 "Network Scanner CLI",
                 "cli",
-                "TCP portlarını ölçün ve komut satırında JSON tanılarını çalıştırın.",
+                "Yerel ağı tarayın, TCP portlarını ölçün ve DNS/WHOIS/JSON tanılarını çalıştırın.",
                 &content,
             )
         }),

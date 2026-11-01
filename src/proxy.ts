@@ -10,6 +10,7 @@ const desktopProducts: Record<string, string> = {
   "/lpr-pro": "lpr",
   "/cortex": "cortex",
   "/cortex/admin": "admin",
+  "/sentinel": "sentinel",
 };
 
 function getPreferredLocale(request: NextRequest): string {

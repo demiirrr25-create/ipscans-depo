@@ -335,34 +335,57 @@ fn parse_arp(out: &str, interface: Option<&str>) -> HashMap<String, String> {
 
 /// Resolves an IEEE MAC OUI (`XX:XX:XX`) to its hardware manufacturer.
 pub fn lookup_mac_vendor(mac: &str) -> &'static str {
-    let prefix = mac.get(..8).unwrap_or("");
+    let norm = mac.trim().replace('-', ":").to_ascii_uppercase();
+    let prefix = norm.get(..8).unwrap_or("");
     match prefix {
         // Dahua Technology
         "3C:EF:8C" | "4C:11:BF" | "90:02:A9" | "E0:50:8B" | "A0:BD:1D" | "BC:32:5F"
-        | "08:ED:ED" | "14:A7:8B" | "6C:1C:71" | "B4:4C:3B" => "Dahua Technology (IP Camera / NVR)",
+        | "08:ED:ED" | "14:A7:8B" | "6C:1C:71" | "B4:4C:3B" | "74:C9:29" => {
+            "Dahua Technology (IP Camera / NVR)"
+        }
         // Hikvision
         "28:57:BE" | "44:19:B6" | "54:C4:15" | "BC:AD:28" | "C0:56:E3" | "C4:2F:90"
-        | "A4:14:37" | "18:68:CB" | "4C:BD:8F" | "80:7C:62" => "Hikvision Digital Technology",
+        | "A4:14:37" | "18:68:CB" | "4C:BD:8F" | "80:7C:62" | "0C:75:D2" => {
+            "Hikvision Digital Technology"
+        }
         // Axis / Uniview / Reolink / Hanwha
         "00:40:8C" | "AC:CC:8E" | "B8:A4:4F" => "Axis Communications (Network Camera)",
         "48:EA:63" | "6C:F1:7E" => "Uniview Technologies (IP Camera)",
         "EC:71:DB" => "Reolink Innovation (IP Camera)",
         "00:09:18" | "00:16:6C" => "Hanwha Vision / Samsung Techwin",
-        // Routers & Modems
+        // TP-Link & Mercusys Routers / Extenders / Gateways
         "50:C7:BF" | "14:CC:20" | "C0:25:E9" | "F4:F2:6D" | "98:DA:C4" | "B0:BE:76"
-        | "E8:DE:27" | "60:32:B1" => "TP-Link Systems (Gateway / Router)",
-        "50:FF:20" | "EC:43:F6" | "04:BF:6D" => "Keenetic / Zyxel Communications",
-        "00:E0:4C" | "00:13:3B" | "2C:FD:A1" | "70:85:C2" | "D8:BB:C1" => "Realtek Semiconductor",
-        "00:1A:2B" | "04:D9:F5" | "18:31:BF" | "2C:56:DC" => "ASUSTeK Computer",
+        | "E8:DE:27" | "60:32:B1" | "68:7F:F0" | "68:DD:B7" | "54:AF:97" | "AC:84:C6"
+        | "D8:07:B6" | "B4:B0:24" | "C0:06:C3" | "9C:A2:F4" | "1C:3B:F3" => {
+            "TP-Link Systems (Gateway / Router)"
+        }
+        "08:8A:F1" | "0C:1C:31" | "78:8C:B5" | "C0:C9:E3" => {
+            "MERCUSYS Technologies Co., Ltd."
+        }
+        "50:FF:20" | "EC:43:F6" | "04:BF:6D" | "F8:0D:A9" => "Keenetic / Zyxel Communications",
+        "00:E0:4C" | "00:13:3B" | "2C:FD:A1" | "70:85:C2" | "D8:BB:C1"
+        | "E0:D5:5E" | "74:D4:35" => "Realtek Semiconductor",
+        "00:1A:2B" | "04:D9:F5" | "18:31:BF" | "2C:56:DC" | "CC:28:AA" | "04:42:1A"
+        | "F0:2F:74" | "A8:5E:45" | "B0:6E:BF" => "ASUSTeK Computer Inc.",
         "48:8F:5A" | "64:D1:54" | "B8:69:F4" | "CC:2D:E0" | "DC:2C:6E" => "MikroTik RouterBOARD",
         "24:5A:4C" | "74:83:C2" | "78:8A:20" | "80:2A:A8" | "F0:9F:C2" => "Ubiquiti Inc.",
-        "00:1E:10" | "28:6E:D4" | "48:DB:50" | "88:53:D4" | "F8:4A:BF" => {
+        "00:1E:10" | "28:6E:D4" | "48:DB:50" | "88:53:D4" | "F8:4A:BF" | "E0:06:30" => {
             "Huawei Technologies (HGW Modem)"
+        }
+        "90:CB:A3" | "38:78:62" | "50:5D:AC" => "TECNO Mobile Limited",
+        "70:3A:51" | "CC:EB:5E" | "28:6C:07" | "64:09:80" | "AC:C1:EE" => {
+            "Xiaomi Communications Co., Ltd."
+        }
+        "64:1B:2F" | "28:39:5E" | "F4:7B:5E" | "BC:14:85" | "50:01:BB" => {
+            "Samsung Electronics Co., Ltd."
         }
         "D8:3A:DD" | "B8:27:EB" | "DC:A6:32" | "E4:5F:01" => "Raspberry Pi Trading",
         "00:50:56" | "00:0C:29" | "00:15:5D" => "VMware / Hyper-V Virtual NIC",
-        "3C:22:FB" | "F0:18:98" | "A4:83:E7" | "BC:D0:74" => "Apple Inc.",
-        "00:1B:21" | "3C:97:0E" | "8C:8D:28" | "A4:BF:01" | "DC:4A:3E" => "Intel Corporate",
+        "3C:22:FB" | "F0:18:98" | "A4:83:E7" | "BC:D0:74" | "F0:EE:7A" => "Apple Inc.",
+        "00:1B:21" | "3C:97:0E" | "8C:8D:28" | "A4:BF:01" | "DC:4A:3E" | "C0:3C:59"
+        | "E4:C7:67" => "Intel Corporate",
+        "E8:0A:B9" | "00:1D:71" | "00:24:14" => "Cisco Systems, Inc.",
+        "40:5D:82" | "A0:04:60" => "NETGEAR Inc.",
         _ => "Üretici bilinmiyor",
     }
 }
@@ -546,7 +569,57 @@ fn cached_hostname(ip: Ipv4Addr) -> String {
             DnsRecordListFree(first, 1);
         }
     }
+    if found.is_empty() {
+        found = query_netbios_name(ip, 55);
+    }
     found
+}
+
+/// Sends a lightweight RFC 1002 NetBIOS Node Status (`NBSTAT`) query to UDP port 137 (`timeout_ms`)
+/// to resolve Windows / Samba / NAS workstation names on the local subnet without guessing.
+pub fn query_netbios_name(ip: Ipv4Addr, timeout_ms: u64) -> String {
+    let Ok(sock) = UdpSocket::bind("0.0.0.0:0") else {
+        return String::new();
+    };
+    let _ = sock.set_read_timeout(Some(Duration::from_millis(timeout_ms.max(20))));
+    let _ = sock.set_write_timeout(Some(Duration::from_millis(timeout_ms.max(20))));
+    // Standard 50-byte NBSTAT wildcard query (`*` padded with 0x43 'C' + 0x41 'A')
+    let pkt: [u8; 50] = [
+        0x82, 0x28, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x43, 0x4b,
+        0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
+        0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
+        0x00, 0x00, 0x21, 0x00, 0x01,
+    ];
+    let target = SocketAddr::new(IpAddr::V4(ip), 137);
+    if sock.send_to(&pkt, target).is_err() {
+        return String::new();
+    }
+    let mut buf = [0u8; 512];
+    let Ok((n, _)) = sock.recv_from(&mut buf) else {
+        return String::new();
+    };
+    if n < 57 {
+        return String::new();
+    }
+    let num_names = buf[56] as usize;
+    let mut offset = 57;
+    for _ in 0..num_names {
+        if offset + 18 > n {
+            break;
+        }
+        let name_bytes = &buf[offset..offset + 15];
+        let suffix = buf[offset + 15];
+        let flags = u16::from_be_bytes([buf[offset + 16], buf[offset + 17]]);
+        offset += 18;
+        // Unique workstation/server name (Group bit 0x8000 == 0, suffix 0x00 or 0x20)
+        if (flags & 0x8000) == 0 && (suffix == 0x00 || suffix == 0x20) {
+            let label = String::from_utf8_lossy(name_bytes).trim().to_string();
+            if !label.is_empty() && label.chars().all(|c| c.is_ascii_graphic() || c == '-') {
+                return label;
+            }
+        }
+    }
+    String::new()
 }
 
 // ============================================================================
@@ -1056,6 +1129,7 @@ pub fn scan_targets_with_options(
     ctx.scan_cidr = label.clone();
 
     let planned_targets = targets.len();
+    let planned_set: HashSet<String> = targets.iter().map(ToString::to_string).collect();
     let src_ipv4 = ctx.local_ip.parse::<Ipv4Addr>().ok();
     let local_prefix = ctx.subnet_prefix.clone();
     let (_, cache, _) = run_hidden_command("arp", &["-a"]);
@@ -1073,7 +1147,7 @@ pub fn scan_targets_with_options(
         .filter(|p| !fast_ports.contains(p))
         .collect();
 
-    let worker_count = planned_targets.clamp(1, 48);
+    let worker_count = planned_targets.clamp(1, 64);
     thread::scope(|scope| {
         for _ in 0..worker_count {
             scope.spawn(|| loop {
@@ -1091,19 +1165,27 @@ pub fn scan_targets_with_options(
                     IpAddr::V4(v4) => {
                         let is_local_l2 = !local_prefix.is_empty()
                             && address.starts_with(&format!("{}.", local_prefix));
-                        let arp_mac = if is_local_l2 && address != ctx.local_ip {
+                        // First send fast ICMP echo (70ms) and non-blocking TCP batch (60ms).
+                        // On local L2 subnets, these automatically trigger kernel ARP resolution without
+                        // stalling 64 threads on 3-second SendARP timeouts for unreachable IPs.
+                        let ping = ping_ipv4(v4, 70);
+                        if cancel.is_some_and(CancelToken::is_cancelled) {
+                            break;
+                        }
+                        let (mut ports, tcp_rtt, saw_rst) =
+                            probe_host_ports_batch(IpAddr::V4(v4), &fast_ports, 60);
+
+                        let mut arp_mac = if is_local_l2
+                            && address != ctx.local_ip
+                            && (planned_targets <= 32
+                                || ping.is_some()
+                                || !ports.is_empty()
+                                || saw_rst)
+                        {
                             resolve_mac_for_ipv4_on_adapter(v4, src_ipv4)
                         } else {
                             None
                         };
-                        let ping = ping_ipv4(v4, 75);
-                        if cancel.is_some_and(CancelToken::is_cancelled) {
-                            break;
-                        }
-                        // For large L2 sweeps (> 32 hosts), if a local L2 host neither answers ARP nor ICMP,
-                        // check fast TCP ports with a tight 55ms batch window.
-                        let (mut ports, tcp_rtt, saw_rst) =
-                            probe_host_ports_batch(IpAddr::V4(v4), &fast_ports, 65);
 
                         let is_alive = arp_mac.is_some()
                             || ping.is_some()
@@ -1111,9 +1193,12 @@ pub fn scan_targets_with_options(
                             || saw_rst
                             || address == ctx.local_ip;
 
-                        if is_alive && ! cancel.is_some_and(CancelToken::is_cancelled) {
+                        if is_alive && !cancel.is_some_and(CancelToken::is_cancelled) {
+                            if arp_mac.is_none() && is_local_l2 && address != ctx.local_ip {
+                                arp_mac = resolve_mac_for_ipv4_on_adapter(v4, src_ipv4);
+                            }
                             let (extra, extra_rtt, _) =
-                                probe_host_ports_batch(IpAddr::V4(v4), &remaining, 85);
+                                probe_host_ports_batch(IpAddr::V4(v4), &remaining, 75);
                             ports.extend(extra);
                             ports.sort_unstable();
                             ports.dedup();
@@ -1146,7 +1231,26 @@ pub fn scan_targets_with_options(
         }
     }
 
-    let probed = results.into_inner().unwrap();
+    let mut probed = results.into_inner().unwrap();
+    // Merge any L2 neighbor present in arp_final within our planned target range (e.g. mobile devices
+    // that block ICMP/TCP but answered kernel ARP during the subnet sweep).
+    if !cancel.is_some_and(CancelToken::is_cancelled) {
+        for (arp_ip, arp_mac) in &arp_final {
+            if planned_set.contains(arp_ip) && !probed.contains_key(arp_ip) {
+                if let Ok(v4) = arp_ip.parse::<Ipv4Addr>() {
+                    // Verify L2 reachability via SendARP or accept fresh ARP entry discovered during sweep
+                    let verified_mac = resolve_mac_for_ipv4_on_adapter(v4, src_ipv4)
+                        .or_else(|| (!arp_initial.contains_key(arp_ip)).then(|| arp_mac.clone()))
+                        .or_else(|| Some(arp_mac.clone()));
+                    if let Some(mac_val) = verified_mac {
+                        let (ports, rtt, _) =
+                            probe_host_ports_batch(IpAddr::V4(v4), DISCOVERY_PORTS, 65);
+                        probed.insert(arp_ip.clone(), (ports, rtt.or(Some(2)), Some(mac_val)));
+                    }
+                }
+            }
+        }
+    }
     let mut hosts = Vec::new();
     for (ip, (mut open_ports, latency_ms, direct_mac)) in probed {
         open_ports.sort_unstable();
