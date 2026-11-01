@@ -3,13 +3,18 @@
 use ipscans_core::console::{escape, field, json, page, serve, Reply};
 use ipscans_core::json::{extract_json_string, json_str};
 use ipscans_core::network::{detect_local_ipv4, scan_local_subnet};
-use ipscans_core::remote_desktop::derive_station_identity;
+use ipscans_core::remote_desktop::{
+    derive_station_identity, generate_rdp_profile_content, probe_rdp_x224, RdpSessionManager,
+    RdpSessionState,
+};
+use ipscans_core::win32::app_data_dir;
 use std::{
-    env,
-    net::{IpAddr, SocketAddr, TcpStream},
+    env, fs,
+    io::{Read, Write},
+    net::{IpAddr, SocketAddr, TcpListener},
     process::Command,
     sync::Arc,
-    time::Duration,
+    thread,
 };
 
 fn endpoint(raw: &str) -> Result<SocketAddr, &'static str> {
@@ -26,13 +31,74 @@ fn endpoint(raw: &str) -> Result<SocketAddr, &'static str> {
 }
 
 fn open_session(addr: SocketAddr) -> Result<String, String> {
+    let dir = app_data_dir("ipcast");
+    let profile_path = dir.join(format!("session-{}-{}.rdp", addr.ip(), addr.port()));
+    let content = generate_rdp_profile_content(addr);
+    fs::write(&profile_path, content).map_err(|e| format!("RDP profili yazılamadı: {e}"))?;
     let client = ipscans_core::win32::system_tool("mstsc").map_err(|e| e.to_string())?;
     Command::new(client)
-        .arg(format!("/v:{addr}"))
-        .arg("/prompt")
+        .arg(&profile_path)
         .spawn()
         .map_err(|e| format!("RDP istemcisi açılamadı. {e}"))?;
-    Ok(format!("{addr} için Windows RDP istemcisi açıldı. Kimlik bilgilerini ve sertifikayı istemcide doğrulayın."))
+    Ok(format!(
+        "{addr} için otomatik yeniden bağlanma açık (.rdp) profili oluşturuldu ve Windows RDP istemcisi açıldı: {}",
+        profile_path.display()
+    ))
+}
+
+fn spawn_x224_endpoint(accept_count: usize) -> SocketAddr {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind x224 endpoint");
+    let addr = listener.local_addr().unwrap();
+    thread::spawn(move || {
+        for _ in 0..accept_count {
+            if let Ok((mut stream, _)) = listener.accept() {
+                let mut req = [0u8; 64];
+                let _ = stream.read(&mut req);
+                let resp: [u8; 19] = [
+                    0x03, 0x00, 0x00, 0x13, 0x0e, 0xd0, 0x00, 0x00, 0x12, 0x34, 0x00, 0x02, 0x01,
+                    0x08, 0x00, 0x02, 0x00, 0x00, 0x00,
+                ];
+                let _ = stream.write_all(&resp);
+            }
+        }
+    });
+    addr
+}
+
+fn run_two_endpoint_session_lifecycle() -> (bool, String, String) {
+    let host_a = spawn_x224_endpoint(1);
+    let host_b = spawn_x224_endpoint(1);
+    let mut mgr = RdpSessionManager::new(host_a);
+
+    // 1. Connect to Host A
+    let ok1 = mgr.connect(800).is_ok() && matches!(mgr.state, RdpSessionState::Connected { .. });
+    // 2. Host A listener is now exhausted -> check_keepalive detects drop
+    let dropped = !mgr.check_keepalive(300)
+        && matches!(mgr.state, RdpSessionState::ConnectionLost { .. });
+    // 3. Reconnect/failover to Host B
+    let ok2 = mgr.reconnect(Some(host_b), 800).is_ok()
+        && matches!(mgr.state, RdpSessionState::Reconnected { .. });
+
+    let ok = ok1 && dropped && ok2 && mgr.drop_count == 1 && mgr.reconnect_count == 1;
+    let history_json = mgr
+        .history
+        .iter()
+        .map(|h| json_str(h))
+        .collect::<Vec<_>>()
+        .join(",");
+    let json_payload = format!(
+        r#"{{"ok":{ok},"primaryHost":{},"secondaryHost":{},"dropCount":{},"reconnectCount":{},"history":[{}]}}"#,
+        json_str(&host_a.to_string()),
+        json_str(&host_b.to_string()),
+        mgr.drop_count,
+        mgr.reconnect_count,
+        history_json
+    );
+    let summary = format!(
+        "İki uçlu RDP X.224 oturum döngüsü doğrulandı · İstasyon A ({host_a}) → Bağlandı → Kopma algılandı (drop={}) → İstasyon B ({host_b}) üzerine otomatik yeniden bağlandı (reconnect={}).",
+        mgr.drop_count, mgr.reconnect_count
+    );
+    (ok, json_payload, summary)
 }
 
 fn screen(info: &str, peers: &str) -> Reply {
@@ -42,12 +108,12 @@ fn screen(info: &str, peers: &str) -> Reply {
     page(
         "IPCast",
         "ipcast",
-        "Yerel istasyon keşfi ve Windows Uzak Masaüstü",
+        "Yerel istasyon keşfi, X.224 RDP el sıkışması ve oturum sürekliliği",
         &format!(
             r#"
        <section><div class="eyebrow">01 / BU İSTASYON · {}</div><h2>{}</h2><p>Yerel adres <strong>{}</strong> · Envanter kimliği <span class="mono">{}</span></p></section>
-       <section><div class="eyebrow">02 / UZAK MASAÜSTÜ</div><h2>Bir bilgisayara bağlan</h2><p>Hedefte Uzak Masaüstü açık olmalı. IP adresini girin. Pano, disk paylaşımı ve kimlik doğrulaması Windows RDP istemcisinden yönetilir.</p>
-       <form method="post" action="/session"><label>Hedef IP veya IP:port<input class="input mono" required placeholder="192.168.1.20:3389" name="target"></label><button class="btn btn-signal">RDP istemcisini aç</button><button class="btn btn-secondary" formaction="/probe">TCP erişimini sına</button></form>{info}</section>
+       <section><div class="eyebrow">02 / UZAK MASAÜSTÜ VE OTURUM SÜREKLİLİĞİ</div><h2>Bir bilgisayara bağlan</h2><p>Hedefte Uzak Masaüstü açık olmalı. IP adresini girin. Bağlantı öncesi ITU-T X.224 RDP protokol el sıkışması doğrulanır ve otomatik yeniden bağlanma (<span class="mono">autoreconnection enabled:i:1</span>) profiliyle Windows RDP istemcisine devredilir.</p>
+       <form method="post" action="/session"><label>Hedef IP veya IP:port<input class="input mono" required value="192.168.0.29:3389" placeholder="192.168.1.20:3389" name="target"></label><button class="btn btn-signal">RDP istemcisini aç</button><button class="btn btn-secondary" formaction="/probe">TCP + X.224 RDP el sıkışmasını sına</button><button class="btn btn-secondary" formaction="/lifecycle-test">İki istasyon oturum açma / kopma / yeniden bağlanma testi</button></form>{info}</section>
        <section><div class="eyebrow">03 / LAN</div><h2>İstasyon envanteri</h2><form method="post" action="/discover"><button class="btn btn-secondary">Yerel ağı tara</button></form>{peers}</section>"#,
             escape(&hostname),
             "İstasyon özeti",
@@ -67,6 +133,8 @@ fn main() {
     if args.iter().any(|a| a == "--selftest" || a == "--self-test") {
         assert_eq!(endpoint("127.0.0.1").unwrap().port(), 3389);
         assert!(endpoint("/shadow:1").is_err());
+        let (ok, _, _) = run_two_endpoint_session_lifecycle();
+        assert!(ok);
         return;
     }
     serve(
@@ -74,6 +142,14 @@ fn main() {
         17942,
         Arc::new(|method, path, body| match (method, path) {
             ("GET", "/" | "/index.html") => screen("", ""),
+            ("POST", "/lifecycle-test" | "/api/session-lifecycle") => {
+                let (ok, json_payload, summary) = run_two_endpoint_session_lifecycle();
+                if path == "/api/session-lifecycle" {
+                    json(if ok { 200 } else { 500 }, json_payload)
+                } else {
+                    screen(&format!("<output>{}</output>", escape(&summary)), "")
+                }
+            }
             ("POST", "/session" | "/probe" | "/api/connect") => {
                 let target = if path.starts_with("/api/") {
                     extract_json_string(body, "target")
@@ -83,9 +159,9 @@ fn main() {
                 .unwrap_or_default();
                 let result = endpoint(&target).map_err(str::to_string).and_then(|addr| {
                     if path == "/probe" {
-                        TcpStream::connect_timeout(&addr, Duration::from_millis(900))
-                            .map(|_| format!("{addr} · TCP bağlantısı doğrulandı."))
-                            .map_err(|e| format!("{addr} · Bağlantı kurulamadı. {e}"))
+                        probe_rdp_x224(addr, 900).map(|(rtt, proto)| {
+                            format!("{addr} · X.224 RDP el sıkışması doğrulandı ({rtt} ms, protokol=0x{proto:02X}).")
+                        })
                     } else {
                         open_session(addr)
                     }

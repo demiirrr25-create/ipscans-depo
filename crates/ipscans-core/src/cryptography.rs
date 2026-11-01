@@ -171,6 +171,496 @@ pub fn chain_forensic_evidence(
     sha256_hex(record.as_bytes())
 }
 
+// ============================================================================
+// Pure-Rust Asymmetric RSA-512-SHA256 Licensing, Revocation & Key Rotation
+// Note: ONLY public moduli (N, E) reside in `ipscans-core` / `IPScans-Cortex.exe`.
+// Private signing exponents `d` never enter the distributed client binary.
+// ============================================================================
+
+/// Key ID v1 Public Modulus (512-bit RSA, e = 65537).
+pub const PUBLIC_KEY_V1_N_HEX: &str = "bf2079016d627bd8938a69c2cbbe03019fbb67433a16c383eae187537580a04ecec97500d9a480c5207bdb17990eb07e2d9dcbe39bcad2dfbc467452c2ebe5fd";
+/// Key ID v2 Public Modulus (512-bit RSA rotated key, e = 65537).
+pub const PUBLIC_KEY_V2_N_HEX: &str = "bde722e1aaf0c920b64d8958c684b84f91ebc5d00a3e8651d76ba74e89cb7f0d67995244147d4e8a4f77fd11cc6f274561bc2ab5349f7ce7a32ea8e80ce06d35";
+pub const RSA_PUBLIC_E: u64 = 65537;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct BigUint {
+    limbs: Vec<u32>, // little-endian base 2^32
+}
+
+impl BigUint {
+    fn zero() -> Self {
+        Self { limbs: vec![0] }
+    }
+
+    fn from_u64(v: u64) -> Self {
+        let lo = (v & 0xFFFF_FFFF) as u32;
+        let hi = (v >> 32) as u32;
+        let mut b = Self {
+            limbs: if hi != 0 { vec![lo, hi] } else { vec![lo] },
+        };
+        b.trim();
+        b
+    }
+
+    fn trim(&mut self) {
+        while self.limbs.len() > 1 && *self.limbs.last().unwrap() == 0 {
+            self.limbs.pop();
+        }
+        if self.limbs.is_empty() {
+            self.limbs.push(0);
+        }
+    }
+
+    fn is_zero(&self) -> bool {
+        self.limbs.iter().all(|&x| x == 0)
+    }
+
+    fn from_be_bytes(bytes: &[u8]) -> Self {
+        let mut limbs = Vec::new();
+        let mut i = bytes.len();
+        while i > 0 {
+            let start = i.saturating_sub(4);
+            let mut buf = [0u8; 4];
+            let slice = &bytes[start..i];
+            buf[4 - slice.len()..].copy_from_slice(slice);
+            limbs.push(u32::from_be_bytes(buf));
+            i = start;
+        }
+        let mut out = Self { limbs };
+        out.trim();
+        out
+    }
+
+    fn to_be_bytes_padded(&self, target_len: usize) -> Vec<u8> {
+        let mut raw = Vec::with_capacity(self.limbs.len() * 4);
+        for &limb in self.limbs.iter().rev() {
+            raw.extend_from_slice(&limb.to_be_bytes());
+        }
+        let first_nonzero = raw.iter().position(|&b| b != 0).unwrap_or(raw.len());
+        let trimmed = &raw[first_nonzero..];
+        if trimmed.len() >= target_len {
+            trimmed.to_vec()
+        } else {
+            let mut out = vec![0u8; target_len - trimmed.len()];
+            out.extend_from_slice(trimmed);
+            out
+        }
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, &'static str> {
+        let clean = hex.trim();
+        if clean.is_empty() {
+            return Err("Empty hex");
+        }
+        let padded = if clean.len() % 2 == 1 {
+            format!("0{}", clean)
+        } else {
+            clean.to_string()
+        };
+        let mut bytes = Vec::with_capacity(padded.len() / 2);
+        for i in (0..padded.len()).step_by(2) {
+            let b = u8::from_str_radix(&padded[i..i + 2], 16).map_err(|_| "Invalid hex digit")?;
+            bytes.push(b);
+        }
+        Ok(Self::from_be_bytes(&bytes))
+    }
+
+    fn to_hex_padded(&self, byte_len: usize) -> String {
+        let bytes = self.to_be_bytes_padded(byte_len);
+        let mut out = String::with_capacity(bytes.len() * 2);
+        for b in bytes {
+            use std::fmt::Write;
+            let _ = write!(&mut out, "{:02x}", b);
+        }
+        out
+    }
+
+    fn cmp_val(&self, other: &Self) -> std::cmp::Ordering {
+        let mut a = self.clone();
+        let mut b = other.clone();
+        a.trim();
+        b.trim();
+        if a.limbs.len() != b.limbs.len() {
+            return a.limbs.len().cmp(&b.limbs.len());
+        }
+        for i in (0..a.limbs.len()).rev() {
+            if a.limbs[i] != b.limbs[i] {
+                return a.limbs[i].cmp(&b.limbs[i]);
+            }
+        }
+        std::cmp::Ordering::Equal
+    }
+
+    fn sub_assign(&mut self, other: &Self) {
+        let mut borrow = 0i64;
+        for i in 0..self.limbs.len() {
+            let o = *other.limbs.get(i).unwrap_or(&0) as i64;
+            let diff = (self.limbs[i] as i64) - o - borrow;
+            if diff < 0 {
+                self.limbs[i] = (diff + (1i64 << 32)) as u32;
+                borrow = 1;
+            } else {
+                self.limbs[i] = diff as u32;
+                borrow = 0;
+            }
+        }
+        self.trim();
+    }
+
+    fn shl1_add_bit(&mut self, bit: u32) {
+        let mut carry = bit;
+        for limb in &mut self.limbs {
+            let next_carry = *limb >> 31;
+            *limb = (*limb << 1) | carry;
+            carry = next_carry;
+        }
+        if carry != 0 {
+            self.limbs.push(carry);
+        }
+        self.trim();
+    }
+
+    fn bit_len(&self) -> usize {
+        let mut a = self.clone();
+        a.trim();
+        if a.is_zero() {
+            return 0;
+        }
+        let top = *a.limbs.last().unwrap();
+        (a.limbs.len() - 1) * 32 + (32 - top.leading_zeros() as usize)
+    }
+
+    fn get_bit(&self, idx: usize) -> u32 {
+        let limb_idx = idx / 32;
+        let bit_idx = idx % 32;
+        if let Some(&limb) = self.limbs.get(limb_idx) {
+            (limb >> bit_idx) & 1
+        } else {
+            0
+        }
+    }
+
+    fn mul(&self, other: &Self) -> Self {
+        let mut res = vec![0u32; self.limbs.len() + other.limbs.len()];
+        for i in 0..self.limbs.len() {
+            let mut carry = 0u64;
+            for j in 0..other.limbs.len() {
+                let prod = (self.limbs[i] as u64) * (other.limbs[j] as u64)
+                    + (res[i + j] as u64)
+                    + carry;
+                res[i + j] = (prod & 0xFFFF_FFFF) as u32;
+                carry = prod >> 32;
+            }
+            res[i + other.limbs.len()] = carry as u32;
+        }
+        let mut out = Self { limbs: res };
+        out.trim();
+        out
+    }
+
+    fn rem(&self, modulus: &Self) -> Self {
+        let mut r = Self::zero();
+        let bits = self.bit_len();
+        for i in (0..bits).rev() {
+            r.shl1_add_bit(self.get_bit(i));
+            if r.cmp_val(modulus) != std::cmp::Ordering::Less {
+                r.sub_assign(modulus);
+            }
+        }
+        r.trim();
+        r
+    }
+
+    fn mod_pow(&self, exp: &Self, modulus: &Self) -> Self {
+        let mut result = Self::from_u64(1);
+        let mut base = self.rem(modulus);
+        let bits = exp.bit_len();
+        for i in 0..bits {
+            if exp.get_bit(i) == 1 {
+                result = result.mul(&base).rem(modulus);
+            }
+            base = base.mul(&base).rem(modulus);
+        }
+        result
+    }
+}
+
+fn encode_pkcs1_v15_sha256_block(message: &[u8]) -> [u8; 64] {
+    let digest = sha256_bytes(message);
+    let mut block = [0xFFu8; 64];
+    block[0] = 0x00;
+    block[1] = 0x01;
+    // 64 - 3 - 32 = 29; place 0x00 separator at index 30, digest at 32..64
+    block[30] = 0x00;
+    block[31] = 0x20; // SHA-256 digest length marker (32 bytes)
+    block[32..64].copy_from_slice(&digest);
+    block
+}
+
+pub fn lookup_public_modulus_hex(kid: &str) -> Option<&'static str> {
+    match kid {
+        "cortex-key-2026-v1" => Some(PUBLIC_KEY_V1_N_HEX),
+        "cortex-key-2026-v2" => Some(PUBLIC_KEY_V2_N_HEX),
+        _ => None,
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CortexLicenseClaims {
+    pub license_id: String,
+    pub key_id: String,
+    pub customer: String,
+    pub tier: String,
+    pub max_cameras: u32,
+    pub issued_at_unix: u64,
+    pub expires_at_unix: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LicenseEnforcementResult {
+    pub allowed: bool,
+    pub status_code: &'static str,
+    pub reason_tr: String,
+    pub claims: Option<CortexLicenseClaims>,
+}
+
+fn hex_encode_str(s: &str) -> String {
+    s.bytes().map(|b| format!("{:02x}", b)).collect()
+}
+
+fn hex_decode_str(hex: &str) -> Option<String> {
+    if hex.len() % 2 != 0 {
+        return None;
+    }
+    let mut bytes = Vec::with_capacity(hex.len() / 2);
+    for i in (0..hex.len()).step_by(2) {
+        bytes.push(u8::from_str_radix(&hex[i..i + 2], 16).ok()?);
+    }
+    String::from_utf8(bytes).ok()
+}
+
+/// Signs a Cortex license token using the issuer's private RSA exponent (`private_d_hex`) and modulus (`public_n_hex`).
+/// This function is invoked ONLY by `CortexAdmin.exe` (`admin.rs`); `IPScans-Cortex.exe` never receives `private_d_hex`.
+pub fn sign_cortex_license_asymmetric(
+    private_d_hex: &str,
+    public_n_hex: &str,
+    claims: &CortexLicenseClaims,
+) -> Result<String, &'static str> {
+    if claims.customer.trim().is_empty() || claims.customer.len() > 240 {
+        return Err("Geçerli bir müşteri adı girin.");
+    }
+    if !matches!(claims.tier.as_str(), "PRO" | "PLUS" | "ULTRA") {
+        return Err("Geçersiz lisans paketi.");
+    }
+    if claims.expires_at_unix <= claims.issued_at_unix {
+        return Err("Bitiş zamanı başlangıç zamanından sonra olmalı.");
+    }
+    let d = BigUint::from_hex(private_d_hex)?;
+    let n = BigUint::from_hex(public_n_hex)?;
+    let payload = format!(
+        "IPS2.{}.{}.{}.{}.{}.{}.{}",
+        claims.key_id,
+        claims.license_id,
+        claims.tier,
+        claims.max_cameras,
+        claims.issued_at_unix,
+        claims.expires_at_unix,
+        hex_encode_str(claims.customer.trim())
+    );
+    let block = encode_pkcs1_v15_sha256_block(payload.as_bytes());
+    let m = BigUint::from_be_bytes(&block);
+    let sig = m.mod_pow(&d, &n).to_hex_padded(64);
+    Ok(format!("{}.{}", payload, sig))
+}
+
+/// Verifies an asymmetric `IPS2` Cortex license token using ONLY the public key registry (`PUBLIC_KEY_V1_N_HEX` / `PUBLIC_KEY_V2_N_HEX`).
+pub fn verify_cortex_license_asymmetric(token: &str) -> Result<CortexLicenseClaims, &'static str> {
+    let parts: Vec<&str> = token.trim().split('.').collect();
+    if parts.len() != 9 || parts[0] != "IPS2" {
+        return Err("Geçersiz IPS2 asimetrik lisans biçimi.");
+    }
+    let key_id = parts[1];
+    let license_id = parts[2];
+    let tier = parts[3];
+    let max_cameras = parts[4]
+        .parse::<u32>()
+        .map_err(|_| "Geçersiz kamera kotası.")?;
+    let issued_at_unix = parts[5]
+        .parse::<u64>()
+        .map_err(|_| "Geçersiz başlangıç zamanı.")?;
+    let expires_at_unix = parts[6]
+        .parse::<u64>()
+        .map_err(|_| "Geçersiz bitiş zamanı.")?;
+    let customer = hex_decode_str(parts[7]).ok_or("Geçersiz müşteri kodlaması.")?;
+    let sig_hex = parts[8];
+
+    let pub_n_hex = lookup_public_modulus_hex(key_id)
+        .ok_or("Bilinmeyen veya devre dışı bırakılmış anahtar kimliği (kid).")?;
+    let n = BigUint::from_hex(pub_n_hex)?;
+    let e = BigUint::from_u64(RSA_PUBLIC_E);
+    let sig = BigUint::from_hex(sig_hex)?;
+
+    let payload = parts[..8].join(".");
+    let expected_block = encode_pkcs1_v15_sha256_block(payload.as_bytes());
+    let recovered = sig.mod_pow(&e, &n).to_be_bytes_padded(64);
+    if recovered.as_slice() != expected_block.as_slice() {
+        return Err("RSA-SHA256 açık anahtar imza doğrulaması başarısız.");
+    }
+
+    Ok(CortexLicenseClaims {
+        license_id: license_id.to_string(),
+        key_id: key_id.to_string(),
+        customer,
+        tier: tier.to_string(),
+        max_cameras,
+        issued_at_unix,
+        expires_at_unix,
+    })
+}
+
+/// Signs a Certificate Revocation List (`CRL1.<kid>.<issued_at>.<csv_revoked_ids>.<sig>`).
+pub fn sign_revocation_list_asymmetric(
+    private_d_hex: &str,
+    public_n_hex: &str,
+    key_id: &str,
+    issued_at_unix: u64,
+    revoked_license_ids: &[&str],
+) -> Result<String, &'static str> {
+    let d = BigUint::from_hex(private_d_hex)?;
+    let n = BigUint::from_hex(public_n_hex)?;
+    let joined = revoked_license_ids.join(",");
+    let payload = format!("CRL1.{}.{}.{}", key_id, issued_at_unix, hex_encode_str(&joined));
+    let block = encode_pkcs1_v15_sha256_block(payload.as_bytes());
+    let m = BigUint::from_be_bytes(&block);
+    let sig = m.mod_pow(&d, &n).to_hex_padded(64);
+    Ok(format!("{}.{}", payload, sig))
+}
+
+/// Verifies a signed CRL token using ONLY the public key registry and returns the list of revoked license IDs.
+pub fn verify_revocation_list_asymmetric(crl_token: &str) -> Result<Vec<String>, &'static str> {
+    if crl_token.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    let parts: Vec<&str> = crl_token.trim().split('.').collect();
+    if parts.len() != 5 || parts[0] != "CRL1" {
+        return Err("Geçersiz CRL1 iptal listesi biçimi.");
+    }
+    let key_id = parts[1];
+    let pub_n_hex = lookup_public_modulus_hex(key_id).ok_or("Bilinmeyen CRL anahtar kimliği.")?;
+    let n = BigUint::from_hex(pub_n_hex)?;
+    let e = BigUint::from_u64(RSA_PUBLIC_E);
+    let sig = BigUint::from_hex(parts[4])?;
+
+    let payload = parts[..4].join(".");
+    let expected_block = encode_pkcs1_v15_sha256_block(payload.as_bytes());
+    let recovered = sig.mod_pow(&e, &n).to_be_bytes_padded(64);
+    if recovered.as_slice() != expected_block.as_slice() {
+        return Err("CRL açık anahtar imzası geçersiz.");
+    }
+    let decoded = hex_decode_str(parts[3]).ok_or("CRL içeriği çözülemedi.")?;
+    Ok(decoded
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect())
+}
+
+/// Enforces license signature, key rotation policy (`retired_kids`), revocation list (`crl_token`),
+/// expiration timestamp (`current_unix`), and camera quota (`requested_cameras`).
+pub fn enforce_cortex_license(
+    token: &str,
+    crl_token: Option<&str>,
+    retired_kids: &[&str],
+    current_unix: u64,
+    requested_cameras: u32,
+) -> LicenseEnforcementResult {
+    let claims = match verify_cortex_license_asymmetric(token) {
+        Ok(c) => c,
+        Err(e) => {
+            return LicenseEnforcementResult {
+                allowed: false,
+                status_code: "INVALID_SIGNATURE",
+                reason_tr: e.to_string(),
+                claims: None,
+            }
+        }
+    };
+
+    if retired_kids.contains(&claims.key_id.as_str()) {
+        return LicenseEnforcementResult {
+            allowed: false,
+            status_code: "KEY_ROTATED_OUT",
+            reason_tr: format!(
+                "Anahtar kimliği ({}) rotasyonla kullanımdan kaldırıldı.",
+                claims.key_id
+            ),
+            claims: Some(claims),
+        };
+    }
+
+    if let Some(crl_raw) = crl_token.filter(|s| !s.trim().is_empty()) {
+        match verify_revocation_list_asymmetric(crl_raw) {
+            Ok(revoked) => {
+                if revoked.iter().any(|id| id == &claims.license_id) {
+                    return LicenseEnforcementResult {
+                        allowed: false,
+                        status_code: "REVOKED",
+                        reason_tr: format!(
+                            "Lisans ({}) yönetici iptal listesinde (CRL) yer alıyor.",
+                            claims.license_id
+                        ),
+                        claims: Some(claims),
+                    };
+                }
+            }
+            Err(e) => {
+                return LicenseEnforcementResult {
+                    allowed: false,
+                    status_code: "INVALID_CRL",
+                    reason_tr: e.to_string(),
+                    claims: Some(claims),
+                };
+            }
+        }
+    }
+
+    if current_unix > claims.expires_at_unix {
+        return LicenseEnforcementResult {
+            allowed: false,
+            status_code: "EXPIRED",
+            reason_tr: format!(
+                "Lisans süresi doldu (bitiş: {}, şu an: {}).",
+                claims.expires_at_unix, current_unix
+            ),
+            claims: Some(claims),
+        };
+    }
+
+    if requested_cameras > claims.max_cameras {
+        return LicenseEnforcementResult {
+            allowed: false,
+            status_code: "QUOTA_EXCEEDED",
+            reason_tr: format!(
+                "Kamera kotası aşıldı: istenen {}, lisans limiti {} ({}).",
+                requested_cameras, claims.max_cameras, claims.tier
+            ),
+            claims: Some(claims),
+        };
+    }
+
+    LicenseEnforcementResult {
+        allowed: true,
+        status_code: "ACTIVE",
+        reason_tr: format!(
+            "Lisans geçerli · {} ({} kamera kotası, anahtar {}).",
+            claims.customer, claims.max_cameras, claims.key_id
+        ),
+        claims: Some(claims),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,5 +694,76 @@ mod tests {
         let genesis = "0000000000000000000000000000000000000000000000000000000000000000";
         let h1 = chain_forensic_evidence(genesis, "CAM-01", "INTRUSION", "2026-11-01T10:00:00Z");
         assert_eq!(h1.len(), 64);
+    }
+
+    #[test]
+    fn test_asymmetric_rsa_license_lifecycle_expiration_revocation_and_rotation() {
+        // Private keys exist ONLY in test scope / admin issuer, never in client verification constants.
+        const PRIV_D_V1: &str = "2729cb41cc9d328d65662657c111f561bece52d186b4a5698196a6f92609ae4f3d0ec1930b1d917781f14e399a2b53d900f9f5d26f63f79d58ddb673a61e0c2d";
+        const PRIV_D_V2: &str = "34d8e3ce254208d6bfa4e839fa54e8edcbcfef26ac132652143ef33a5a0275828c8bbe9b69aae7fadda88c556aa8770031c39e558a8f2434abdc58b9cd35d3a9";
+
+        let claims_v1 = CortexLicenseClaims {
+            license_id: "LIC-2026-0001".to_string(),
+            key_id: "cortex-key-2026-v1".to_string(),
+            customer: "Anadolu Organize Sanayi".to_string(),
+            tier: "PRO".to_string(),
+            max_cameras: 8,
+            issued_at_unix: 1_700_000_000,
+            expires_at_unix: 1_800_000_000,
+        };
+
+        let token_v1 =
+            sign_cortex_license_asymmetric(PRIV_D_V1, PUBLIC_KEY_V1_N_HEX, &claims_v1).unwrap();
+
+        // 1. Active verification & quota enforcement
+        let ok_res = enforce_cortex_license(&token_v1, None, &[], 1_750_000_000, 6);
+        assert!(ok_res.allowed);
+        assert_eq!(ok_res.status_code, "ACTIVE");
+
+        // 2. Camera quota exceeded
+        let quota_res = enforce_cortex_license(&token_v1, None, &[], 1_750_000_000, 12);
+        assert!(!quota_res.allowed);
+        assert_eq!(quota_res.status_code, "QUOTA_EXCEEDED");
+
+        // 3. Expired license
+        let exp_res = enforce_cortex_license(&token_v1, None, &[], 1_800_000_001, 4);
+        assert!(!exp_res.allowed);
+        assert_eq!(exp_res.status_code, "EXPIRED");
+
+        // 4. Signed Revocation List (CRL) blocks revoked license ID
+        let crl_token = sign_revocation_list_asymmetric(
+            PRIV_D_V1,
+            PUBLIC_KEY_V1_N_HEX,
+            "cortex-key-2026-v1",
+            1_750_000_000,
+            &["LIC-2026-0001", "LIC-2026-0099"],
+        )
+        .unwrap();
+        let rev_res =
+            enforce_cortex_license(&token_v1, Some(&crl_token), &[], 1_750_000_000, 4);
+        assert!(!rev_res.allowed);
+        assert_eq!(rev_res.status_code, "REVOKED");
+
+        // 5. Key Rotation: retire v1, issue with v2
+        let claims_v2 = CortexLicenseClaims {
+            license_id: "LIC-2026-0002".to_string(),
+            key_id: "cortex-key-2026-v2".to_string(),
+            customer: "Anadolu Organize Sanayi".to_string(),
+            tier: "ULTRA".to_string(),
+            max_cameras: 64,
+            issued_at_unix: 1_750_000_000,
+            expires_at_unix: 1_850_000_000,
+        };
+        let token_v2 =
+            sign_cortex_license_asymmetric(PRIV_D_V2, PUBLIC_KEY_V2_N_HEX, &claims_v2).unwrap();
+
+        let retired = ["cortex-key-2026-v1"];
+        let rotated_old = enforce_cortex_license(&token_v1, None, &retired, 1_760_000_000, 4);
+        assert!(!rotated_old.allowed);
+        assert_eq!(rotated_old.status_code, "KEY_ROTATED_OUT");
+
+        let rotated_new = enforce_cortex_license(&token_v2, None, &retired, 1_760_000_000, 32);
+        assert!(rotated_new.allowed);
+        assert_eq!(rotated_new.status_code, "ACTIVE");
     }
 }

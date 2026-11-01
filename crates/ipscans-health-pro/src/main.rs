@@ -1,14 +1,17 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use ipscans_core::{
     design::{bind_app_server, run_http_loop},
-    health_monitor::{detect_arp_mac_conflicts, summarize_rtt_samples},
+    health_monitor::{HealthSampleRecord, HealthSessionTracker, summarize_rtt_samples},
     json::json_str,
     network::{discover_gateway_context, interface_arp_table, ping_ipv4, probe_host_ports},
-    win32::launch_desktop_app_window,
+    win32::{app_data_dir, launch_desktop_app_window},
 };
 use std::{
     collections::{HashMap, VecDeque},
     fmt::Write,
+    fs::OpenOptions,
+    io::Write as IoWrite,
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -16,21 +19,50 @@ use std::{
 
 const WINDOW: usize = 60;
 
-struct Sample {
-    time: u64,
-    gateway: String,
-    gateway_ms: Option<u32>,
-    wan_ms: Option<u32>,
-    changes: Option<Vec<String>>,
-}
-
-#[derive(Default)]
 struct Monitor {
-    samples: VecDeque<Sample>,
-    previous: Option<(String, HashMap<String, String>)>,
+    samples: VecDeque<HealthSampleRecord>,
+    tracker: HealthSessionTracker,
     active: bool,
     last_visit: Option<Instant>,
     dark: bool,
+    log_path: PathBuf,
+    last_sim_summary: Option<String>,
+}
+
+impl Default for Monitor {
+    fn default() -> Self {
+        let dir = app_data_dir("health");
+        Self {
+            samples: VecDeque::new(),
+            tracker: HealthSessionTracker::new(),
+            active: false,
+            last_visit: None,
+            dark: false,
+            log_path: dir.join("telemetry-history.jsonl"),
+            last_sim_summary: None,
+        }
+    }
+}
+
+fn sample_to_json(s: &HealthSampleRecord) -> String {
+    let gw = s
+        .gateway_rtt_ms
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| "null".into());
+    let wan = s
+        .wan_rtt_ms
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| "null".into());
+    format!(
+        "{{\"ts\":{},\"adapter\":{},\"gateway\":{},\"gwRttMs\":{},\"wanRttMs\":{},\"adapterChanged\":{},\"arpConflicts\":{}}}",
+        s.timestamp_unix,
+        json_str(&s.adapter_ip),
+        json_str(&s.gateway_ip),
+        gw,
+        wan,
+        s.adapter_changed,
+        s.arp_conflicts.len()
+    )
 }
 
 fn measure(state: &Mutex<Monitor>) {
@@ -45,41 +77,76 @@ fn measure(state: &Mutex<Monitor>) {
         let (_, wan) = probe_host_ports("1.1.1.1", &[443], 700);
         (job.join().unwrap_or(None), wan)
     });
-    let arp = interface_arp_table(&ctx.local_ip);
-    let mut monitor = state.lock().unwrap();
-    let changes = match (&monitor.previous, &arp) {
-        (Some((nic, base)), Some(now)) if nic == &ctx.local_ip => {
-            let entries = now
-                .iter()
-                .map(|(a, b)| (a.clone(), b.clone()))
-                .collect::<Vec<_>>();
-            Some(
-                detect_arp_mac_conflicts(base, &entries)
-                    .iter()
-                    .map(|a| format!("{} · {} → {}", a.ip, a.previous_mac, a.conflicting_mac))
-                    .collect(),
-            )
-        }
-        _ => None,
-    };
-    if let Some((previous_ip, _)) = &monitor.previous {
-        if previous_ip != &ctx.local_ip {
-            monitor.samples.clear();
-        }
-    }
-    monitor.previous = arp.map(|map| (ctx.local_ip, map));
+    let arp = interface_arp_table(&ctx.local_ip).unwrap_or_default();
     let time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    monitor.samples.push_front(Sample {
+    let mut monitor = state.lock().unwrap();
+    let sample = monitor.tracker.ingest_observation(
         time,
-        gateway: ctx.gateway_ip,
+        &ctx.local_ip,
+        &ctx.gateway_ip,
         gateway_ms,
         wan_ms,
-        changes,
-    });
+        &arp,
+    );
+    if let Ok(mut file) = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&monitor.log_path)
+    {
+        let _ = writeln!(file, "{}", sample_to_json(&sample));
+    }
+    monitor.samples.push_front(sample);
     monitor.samples.truncate(WINDOW);
+}
+
+fn run_resilience_simulation(state: &Mutex<Monitor>) -> String {
+    let mut sim = HealthSessionTracker::new();
+    let mut arp_eth = HashMap::new();
+    arp_eth.insert("192.168.0.1".to_string(), "aa-bb-cc-00-11-22".to_string());
+    let mut arp_wifi = HashMap::new();
+    arp_wifi.insert("192.168.1.1".to_string(), "dd-ee-ff-33-44-55".to_string());
+
+    // 1. Healthy baseline on primary adapter
+    sim.ingest_observation(1_700_000_000, "192.168.0.29", "192.168.0.1", Some(2), Some(14), &arp_eth);
+    sim.ingest_observation(1_700_000_005, "192.168.0.29", "192.168.0.1", Some(3), Some(15), &arp_eth);
+    // 2. Complete connection loss (both gateway and WAN unreachable)
+    sim.ingest_observation(1_700_000_010, "192.168.0.29", "192.168.0.1", None, None, &arp_eth);
+    sim.ingest_observation(1_700_000_015, "192.168.0.29", "192.168.0.1", None, None, &arp_eth);
+    // 3. Adapter transition (failover to Wi-Fi adapter) and recovery
+    sim.ingest_observation(1_700_000_020, "192.168.1.44", "192.168.1.1", Some(6), Some(19), &arp_wifi);
+    // 4. Genuine ARP conflict on the same adapter
+    let mut arp_wifi_spoof = arp_wifi;
+    arp_wifi_spoof.insert("192.168.1.1".to_string(), "99-88-77-66-55-44".to_string());
+    sim.ingest_observation(1_700_000_025, "192.168.1.44", "192.168.1.1", Some(5), Some(18), &arp_wifi_spoof);
+
+    let rep = sim.report();
+    let outage_secs = sim.outages.first().map(|o| o.duration_secs).unwrap_or(0);
+    let outage_samples = sim.outages.first().map(|o| o.failed_samples).unwrap_or(0);
+    let summary = format!(
+        "Doğrulama tamamlandı · Toplam örnek: {} · Kesinti olayı: {} ({} ardışık kayıp, {} sn) · Adaptör değişimi: {} (192.168.0.29 → 192.168.1.44) · Aynı adaptörde ARP/MAC uyuşmazlığı: {}",
+        rep.total_samples,
+        rep.outage_count,
+        outage_samples,
+        outage_secs,
+        rep.adapter_switch_count,
+        rep.arp_conflict_count
+    );
+    let mut monitor = state.lock().unwrap();
+    monitor.last_sim_summary = Some(summary);
+    format!(
+        r#"{{"ok":true,"totalSamples":{},"gatewayLossPct":{:.2},"wanLossPct":{:.2},"gatewayP95Ms":{},"wanP95Ms":{},"outageCount":{},"adapterSwitchCount":{},"arpConflictCount":{}}}"#,
+        rep.total_samples,
+        rep.gateway_loss_pct,
+        rep.wan_loss_pct,
+        rep.gateway_p95_ms,
+        rep.wan_p95_ms,
+        rep.outage_count,
+        rep.adapter_switch_count,
+        rep.arp_conflict_count
+    )
 }
 
 fn rtt(ms: Option<u32>) -> String {
@@ -94,17 +161,28 @@ impl Monitor {
         let Some(s) = self.samples.front() else {
             return "{\"ok\":false,\"reason\":\"no_samples\"}".into();
         };
-        let changes = s
-            .changes
-            .as_ref()
-            .map(|c| {
-                format!(
-                    "[{}]",
-                    c.iter().map(|v| json_str(v)).collect::<Vec<_>>().join(",")
-                )
-            })
-            .unwrap_or_else(|| "null".into());
-        format!("{{\"ok\":true,\"gatewayIp\":{},\"gatewayRttMs\":{},\"wanRttMs\":{},\"arpChanges\":{},\"timestamp\":{},\"sampleCount\":{}}}",json_str(&s.gateway),as_json(s.gateway_ms),as_json(s.wan_ms),changes,s.time,self.samples.len())
+        let changes = format!(
+            "[{}]",
+            s.arp_conflicts
+                .iter()
+                .map(|a| json_str(&format!("{} · {} → {}", a.ip, a.previous_mac, a.conflicting_mac)))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let rep = self.tracker.report();
+        format!(
+            "{{\"ok\":true,\"adapterIp\":{},\"gatewayIp\":{},\"gatewayRttMs\":{},\"wanRttMs\":{},\"arpChanges\":{},\"adapterSwitched\":{},\"outageCount\":{},\"adapterTransitionCount\":{},\"timestamp\":{},\"sampleCount\":{}}}",
+            json_str(&s.adapter_ip),
+            json_str(&s.gateway_ip),
+            as_json(s.gateway_rtt_ms),
+            as_json(s.wan_rtt_ms),
+            changes,
+            if s.adapter_changed { "true" } else { "false" },
+            rep.outage_count,
+            rep.adapter_switch_count,
+            s.timestamp_unix,
+            self.samples.len()
+        )
     }
     fn page(&self) -> String {
         let theme = if self.dark { "dark" } else { "light" };
@@ -113,8 +191,9 @@ impl Monitor {
         } else {
             ""
         };
+        let rep = self.tracker.report();
         let mut page = format!(
-            r#"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8">{refresh}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Network Health Pro · Bağlantı ölçümleri</title><link rel="icon" href="/brand/health.png"><link rel="stylesheet" href="/design/v2.css"><style>.topbar{{position:static;min-height:68px;gap:10px;flex-wrap:wrap}}.hero{{margin-bottom:20px;border-left:4px solid var(--signal);padding:10px 18px}}.hero h1{{font-size:clamp(26px,4vw,46px);letter-spacing:-.055em}}.actions{{display:flex;gap:8px;flex-wrap:wrap}}.metric{{font-size:1.8rem;font-weight:600;letter-spacing:-.045em}}.bars{{display:flex;align-items:end;height:42px;gap:3px;margin-top:10px}}.bars i{{display:block;width:8px;min-height:3px;background:var(--signal);border-radius:3px}}.bars i.miss{{height:3px;background:var(--warn)}}.note{{margin-top:12px}}.tablebox{{max-height:420px;overflow:auto}}</style></head><body><header class="topbar"><div class="brand-cluster"><img class="brand-logo" src="/brand/health.png" alt=""><div><strong>Network Health Pro</strong><div class="brand-sub">Bağlantı telemetrisi · v{}</div></div></div><div class="actions"><form action="/theme" method="post"><button class="btn btn-secondary">Temayı değiştir</button></form><form action="/sample" method="post"><button class="btn btn-secondary">Şimdi ölç</button></form><form action="/{}" method="post"><button class="btn btn-signal">{}</button></form></div></header><main class="workspace"><section class="hero"><span class="eyebrow">BAĞLANTI GÖZLEMİ</span><h1>Ağ sağlığı</h1><p>{} · Son {} ölçüm / {} örneklik pencere</p></section><div class="bento-grid">"#,
+            r#"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8">{refresh}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Network Health Pro · Bağlantı ölçümleri</title><link rel="icon" href="/brand/health.png"><link rel="stylesheet" href="/design/v2.css"><style>.topbar{{position:static;min-height:68px;gap:10px;flex-wrap:wrap}}.hero{{margin-bottom:20px;border-left:4px solid var(--signal);padding:10px 18px}}.hero h1{{font-size:clamp(26px,4vw,46px);letter-spacing:-.055em}}.actions{{display:flex;gap:8px;flex-wrap:wrap}}.metric{{font-size:1.8rem;font-weight:600;letter-spacing:-.045em}}.bars{{display:flex;align-items:end;height:42px;gap:3px;margin-top:10px}}.bars i{{display:block;width:8px;min-height:3px;background:var(--signal);border-radius:3px}}.bars i.miss{{height:3px;background:var(--warn)}}.note{{margin-top:12px}}.tablebox{{max-height:420px;overflow:auto}}</style></head><body><header class="topbar"><div class="brand-cluster"><img class="brand-logo" src="/brand/health.png" alt=""><div><strong>Network Health Pro</strong><div class="brand-sub">Bağlantı telemetrisi · v{}</div></div></div><div class="actions"><form action="/theme" method="post"><button class="btn btn-secondary">Temayı değiştir</button></form><form action="/sample" method="post"><button class="btn btn-secondary">Şimdi ölç</button></form><form action="/simulate-test" method="post"><button class="btn btn-secondary">Kesinti ve adaptör geçişini sına</button></form><form action="/{}" method="post"><button class="btn btn-signal">{}</button></form></div></header><main class="workspace"><section class="hero"><span class="eyebrow">BAĞLANTI GÖZLEMİ</span><h1>Ağ sağlığı</h1><p>{} · Son {} ölçüm / {} örneklik pencere · Kesinti: {} · Adaptör geçişi: {}</p></section><div class="bento-grid">"#,
             env!("CARGO_PKG_VERSION"),
             if self.active { "stop" } else { "start" },
             if self.active {
@@ -128,8 +207,16 @@ impl Monitor {
                 "Sürekli izleme kapalı"
             },
             self.samples.len(),
-            WINDOW
+            WINDOW,
+            rep.outage_count,
+            rep.adapter_switch_count,
         );
+        if let Some(sim) = &self.last_sim_summary {
+            let _ = write!(
+                page,
+                r#"<section class="bento-card col-12"><div class="eyebrow">DOĞRULANMIŞ DAYANIKLILIK SENARYOSU</div><p class="mono">{sim}</p></section>"#
+            );
+        }
         for (gateway, title) in [
             (true, "AĞ GEÇİDİ · ICMP ECHO"),
             (false, "1.1.1.1 · TCP 443"),
@@ -138,7 +225,7 @@ impl Monitor {
                 .samples
                 .iter()
                 .rev()
-                .map(|s| if gateway { s.gateway_ms } else { s.wan_ms })
+                .map(|s| if gateway { s.gateway_rtt_ms } else { s.wan_rtt_ms })
                 .collect();
             let good: Vec<_> = readings.iter().filter_map(|n| n.map(u64::from)).collect();
             let summary = summarize_rtt_samples(&good);
@@ -159,14 +246,15 @@ impl Monitor {
             } else {
                 "TCP başarısız"
             };
+            let p95_val = if gateway { rep.gateway_p95_ms } else { rep.wan_p95_ms };
             let jitter = if good.len() >= 2 {
-                format!("{:.1} ms", summary.jitter_ms)
+                format!("{:.1} ms · p95 {} ms", summary.jitter_ms, p95_val)
             } else {
                 "—".into()
             };
             let _ = write!(
                 page,
-                r#"<section class="bento-card col-6"><div class="eyebrow">{title}</div><div class="metric mono">{value}</div><p>{label} {loss} · Ardışık başarılı ölçümlerin gecikme farkı {jitter}</p><div class="bars" aria-hidden="true">"#
+                r#"<section class="bento-card col-6"><div class="eyebrow">{title}</div><div class="metric mono">{value}</div><p>{label} {loss} · Gecikme farkı {jitter}</p><div class="bars" aria-hidden="true">"#
             );
             for n in readings {
                 if let Some(n) = n {
@@ -182,29 +270,49 @@ impl Monitor {
             page.push_str("</div></section>");
         }
         let last = self.samples.front();
-        let arps = last.and_then(|s| s.changes.as_ref());
-        let text = match arps {
-            Some(c) if c.is_empty() => "Değişiklik gözlenmedi".into(),
-            Some(c) => format!("{} MAC değişimi", c.len()),
+        let text = match last {
+            Some(s) if s.adapter_changed => "Adaptör değişti (ARP tablosu yeni arayüze sıfırlandı)".into(),
+            Some(s) if s.arp_conflicts.is_empty() => "Değişiklik gözlenmedi".into(),
+            Some(s) => format!("{} MAC değişimi", s.arp_conflicts.len()),
             None => "Karşılaştırılabilir iki ARP kaydı bekleniyor".into(),
         };
         let _ = write!(
             page,
-            r#"<section class="bento-card col-12"><div class="eyebrow">L2 KOMŞU TABLOSU</div><h2 class="card-title">{text}</h2><p class="card-desc">Aynı arabirimde iki gözlem arasında IPv4 adresinin MAC karşılığı değişirse kaydedilir.</p>"#
+            r#"<section class="bento-card col-12"><div class="eyebrow">L2 KOMŞU TABLOSU VE ADAPTÖR SÜREKLİLİĞİ</div><h2 class="card-title">{text}</h2><p class="card-desc">Aynı arabirimde iki gözlem arasında IPv4 adresinin MAC karşılığı değişirse kaydedilir. Adaptör değiştiğinde yanlış ARP sahteciliği uyarısı üretilmez. Uzun süreli kayıt dosyası: <span class="mono">{}</span></p>"#,
+            self.log_path.display()
         );
-        if let Some(changes) = arps {
-            for c in changes {
-                let _ = write!(page, "<p class=\"mono\">{c}</p>");
+        if let Some(s) = last {
+            for c in &s.arp_conflicts {
+                let _ = write!(
+                    page,
+                    "<p class=\"mono\">{} · {} → {}</p>",
+                    c.ip, c.previous_mac, c.conflicting_mac
+                );
             }
         }
-        page.push_str(r#"</section><section class="bento-card col-12"><div class="card-header"><h2 class="card-title">Ölçüm geçmişi</h2></div><div class="data-table-wrap tablebox"><table class="data-table"><thead><tr><th>Saat (UTC)</th><th>Ağ geçidi</th><th>ICMP RTT</th><th>WAN TCP RTT</th><th>ARP değişimi</th></tr></thead><tbody>"#);
+        page.push_str(r#"</section><section class="bento-card col-12"><div class="card-header"><h2 class="card-title">Ölçüm geçmişi</h2></div><div class="data-table-wrap tablebox"><table class="data-table"><thead><tr><th>Saat (UTC)</th><th>Adaptör IP</th><th>Ağ geçidi</th><th>ICMP RTT</th><th>WAN TCP RTT</th><th>ARP değişimi</th></tr></thead><tbody>"#);
         for s in &self.samples {
-            let t = s.time % 86400;
-            let _=write!(page,"<tr><td>{:02}:{:02}:{:02}</td><td class=\"mono\">{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",t/3600,t/60%60,t%60,if s.gateway.is_empty(){"Algılanmadı"}else{&s.gateway},rtt(s.gateway_ms),rtt(s.wan_ms),s.changes.as_ref().map(|c|c.len().to_string()).unwrap_or_else(||"—".into()));
+            let t = s.timestamp_unix % 86400;
+            let _ = write!(
+                page,
+                "<tr><td>{:02}:{:02}:{:02}</td><td class=\"mono\">{}</td><td class=\"mono\">{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                t / 3600,
+                t / 60 % 60,
+                t % 60,
+                if s.adapter_ip.is_empty() { "—" } else { &s.adapter_ip },
+                if s.gateway_ip.is_empty() { "Algılanmadı" } else { &s.gateway_ip },
+                rtt(s.gateway_rtt_ms),
+                rtt(s.wan_rtt_ms),
+                if s.adapter_changed {
+                    "Adaptör geçişi".to_string()
+                } else {
+                    s.arp_conflicts.len().to_string()
+                }
+            );
         }
         if self.samples.is_empty() {
             page.push_str(
-                "<tr><td colspan=\"5\">İlk örnek için Şimdi ölç düğmesini kullanın.</td></tr>",
+                "<tr><td colspan=\"6\">İlk örnek için Şimdi ölç düğmesini kullanın.</td></tr>",
             );
         }
         page.push_str("</tbody></table></div><p class=\"card-desc note\">TCP bağlantı süresi ve ICMP yanıt süresi farklı ölçümlerdir. ICMP engellenebilir. Pencere kapatıldıktan sonra izleme en geç bir dakika içinde durur.</p></section></div></main></body></html>");
@@ -220,12 +328,17 @@ fn main() {
         return;
     }
     if args.iter().any(|a| a == "--selftest") {
-        assert!(Monitor::default().json().contains("no_samples"));
+        let state = Mutex::new(Monitor::default());
+        assert!(state.lock().unwrap().json().contains("no_samples"));
         assert!(ping_ipv4(std::net::Ipv4Addr::LOCALHOST, 500).is_some());
+        let sim_json = run_resilience_simulation(&state);
+        assert!(sim_json.contains("\"outageCount\":1"));
+        assert!(sim_json.contains("\"adapterSwitchCount\":1"));
         return;
     }
     let (listener, port) = bind_app_server(17946);
     let state = Arc::new(Mutex::new(Monitor::default()));
+    measure(&state);
     let sampling = Arc::new(Mutex::new(()));
     let worker = state.clone();
     let busy = sampling.clone();
@@ -267,6 +380,28 @@ fn main() {
                     }
                     let _guard = sampling.lock().unwrap();
                     measure(&state);
+                }
+                ("POST", "/simulate-test" | "/api/simulate-test") => {
+                    let json_out = run_resilience_simulation(&state);
+                    if path == "/api/simulate-test" {
+                        return (200, "application/json; charset=utf-8", json_out.into_bytes());
+                    }
+                }
+                ("GET", "/api/report") => {
+                    let s = state.lock().unwrap();
+                    let rep = s.tracker.report();
+                    let out = format!(
+                        r#"{{"ok":true,"totalSamples":{},"gatewayLossPct":{:.2},"wanLossPct":{:.2},"gatewayP95Ms":{},"wanP95Ms":{},"outageCount":{},"adapterSwitchCount":{},"arpConflictCount":{}}}"#,
+                        rep.total_samples,
+                        rep.gateway_loss_pct,
+                        rep.wan_loss_pct,
+                        rep.gateway_p95_ms,
+                        rep.wan_p95_ms,
+                        rep.outage_count,
+                        rep.adapter_switch_count,
+                        rep.arp_conflict_count
+                    );
+                    return (200, "application/json; charset=utf-8", out.into_bytes());
                 }
                 ("POST", "/stop") => state.lock().unwrap().active = false,
                 ("POST", "/theme") => {

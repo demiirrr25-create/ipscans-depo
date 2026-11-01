@@ -36,6 +36,41 @@ extern "system" {
 extern "system" {
     fn MoveFileW(existing: *const u16, new: *const u16) -> i32;
     fn GetSystemDirectoryW(buffer: *mut u16, length: u32) -> u32;
+    fn GetCurrentProcess() -> isize;
+    fn K32GetProcessMemoryInfo(
+        process: isize,
+        ppsmem_counters: *mut ProcessMemoryCounters,
+        cb: u32,
+    ) -> i32;
+}
+
+#[repr(C)]
+#[derive(Default)]
+struct ProcessMemoryCounters {
+    cb: u32,
+    page_fault_count: u32,
+    peak_working_set_size: usize,
+    working_set_size: usize,
+    quota_peak_paged_pool_usage: usize,
+    quota_paged_pool_usage: usize,
+    quota_peak_non_paged_pool_usage: usize,
+    quota_non_paged_pool_usage: usize,
+    pagefile_usage: usize,
+    peak_pagefile_usage: usize,
+}
+
+/// Returns `(working_set_bytes, peak_working_set_bytes)` of the current process via Win32 `K32GetProcessMemoryInfo`.
+pub fn process_memory_bytes() -> (u64, u64) {
+    let mut pmc = ProcessMemoryCounters {
+        cb: std::mem::size_of::<ProcessMemoryCounters>() as u32,
+        ..Default::default()
+    };
+    let ok = unsafe { K32GetProcessMemoryInfo(GetCurrentProcess(), &mut pmc, pmc.cb) };
+    if ok != 0 {
+        (pmc.working_set_size as u64, pmc.peak_working_set_size as u64)
+    } else {
+        (0, 0)
+    }
 }
 
 pub fn system_tool(name: &str) -> std::io::Result<PathBuf> {
