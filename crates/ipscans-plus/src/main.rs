@@ -172,12 +172,12 @@ impl Inventory {
             gateway
         };
         let mut svg = String::from(
-            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" role="img" aria-label="Mantıksal IPv4 ve L2 topoloji görünümü" style="width:100%;max-height:430px"><rect width="900" height="430" rx="14" fill="#0d1524"/>"##,
+            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" role="img" aria-label="Mantıksal IPv4 ve L2 topoloji görünümü" style="width:100%;max-height:430px"><defs><linearGradient id="gw-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2f6bff"/><stop offset="50%" stop-color="#00c2ff"/><stop offset="100%" stop-color="#7a5cff"/></linearGradient></defs><rect width="900" height="430" rx="16" fill="#0A0C12" stroke="rgba(255,255,255,0.08)"/>"##,
         );
         for (i, h) in chunk.iter().enumerate() {
             let a = (i as f64 * std::f64::consts::TAU / chunk.len().max(1) as f64)
                 - std::f64::consts::FRAC_PI_2;
-            let (x, y) = (450. + 362. * a.cos(), 215. + 172. * a.sin());
+            let (x, y) = (450. + 356. * a.cos(), 215. + 168. * a.sin());
             let is_confirmed = topo.links.iter().any(|l| {
                 l.confidence == LinkConfidence::ConfirmedL2 && (l.to == h.ip || l.from == h.ip)
             });
@@ -189,19 +189,19 @@ impl Inventory {
             } else if !gateway.is_empty() {
                 let _ = write!(
                     svg,
-                    r##"<path d="M450 215 L{x:.0} {y:.0}" stroke="#516d99" stroke-dasharray="4 5"/>"##
+                    r##"<path d="M450 215 L{x:.0} {y:.0}" stroke="#4c82ff" stroke-opacity="0.45" stroke-dasharray="4 5"/>"##
                 );
             }
             let label = html(&h.ip);
             let _ = write!(
                 svg,
-                r##"<g transform="translate({x:.0} {y:.0})"><title>{label} · {}</title><rect x="-57" y="-13" width="114" height="26" rx="8" fill="#15243a" stroke="#88a2c9"/><text fill="#eff6ff" text-anchor="middle" y="5" font-family="monospace" font-size="12">{label}</text></g>"##,
+                r##"<g transform="translate({x:.0} {y:.0})"><title>{label} · {}</title><rect x="-60" y="-14" width="120" height="28" rx="9" fill="#131722" stroke="rgba(255,255,255,0.18)"/><text fill="#f5f7fa" text-anchor="middle" y="4" font-family="monospace" font-size="11.5">{label}</text></g>"##,
                 html(&h.device_type)
             );
         }
         let _ = write!(
             svg,
-            r##"<rect x="372" y="191" width="156" height="48" rx="12" fill="#244d89"/><text x="450" y="209" fill="white" text-anchor="middle" font-family="sans-serif" font-size="11">YEREL AĞ GEÇİDİ</text><text x="450" y="227" fill="white" text-anchor="middle" font-family="monospace" font-size="12">{}</text></svg>"##,
+            r##"<rect x="368" y="189" width="164" height="52" rx="14" fill="url(#gw-grad)"/><text x="450" y="209" fill="white" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="10.5" letter-spacing="0.06em">AĞ GEÇİDİ</text><text x="450" y="227" fill="white" text-anchor="middle" font-family="monospace" font-weight="600" font-size="12.5">{}</text></svg>"##,
             html(center)
         );
         svg
@@ -209,10 +209,38 @@ impl Inventory {
     fn page(&self, message: &str, ports: Option<(&str, &[PortResult])>, report: bool) -> String {
         let theme = if self.dark { "dark" } else { "light" };
         let mut out = format!(
-            r#"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IPScans+ · Ağ envanteri</title><link rel="icon" href="/brand/scanner.png"><link rel="stylesheet" href="/design/v2.css"><style>
-        .flow,.bar{{display:flex;gap:10px;align-items:center;flex-wrap:wrap}}.workspace{{display:grid;gap:16px}}.scope{{background:linear-gradient(135deg,var(--surface) 0%,var(--surface-dim) 100%);padding:22px 26px;border-left:4px solid var(--signal);border-radius:18px;border-top:1px solid var(--line-2);border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);box-shadow:var(--shadow-sm)}}.scope h1{{font-size:clamp(25px,4vw,42px);letter-spacing:-.05em}}.bar .input,.bar .select{{width:auto;max-width:100%}}a{{color:var(--signal)}}small{{color:var(--ink-2)}}.map{{display:flex;flex-wrap:wrap;gap:8px}}.map span{{padding:6px 12px;border:1px dashed var(--line-3);border-radius:8px}}td details{{min-width:100px}}@media print{{.no-print,details,form,header button{{display:none!important}}.workspace,.bento-card,.data-table-wrap{{overflow:visible;padding:0;box-shadow:none;border:none}}table{{font-size:10px}}thead{{display:table-header-group}}tr{{break-inside:avoid}}}}</style></head><body><div class="app-shell">
-        <header class="topbar"><div class="brand-cluster"><img class="brand-logo" alt="" src="/brand/scanner.png"><div><div style="display:flex;align-items:center;gap:8px"><strong>IPScans+</strong><span class="badge badge-signal mono">v{}</span></div><div class="brand-sub">Ağ keşfi, çoklu adaptör, L2 topoloji, ONVIF ve TCP servis denetimi</div></div></div><div class="top-actions"><span class="badge badge-ok mono"><span class="status-dot"></span>YEREL RUST MOTORU AKTİF</span><form class="no-print" method="post" action="/theme"><button class="btn btn-secondary">Temayı değiştir</button></form></div></header><main class="workspace">"#,
-            env!("CARGO_PKG_VERSION")
+            r##"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IPScans+ — Ağ Envanteri ve Topoloji</title><link rel="icon" href="/brand/scanner.png"><link rel="stylesheet" href="/design/v2.css"><style>
+        .flow,.bar{{display:flex;gap:10px;align-items:center;flex-wrap:wrap}}.workspace{{display:grid;gap:16px}}.scope{{background:linear-gradient(135deg,var(--surface-dim) 0%,var(--surface) 100%);padding:22px 26px;border-radius:20px;border:1px solid var(--line-2);box-shadow:var(--shadow-card);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}}.scope h1{{font-size:clamp(24px,3.2vw,36px);letter-spacing:-.04em;margin:2px 0 4px}}.bar .input,.bar .select{{width:auto;max-width:100%}}a{{color:var(--signal);text-decoration:none}}a:hover{{text-decoration:underline}}small{{color:var(--ink-2)}}.map{{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}}.map span{{padding:6px 12px;border:1px dashed var(--line-3);border-radius:8px}}td details{{min-width:100px;display:inline-block}}.row-actions{{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}}@media print{{.no-print,details,form,header button{{display:none!important}}.workspace,.bento-card,.data-table-wrap{{overflow:visible;padding:0;box-shadow:none;border:none}}table{{font-size:10px}}thead{{display:table-header-group}}tr{{break-inside:avoid}}}}</style></head><body><div class="app-shell">
+        <header class="topbar">
+          <div class="brand-cluster">
+            <span class="ipscans-hex-mark" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+                <defs><linearGradient id="ips-g" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2F6BFF"/><stop offset="50%" stop-color="#00C2FF"/><stop offset="100%" stop-color="#7A5CFF"/></linearGradient></defs>
+                <path d="M16 3L27.2583 9.5V22.5L16 29L4.74167 22.5V9.5L16 3Z" stroke="url(#ips-g)" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M16 9V16M16 16L22 19.5M16 16L10 19.5" stroke="url(#ips-g)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="16" cy="16" r="2.6" fill="url(#ips-g)"/>
+              </svg>
+            </span>
+            <span class="brand-divider" aria-hidden="true"></span>
+            <img class="brand-logo" alt="" src="/brand/scanner.png">
+            <div>
+              <div class="brand-title">IPScans+</div>
+              <div class="brand-sub">Ağ keşfi, çoklu adaptör, L2 topoloji, ONVIF ve TCP servis denetimi</div>
+            </div>
+          </div>
+          <nav class="nav-pills no-print" id="plusNavPills" role="tablist">
+            <button type="button" class="nav-tab active" onclick="window.filterPlusSection('all', this)">Tüm Modüller</button>
+            <button type="button" class="nav-tab" onclick="window.filterPlusSection('inventory', this)">Cihaz Envanteri</button>
+            <button type="button" class="nav-tab" onclick="window.filterPlusSection('topology', this)">Topoloji Haritası</button>
+            <button type="button" class="nav-tab" onclick="window.filterPlusSection('onvif', this)">ONVIF &amp; Kamera</button>
+            <button type="button" class="nav-tab" onclick="window.filterPlusSection('ports', this)">Port Denetimi</button>
+          </nav>
+          <div class="top-actions no-print">
+            <a class="btn btn-secondary btn-sm" download="envanter.csv" href="/export/csv">CSV İndir</a>
+            <a class="btn btn-secondary btn-sm" download="envanter.json" href="/export/json">JSON İndir</a>
+            <form method="post" action="/theme" style="display:inline"><button class="btn btn-secondary btn-sm">Temayı Değiştir</button></form>
+          </div>
+        </header><main class="workspace">"##
         );
         let range = self
             .context
@@ -224,7 +252,7 @@ impl Inventory {
         let peak_mb = (self.metrics.peak_working_set_bytes as f64) / (1024.0 * 1024.0);
         let _ = write!(
             out,
-            r#"<section class="scope"><div class="eyebrow">AĞ ENVANTERİ · DOĞRULANMIŞ KEŞİF</div><h1>{}</h1><p>{} bulunan cihaz ({} yoklanan / {} planlanan hedef) · {} görünür · {:.2} sn · Tepe bellek {:.1} MB</p></section><div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">AKTİF CİHAZ</div><div class="kpi-value mono">{}</div><div class="kpi-sub">Yoklanan: {} / {} hedef</div></div><div class="kpi-box"><div class="kpi-label">KEŞİF SÜRESİ</div><div class="kpi-value mono">{:.2} sn</div><div class="kpi-sub">SendARP + Winsock2 paralel</div></div><div class="kpi-box"><div class="kpi-label">TEPE BELLEK</div><div class="kpi-value mono">{:.1} MB</div><div class="kpi-sub">Sıfır çalışma zamanı bağımlılığı</div></div><div class="kpi-box"><div class="kpi-label">YANLIŞ POZİTİF</div><div class="kpi-value mono" style="color:var(--ok)">0</div><div class="kpi-sub">Tahminsiz OUI + NetBIOS</div></div></div>"#,
+            r##"<section class="scope"><div><div class="eyebrow">AĞ ENVANTERİ VE DOĞRULANMIŞ KEŞİF</div><h1>{}</h1><p style="color:var(--ink-2)">{} bulunan cihaz ({} yoklanan / {} planlanan hedef) · {} görünür · {:.2} sn · Tepe bellek {:.1} MB</p></div><div class="bar no-print"><a class="btn btn-secondary btn-sm" download="envanter.html" href="/export/html">HTML Rapor</a><a class="btn btn-secondary btn-sm" href="/report">Yazdır / PDF</a></div></section><div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">AKTİF CİHAZ</div><div class="kpi-value mono">{}</div><div class="kpi-sub">Yoklanan: {} / {} hedef</div></div><div class="kpi-box"><div class="kpi-label">KEŞİF SÜRESİ</div><div class="kpi-value mono">{:.2} sn</div><div class="kpi-sub">SendARP + Winsock2 paralel</div></div><div class="kpi-box"><div class="kpi-label">TEPE BELLEK</div><div class="kpi-value mono">{:.1} MB</div><div class="kpi-sub">Yüksek hızlı yerel çalışma</div></div><div class="kpi-box"><div class="kpi-label">DOĞRULAMA</div><div class="kpi-value mono" style="color:var(--ok)">0 Yanlış Pozitif</div><div class="kpi-sub">IEEE OUI + NetBIOS + mDNS</div></div></div>"##,
             html(range),
             self.hosts.len(),
             self.metrics.probed_targets,
@@ -241,12 +269,13 @@ impl Inventory {
         if !message.is_empty() {
             let _ = write!(
                 out,
-                "<p role=\"status\" class=\"badge badge-warn\">{}</p>",
+                "<p role=\"status\" class=\"badge badge-signal\">{}</p>",
                 html(message)
             );
         }
         if !report {
-            let mut adapter_opts = String::from("<option value=\"\">Otomatik (Varsayılan Rota)</option>");
+            let mut adapter_opts =
+                String::from("<option value=\"\">Otomatik (Varsayılan Rota)</option>");
             for a in &self.adapters {
                 let sel = if a.ipv4 == self.selected_adapter && !a.ipv4.is_empty() {
                     " selected"
@@ -264,15 +293,15 @@ impl Inventory {
             }
             let _ = write!(
                 out,
-                r#"<section class="bento-card"><form class="bar" action="/scan" method="post"><label for="adapter">Adaptör</label><select class="select mono" id="adapter" name="adapter">{adapter_opts}</select><label for="range">Hedef aralığı (IPv4 CIDR, başlangıç-bitiş, !dışla veya IPv6 /120–/128)</label><input class="input mono" id="range" name="range" placeholder="Otomatik, 192.168.0.1-16, 192.168.0.0/24 veya ::1/128"><button class="btn btn-signal">Ağı tara</button></form><form class="bar" style="margin-top:8px" action="/cancel" method="post"><button class="btn btn-secondary">Aktif taramayı iptal et</button></form><p class="card-desc">Bilinmeyen cihaz adı, üretici veya topoloji bağı tahminle doldurulmaz. ICMP engelli ama TCP portu açık veya ARP yanıtı veren hedefler SendARP + paralel Winsock2 ile doğrulanır.</p></section>"#
+                r##"<section class="bento-card" data-plus-sec="inventory"><div class="eyebrow">ÇOKLU ADAPTÖR VE ALT AĞ TARAYICI</div><div class="bar"><form class="bar" action="/scan" method="post"><label for="adapter">Adaptör</label><select class="select mono" id="adapter" name="adapter">{adapter_opts}</select><label for="range">Hedef aralığı (IPv4 CIDR, başlangıç-bitiş, !dışla veya IPv6 /120–/128)</label><input class="input mono" id="range" name="range" placeholder="Otomatik, 192.168.0.1-16, 192.168.0.0/24 veya ::1/128"><button class="btn btn-signal">Ağı tara</button></form><form class="bar" action="/cancel" method="post"><button class="btn btn-secondary">Aktif taramayı iptal et</button></form></div><p class="card-desc" style="margin-top:8px">Bilinmeyen cihaz adı, üretici veya topoloji bağı tahminle doldurulmaz. ICMP engelli ama TCP portu açık veya ARP yanıtı veren hedefler SendARP + paralel Winsock2 ile doğrulanır.</p></section>"##
             );
             let _ = write!(
                 out,
-                r#"<section class="bar"><form class="bar" method="post" action="/filter"><label for="q">Filtre</label><input class="input" id="q" name="q" placeholder="ip:192.168 · port:443 · üretici" value="{}"><button class="btn btn-secondary">Uygula</button></form><a download="envanter.json" href="/export/json">JSON</a><a download="envanter.csv" href="/export/csv">CSV</a><a download="envanter.html" href="/export/html">HTML</a><a href="/report">Yazdır / PDF</a></section>"#,
+                r##"<section class="bar" data-plus-sec="inventory"><form class="bar" method="post" action="/filter"><label for="q">Filtre</label><input class="input" id="q" name="q" placeholder="ip:192.168 · port:443 · üretici" value="{}"><button class="btn btn-secondary">Uygula</button></form><a class="btn btn-secondary btn-sm" download="envanter.json" href="/export/json">JSON</a><a class="btn btn-secondary btn-sm" download="envanter.csv" href="/export/csv">CSV</a><a class="btn btn-secondary btn-sm" download="envanter.html" href="/export/html">HTML</a><a class="btn btn-secondary btn-sm" href="/report">Yazdır / PDF</a></section>"##,
                 html(&self.filter)
             );
         }
-        out.push_str(r#"<section class="bento-card"><div class="card-header"><h2 class="card-title">Cihaz envanteri</h2></div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>Cihaz / IP</th><th>Ad</th><th>MAC / üretici</th><th>Sınıflandırma</th><th>Açık TCP</th><th>RTT</th></tr></thead><tbody>"#);
+        out.push_str(r##"<section class="bento-card" data-plus-sec="inventory"><div class="card-header"><div><div class="eyebrow">CANLI TABLO</div><h2 class="card-title">Cihaz envanteri</h2></div></div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>Cihaz / IP</th><th>Ad</th><th>MAC / üretici</th><th>Sınıflandırma</th><th>Açık TCP</th><th>RTT</th><th class="no-print">İşlemler</th></tr></thead><tbody>"##);
         for h in &rows {
             let label = self.label(h);
             let name = if label.is_empty() { &h.hostname } else { label };
@@ -283,33 +312,21 @@ impl Inventory {
                 .map(u16::to_string)
                 .collect::<Vec<_>>()
                 .join(", ");
+            let scheme = if h.open_ports.contains(&443) {
+                "https"
+            } else {
+                "http"
+            };
             let _ = write!(
                 out,
-                r#"<tr><td><a class="mono" href="{}://{}" target="_blank" rel="noopener">{}</a></td><td>{}"#,
-                if h.open_ports.contains(&443) {
-                    "https"
-                } else {
-                    "http"
-                },
+                r##"<tr><td><a class="mono" href="{scheme}://{}" target="_blank" rel="noopener">{}</a></td><td>{}</td><td><span class="mono">{}</span><br><small>{}</small></td><td>{}</td><td class="mono">{}</td><td class="mono">{}</td>"##,
                 h.ip,
                 h.ip,
                 if name.is_empty() {
                     "—".into()
                 } else {
                     html(name)
-                }
-            );
-            if !report {
-                let _ = write!(
-                    out,
-                    r#"<details class="no-print"><summary>Adlandır</summary><form method="post" action="/rename"><input type="hidden" name="ip" value="{}"><input aria-label="Cihaz adı" name="label" maxlength="80" value="{}"><button>Kaydet</button></form></details>"#,
-                    h.ip,
-                    html(label)
-                );
-            }
-            let _ = write!(
-                out,
-                "</td><td>{}<br><small>{}</small></td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                },
                 html(mac),
                 html(&h.vendor),
                 html(&h.device_type),
@@ -322,9 +339,21 @@ impl Inventory {
                     .map(|v| format!("{v} ms"))
                     .unwrap_or_else(|| "—".into())
             );
+            if !report {
+                let _ = write!(
+                    out,
+                    r##"<td class="no-print"><div class="row-actions"><form method="post" action="/ports" style="display:inline"><input type="hidden" name="target" value="{}"><button class="btn btn-secondary btn-sm">Port Yokla</button></form><details class="no-print"><summary class="btn btn-secondary btn-sm">Adlandır</summary><form method="post" action="/rename" style="margin-top:6px;display:flex;gap:6px"><input type="hidden" name="ip" value="{}"><input class="input" style="padding:4px 8px;height:30px;width:130px" aria-label="Cihaz adı" name="label" maxlength="80" value="{}"><button class="btn btn-signal btn-sm">Kaydet</button></form></details></div></td>"##,
+                    h.ip,
+                    h.ip,
+                    html(label)
+                );
+            } else {
+                out.push_str("<td class=\"no-print\"></td>");
+            }
+            out.push_str("</tr>");
         }
         if rows.is_empty() {
-            out.push_str("<tr><td colspan=\"6\">Görüntülenecek cihaz yok. Bir tarama başlatın veya filtreyi değiştirin.</td></tr>");
+            out.push_str("<tr><td colspan=\"7\">Görüntülenecek cihaz yok. Bir tarama başlatın veya filtreyi değiştirin.</td></tr>");
         }
         out.push_str("</tbody></table></div></section>");
         if !report {
@@ -342,7 +371,7 @@ impl Inventory {
             );
             let _ = write!(
                 out,
-                r#"<section class="bento-card"><div class="eyebrow">TOPOLOJİ · DOĞRULANMIŞ L2 ({}) &amp; ÇIKARSANAN ROTA ({})</div><h2 class="card-title">Ağ geçidi · {}</h2><p class="card-desc">SNMP/LLDP/CDP ile doğrulanan komşuluklar düz yeşil çizgiyle, varsayılan ağ geçidi rotası kesikli çizgiyle gösterilir. Ağ geçidi yoksa sahte bağ üretilmez.</p><div class="map">"#,
+                r##"<section class="bento-card" data-plus-sec="topology"><div class="eyebrow">TOPOLOJİ · DOĞRULANMIŞ L2 ({}) &amp; ÇIKARSANAN ROTA ({})</div><h2 class="card-title">Ağ geçidi · {}</h2><p class="card-desc">SNMP/LLDP/CDP ile doğrulanan komşuluklar düz yeşil çizgiyle, varsayılan ağ geçidi rotası kesikli çizgiyle gösterilir. Ağ geçidi yoksa sahte bağ üretilmez.</p><div class="map">"##,
                 topo.confirmed_count,
                 topo.inferred_count,
                 html(gateway)
@@ -358,30 +387,33 @@ impl Inventory {
                 {
                     let _ = write!(
                         out,
-                        "<a target=\"_blank\" href=\"/map/{i}\">SVG / Bölüm {}</a> ",
+                        "<a class=\"btn btn-secondary btn-sm\" target=\"_blank\" href=\"/map/{i}\">SVG / Bölüm {}</a> ",
                         i + 1
                     );
                 }
             }
-            out.push_str(r#"</div><form class="bar" style="margin-top:12px" action="/snmp" method="post"><label for="snmp_target">SNMPv2c Anahtar/Cihaz IP</label><input class="input mono" name="target" id="snmp_target" placeholder="192.168.0.1:161" required><label for="community">Community</label><input class="input mono" name="community" id="community" value="public" required><button class="btn btn-secondary">LLDP / CDP / MIB Yokla</button></form></section>"#);
+            out.push_str(r##"</div><form class="bar" style="margin-top:12px" action="/snmp" method="post"><label for="snmp_target">SNMPv2c Anahtar/Cihaz IP</label><input class="input mono" name="target" id="snmp_target" placeholder="192.168.0.1:161" required><label for="community">Community</label><input class="input mono" name="community" id="community" value="public" required><button class="btn btn-secondary">LLDP / CDP / MIB Yokla</button></form></section>"##);
 
             let _ = write!(
                 out,
-                r#"<section class="bento-card"><div class="eyebrow">ONVIF KAMERA KEŞFİ VE HTTPS YÖNETİM DOĞRULAMASI</div><h2 class="card-title">WS-Discovery (UDP 3702) &amp; Kimlik Doğrulamalı HTTPS</h2><form class="bar" action="/onvif" method="post"><label for="xaddrs">ONVIF XAddrs (Boş bırakılırsa WS-Discovery yayınlanır)</label><input class="input mono" name="xaddrs" id="xaddrs" placeholder="https://192.168.0.50:443/onvif/device_service"><label for="user">Kullanıcı</label><input class="input mono" name="username" id="user" placeholder="admin"><label for="pass">Parola</label><input class="input mono" type="password" name="password" id="pass" placeholder="••••••••"><button class="btn btn-secondary">ONVIF Doğrula</button></form>{}</section>"#,
+                r##"<section class="bento-card" data-plus-sec="onvif"><div class="eyebrow">ONVIF KAMERA KEŞFİ VE HTTPS YÖNETİM DOĞRULAMASI</div><h2 class="card-title">WS-Discovery (UDP 3702) &amp; Kimlik Doğrulamalı HTTPS</h2><form class="bar" style="margin-top:10px" action="/onvif" method="post"><label for="xaddrs">ONVIF XAddrs (Boş bırakılırsa WS-Discovery yayınlanır)</label><input class="input mono" name="xaddrs" id="xaddrs" placeholder="https://192.168.0.50:443/onvif/device_service"><label for="user">Kullanıcı</label><input class="input mono" name="username" id="user" placeholder="admin"><label for="pass">Parola</label><input class="input mono" type="password" name="password" id="pass" placeholder="••••••••"><button class="btn btn-secondary">ONVIF Doğrula</button></form>{}</section>"##,
                 if self.onvif_status.is_empty() {
                     String::new()
                 } else {
-                    format!("<p class=\"mono\" style=\"margin-top:8px\">{}</p>", html(&self.onvif_status))
+                    format!(
+                        "<p class=\"mono\" style=\"margin-top:8px\">{}</p>",
+                        html(&self.onvif_status)
+                    )
                 }
             );
 
-            out.push_str(r#"<section class="bento-card"><h2 class="card-title">TCP servis denetimi</h2><form class="bar" action="/ports" method="post"><label for="target">Ana bilgisayar</label><input class="input mono" name="target" id="target" required placeholder="127.0.0.1"><button class="btn btn-signal">Portları yokla</button></form>"#);
+            out.push_str(r##"<section class="bento-card" data-plus-sec="ports"><div class="eyebrow">DERİN SERVİS VE PORT DENETİMİ</div><h2 class="card-title">TCP servis denetimi</h2><form class="bar" style="margin-top:10px" action="/ports" method="post"><label for="target">Ana bilgisayar</label><input class="input mono" name="target" id="target" required placeholder="127.0.0.1"><button class="btn btn-signal">Portları yokla</button></form>"##);
             if let Some((target, ports)) = ports {
-                let _ = write!(out, "<h3>{}</h3><table class=\"data-table\"><thead><tr><th>Port</th><th>Servis</th><th>Durum</th><th>RTT</th></tr></thead><tbody>", html(target));
+                let _ = write!(out, "<h3 class=\"mono\" style=\"margin:14px 0 8px\">{}</h3><div class=\"data-table-wrap\"><table class=\"data-table\"><thead><tr><th>Port</th><th>Servis</th><th>Durum</th><th>RTT</th></tr></thead><tbody>", html(target));
                 for p in ports {
                     let _ = write!(
                         out,
-                        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                        "<tr><td class=\"mono\">{}</td><td>{}</td><td>{}</td><td class=\"mono\">{}</td></tr>",
                         p.port,
                         p.service,
                         p.status,
@@ -390,13 +422,21 @@ impl Inventory {
                             .unwrap_or_else(|| "—".into())
                     );
                 }
-                out.push_str("</tbody></table>");
+                out.push_str("</tbody></table></div>");
             }
             out.push_str("</section>");
         } else {
             out.push_str("<p class=\"no-print\">PDF kaydetmek için Ctrl+P ile yazdırma iletişim kutusunu açın.</p>");
         }
-        out.push_str("</main></div><script src=\"/design/v2.js\"></script></body></html>");
+        out.push_str(r##"</main></div><script src="/design/v2.js"></script><script>
+        window.filterPlusSection = function(key, btn) {
+          document.querySelectorAll('#plusNavPills .nav-tab').forEach(b => b.classList.remove('active'));
+          if (btn) btn.classList.add('active');
+          document.querySelectorAll('[data-plus-sec]').forEach(el => {
+            el.style.display = (key === 'all' || el.getAttribute('data-plus-sec') === key) ? '' : 'none';
+          });
+        };
+        </script></body></html>"##);
         out
     }
 }
@@ -454,7 +494,7 @@ fn main() {
             if method == "POST" && (path == "/cancel" || path == "/api/scan/cancel") {
                 active_cancel.lock().unwrap().cancel();
                 return if path == "/api/scan/cancel" {
-                    (200, JSON, br#"{"ok":true,"cancelled":true}"#.to_vec())
+                    (200, JSON, br##"{"ok":true,"cancelled":true}"##.to_vec())
                 } else {
                     (
                         200,
@@ -469,7 +509,7 @@ fn main() {
             }
             if method == "POST" && (path == "/scan" || path == "/api/scan") {
                 let Ok(_guard) = scanning.try_lock() else {
-                    return (400, JSON, br#"{"error":"Tarama devam ediyor"}"#.to_vec());
+                    return (400, JSON, br##"{"error":"Tarama devam ediyor"}"##.to_vec());
                 };
                 let range = field(body, "range")
                     .or_else(|| extract_json_string(body, "range"))
@@ -485,7 +525,7 @@ fn main() {
                         (
                             400,
                             JSON,
-                            br#"{"error":"Invalid target range specification"}"#.to_vec(),
+                            br##"{"error":"Invalid target range specification"}"##.to_vec(),
                         )
                     } else {
                         (
@@ -634,7 +674,7 @@ fn main() {
                         .chars()
                         .any(|c| !(c.is_ascii_alphanumeric() || ".-:".contains(c)))
                 {
-                    return (400, JSON, br#"{"error":"Invalid host"}"#.to_vec());
+                    return (400, JSON, br##"{"error":"Invalid host"}"##.to_vec());
                 }
                 if path == "/api/ports" {
                     return (
@@ -740,7 +780,7 @@ fn main() {
                 ("GET", "/report" | "/export/html") => {
                     return (200, PAGE, inv.page("", None, true).into_bytes())
                 }
-                _ => return (404, JSON, br#"{"error":"Not found"}"#.to_vec()),
+                _ => return (404, JSON, br##"{"error":"Not found"}"##.to_vec()),
             }
             (200, PAGE, inv.page(message, None, false).into_bytes())
         }),

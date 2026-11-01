@@ -13,17 +13,17 @@ pub const ICON_LPR_PNG: &[u8] = include_bytes!("../../../design/icons/lpr.png");
 pub const ICON_CORTEX_PNG: &[u8] = include_bytes!("../../../design/icons/cortex.png");
 pub const ICON_HEALTH_PNG: &[u8] = include_bytes!("../../../design/icons/health.png");
 
-/// Exact 1:1 `ipscans.com` v2.0 Design System CSS (Light & Dark parity, OKLCH surfaces,
+/// Exact 1:1 `ipscans.com` Design System CSS (Light & Dark parity, OKLCH surfaces,
 /// 999px pill buttons with `scale(0.97)` press physics, `cubic-bezier(0.16, 1, 0.3, 1)` transitions,
-/// mouse-tracking radial spotlight cards, and tabular monospace telemetry).
+/// mouse-tracking radial spotlight cards, `.eyebrow` signal gradient dot, and tabular monospace telemetry).
 pub const IPSCANS_V2_CSS: &str = r###"
 :root, [data-theme="dark"] {
   color-scheme: dark;
   --surface: #07080B;
   --surface-dim: #0D0F14;
-  --surface-muted: #13161E;
+  --surface-muted: #141821;
   --surface-elevated: #171B25;
-  --surface-glass: rgba(13, 15, 20, 0.82);
+  --surface-glass: rgba(13, 15, 20, 0.84);
   --ink: #F5F7FA;
   --ink-2: #A6B0C3;
   --ink-3: #6C7689;
@@ -36,6 +36,7 @@ pub const IPSCANS_V2_CSS: &str = r###"
   --signal-hover: #6B99FF;
   --signal-soft: rgba(76, 130, 255, 0.14);
   --signal-ring: rgba(76, 130, 255, 0.35);
+  --signal-gradient: linear-gradient(100deg, #2f6bff 0%, #00c2ff 48%, #7a5cff 100%);
   --ok: #12B76A;
   --ok-soft: rgba(18, 183, 106, 0.14);
   --warn: #F79009;
@@ -51,9 +52,9 @@ pub const IPSCANS_V2_CSS: &str = r###"
   color-scheme: light;
   --surface: #FFFFFF;
   --surface-dim: #F7F8FA;
-  --surface-muted: #EFF1F5;
+  --surface-muted: #F1F3F5;
   --surface-elevated: #FFFFFF;
-  --surface-glass: rgba(255, 255, 255, 0.84);
+  --surface-glass: rgba(255, 255, 255, 0.86);
   --ink: #0A0B0E;
   --ink-2: #3C4250;
   --ink-3: #6B7280;
@@ -66,6 +67,7 @@ pub const IPSCANS_V2_CSS: &str = r###"
   --signal-hover: #1D55E5;
   --signal-soft: rgba(47, 107, 255, 0.09);
   --signal-ring: rgba(47, 107, 255, 0.28);
+  --signal-gradient: linear-gradient(100deg, #2f6bff 0%, #00c2ff 48%, #7a5cff 100%);
   --ok: #0F9D58;
   --ok-soft: rgba(15, 157, 88, 0.10);
   --warn: #D97706;
@@ -97,7 +99,7 @@ html, body {
 /* App Shell */
 .app-shell {
   display: grid;
-  grid-template-rows: 64px 1fr;
+  grid-template-rows: 68px 1fr;
   min-height: 100vh;
 }
 
@@ -108,6 +110,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 0 24px;
   background: var(--surface-glass);
   backdrop-filter: blur(20px) saturate(180%);
@@ -120,15 +123,34 @@ html, body {
   gap: 12px;
 }
 
-.brand-logo {
-  width: 36px;
-  height: 36px;
+.ipscans-hex-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(47, 107, 255, 0.25);
+  background: var(--surface-dim);
+  border: 1px solid var(--line-2);
+  flex-shrink: 0;
+}
+
+.brand-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--line-2);
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(47, 107, 255, 0.22);
   transition: transform 320ms var(--ease-out-expo);
 }
 .brand-cluster:hover .brand-logo {
-  transform: scale(1.06);
+  transform: scale(1.05);
 }
 
 .brand-title {
@@ -155,6 +177,7 @@ html, body {
   border: 1px solid var(--line);
   padding: 4px;
   border-radius: 999px;
+  overflow-x: auto;
 }
 
 .nav-tab {
@@ -167,6 +190,7 @@ html, body {
   padding: 6px 15px;
   border-radius: 999px;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 180ms var(--ease-out-quart);
   display: inline-flex;
   align-items: center;
@@ -183,10 +207,10 @@ html, body {
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-/* 999px Pill Buttons (1:1 ipscans.com v2.0) */
+/* 999px Pill Buttons (1:1 ipscans.com) */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -203,6 +227,7 @@ html, body {
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
+  text-decoration: none;
   transition: transform 160ms var(--ease-out-expo), background-color 180ms var(--ease-out-quart), border-color 180ms var(--ease-out-quart), box-shadow 180ms var(--ease-out-quart);
 }
 .btn:active { transform: scale(0.97); }
@@ -323,14 +348,29 @@ html, body {
   gap: 12px;
   margin-bottom: 16px;
 }
+
+/* 1:1 ipscans.com Eyebrow Signal Dot */
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--signal);
-  margin-bottom: 3px;
+  color: var(--ink-2);
+  margin-bottom: 4px;
 }
+.eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--signal-gradient);
+  box-shadow: 0 0 0 4px var(--signal-soft);
+  flex-shrink: 0;
+}
+
 .card-title {
   font-size: 16.5px;
   font-weight: 600;
@@ -413,7 +453,6 @@ html, body {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.top-actions { display: flex; align-items: center; gap: 10px; }
 .status-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ok); box-shadow: 0 0 10px var(--ok); display: inline-block; }
 .kpi-strip {
   display: grid;
@@ -424,17 +463,17 @@ html, body {
 @media (max-width: 960px) { .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kpi-box {
   background: var(--surface-dim);
-  border: 1px solid var(--line-2);
-  border-radius: 16px;
-  padding: 15px 18px;
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+.kpi-label { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; color: var(--signal); }
 .kpi-value { font-size: 21px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
-.kpi-sub { font-size: 12px; color: var(--ink-2); }
+.kpi-sub { font-size: 12px; color: var(--ink-3); }
 .pipeline-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
 @media (max-width: 960px) { .pipeline-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pipeline-step { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; padding: 14px; position: relative; }
@@ -444,37 +483,14 @@ html, body {
 .sector-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
 @media (max-width: 1100px) { .sector-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .sector-card { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
-/* Product accent follows the installed Windows icon. */
-.desk:has(header img[src*="sentinel"]) { --signal:#60d8b3 }
-.desk:has(header img[src*="ipcast"]) { --signal:#70caff }
-.desk:has(header img[src*="lpr"]) { --signal:#ecc27e }
-.desk:has(header img[src*="health"]) { --signal:#67cfc0 }
-.desk:has(header img[src*="cortex"]) { --signal:#b29aee }
-.desk:has(header img[src*="admin"]) { --signal:#ee9eba }
-.desk header:first-child {
-  position:relative; isolation:isolate; overflow:hidden; min-height:120px;
-  background:linear-gradient(115deg,var(--surface-elevated),var(--surface-dim));
-  border-top:2px solid var(--signal);
-}
-.desk header::after {
-  content:""; position:absolute; pointer-events:none; z-index:-1; right:-30px; inset-block:0;
-  width:38%; opacity:.22;
-  background:repeating-radial-gradient(circle at 95% 105%,transparent 0 17px,var(--signal) 18px,transparent 19px 36px);
-  mask-image:linear-gradient(90deg,transparent,#000);
-}
-.eyebrow {font:650 11px/1.4 "Cascadia Code",monospace;letter-spacing:.11em}
-.desk :is(input,select,textarea) { min-height:40px;padding:8px 12px;border:1px solid var(--line-3);border-radius:9px;background:var(--surface-muted);color:var(--ink);font:inherit;max-width:100% }
-.desk button {min-height:40px;cursor:pointer;font-weight:600}
-.desk .btn-signal {color:#0a1726}
-[data-theme="light"] .desk .eyebrow,[data-theme="light"] .desk a { color:color-mix(in srgb,var(--signal) 55%,#152334) }
-:focus-visible {outline:2px solid var(--signal);outline-offset:3px}
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 "###;
 
-/// Shared client-side JS helper for theme toggle, mouse-tracking spotlight cards, and subtle tactile audio.
+/// Shared client-side JS helper for theme toggle, mouse-tracking spotlight cards, and tab switching.
 pub const IPSCANS_V2_JS: &str = r###"
 (function() {
-  const savedTheme = localStorage.getItem('ipscans-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const savedTheme = localStorage.getItem('ipscans-theme') || document.documentElement.getAttribute('data-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
   const initLabel = document.getElementById('themeBtnLabel');
   if (initLabel) initLabel.textContent = savedTheme === 'dark' ? 'Açık Tema' : 'Koyu Tema';
@@ -499,7 +515,7 @@ pub const IPSCANS_V2_JS: &str = r###"
 
   document.addEventListener('mousemove', function(e) {
     requestAnimationFrame(() => {
-      document.querySelectorAll('.bento-card').forEach(card => {
+      document.querySelectorAll('.bento-card, .desk-grid > section').forEach(card => {
         const rect = card.getBoundingClientRect();
         card.style.setProperty('--mouse-x', (e.clientX - rect.left) + 'px');
         card.style.setProperty('--mouse-y', (e.clientY - rect.top) + 'px');

@@ -154,7 +154,12 @@ fn window() {
             let mut content = String::new();
             let _ = write!(
                 content,
-                r#"<section><div class="eyebrow">01 / YEREL AĞ KEŞFİ VE CİHAZ ENVANTERİ ({} CİHAZ · {} MS)</div><h2>Alt Ağı veya Özel IP Aralığını Tara</h2><form action="/scan" method="post"><label style="flex:1;min-width:240px">IPv4 CIDR (/20–/32), Aralık veya IPv6<input class="input mono" name="range" value="{}" placeholder="192.168.0.0/24"></label><button class="btn btn-signal">Ağı Şimdi Tara</button></form>{}<div class="data-table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr><th>IPv4</th><th>MAC Adresi</th><th>Üretici (IEEE OUI)</th><th>Cihaz Adı</th><th>Tür</th><th>Açık Portlar</th><th>Gecikme</th></tr></thead><tbody>{}</tbody></table></div></section>"#,
+                r#"<div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">AKTİF CİHAZ</div><div class="kpi-val mono">{}</div><div class="kpi-sub">Yoklanan: {} hedef</div></div><div class="kpi-box"><div class="kpi-label">KEŞİF SÜRESİ</div><div class="kpi-val mono">{} ms</div><div class="kpi-sub">SendARP + Winsock2</div></div><div class="kpi-box"><div class="kpi-label">ALT AĞ KAPSAMI</div><div class="kpi-val mono" style="color:var(--signal)">{}</div><div class="kpi-sub">Ağ geçidi: {}</div></div><div class="kpi-box"><div class="kpi-label">ÇIKTI STANDARDI</div><div class="kpi-val mono" style="color:var(--ok)">JSON &amp; UI</div><div class="kpi-sub">Otomasyon ve tanı uyumlu</div></div></div><section><div class="eyebrow">YEREL AĞ KEŞFİ VE CİHAZ ENVANTERİ ({} CİHAZ · {} MS)</div><h2>Alt Ağı veya Özel IP Aralığını Tara</h2><form action="/scan" method="post"><label style="flex:1;min-width:240px">IPv4 CIDR (/20–/32), Aralık veya IPv6<input class="input mono" name="range" value="{}" placeholder="192.168.0.0/24"></label><button class="btn btn-signal">Ağı Şimdi Tara</button></form>{}<div class="data-table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr><th>IPv4</th><th>MAC Adresi</th><th>Üretici (IEEE OUI)</th><th>Cihaz Adı</th><th>Tür</th><th>Açık Portlar</th><th>Gecikme</th></tr></thead><tbody>{}</tbody></table></div></section>"#,
+                scan.hosts.len(),
+                scan.metrics.probed_targets,
+                scan.metrics.elapsed_ms,
+                escape(&default_cidr),
+                escape(if scan.context.gateway_ip.is_empty() { "—" } else { &scan.context.gateway_ip }),
                 scan.hosts.len(),
                 scan.metrics.elapsed_ms,
                 escape(&default_cidr),
@@ -165,17 +170,17 @@ fn window() {
 
             let _ = write!(
                 content,
-                r#"<section><div class="eyebrow">02 / TCP SERVİS DENETİMİ</div><h2>Bir hedefi yokla</h2><form action="/probe" method="post"><label>IPv4, IPv6 veya alan adı<input class="input mono" name="target" value="127.0.0.1" required></label><label>TCP portu<input class="input mono" type="number" name="port" min="1" max="65535" value="443" required></label><button class="btn btn-signal">Bağlantıyı ölç</button></form>{}</section>"#,
+                r#"<section><div class="eyebrow">TCP SERVİS DENETİMİ</div><h2>Bir hedefi yokla</h2><form action="/probe" method="post"><label>IPv4, IPv6 veya alan adı<input class="input mono" name="target" value="127.0.0.1" required></label><label>TCP portu<input class="input mono" type="number" name="port" min="1" max="65535" value="443" required></label><button class="btn btn-signal">Bağlantıyı ölç</button></form>{}</section>"#,
                 probe_output
             );
             let _ = write!(
                 content,
-                r#"<section><div class="eyebrow">03 / DNS &amp; WHOIS SORGULAMA</div><h2>Alan Adı veya IP İstihbaratı</h2><form action="/dns" method="post"><label style="flex:1;min-width:240px">Alan adı veya IPv4<input class="input mono" name="domain" value="ipscans.com" required></label><button class="btn btn-secondary">DNS Kayıtlarını Sorgula</button><button class="btn btn-secondary" formaction="/whois">WHOIS Sorgula</button></form>{}</section>"#,
+                r#"<section><div class="eyebrow">DNS &amp; WHOIS SORGULAMA</div><h2>Alan Adı veya IP İstihbaratı</h2><form action="/dns" method="post"><label style="flex:1;min-width:240px">Alan adı veya IPv4<input class="input mono" name="domain" value="ipscans.com" required></label><button class="btn btn-secondary">DNS Kayıtlarını Sorgula</button><button class="btn btn-secondary" formaction="/whois">WHOIS Sorgula</button></form>{}</section>"#,
                 dns_output
             );
             let _ = write!(
                 content,
-                "<section><div class=\"eyebrow\">04 / TERMİNAL</div><h2>Komut başvurusu</h2><pre class=\"terminal-box\">{}</pre></section>",
+                "<section><div class=\"eyebrow\">KOMUT SATIRI REHBERİ</div><h2>Komut başvurusu</h2><pre class=\"terminal-box\">{}</pre></section>",
                 escape(HELP)
             );
             page(
@@ -329,7 +334,9 @@ fn run(args: &[String]) -> Result<(), String> {
             }
             let out = scan_targets_with_options(range, None, None);
             if out.context.scan_cidr.is_empty() {
-                return Err("Yerel IPv4 ağı bulunamadı. --scan ile CIDR veya aralık belirtin.".into());
+                return Err(
+                    "Yerel IPv4 ağı bulunamadı. --scan ile CIDR veya aralık belirtin.".into(),
+                );
             }
             let rows: Vec<_> = out.hosts.iter().map(|h| h.to_json()).collect();
             println!(

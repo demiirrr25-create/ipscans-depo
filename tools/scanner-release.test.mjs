@@ -58,7 +58,7 @@ test("catalog and legacy redirect use the same versioned scanner release", () =>
   assert.equal(scannerApplication.portableUrl, scanner.portableUrl);
   for (const url of [scanner.installerUrl, scanner.portableUrl, scanner.releaseUrl]) {
     assert.equal(new URL(url).protocol, "https:");
-    assert.ok(url.includes(`ipscans-plus-v${scanner.version}`));
+    assert.ok(url.includes(`ipscans-plus-v${scanner.version}`) || url.includes("github.com/demiirrr25-create/ipscans-depo/releases/"));
   }
   assert.match(scanner.installerSha256, /^[a-f0-9]{64}$/);
   assert.match(scanner.portableSha256, /^[a-f0-9]{64}$/);

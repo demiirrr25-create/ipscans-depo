@@ -7,10 +7,21 @@ use ipscans_core::network::{detect_local_ipv4, scan_local_subnet, DiscoveredHost
 use ipscans_core::remote_desktop::{
     capture_desktop_bmp, compute_adaptive_stream_profile, derive_station_identity,
     discover_ipcast_peer_by_id, generate_rdp_profile_content, inject_remote_key,
-    inject_remote_mouse, primary_screen_resolution, probe_rdp_x224,
-    RdpSessionManager, RdpSessionState,
+    inject_remote_mouse, primary_screen_resolution, probe_rdp_x224, RdpSessionManager,
+    RdpSessionState,
 };
-fn now_iso8601() -> String { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); format!("{:02}:{:02}:{:02} UTC", (secs / 3600) % 24, (secs / 60) % 60, secs % 60) }
+fn now_iso8601() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format!(
+        "{:02}:{:02}:{:02} UTC",
+        (secs / 3600) % 24,
+        (secs / 60) % 60,
+        secs % 60
+    )
+}
 
 #[derive(Clone)]
 struct FileTransferItem {
@@ -119,8 +130,8 @@ fn run_two_endpoint_session_lifecycle() -> (bool, String, String) {
     let mut mgr = RdpSessionManager::new(host_a);
 
     let ok1 = mgr.connect(800).is_ok() && matches!(mgr.state, RdpSessionState::Connected { .. });
-    let dropped = !mgr.check_keepalive(300)
-        && matches!(mgr.state, RdpSessionState::ConnectionLost { .. });
+    let dropped =
+        !mgr.check_keepalive(300) && matches!(mgr.state, RdpSessionState::ConnectionLost { .. });
     let ok2 = mgr.reconnect(Some(host_b), 800).is_ok()
         && matches!(mgr.state, RdpSessionState::Reconnected { .. });
 
@@ -248,7 +259,11 @@ fn fetch_peer_screen_bmp(state: &Arc<Mutex<IpCastState>>, max_width: u32) -> (u3
 }
 
 /// Resolves a user-entered target (9-digit ID `XXX-XXX-XXX`, `127.0.0.1`, or `IP[:port]`) and establishes an IPCast P2P session.
-fn connect_p2p_target(state: &Arc<Mutex<IpCastState>>, raw_target: &str, pin: &str) -> Result<String, String> {
+fn connect_p2p_target(
+    state: &Arc<Mutex<IpCastState>>,
+    raw_target: &str,
+    pin: &str,
+) -> Result<String, String> {
     let trimmed = raw_target.trim();
     if trimmed.is_empty() {
         return Err("Hedef IPCast ID (örn. 123-456-789) veya IP adresi girin.".into());
@@ -310,9 +325,9 @@ fn connect_p2p_target(state: &Arc<Mutex<IpCastState>>, raw_target: &str, pin: &s
         }
         _ => (trimmed, local_port),
     };
-    let ip: IpAddr = host_part
-        .parse()
-        .map_err(|_| "Geçerli bir 9-haneli IPCast Kimliği (XXX-XXX-XXX) veya IPv4 adresi girin.".to_string())?;
+    let ip: IpAddr = host_part.parse().map_err(|_| {
+        "Geçerli bir 9-haneli IPCast Kimliği (XXX-XXX-XXX) veya IPv4 adresi girin.".to_string()
+    })?;
 
     if ip.is_loopback() || ip.to_string() == local_ip {
         if !pin.trim().is_empty() && pin.trim() != local_pin && pin.trim() != local_pass {
@@ -382,7 +397,9 @@ fn handle_file_transfer(
         (st.allow_file_transfer, st.active_peer_label.clone())
     };
     if !allow_transfer {
-        return Err("Dosya aktarımı izni bu istasyonda kapalı. İzin panelinden etkinleştirin.".into());
+        return Err(
+            "Dosya aktarımı izni bu istasyonda kapalı. İzin panelinden etkinleştirin.".into(),
+        );
     }
 
     let src_path = Path::new(trimmed);
@@ -407,7 +424,11 @@ fn handle_file_transfer(
             safe_name
         };
         let body = if content_text.trim().is_empty() {
-            format!("IPCast Doğrulanmış Dosya Aktarımı · {}\nHedef: {}\n", now_iso8601(), target_label)
+            format!(
+                "IPCast Doğrulanmış Dosya Aktarımı · {}\nHedef: {}\n",
+                now_iso8601(),
+                target_label
+            )
         } else {
             content_text.to_string()
         };
@@ -427,7 +448,10 @@ fn handle_file_transfer(
         size_bytes: payload_bytes.len() as u64,
         direction: format!("Gönderildi → {}", target_label),
         sha256_prefix: digest[..16].to_string(),
-        status: format!("Tamamlandı · SHA-256 Doğrulandı ({})", dest_path.display()),
+        status: format!(
+            "Tamamlandı · SHA-256 Doğrulandı ({})",
+            dest_path.display()
+        ),
         timestamp: now_iso8601(),
     };
     state.lock().unwrap().transfers.insert(0, item);
@@ -515,7 +539,7 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
           <div class="kpi-box"><div class="kpi-label">SHA-256 AKTARIM &amp; SOHBET</div><div class="kpi-value mono">AKTİF</div><div class="kpi-sub">Uçtan uca bütünlük doğrulamalı</div></div>
         </div>
         <section>
-          <div class="eyebrow">01 / BU İSTASYON · {hostname} · CANLI P2P HOST AKTİF</div>
+          <div class="eyebrow">YEREL İSTASYON · {hostname} · CANLI P2P HOST</div>
           <h2>İstasyon Kimliği ve Güvenlik İzinleri</h2>
           <p>
             Yerel IPv4: <strong class="mono">{local_ip}</strong> ·
@@ -543,7 +567,7 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
         </section>
 
         <section>
-          <div class="eyebrow">02 / UZAK MASAÜSTÜ BAĞLANTISI (P2P NATIVE GDI &amp; X.224 RDP)</div>
+          <div class="eyebrow">UZAK MASAÜSTÜ BAĞLANTISI (P2P GDI &amp; X.224 RDP)</div>
           <h2>Bir Bilgisayara Bağlan</h2>
           <p>9-haneli IPCast Kimliğini (<span class="mono">{formatted_id}</span>) veya hedef bilgisayarın IP adresini girin. <strong>Canlı P2P Masaüstü Bağlantısı</strong> Windows Home dahil tüm sürümlerde doğrudan ekran akışı ve uzaktan fare/klavye kontrolü sağlar; <strong>RDP İstemcisi</strong> ise ITU-T X.224 el sıkışmasıyla Windows RDP oturumu açar.</p>
           <form method="post" action="/p2p-connect">
@@ -562,27 +586,33 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
         </section>
 
         <section>
-          <div class="eyebrow">03 / CANLI UZAK MASAÜSTÜ EKRANI · AKTİF HEDEF: {active_label}</div>
+          <div class="eyebrow">CANLI UZAK MASAÜSTÜ EKRANI · AKTİF HEDEF: {active_label}</div>
           <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px">
             <h2 style="margin:0">Canlı Masaüstü Görüntüsü ve Uzaktan Fare / Klavye Kontrolü</h2>
             <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-              <span class="badge badge-ok" id="streamStatusBadge">CANLI GDI AKIŞI AKTİF ({res_w}×{res_h})</span>
+              <span class="badge badge-ok" id="streamStatusBadge">CANLI GDI AKIŞI ({res_w}×{res_h})</span>
+              <select class="select mono" id="streamWidthSelect" style="width:auto;padding:5px 10px;height:32px;font-size:12px" onchange="window.refreshIpCastFrame()">
+                <option value="960">720p Hızlı Akış</option>
+                <option value="1280" selected>1080p Dengeli</option>
+                <option value="1920">Tam Çözünürlük</option>
+              </select>
               <button type="button" class="btn btn-secondary btn-sm" id="toggleLiveStreamBtn" onclick="window.toggleIpCastStream()">Canlı Akışı Duraklat</button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="window.refreshIpCastFrame()">Kareyi Şimdi Yenile</button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="window.sendIpCastKey(27)">ESC Gönder</button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="window.sendIpCastKey(13)">ENTER Gönder</button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="window.sendIpCastKey(9)">TAB Gönder</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.refreshIpCastFrame()">Kareyi Yenile</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.fullscreenIpCast()">Tam Ekran</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.sendIpCastKey(27)">ESC</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.sendIpCastKey(13)">ENTER</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.sendIpCastKey(9)">TAB</button>
             </div>
           </div>
           <p style="margin-top:0">Ekran görüntüsü üzerinde tıkladığınız nokta gerçek zamanlı olarak hedef istasyona (<strong class="mono">{active_label}</strong>) fare tıklaması olarak iletilir.</p>
-          <div style="position:relative;border:1px solid var(--line-2);border-radius:14px;overflow:hidden;background:#05070a">
+          <div id="ipcastStageWrap" style="position:relative;border:1px solid var(--line-2);border-radius:14px;overflow:hidden;background:#05070a">
             <img id="ipcastLiveScreen" src="/api/screen.bmp?w=1280&amp;t=1" alt="Canlı Uzak Masaüstü Ekranı" style="display:block;width:100%;height:auto;cursor:crosshair;min-height:280px" onclick="window.handleIpCastCanvasClick(event)" oncontextmenu="return window.handleIpCastRightClick(event)">
           </div>
           <output id="ipcastInputStatus" style="margin-top:10px">Hazır · Görüntü üzerine sol veya sağ tıklayarak uzaktan fare kontrolü gönderebilirsiniz.</output>
         </section>
 
         <section>
-          <div class="eyebrow">04 / DOĞRULANMIŞ DOSYA AKTARIMI (SHA-256) VE OTURUM SOHBETİ</div>
+          <div class="eyebrow">DOĞRULANMIŞ DOSYA AKTARIMI (SHA-256) VE OTURUM SOHBETİ</div>
           <h2>Dosya Gönder ve Oturum İçi Mesajlaş</h2>
           <form method="post" action="/transfer" style="margin-bottom:14px">
             <label style="flex:2;min-width:240px">Yerel Dosya Yolu veya Dosya Adı
@@ -610,7 +640,7 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
         </section>
 
         <section>
-          <div class="eyebrow">05 / YEREL AĞ (LAN) İSTASYON ENVANTERİ ({host_count} CİHAZ)</div>
+          <div class="eyebrow">YEREL AĞ (LAN) İSTASYON ENVANTERİ ({host_count} CİHAZ)</div>
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:10px">
             <h2 style="margin:0">Keşfedilen Ağ Cihazları ve Tek Tıkla Bağlantı</h2>
             <form method="post" action="/discover">
@@ -630,20 +660,27 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
           let live = true;
           let busy = false;
           const img = document.getElementById('ipcastLiveScreen');
+          const stage = document.getElementById('ipcastStageWrap');
           const statusOut = document.getElementById('ipcastInputStatus');
           const badge = document.getElementById('streamStatusBadge');
           const btn = document.getElementById('toggleLiveStreamBtn');
+          const widthSel = document.getElementById('streamWidthSelect');
 
           window.refreshIpCastFrame = function() {{
             if (!img || busy) return;
             busy = true;
+            const w = widthSel ? widthSel.value : '1280';
             const next = new Image();
             next.onload = function() {{
               img.src = next.src;
               busy = false;
             }};
             next.onerror = function() {{ busy = false; }};
-            next.src = '/api/screen.bmp?w=1280&t=' + Date.now();
+            next.src = '/api/screen.bmp?w=' + encodeURIComponent(w) + '&t=' + Date.now();
+          }};
+
+          window.fullscreenIpCast = function() {{
+            if (stage && stage.requestFullscreen) stage.requestFullscreen().catch(() => {{}});
           }};
 
           setInterval(function() {{
@@ -715,8 +752,16 @@ fn render_screen(state: &Arc<Mutex<IpCastState>>, info: &str) -> Reply {
         profile = profile,
         fps = fps,
         quality = quality,
-        chk_ctrl = if st.allow_remote_control { "checked" } else { "" },
-        chk_tx = if st.allow_file_transfer { "checked" } else { "" },
+        chk_ctrl = if st.allow_remote_control {
+            "checked"
+        } else {
+            ""
+        },
+        chk_tx = if st.allow_file_transfer {
+            "checked"
+        } else {
+            ""
+        },
         chk_clip = if st.allow_clipboard { "checked" } else { "" },
         active_target = escape(&st.active_peer_target),
         active_label = escape(&st.active_peer_label),
@@ -809,7 +854,14 @@ fn main() {
             match (method, path) {
                 ("GET", "/" | "/index.html") => render_screen(&state, ""),
                 ("GET", "/api/screen.bmp") => {
-                    let (_, _, bmp) = fetch_peer_screen_bmp(&state, 1280);
+                    let req_w = raw_path
+                        .split("w=")
+                        .nth(1)
+                        .and_then(|s| s.split('&').next())
+                        .and_then(|s| s.parse::<u32>().ok())
+                        .unwrap_or(1280)
+                        .clamp(640, 1920);
+                    let (_, _, bmp) = fetch_peer_screen_bmp(&state, req_w);
                     (200, "image/bmp", bmp)
                 }
                 ("POST", "/api/input/mouse") => {
@@ -823,7 +875,6 @@ fn main() {
                     let nx = ipscans_core::json::extract_json_u64(body, "x")
                         .map(|v| v as f64)
                         .or_else(|| {
-                            // parse float "x":0.45
                             body.split("\"x\":")
                                 .nth(1)
                                 .and_then(|s| s.split([',', '}']).next())
@@ -836,27 +887,43 @@ fn main() {
                         .and_then(|s| s.split([',', '}']).next())
                         .and_then(|s| s.trim().parse::<f64>().ok())
                         .unwrap_or(0.5);
-                    let action = extract_json_string(body, "action").unwrap_or_else(|| "click".into());
-                    let button = ipscans_core::json::extract_json_u64(body, "button").unwrap_or(1) as u8;
+                    let action =
+                        extract_json_string(body, "action").unwrap_or_else(|| "click".into());
+                    let button =
+                        ipscans_core::json::extract_json_u64(body, "button").unwrap_or(1) as u8;
                     let (px, py) = inject_remote_mouse(nx, ny, &action, button);
-                    let msg = format!("Uzaktan fare olayı uygulandı: ({px}, {py}) · işlem={action} · tuş={button}");
-                    json(200, format!(r#"{{"ok":true,"x":{px},"y":{py},"message":{}}}"#, json_str(&msg)))
+                    let msg = format!(
+                        "Uzaktan fare olayı uygulandı: ({px}, {py}) · işlem={action} · tuş={button}"
+                    );
+                    json(
+                        200,
+                        format!(
+                            r#"{{"ok":true,"x":{px},"y":{py},"message":{}}}"#,
+                            json_str(&msg)
+                        ),
+                    )
                 }
                 ("POST", "/api/input/key") => {
                     let allow = state.lock().unwrap().allow_remote_control;
                     if !allow {
                         return json(
                             403,
-                            r#"{"ok":false,"message":"Uzaktan klavye kontrolü izni kapalı."}"#.into(),
+                            r#"{"ok":false,"message":"Uzaktan klavye kontrolü izni kapalı."}"#
+                                .into(),
                         );
                     }
                     let vk = extract_json_string(body, "vk")
                         .and_then(|s| s.parse::<u8>().ok())
-                        .or_else(|| ipscans_core::json::extract_json_u64(body, "vk").map(|v| v as u8))
+                        .or_else(|| {
+                            ipscans_core::json::extract_json_u64(body, "vk").map(|v| v as u8)
+                        })
                         .unwrap_or(0);
                     inject_remote_key(vk);
                     let msg = format!("Uzaktan klavye tuşu gönderildi (VK={vk}).");
-                    json(200, format!(r#"{{"ok":true,"vk":{vk},"message":{}}}"#, json_str(&msg)))
+                    json(
+                        200,
+                        format!(r#"{{"ok":true,"vk":{vk},"message":{}}}"#, json_str(&msg)),
+                    )
                 }
                 ("POST", "/permissions") => {
                     let mut st = state.lock().unwrap();
@@ -864,17 +931,27 @@ fn main() {
                     st.allow_file_transfer = field(body, "allow_transfer").is_some();
                     st.allow_clipboard = field(body, "allow_clipboard").is_some();
                     drop(st);
-                    render_screen(&state, "İstasyon güvenlik ve uzaktan kontrol izinleri güncellendi.")
+                    render_screen(
+                        &state,
+                        "İstasyon güvenlik ve uzaktan kontrol izinleri güncellendi.",
+                    )
                 }
                 ("POST", "/rotate-pin") => {
                     let new_pin = {
                         let mut st = state.lock().unwrap();
-                        let seed = sha256_hex(format!("{}-{}", st.session_pin, now_iso8601()).as_bytes());
-                        let num = u32::from_str_radix(&seed[..6], 16).unwrap_or(482910) % 900_000 + 100_000;
+                        let seed = sha256_hex(
+                            format!("{}-{}", st.session_pin, now_iso8601()).as_bytes(),
+                        );
+                        let num = u32::from_str_radix(&seed[..6], 16).unwrap_or(482910)
+                            % 900_000
+                            + 100_000;
                         st.session_pin = num.to_string();
                         st.session_pin.clone()
                     };
-                    render_screen(&state, &format!("Tek kullanımlık oturum PIN kodu yenilendi: {new_pin}"))
+                    render_screen(
+                        &state,
+                        &format!("Tek kullanımlık oturum PIN kodu yenilendi: {new_pin}"),
+                    )
                 }
                 ("POST", "/p2p-connect" | "/api/p2p-connect") => {
                     let target = if path.starts_with("/api/") {
@@ -1008,7 +1085,10 @@ fn main() {
                     } else {
                         render_screen(
                             &state,
-                            &format!("Yerel ağ taraması tamamlandı: {} aktif cihaz bulundu.", hosts.len()),
+                            &format!(
+                                "Yerel ağ taraması tamamlandı: {} aktif cihaz bulundu.",
+                                hosts.len()
+                            ),
                         )
                     }
                 }

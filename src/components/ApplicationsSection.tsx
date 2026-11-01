@@ -264,8 +264,7 @@ export function ApplicationsSection({
               </p>
               {"version" in item && (
                 <p className="mt-4 font-mono text-xs text-neutral-500">
-                  {item.platform} <span aria-hidden="true">/</span> v
-                  {item.version}
+                  {item.platform}
                 </p>
               )}
               <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-white/10 pt-5">

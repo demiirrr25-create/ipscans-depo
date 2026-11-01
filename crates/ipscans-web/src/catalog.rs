@@ -16,30 +16,62 @@ pub struct App {
 }
 
 pub const APPS: &[App] = &[
-    App { key: "scanner", name: "IPscans+", file: "IPscans-Plus.exe",
+    App {
+        key: "scanner",
+        name: "IPscans+",
+        file: "IPscans-Plus.exe",
         tr: "Çoklu adaptör, IPv4 aralık/CIDR, sınırlı IPv6 (/120–/128), SNMPv2c/LLDP/CDP topolojisi, ONVIF keşfi ve tarama iptali ile yerel ağı tarayın; CSV, JSON veya HTML olarak dışa aktarın.",
-        en: "Scan across multiple adapters, IPv4 ranges/CIDR, bounded IPv6 (/120–/128), SNMPv2c/LLDP/CDP topology, ONVIF discovery and instant cancellation; export as CSV, JSON or HTML." },
-    App { key: "health", name: "Network Health Pro", file: "ipscans-network-health-pro.exe",
+        en: "Scan across multiple adapters, IPv4 ranges/CIDR, bounded IPv6 (/120–/128), SNMPv2c/LLDP/CDP topology, ONVIF discovery and instant cancellation; export as CSV, JSON or HTML.",
+    },
+    App {
+        key: "health",
+        name: "Network Health Pro",
+        file: "ipscans-network-health-pro.exe",
         tr: "Ağ geçidi ICMP ve WAN TCP gecikmesini örnekleyin; bağlantı kesintilerini, adaptör geçişlerini ve uzun süreli JSONL telemetri geçmişini izleyin.",
-        en: "Sample gateway ICMP and WAN TCP latency; track connection outages, adapter transitions and long-duration JSONL telemetry history." },
-    App { key: "sentinel", name: "IPScans Sentinel", file: "IPScans-Sentinel.exe",
+        en: "Sample gateway ICMP and WAN TCP latency; track connection outages, adapter transitions and long-duration JSONL telemetry history.",
+    },
+    App {
+        key: "sentinel",
+        name: "IPScans Sentinel",
+        file: "IPScans-Sentinel.exe",
         tr: "Yerel ağ durumunu ve olay bulgularını inceleyin; hedefe özel güvenlik duvarı kuralı ekleme, doğrulama ve işlemsel geri almayı yürütün.",
-        en: "Review local network conditions and incident evidence; execute target-specific firewall rule addition, verification and transactional rollback." },
-    App { key: "ipcast", name: "IPCast", file: "IPCast.exe",
+        en: "Review local network conditions and incident evidence; execute target-specific firewall rule addition, verification and transactional rollback.",
+    },
+    App {
+        key: "ipcast",
+        name: "IPCast",
+        file: "IPCast.exe",
         tr: "Yerel istasyonları keşfedin, bağlantı öncesi ITU-T X.224 RDP el sıkışmasını doğrulayın ve otomatik yeniden bağlanma (.rdp) profiliyle Windows Uzak Masaüstü istemcisini başlatın.",
-        en: "Discover local stations, verify pre-flight ITU-T X.224 RDP negotiation and launch Windows Remote Desktop with an auto-reconnecting (.rdp) profile." },
-    App { key: "lpr", name: "IPScans LPR Pro", file: "IPScans-LPR-Pro.exe",
+        en: "Discover local stations, verify pre-flight ITU-T X.224 RDP negotiation and launch Windows Remote Desktop with an auto-reconnecting (.rdp) profile.",
+    },
+    App {
+        key: "lpr",
+        name: "IPScans LPR Pro",
+        file: "IPScans-LPR-Pro.exe",
         tr: "PGM/BMP plaka görüntülerinden piksel matrisli OCR çözümlemesi yapın, 24 plakalık etiketli veri setiyle doğruluğu ölçün ve kapalı çevrim bariyer röle onayını (OPEN_CONFIRMED) denetleyin.",
-        en: "Run pixel-matrix OCR on PGM/BMP plate images, benchmark accuracy on the 24-plate labeled dataset and verify closed-loop barrier relay feedback (OPEN_CONFIRMED)." },
-    App { key: "cortex", name: "IPScans Cortex", file: "IPScans-Cortex.exe",
+        en: "Run pixel-matrix OCR on PGM/BMP plate images, benchmark accuracy on the 24-plate labeled dataset and verify closed-loop barrier relay feedback (OPEN_CONFIRMED).",
+    },
+    App {
+        key: "cortex",
+        name: "IPScans Cortex",
+        file: "IPScans-Cortex.exe",
         tr: "ONVIF kameralarını keşfedin, kayıtlı PGM/BMP video akışlarını çözerek SHA-256 adli zincirli ROI ihlal olayları üretin ve açık anahtarlı RSA-512 lisans/CRL/rotasyon kurallarını uygulayın.",
-        en: "Discover ONVIF cameras, decode recorded PGM/BMP video streams into SHA-256 forensically chained ROI intrusion events and enforce public-key RSA-512 license/CRL/rotation rules." },
-    App { key: "admin", name: "Cortex Admin", file: "CortexAdmin.exe",
+        en: "Discover ONVIF cameras, decode recorded PGM/BMP video streams into SHA-256 forensically chained ROI intrusion events and enforce public-key RSA-512 license/CRL/rotation rules.",
+    },
+    App {
+        key: "admin",
+        name: "Cortex Admin",
+        file: "CortexAdmin.exe",
         tr: "İstemciye özel anahtar sızdırmadan asimetrik RSA-512-SHA256 (IPS2) lisansları, CRL1 iptal listelerini ve anahtar rotasyonlarını (v1/v2) imzalayın ve yaşam döngüsünü doğrulayın.",
-        en: "Sign asymmetric RSA-512-SHA256 (IPS2) licenses, CRL1 revocation lists and key rotations (v1/v2) without leaking private keys to the client, and verify the full lifecycle." },
-    App { key: "cli", name: "IPScans CLI", file: "ipscans-network-scanner.exe",
+        en: "Sign asymmetric RSA-512-SHA256 (IPS2) licenses, CRL1 revocation lists and key rotations (v1/v2) without leaking private keys to the client, and verify the full lifecycle.",
+    },
+    App {
+        key: "cli",
+        name: "IPScans CLI",
+        file: "ipscans-network-scanner.exe",
         tr: "Terminalden 1/16/254 hedefli keşif kıyaslaması (--benchmark), çoklu adaptör listesi (--adapters), SNMPv2c sorgusu (--snmp), port, DNS ve WHOIS sorguları çalıştırın.",
-        en: "Run 1/16/254-target discovery benchmarks (--benchmark), multi-adapter enumeration (--adapters), SNMPv2c queries (--snmp), port, DNS and WHOIS checks from your terminal." },
+        en: "Run 1/16/254-target discovery benchmarks (--benchmark), multi-adapter enumeration (--adapters), SNMPv2c queries (--snmp), port, DNS and WHOIS checks from your terminal.",
+    },
 ];
 
 pub fn render(tr: bool, published: bool, public_dir: Option<&Path>) -> String {
@@ -49,13 +81,15 @@ pub fn render(tr: bool, published: bool, public_dir: Option<&Path>) -> String {
     let other = pick("en", "tr");
     let other_name = pick("English", "Türkçe");
     let home = format!("https://ipscans.com/{lang}");
-    let mut html = format!(r#"<!doctype html><html lang="{lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} · IPScans</title><link rel="stylesheet" href="/desktop/catalog.css"></head><body>
+    let mut html = format!(
+        r#"<!doctype html><html lang="{lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} · IPScans</title><link rel="stylesheet" href="/desktop/catalog.css"></head><body>
 <header><nav><a class="brand" href="{home}">IPScans</a><a href="/desktop/{other}.html" lang="{other}" hreflang="{other}">{other_name}</a></nav></header>
-<main><section class="intro"><p class="kicker">WINDOWS x64 &nbsp;/&nbsp; RUST</p><h1>{title}</h1><p>{}</p><small>{} · <code>{TAG}</code> (<code>{PREVIOUS_TAG}</code> {})</small></section><div class="grid">"#,
-        pick("Ağ keşfi, kamera işletimi ve yerel yönetim için sekiz taşınabilir araç. Aracınızı seçin, dosya adını kontrol edin ve ilgili ön sürümü inceleyin.",
-             "Eight portable tools for network discovery, camera operations and local administration. Find your tool, check the filename and inspect the preview build."),
-        &format!("{} {}", pick("Ön sürüm", "Prerelease"), env!("CARGO_PKG_VERSION")),
-        pick("korundu", "preserved"));
+<main><section class="intro"><p class="kicker">WINDOWS x64</p><h1>{title}</h1><p>{}</p></section><div class="grid">"#,
+        pick(
+            "Ağ keşfi, kamera işletimi ve yerel yönetim için sekiz taşınabilir masaüstü uygulaması. Aracınızı seçin ve doğrudan çalıştırın.",
+            "Eight portable desktop applications for network discovery, camera operations and local administration. Choose your application and launch directly."
+        )
+    );
     for app in APPS {
         let App {
             key,
@@ -70,19 +104,32 @@ pub fn render(tr: bool, published: bool, public_dir: Option<&Path>) -> String {
         } else {
             format!("/brand/{key}.png")
         };
-        write!(html, r#"<article id="{key}"><div class="identity"><img alt="" width="52" height="52" src="{icon}"><h2>{name}</h2></div><p>{desc}</p>"#).unwrap();
+        write!(
+            html,
+            r#"<article id="{key}"><div class="identity"><img alt="" width="52" height="52" src="{icon}"><h2>{name}</h2></div><p>{desc}</p>"#
+        )
+        .unwrap();
         if public_dir.is_some_and(|dir| {
             dir.join("desktop-previews")
                 .join(format!("{key}.png"))
                 .is_file()
         }) {
             let alt = pick("Uygulama görünümü", "Application view");
-            write!(html, r#"<a class="preview" href="/desktop-previews/{key}.png"><img loading="lazy" src="/desktop-previews/{key}.png" alt="{name} — {alt}"></a>"#).unwrap();
+            write!(
+                html,
+                r#"<a class="preview" href="/desktop-previews/{key}.png"><img loading="lazy" src="/desktop-previews/{key}.png" alt="{name} — {alt}"></a>"#
+            )
+            .unwrap();
         }
         write!(html, r#"<div class="file"><code>{file}</code>"#).unwrap();
         if published {
-            write!(html, r#"<a class="download" href="{RELEASES}/download/{TAG}/{file}" aria-label="{name} — {}">{} <span aria-hidden="true">↓</span></a>"#,
-                pick("Ön sürümü indir", "Download prerelease"), pick("İndir", "Download")).unwrap();
+            write!(
+                html,
+                r#"<a class="download" href="{RELEASES}/download/{TAG}/{file}" aria-label="{name} — {}">{} <span aria-hidden="true">↓</span></a>"#,
+                pick("Uygulamayı indir", "Download application"),
+                pick("İndir", "Download")
+            )
+            .unwrap();
         } else {
             write!(
                 html,
@@ -98,24 +145,48 @@ pub fn render(tr: bool, published: bool, public_dir: Option<&Path>) -> String {
     } else {
         RELEASES.into()
     };
-    write!(html, r#"</div><aside><h2>{}</h2><p>{}</p><a href="{notes}">{}</a></aside></main></body></html>"#,
+    write!(
+        html,
+        r#"</div><aside><h2>{}</h2><p>{}</p><a href="{notes}">{}</a></aside></main></body></html>"#,
         pick("İndirdikten sonra", "After downloading"),
-        pick("EXE dosyasını Windows’un İndirilenler klasöründe çalıştırdığınızda uygulama kendisini Masaüstüne kopyalar. Başka bir klasörden kopyalamak için PowerShell’de EXE’yi --install-desktop seçeneğiyle çalıştırın. Komut satırı aracını PowerShell’den kullanın.",
-             "Launch the EXE from your Windows Downloads folder to create a desktop copy. From another folder, run the EXE in PowerShell with --install-desktop. Use PowerShell for the command-line scanner."),
-        pick("GitHub sürüm kayıtları ↗", "GitHub release notes ↗")).unwrap();
+        pick(
+            "EXE dosyasını Windows’un İndirilenler klasöründe çalıştırdığınızda uygulama kendisini Masaüstüne kopyalar. Başka bir klasörden kopyalamak için PowerShell’de EXE’yi --install-desktop seçeneğiyle çalıştırın. Komut satırı aracını PowerShell’den kullanın.",
+            "Launch the EXE from your Windows Downloads folder to create a desktop copy. From another folder, run the EXE in PowerShell with --install-desktop. Use PowerShell for the command-line scanner."
+        ),
+        pick("GitHub sürüm kayıtları ↗", "GitHub release notes ↗")
+    )
+    .unwrap();
     html
 }
 
 pub fn apps_json(public_dir: Option<&Path>, published: bool) -> String {
     use ipscans_core::json::json_str;
-    let rows = APPS.iter().map(|app| {
-        let preview = format!("/desktop-previews/{}.png", app.key);
-        let preview = if public_dir.is_none_or(|d| d.join(&preview[1..]).is_file()) { preview } else { String::new() };
-        let download = if published { format!("{RELEASES}/download/{TAG}/{}", app.file) } else { String::new() };
-        format!(r#"  {{"id":{}, "name":{}, "tr":{}, "en":{}, "version":{}, "preview":{}, "download":{}}}"#,
-            json_str(app.key), json_str(app.name), json_str(app.tr), json_str(app.en),
-            json_str(env!("CARGO_PKG_VERSION")), json_str(&preview), json_str(&download))
-    }).collect::<Vec<_>>();
+    let rows = APPS
+        .iter()
+        .map(|app| {
+            let preview = format!("/desktop-previews/{}.png", app.key);
+            let preview = if public_dir.is_none_or(|d| d.join(&preview[1..]).is_file()) {
+                preview
+            } else {
+                String::new()
+            };
+            let download = if published {
+                format!("{RELEASES}/download/{TAG}/{}", app.file)
+            } else {
+                String::new()
+            };
+            format!(
+                r#"  {{"id":{}, "name":{}, "tr":{}, "en":{}, "version":{}, "preview":{}, "download":{}}}"#,
+                json_str(app.key),
+                json_str(app.name),
+                json_str(app.tr),
+                json_str(app.en),
+                json_str(env!("CARGO_PKG_VERSION")),
+                json_str(&preview),
+                json_str(&download)
+            )
+        })
+        .collect::<Vec<_>>();
     format!("[\n{}\n]\n", rows.join(",\n"))
 }
 

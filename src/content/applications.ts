@@ -1,18 +1,18 @@
-﻿import type { Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
 
 type Localized = Record<Locale, string>;
 
 export const ipcastRelease = {
   version: "3.0.0",
   platform: "Windows 10/11 · x64 (Rust Native)",
-  bytes: 2701312,
-  sha256: "b7746cc68d5bd436f90fd0763c4c3af27e1cc7212271e74db83e587976820481",
+  bytes: 1049088,
+  sha256: "651a7cbae744631e437f809ef74e92f71ab04498a062b0a7f1d6368bbb83e628",
   fileName: "IPCast-3.0.0.exe",
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPCast.exe",
   publishedAt: "2026-11-01T06:40:00Z",
   installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPCast.exe",
-  installerBytes: 2701312,
-  installerSha256: "b7746cc68d5bd436f90fd0763c4c3af27e1cc7212271e74db83e587976820481",
+  installerBytes: 1049088,
+  installerSha256: "651a7cbae744631e437f809ef74e92f71ab04498a062b0a7f1d6368bbb83e628",
   releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/desktop-audit-2026.11.01-r2",
 } as const;
 
@@ -22,10 +22,10 @@ export const desktopRelease = {
     releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/desktop-audit-2026.11.01-r2",
     installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPscans-Plus.exe",
     portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/desktop-audit-2026.11.01-r2/IPscans-Plus.exe",
-    installerBytes: 2707968,
-    installerSha256: "62304fa2dead50fedec31d3c65b383f8a139e7fa0087d66d4fe798349760a558",
-    portableBytes: 2707968,
-    portableSha256: "62304fa2dead50fedec31d3c65b383f8a139e7fa0087d66d4fe798349760a558",
+    installerBytes: 1056256,
+    installerSha256: "dc4bbea67d5ff6214128b80ab7d5fb0f0a3490bf24ee955e76482e58517e142d",
+    portableBytes: 1056256,
+    portableSha256: "dc4bbea67d5ff6214128b80ab7d5fb0f0a3490bf24ee955e76482e58517e142d",
   },
 } as const;
 

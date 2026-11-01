@@ -341,8 +341,8 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
               <Image src="/sentinel-mark.png" alt="IPScans Sentinel" width={48} height={48} className="size-12 object-cover" />
             </span>
             <div>
-              <p className="ds-eyebrow">{locale === "tr" ? "YENİ · RUST 3.0 SİBER GÜVENLİK SİSTEMİ" : "NEW · RUST 3.0 CYBERSECURITY SUITE"}</p>
-              <h4 className="ds-h3 mt-1 text-ink">IPScans Sentinel 3.0</h4>
+              <p className="ds-eyebrow">{locale === "tr" ? "OTONOM SİBER SAVUNMA PLATFORMU" : "AUTONOMOUS CYBER DEFENSE PLATFORM"}</p>
+              <h4 className="ds-h3 mt-1 text-ink">IPScans Sentinel</h4>
               <p className="ds-body mt-1 max-w-[680px] text-ink-2">
                 {locale === "tr"
                   ? "Yönetici CMD/PowerShell motoru ve yerel Ollama siber güvenlik ajanıyla (ipscans-cyber-agent) sızılan kameraların ağ çıkışını saliseler içinde keser, ana modem portlarını kapatır ve onarım sonrası ağa erişim verir."

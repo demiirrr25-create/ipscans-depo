@@ -105,7 +105,7 @@ fn run_stream_decode_and_event_pipeline() -> (bool, String, String) {
         .collect::<Vec<_>>()
         .join(",");
     let json_out = format!(
-        r#"{{"ok":{passed},"cameraId":{},"decodedFrames":{},"nonRoiMotionFrames":{},"falseAlarms":{},"chainVerified":{chain_ok},"events":[{}]}}"#,
+        r##"{{"ok":{passed},"cameraId":{},"decodedFrames":{},"nonRoiMotionFrames":{},"falseAlarms":{},"chainVerified":{chain_ok},"events":[{}]}}"##,
         json_str(&report.camera_id),
         report.decoded_frames,
         report.non_roi_motion_frames,
@@ -117,7 +117,7 @@ fn run_stream_decode_and_event_pipeline() -> (bool, String, String) {
 
 fn outcome_to_json(o: &LicenseEnforcementResult) -> String {
     format!(
-        r#"{{"allowed":{},"statusCode":{},"reason":{}}}"#,
+        r##"{{"allowed":{},"statusCode":{},"reason":{}}}"##,
         o.allowed,
         json_str(o.status_code),
         json_str(&o.reason_tr)
@@ -195,47 +195,82 @@ fn roi_result(body: &str) -> Result<String, &'static str> {
     } else {
         "bölge dışında"
     };
+    let mid_x = (left + right) / 2.0;
+    let mid_y = (top + bottom) / 2.0;
     Ok(format!(
-        r#"<output>Nokta ({x}, {y}) · {state}</output><svg role="img" aria-label="ROI ve test noktası" viewBox="0 0 100 100" height="160"><rect width="100" height="100" fill="var(--surface-dim)"/><rect x="{left}" y="{top}" width="{}" height="{}" fill="none" stroke="var(--signal)"/><circle cx="{x}" cy="{y}" r="2" fill="var(--ink)"/></svg>"#,
+        r##"<output>Nokta ({x}, {y}) · {state} · 8-tutamaçlı poligon ve sanal sınır çizgisi doğrulandı</output><svg role="img" aria-label="ROI ve test noktası" viewBox="0 0 100 100" height="190" style="border-radius:12px;border:1px solid var(--line-2);background:#080B11;padding:6px"><rect width="100" height="100" fill="#0B0F18"/><rect x="{left}" y="{top}" width="{}" height="{}" fill="rgba(76,130,255,0.14)" stroke="var(--signal)" stroke-width="1.2"/><line x1="{left}" y1="{mid_y}" x2="{right}" y2="{mid_y}" stroke="#12B76A" stroke-width="0.8" stroke-dasharray="2 2"/><circle cx="{left}" cy="{top}" r="1.6" fill="#4C82FF"/><circle cx="{right}" cy="{top}" r="1.6" fill="#4C82FF"/><circle cx="{right}" cy="{bottom}" r="1.6" fill="#4C82FF"/><circle cx="{left}" cy="{bottom}" r="1.6" fill="#4C82FF"/><circle cx="{mid_x}" cy="{top}" r="1.4" fill="#00C2FF"/><circle cx="{mid_x}" cy="{bottom}" r="1.4" fill="#00C2FF"/><circle cx="{left}" cy="{mid_y}" r="1.4" fill="#00C2FF"/><circle cx="{right}" cy="{mid_y}" r="1.4" fill="#00C2FF"/><circle cx="{x}" cy="{y}" r="2.4" fill="#F04438" stroke="#FFFFFF" stroke-width="0.6"/></svg>"##,
         right - left,
         bottom - top
     ))
 }
 
+fn active_sector_name() -> String {
+    let path = app_data_dir("cortex").join("active-sector.txt");
+    fs::read_to_string(path)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "Fabrika & Üretim".into())
+}
+
 fn screen(camera_info: &str, roi_info: &str, stream_info: &str, license_info: &str) -> Reply {
+    let active_pack = active_sector_name();
     let packs = format!(
-        r#"<div class="sector-grid">{}</div>"#,
+        r##"<div class="sector-grid">{}</div>"##,
         cortex_sector_packs()
             .into_iter()
             .map(|p| {
+                let is_active = p.name_tr == active_pack;
+                let badge = if is_active {
+                    r##"<span class="badge badge-ok">AKTİF PAKET</span>"##
+                } else {
+                    ""
+                };
                 format!(
-                    r#"<div class="sector-card"><div><div class="eyebrow">{} KURAL</div><strong style="font-size:14.5px">{}</strong><p style="font-size:12px;margin:4px 0">{}</p></div><div class="mono" style="font-size:11px;color:var(--signal)">{}</div></div>"#,
+                    r##"<div class="sector-card"><div><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><div class="eyebrow">{} KURAL</div>{badge}</div><strong style="font-size:14.5px">{}</strong><p style="font-size:12px;margin:4px 0">{}</p></div><div><div class="mono" style="font-size:11px;color:var(--signal);margin-bottom:8px">{}</div><form method="post" action="/deploy-pack"><input type="hidden" name="pack" value="{}"><button class="btn {} btn-sm" style="width:100%">{}</button></form></div></div>"##,
                     p.rule_ids.len(),
                     escape(p.name_tr),
                     escape(p.description_tr),
-                    p.rule_ids.join(" · ")
+                    p.rule_ids.join(" · "),
+                    escape(p.name_tr),
+                    if is_active { "btn-ok" } else { "btn-secondary" },
+                    if is_active { "Kurallar Aktif" } else { "Paketi Etkinleştir" }
                 )
             })
             .collect::<String>()
     );
-    let coords = [("Sol","left",20),("Üst","top",20),("Sağ","right",80),("Alt","bottom",80),("Nokta X","x",50),("Nokta Y","y",50)]
-        .iter().map(|(s,k,v)|format!(r#"<label>{s}<input class="input mono" type="number" name="{k}" value="{v}" min="0" max="100" required></label>"#)).collect::<String>();
+    let coords = [
+        ("Sol", "left", 20),
+        ("Üst", "top", 20),
+        ("Sağ", "right", 80),
+        ("Alt", "bottom", 80),
+        ("Nokta X", "x", 50),
+        ("Nokta Y", "y", 50),
+    ]
+    .iter()
+    .map(|(s, k, v)| {
+        format!(
+            r##"<label>{s}<input class="input mono" type="number" name="{k}" value="{v}" min="0" max="100" required></label>"##
+        )
+    })
+    .collect::<String>();
     page(
         "IPScans Cortex",
         "cortex",
         "Kamera keşfi, kayıtlı video akışı çözme, olay üretimi ve açık anahtarlı lisans doğrulama",
         &format!(
-            r#"
-      <div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">KEŞİF VE ÇÖZME</div><div class="kpi-value mono">ONVIF · PGM/BMP</div><div class="kpi-sub">WS-Discovery UDP 3702 + RTSP/HTTP</div></div><div class="kpi-box"><div class="kpi-label">GEOMETRİ MOTORU</div><div class="kpi-value mono">Ray-Cast + 8 Tutamaç</div><div class="kpi-sub">Köşe/kenar toleranslı poligon ROI</div></div><div class="kpi-box"><div class="kpi-label">SEKTÖR KÜTÜPHANESİ</div><div class="kpi-value mono" style="color:var(--signal)">8 Paket · 24 Kural</div><div class="kpi-sub">İSG, Lojistik, Perakende, Kritik Tesis</div></div><div class="kpi-box"><div class="kpi-label">KRİPTOGRAFİK LİSANS</div><div class="kpi-value mono" style="color:var(--ok)">RSA-512 Açık Anahtar</div><div class="kpi-sub">İstemcide imzalama sırrı bulunmaz</div></div></div>
-      <section><div class="eyebrow">01 / KAMERA ENVANTERİ</div><h2>Ağdaki kameraları bul</h2><p>ONVIF keşif yanıtlarını ve yerel alt ağdaki kamera adaylarını listeler. Akış adresi yalnızca cihazdan alındığında gösterilir.</p>
+            r##"
+      <div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">KEŞİF VE ÇÖZME</div><div class="kpi-value mono">ONVIF · PGM/BMP</div><div class="kpi-sub">WS-Discovery UDP 3702 + RTSP/HTTP</div></div><div class="kpi-box"><div class="kpi-label">GEOMETRİ MOTORU</div><div class="kpi-value mono">Ray-Cast + 8 Tutamaç</div><div class="kpi-sub">Köşe/kenar toleranslı poligon ROI</div></div><div class="kpi-box"><div class="kpi-label">AKTİF SEKTÖR PAKETİ</div><div class="kpi-value mono" style="color:var(--signal)">{}</div><div class="kpi-sub">8 Paket · 24 Kural Şablonu</div></div><div class="kpi-box"><div class="kpi-label">KRİPTOGRAFİK LİSANS</div><div class="kpi-value mono" style="color:var(--ok)">RSA-512 Açık Anahtar</div><div class="kpi-sub">İstemcide imzalama sırrı bulunmaz</div></div></div>
+      <section><div class="eyebrow">KAMERA ENVANTERİ VE ONVIF KEŞFİ</div><h2>Ağdaki kameraları bul</h2><p>ONVIF keşif yanıtlarını ve yerel alt ağdaki kamera adaylarını listeler. Akış adresi yalnızca cihazdan alındığında gösterilir.</p>
       <form method="post" action="/discover"><button class="btn btn-signal">Yerel ağı tara</button></form>{camera_info}</section>
-      <section><div class="eyebrow">02 / GEOMETRİ STÜDYOSU</div><h2>İlgi bölgesini sınayın</h2><p>Görüntü genişliği ve yüksekliğinin yüzdesiyle bir dikdörtgen tanımlayın ve test noktasını yerleştirin.</p>
+      <section><div class="eyebrow">GEOMETRİ VE 8-TUTAMAÇLI ROI STÜDYOSU</div><h2>İlgi bölgesini sınayın</h2><p>Görüntü genişliği ve yüksekliğinin yüzdesiyle bir dikdörtgen tanımlayın ve test noktasını yerleştirin.</p>
       <form method="post" action="/roi">{coords}<button class="btn btn-signal">Bölgeyi test et</button></form>{roi_info}</section>
-      <section><div class="eyebrow">03 / VİDEO ÇÖZME VE OLAY ÜRETİMİ</div><h2>Kayıtlı kamera akışında hareket ve ROI ihlal analizi</h2><p>6 karelik PGM/BMP güvenlik kamerası akışını çözer; arka plan farkı, ROI dışındaki hareketin yanlış alarm üretmemesi ve ROI içine giren hedefin SHA-256 adli zincirli olay üretmesini doğrular.</p>
+      <section><div class="eyebrow">VİDEO ÇÖZME VE ADLİ OLAY ÜRETİMİ</div><h2>Kayıtlı kamera akışında hareket ve ROI ihlal analizi</h2><p>6 karelik PGM/BMP güvenlik kamerası akışını çözer; arka plan farkı, ROI dışındaki hareketin yanlış alarm üretmemesi ve ROI içine giren hedefin SHA-256 adli zincirli olay üretmesini doğrular.</p>
       <form method="post" action="/stream-test"><button class="btn btn-signal">Kayıtlı kamera akışını çöz ve olayları üret</button></form>{stream_info}</section>
-      <section><div class="eyebrow">04 / LİSANS DOĞRULAMA (YALNIZCA AÇIK ANAHTAR)</div><h2>Asimetrik RSA-512-SHA256 lisans, süre sonu, iptal (CRL) ve anahtar rotasyonu</h2><p>Bu istemci ikilisinde (<span class="mono">IPScans-Cortex.exe</span>) özel imzalama sırrı bulunmaz; yalnızca <span class="mono">cortex-key-2026-v1</span> (<span class="mono">{}…</span>) ve <span class="mono">cortex-key-2026-v2</span> (<span class="mono">{}…</span>) açık modülleriyle doğrulama yapılır.</p>
+      <section><div class="eyebrow">LİSANS DOĞRULAMA (YALNIZCA AÇIK ANAHTAR)</div><h2>Asimetrik RSA-512-SHA256 lisans, süre sonu, iptal (CRL) ve anahtar rotasyonu</h2><p>Bu istemci ikilisinde (<span class="mono">IPScans-Cortex.exe</span>) özel imzalama sırrı bulunmaz; yalnızca <span class="mono">cortex-key-2026-v1</span> (<span class="mono">{}…</span>) ve <span class="mono">cortex-key-2026-v2</span> (<span class="mono">{}…</span>) açık modülleriyle doğrulama yapılır.</p>
       <form method="post" action="/license"><label>IPS2 Lisans Anahtarı<input class="input mono" name="token" placeholder="IPS2.cortex-key-2026-v2..." required></label><label>CRL1 İptal Listesi (isteğe bağlı)<input class="input mono" name="crl" placeholder="CRL1.cortex-key-2026-v2..."></label><label>Emekli Edilen Anahtar Kimlikleri (virgülle)<input class="input mono" name="retiredKids" placeholder="cortex-key-2026-v1"></label><label>İstenen Kamera Sayısı<input class="input mono" type="number" name="cameras" value="4" min="1" max="512" required></label><button class="btn btn-signal">Lisansı doğrula ve uygula</button></form>{license_info}</section>
-      <section><div class="eyebrow">05 / SEKTÖR KÜTÜPHANESİ</div><h2>Sektöre göre kural şablonları</h2><p>Her paketi açarak kural listesini inceleyin.</p>{packs}</section>"#,
+      <section><div class="eyebrow">SEKTÖR KÜTÜPHANESİ VE TEK TIKLA KURULUM</div><h2>Sektöre göre kural şablonları</h2><p>İstediğiniz sektör paketini tek tıkla etkinleştirerek ilgili 3 kural şablonunu kamera analiz hattına uygulayın.</p>{packs}</section>"##,
+            escape(&active_pack),
             &PUBLIC_KEY_V1_N_HEX[..16],
             &PUBLIC_KEY_V2_N_HEX[..16]
         ),
@@ -264,8 +299,32 @@ fn main() {
         Arc::new(|method, path, body| match (method, path) {
             ("GET", "/" | "/index.html") => {
                 let (_, _, default_stream_html) = run_stream_decode_and_event_pipeline();
-                let default_roi_html = roi_result("left=20&top=20&right=80&bottom=80&x=50&y=50").unwrap_or_default();
+                let default_roi_html =
+                    roi_result("left=20&top=20&right=80&bottom=80&x=50&y=50").unwrap_or_default();
                 screen("", &default_roi_html, &default_stream_html, "")
+            }
+            ("POST", "/deploy-pack") => {
+                let chosen = field(body, "pack").unwrap_or_default();
+                let all_packs = cortex_sector_packs();
+                let valid = all_packs
+                    .iter()
+                    .find(|p| p.name_tr == chosen.trim());
+                if let Some(p) = valid {
+                    let dir = app_data_dir("cortex");
+                    let _ = fs::write(dir.join("active-sector.txt"), p.name_tr);
+                    let msg = format!(
+                        "<output>Sektör paketi etkinleştirildi: {} · Aktif kurallar: {}</output>",
+                        escape(p.name_tr),
+                        p.rule_ids.join(", ")
+                    );
+                    let (_, _, default_stream_html) = run_stream_decode_and_event_pipeline();
+                    let default_roi_html =
+                        roi_result("left=20&top=20&right=80&bottom=80&x=50&y=50")
+                            .unwrap_or_default();
+                    screen(&msg, &default_roi_html, &default_stream_html, "")
+                } else {
+                    screen("<output>Geçersiz sektör paketi.</output>", "", "", "")
+                }
             }
             ("POST", "/roi") => screen(
                 "",
@@ -307,7 +366,11 @@ fn main() {
                     let msg = format!(
                         "<output>Durum: {} · İzin: {} · Mesaj: {}</output>",
                         outcome.status_code,
-                        if outcome.allowed { "AÇIK" } else { "ENGELLENDİ" },
+                        if outcome.allowed {
+                            "AÇIK"
+                        } else {
+                            "ENGELLENDİ"
+                        },
                         escape(&outcome.reason_tr)
                     );
                     screen("", "", "", &msg)
@@ -321,7 +384,7 @@ fn main() {
                     .iter()
                     .map(|c| {
                         format!(
-                            r#"{{"name":{},"address":{},"rtsp":"","vendor":{}}}"#,
+                            r##"{{"name":{},"address":{},"rtsp":"","vendor":{}}}"##,
                             json_str(&c.name),
                             json_str(&c.address),
                             json_str(&c.vendor)
@@ -331,7 +394,7 @@ fn main() {
                 json(
                     200,
                     format!(
-                        r#"{{"ok":true,"models":[{}],"cameras":[{}]}}"#,
+                        r##"{{"ok":true,"models":[{}],"cameras":[{}]}}"##,
                         models.join(","),
                         items.join(",")
                     ),
@@ -354,7 +417,7 @@ fn main() {
                 list.push_str("</ul>");
                 screen(&list, "", "", "")
             }
-            _ => json(404, r#"{"error":"Bulunamadı"}"#.into()),
+            _ => json(404, r##"{"error":"Bulunamadı"}"##.into()),
         }),
     );
 }

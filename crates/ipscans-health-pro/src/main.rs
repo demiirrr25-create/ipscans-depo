@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use ipscans_core::{
     design::{bind_app_server, run_http_loop},
-    health_monitor::{HealthSampleRecord, HealthSessionTracker, summarize_rtt_samples},
+    health_monitor::{summarize_rtt_samples, HealthSampleRecord, HealthSessionTracker},
     json::json_str,
     network::{discover_gateway_context, interface_arp_table, ping_ipv4, probe_host_ports},
     win32::{app_data_dir, launch_desktop_app_window},
@@ -110,17 +110,59 @@ fn run_resilience_simulation(state: &Mutex<Monitor>) -> String {
     arp_wifi.insert("192.168.1.1".to_string(), "dd-ee-ff-33-44-55".to_string());
 
     // 1. Healthy baseline on primary adapter
-    sim.ingest_observation(1_700_000_000, "192.168.0.29", "192.168.0.1", Some(2), Some(14), &arp_eth);
-    sim.ingest_observation(1_700_000_005, "192.168.0.29", "192.168.0.1", Some(3), Some(15), &arp_eth);
+    sim.ingest_observation(
+        1_700_000_000,
+        "192.168.0.29",
+        "192.168.0.1",
+        Some(2),
+        Some(14),
+        &arp_eth,
+    );
+    sim.ingest_observation(
+        1_700_000_005,
+        "192.168.0.29",
+        "192.168.0.1",
+        Some(3),
+        Some(15),
+        &arp_eth,
+    );
     // 2. Complete connection loss (both gateway and WAN unreachable)
-    sim.ingest_observation(1_700_000_010, "192.168.0.29", "192.168.0.1", None, None, &arp_eth);
-    sim.ingest_observation(1_700_000_015, "192.168.0.29", "192.168.0.1", None, None, &arp_eth);
+    sim.ingest_observation(
+        1_700_000_010,
+        "192.168.0.29",
+        "192.168.0.1",
+        None,
+        None,
+        &arp_eth,
+    );
+    sim.ingest_observation(
+        1_700_000_015,
+        "192.168.0.29",
+        "192.168.0.1",
+        None,
+        None,
+        &arp_eth,
+    );
     // 3. Adapter transition (failover to Wi-Fi adapter) and recovery
-    sim.ingest_observation(1_700_000_020, "192.168.1.44", "192.168.1.1", Some(6), Some(19), &arp_wifi);
+    sim.ingest_observation(
+        1_700_000_020,
+        "192.168.1.44",
+        "192.168.1.1",
+        Some(6),
+        Some(19),
+        &arp_wifi,
+    );
     // 4. Genuine ARP conflict on the same adapter
     let mut arp_wifi_spoof = arp_wifi;
     arp_wifi_spoof.insert("192.168.1.1".to_string(), "99-88-77-66-55-44".to_string());
-    sim.ingest_observation(1_700_000_025, "192.168.1.44", "192.168.1.1", Some(5), Some(18), &arp_wifi_spoof);
+    sim.ingest_observation(
+        1_700_000_025,
+        "192.168.1.44",
+        "192.168.1.1",
+        Some(5),
+        Some(18),
+        &arp_wifi_spoof,
+    );
 
     let rep = sim.report();
     let outage_secs = sim.outages.first().map(|o| o.duration_secs).unwrap_or(0);
@@ -137,7 +179,7 @@ fn run_resilience_simulation(state: &Mutex<Monitor>) -> String {
     let mut monitor = state.lock().unwrap();
     monitor.last_sim_summary = Some(summary);
     format!(
-        r#"{{"ok":true,"totalSamples":{},"gatewayLossPct":{:.2},"wanLossPct":{:.2},"gatewayP95Ms":{},"wanP95Ms":{},"outageCount":{},"adapterSwitchCount":{},"arpConflictCount":{}}}"#,
+        r##"{{"ok":true,"totalSamples":{},"gatewayLossPct":{:.2},"wanLossPct":{:.2},"gatewayP95Ms":{},"wanP95Ms":{},"outageCount":{},"adapterSwitchCount":{},"arpConflictCount":{}}}"##,
         rep.total_samples,
         rep.gateway_loss_pct,
         rep.wan_loss_pct,
@@ -157,6 +199,42 @@ fn as_json(ms: Option<u32>) -> String {
     ms.map(|v| v.to_string()).unwrap_or_else(|| "null".into())
 }
 impl Monitor {
+    fn health_score(&self) -> u32 {
+        if self.samples.is_empty() {
+            return 100;
+        }
+        let rep = self.tracker.report();
+        let mut penalty = 0.0f64;
+        penalty += rep.gateway_loss_pct * 0.45;
+        penalty += rep.wan_loss_pct * 0.25;
+        if rep.gateway_p95_ms > 20 {
+            penalty += ((rep.gateway_p95_ms - 20) as f64 * 0.3).min(15.0);
+        }
+        if rep.wan_p95_ms > 80 {
+            penalty += ((rep.wan_p95_ms - 80) as f64 * 0.15).min(10.0);
+        }
+        penalty += (rep.arp_conflict_count as f64 * 12.0).min(25.0);
+        (100.0 - penalty).clamp(0.0, 100.0).round() as u32
+    }
+    fn csv(&self) -> String {
+        let mut out = String::from(
+            "\u{feff}TimestampUTC,AdapterIP,GatewayIP,GatewayRTT_ms,WAN_RTT_ms,AdapterChanged,ARP_Conflicts\r\n",
+        );
+        for s in &self.samples {
+            let _ = write!(
+                out,
+                "{},\"{}\",\"{}\",{},{},{},{}\r\n",
+                s.timestamp_unix,
+                s.adapter_ip,
+                s.gateway_ip,
+                s.gateway_rtt_ms.map(|v| v.to_string()).unwrap_or_default(),
+                s.wan_rtt_ms.map(|v| v.to_string()).unwrap_or_default(),
+                s.adapter_changed,
+                s.arp_conflicts.len()
+            );
+        }
+        out
+    }
     fn json(&self) -> String {
         let Some(s) = self.samples.front() else {
             return "{\"ok\":false,\"reason\":\"no_samples\"}".into();
@@ -165,13 +243,17 @@ impl Monitor {
             "[{}]",
             s.arp_conflicts
                 .iter()
-                .map(|a| json_str(&format!("{} · {} → {}", a.ip, a.previous_mac, a.conflicting_mac)))
+                .map(|a| json_str(&format!(
+                    "{} · {} → {}",
+                    a.ip, a.previous_mac, a.conflicting_mac
+                )))
                 .collect::<Vec<_>>()
                 .join(",")
         );
         let rep = self.tracker.report();
         format!(
-            "{{\"ok\":true,\"adapterIp\":{},\"gatewayIp\":{},\"gatewayRttMs\":{},\"wanRttMs\":{},\"arpChanges\":{},\"adapterSwitched\":{},\"outageCount\":{},\"adapterTransitionCount\":{},\"timestamp\":{},\"sampleCount\":{}}}",
+            "{{\"ok\":true,\"healthScore\":{},\"adapterIp\":{},\"gatewayIp\":{},\"gatewayRttMs\":{},\"wanRttMs\":{},\"arpChanges\":{},\"adapterSwitched\":{},\"outageCount\":{},\"adapterTransitionCount\":{},\"timestamp\":{},\"sampleCount\":{}}}",
+            self.health_score(),
             json_str(&s.adapter_ip),
             json_str(&s.gateway_ip),
             as_json(s.gateway_rtt_ms),
@@ -187,14 +269,21 @@ impl Monitor {
     fn page(&self) -> String {
         let theme = if self.dark { "dark" } else { "light" };
         let refresh = if self.active {
-            r#"<meta http-equiv="refresh" content="5;url=/">"#
+            r##"<meta http-equiv="refresh" content="5;url=/">"##
         } else {
             ""
         };
         let rep = self.tracker.report();
+        let score = self.health_score();
+        let score_color = if score >= 85 {
+            "var(--ok)"
+        } else if score >= 60 {
+            "var(--warn)"
+        } else {
+            "var(--err)"
+        };
         let mut page = format!(
-            r#"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8">{refresh}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Network Health Pro · Bağlantı ölçümleri</title><link rel="icon" href="/brand/health.png"><link rel="stylesheet" href="/design/v2.css"><style>.hero{{margin-bottom:20px;border-left:4px solid var(--signal);padding:18px 24px;background:linear-gradient(135deg,var(--surface) 0%,var(--surface-dim) 100%);border-radius:18px;border-top:1px solid var(--line-2);border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);box-shadow:var(--shadow-sm)}}.hero h1{{font-size:clamp(26px,4vw,42px);letter-spacing:-.05em}}.actions{{display:flex;gap:8px;flex-wrap:wrap}}.metric{{font-size:1.8rem;font-weight:700;letter-spacing:-.045em}}.bars{{display:flex;align-items:end;height:46px;gap:4px;margin-top:12px}}.bars i{{display:block;width:9px;min-height:4px;background:var(--signal);border-radius:3px}}.bars i.miss{{height:4px;background:var(--warn)}}.note{{margin-top:12px}}.tablebox{{max-height:420px;overflow:auto}}</style></head><body><div class="app-shell"><header class="topbar"><div class="brand-cluster"><img class="brand-logo" src="/brand/health.png" alt=""><div><div style="display:flex;align-items:center;gap:8px"><strong>Network Health Pro</strong><span class="badge badge-signal mono">v{}</span></div><div class="brand-sub">Sürekli ağ geçidi/WAN gecikme, kesinti, adaptör değişimi ve L2 ARP telemetrisi</div></div></div><div class="actions"><span class="badge badge-ok mono"><span class="status-dot"></span>TELEMETRİ AKTİF</span><form action="/theme" method="post"><button class="btn btn-secondary">Temayı değiştir</button></form><form action="/sample" method="post"><button class="btn btn-secondary">Şimdi ölç</button></form><form action="/simulate-test" method="post"><button class="btn btn-secondary">Kesinti ve adaptör geçişini sına</button></form><form action="/{}" method="post"><button class="btn btn-signal">{}</button></form></div></header><main class="workspace"><section class="hero"><span class="eyebrow">BAĞLANTI GÖZLEMİ VE DAYANIKLILIK</span><h1>Ağ sağlığı ve kesintisiz telemetri</h1><p>{} · Son {} ölçüm / {} örneklik pencere · Kesinti: {} · Adaptör geçişi: {}</p></section><div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">GÖZLEM PENCERESİ</div><div class="kpi-value mono">{} / {}</div><div class="kpi-sub">JSONL kalıcı günlük kaydı</div></div><div class="kpi-box"><div class="kpi-label">AĞ GEÇİDİ P95 RTT</div><div class="kpi-value mono">{} ms</div><div class="kpi-sub">Kayıp oranı: {:.1}%</div></div><div class="kpi-box"><div class="kpi-label">WAN (1.1.1.1) P95 RTT</div><div class="kpi-value mono">{} ms</div><div class="kpi-sub">Kayıp oranı: {:.1}%</div></div><div class="kpi-box"><div class="kpi-label">ADAPTÖR / ARP OLAYI</div><div class="kpi-value mono" style="color:var(--ok)">{} / {}</div><div class="kpi-sub">Adaptör geçişi / ARP uyuşmazlığı</div></div></div><div class="bento-grid">"#,
-            env!("CARGO_PKG_VERSION"),
+            r##"<!doctype html><html lang="tr" data-theme="{theme}"><head><meta charset="utf-8">{refresh}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Network Health Pro — Sürekli Bağlantı ve Dayanıklılık Telemetrisi</title><link rel="icon" href="/brand/health.png"><link rel="stylesheet" href="/design/v2.css"><style>.hero{{margin-bottom:20px;padding:22px 26px;background:linear-gradient(135deg,var(--surface-dim) 0%,var(--surface) 100%);border-radius:20px;border:1px solid var(--line-2);box-shadow:var(--shadow-card);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}}.hero h1{{font-size:clamp(24px,3.2vw,36px);letter-spacing:-.04em;margin:2px 0 4px}}.actions{{display:flex;gap:8px;flex-wrap:wrap;align-items:center}}.metric{{font-size:1.85rem;font-weight:700;letter-spacing:-.045em}}.bars{{display:flex;align-items:end;height:46px;gap:4px;margin-top:12px}}.bars i{{display:block;width:9px;min-height:4px;background:var(--signal);border-radius:3px}}.bars i.miss{{height:4px;background:var(--warn)}}.note{{margin-top:12px}}.tablebox{{max-height:420px;overflow:auto}}</style></head><body><div class="app-shell"><header class="topbar"><div class="brand-cluster"><span class="ipscans-hex-mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><defs><linearGradient id="ips-h" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2F6BFF"/><stop offset="50%" stop-color="#00C2FF"/><stop offset="100%" stop-color="#7A5CFF"/></linearGradient></defs><path d="M16 3L27.2583 9.5V22.5L16 29L4.74167 22.5V9.5L16 3Z" stroke="url(#ips-h)" stroke-width="2" stroke-linejoin="round"/><path d="M16 9V16M16 16L22 19.5M16 16L10 19.5" stroke="url(#ips-h)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="16" r="2.6" fill="url(#ips-h)"/></svg></span><span class="brand-divider" aria-hidden="true"></span><img class="brand-logo" src="/brand/health.png" alt=""><div><div class="brand-title">Network Health Pro</div><div class="brand-sub">Sürekli ağ geçidi/WAN gecikme, kesinti, adaptör değişimi ve L2 ARP telemetrisi</div></div></div><nav class="nav-pills" id="healthNavPills" role="tablist"><button type="button" class="nav-tab active" onclick="window.filterHealthSection('all', this)">Tüm Modüller</button><button type="button" class="nav-tab" onclick="window.filterHealthSection('telemetry', this)">Canlı Telemetri</button><button type="button" class="nav-tab" onclick="window.filterHealthSection('resilience', this)">Ağ Dayanıklılığı &amp; ARP</button><button type="button" class="nav-tab" onclick="window.filterHealthSection('history', this)">Ölçüm Geçmişi</button></nav><div class="actions"><form action="/sample" method="post"><button class="btn btn-secondary btn-sm">Şimdi ölç</button></form><form action="/simulate-test" method="post"><button class="btn btn-secondary btn-sm">Kesinti ve adaptör geçişini sına</button></form><form action="/{}" method="post"><button class="btn btn-signal btn-sm">{}</button></form><form action="/theme" method="post"><button class="btn btn-secondary btn-sm">Temayı değiştir</button></form></div></header><main class="workspace"><section class="hero"><div><span class="eyebrow">BAĞLANTI GÖZLEMİ VE DAYANIKLILIK</span><h1>Ağ sağlığı ve kesintisiz telemetri</h1><p style="color:var(--ink-2)">{} · Son {} ölçüm / {} örneklik pencere · Kesinti: {} · Adaptör geçişi: {}</p></div><div class="actions"><a class="btn btn-secondary btn-sm" download="health-telemetry.csv" href="/export/csv">CSV İndir</a><a class="btn btn-secondary btn-sm" download="health-telemetry.json" href="/export/json">JSON Rapor</a></div></section><div class="kpi-strip"><div class="kpi-box"><div class="kpi-label">AĞ SAĞLIK SKORU</div><div class="kpi-value mono" style="color:{score_color}">{score} / 100</div><div class="kpi-sub">Gözlem penceresi: {} / {}</div></div><div class="kpi-box"><div class="kpi-label">AĞ GEÇİDİ P95 RTT</div><div class="kpi-value mono">{} ms</div><div class="kpi-sub">Kayıp oranı: {:.1}%</div></div><div class="kpi-box"><div class="kpi-label">WAN (1.1.1.1) P95 RTT</div><div class="kpi-value mono">{} ms</div><div class="kpi-sub">Kayıp oranı: {:.1}%</div></div><div class="kpi-box"><div class="kpi-label">ADAPTÖR / ARP OLAYI</div><div class="kpi-value mono" style="color:var(--ok)">{} / {}</div><div class="kpi-sub">Adaptör geçişi / ARP uyuşmazlığı</div></div></div><div class="bento-grid">"##,
             if self.active { "stop" } else { "start" },
             if self.active {
                 "İzlemeyi durdur"
@@ -222,7 +311,7 @@ impl Monitor {
         if let Some(sim) = &self.last_sim_summary {
             let _ = write!(
                 page,
-                r#"<section class="bento-card col-12"><div class="eyebrow">DOĞRULANMIŞ DAYANIKLILIK SENARYOSU</div><p class="mono">{sim}</p></section>"#
+                r##"<section class="bento-card col-12" data-health-sec="resilience"><div class="eyebrow">DOĞRULANMIŞ DAYANIKLILIK SENARYOSU</div><p class="mono">{sim}</p></section>"##
             );
         }
         for (gateway, title) in [
@@ -254,7 +343,11 @@ impl Monitor {
             } else {
                 "TCP başarısız"
             };
-            let p95_val = if gateway { rep.gateway_p95_ms } else { rep.wan_p95_ms };
+            let p95_val = if gateway {
+                rep.gateway_p95_ms
+            } else {
+                rep.wan_p95_ms
+            };
             let jitter = if good.len() >= 2 {
                 format!("{:.1} ms · p95 {} ms", summary.jitter_ms, p95_val)
             } else {
@@ -262,7 +355,7 @@ impl Monitor {
             };
             let _ = write!(
                 page,
-                r#"<section class="bento-card col-6"><div class="eyebrow">{title}</div><div class="metric mono">{value}</div><p>{label} {loss} · Gecikme farkı {jitter}</p><div class="bars" aria-hidden="true">"#
+                r##"<section class="bento-card col-6" data-health-sec="telemetry"><div class="eyebrow">{title}</div><div class="metric mono">{value}</div><p style="color:var(--ink-2)">{label} {loss} · Gecikme farkı {jitter}</p><div class="bars" aria-hidden="true">"##
             );
             for n in readings {
                 if let Some(n) = n {
@@ -279,14 +372,16 @@ impl Monitor {
         }
         let last = self.samples.front();
         let text = match last {
-            Some(s) if s.adapter_changed => "Adaptör değişti (ARP tablosu yeni arayüze sıfırlandı)".into(),
+            Some(s) if s.adapter_changed => {
+                "Adaptör değişti (ARP tablosu yeni arayüze sıfırlandı)".into()
+            }
             Some(s) if s.arp_conflicts.is_empty() => "Değişiklik gözlenmedi".into(),
             Some(s) => format!("{} MAC değişimi", s.arp_conflicts.len()),
             None => "Karşılaştırılabilir iki ARP kaydı bekleniyor".into(),
         };
         let _ = write!(
             page,
-            r#"<section class="bento-card col-12"><div class="eyebrow">L2 KOMŞU TABLOSU VE ADAPTÖR SÜREKLİLİĞİ</div><h2 class="card-title">{text}</h2><p class="card-desc">Aynı arabirimde iki gözlem arasında IPv4 adresinin MAC karşılığı değişirse kaydedilir. Adaptör değiştiğinde yanlış ARP sahteciliği uyarısı üretilmez. Uzun süreli kayıt dosyası: <span class="mono">{}</span></p>"#,
+            r##"<section class="bento-card col-12" data-health-sec="resilience"><div class="eyebrow">L2 KOMŞU TABLOSU VE ADAPTÖR SÜREKLİLİĞİ</div><h2 class="card-title">{text}</h2><p class="card-desc">Aynı arabirimde iki gözlem arasında IPv4 adresinin MAC karşılığı değişirse kaydedilir. Adaptör değiştiğinde yanlış ARP sahteciliği uyarısı üretilmez. Uzun süreli kayıt dosyası: <span class="mono">{}</span></p>"##,
             self.log_path.display()
         );
         if let Some(s) = last {
@@ -298,17 +393,25 @@ impl Monitor {
                 );
             }
         }
-        page.push_str(r#"</section><section class="bento-card col-12"><div class="card-header"><h2 class="card-title">Ölçüm geçmişi</h2></div><div class="data-table-wrap tablebox"><table class="data-table"><thead><tr><th>Saat (UTC)</th><th>Adaptör IP</th><th>Ağ geçidi</th><th>ICMP RTT</th><th>WAN TCP RTT</th><th>ARP değişimi</th></tr></thead><tbody>"#);
+        page.push_str(r##"</section><section class="bento-card col-12" data-health-sec="history"><div class="card-header"><div><div class="eyebrow">ZAMAN SERİSİ KAYITLARI</div><h2 class="card-title">Ölçüm geçmişi</h2></div></div><div class="data-table-wrap tablebox"><table class="data-table"><thead><tr><th>Saat (UTC)</th><th>Adaptör IP</th><th>Ağ geçidi</th><th>ICMP RTT</th><th>WAN TCP RTT</th><th>ARP değişimi</th></tr></thead><tbody>"##);
         for s in &self.samples {
             let t = s.timestamp_unix % 86400;
             let _ = write!(
                 page,
-                "<tr><td>{:02}:{:02}:{:02}</td><td class=\"mono\">{}</td><td class=\"mono\">{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                "<tr><td class=\"mono\">{:02}:{:02}:{:02}</td><td class=\"mono\">{}</td><td class=\"mono\">{}</td><td class=\"mono\">{}</td><td class=\"mono\">{}</td><td>{}</td></tr>",
                 t / 3600,
                 t / 60 % 60,
                 t % 60,
-                if s.adapter_ip.is_empty() { "—" } else { &s.adapter_ip },
-                if s.gateway_ip.is_empty() { "Algılanmadı" } else { &s.gateway_ip },
+                if s.adapter_ip.is_empty() {
+                    "—"
+                } else {
+                    &s.adapter_ip
+                },
+                if s.gateway_ip.is_empty() {
+                    "Algılanmadı"
+                } else {
+                    &s.gateway_ip
+                },
                 rtt(s.gateway_rtt_ms),
                 rtt(s.wan_rtt_ms),
                 if s.adapter_changed {
@@ -323,7 +426,15 @@ impl Monitor {
                 "<tr><td colspan=\"6\">İlk örnek için Şimdi ölç düğmesini kullanın.</td></tr>",
             );
         }
-        page.push_str("</tbody></table></div><p class=\"card-desc note\">TCP bağlantı süresi ve ICMP yanıt süresi farklı ölçümlerdir. ICMP engellenebilir. Pencere kapatıldıktan sonra izleme en geç bir dakika içinde durur.</p></section></div></main></div><script src=\"/design/v2.js\"></script></body></html>");
+        page.push_str(r##"</tbody></table></div><p class="card-desc note">TCP bağlantı süresi ve ICMP yanıt süresi farklı ölçümlerdir. ICMP engellenebilir. Pencere kapatıldıktan sonra izleme en geç bir dakika içinde durur.</p></section></div></main></div><script src="/design/v2.js"></script><script>
+        window.filterHealthSection = function(key, btn) {
+          document.querySelectorAll('#healthNavPills .nav-tab').forEach(b => b.classList.remove('active'));
+          if (btn) btn.classList.add('active');
+          document.querySelectorAll('[data-health-sec]').forEach(el => {
+            el.style.display = (key === 'all' || el.getAttribute('data-health-sec') === key) ? '' : 'none';
+          });
+        };
+        </script></body></html>"##);
         page
     }
 }
@@ -398,14 +509,19 @@ fn main() {
                 ("POST", "/simulate-test" | "/api/simulate-test") => {
                     let json_out = run_resilience_simulation(&state);
                     if path == "/api/simulate-test" {
-                        return (200, "application/json; charset=utf-8", json_out.into_bytes());
+                        return (
+                            200,
+                            "application/json; charset=utf-8",
+                            json_out.into_bytes(),
+                        );
                     }
                 }
-                ("GET", "/api/report") => {
+                ("GET", "/api/report" | "/export/json") => {
                     let s = state.lock().unwrap();
                     let rep = s.tracker.report();
                     let out = format!(
-                        r#"{{"ok":true,"totalSamples":{},"gatewayLossPct":{:.2},"wanLossPct":{:.2},"gatewayP95Ms":{},"wanP95Ms":{},"outageCount":{},"adapterSwitchCount":{},"arpConflictCount":{}}}"#,
+                        r##"{{"ok":true,"healthScore":{},"totalSamples":{},"gatewayLossPct":{:.2},"wanLossPct":{:.2},"gatewayP95Ms":{},"wanP95Ms":{},"outageCount":{},"adapterSwitchCount":{},"arpConflictCount":{}}}"##,
+                        s.health_score(),
                         rep.total_samples,
                         rep.gateway_loss_pct,
                         rep.wan_loss_pct,
@@ -417,6 +533,10 @@ fn main() {
                     );
                     return (200, "application/json; charset=utf-8", out.into_bytes());
                 }
+                ("GET", "/export/csv") => {
+                    let s = state.lock().unwrap();
+                    return (200, "text/csv; charset=utf-8", s.csv().into_bytes());
+                }
                 ("POST", "/stop") => state.lock().unwrap().active = false,
                 ("POST", "/theme") => {
                     let mut s = state.lock().unwrap();
@@ -427,7 +547,7 @@ fn main() {
                     return (
                         404,
                         "application/json",
-                        br#"{"error":"Not found"}"#.to_vec(),
+                        br##"{"error":"Not found"}"##.to_vec(),
                     )
                 }
             }

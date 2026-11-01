@@ -37,15 +37,15 @@ pub fn field(body: &str, name: &str) -> Option<String> {
 }
 
 pub fn page(title: &str, icon: &str, subtitle: &str, body: &str) -> Reply {
-    let version = env!("CARGO_PKG_VERSION");
     let html = format!(
-        r#"<!doctype html><html lang="tr" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} · IPScans Rust Suite</title><link rel="icon" href="/brand/{icon}.png"><link rel="stylesheet" href="/design/v2.css"><style>
+        r##"<!doctype html><html lang="tr" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} — IPScans</title><link rel="icon" href="/brand/{icon}.png"><link rel="stylesheet" href="/design/v2.css"><style>
       .desk-workspace{{max-width:1420px;margin:0 auto;padding:24px}}
       .desk-grid{{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}}
       .desk-grid > section{{grid-column:span 12;position:relative;background:var(--surface-dim);border:1px solid var(--line);border-radius:20px;padding:22px 24px;box-shadow:var(--shadow-card);overflow:hidden;transition:border-color 220ms var(--ease-out-quart)}}
+      .desk-grid > section::before{{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(520px circle at var(--mouse-x,-500px) var(--mouse-y,-500px),var(--signal-soft),transparent 45%);opacity:0.65}}
       .desk-grid > section:hover{{border-color:var(--line-2)}}
-      .desk-grid h2{{font-size:18px;font-weight:650;letter-spacing:-0.02em;margin:4px 0 10px;color:var(--ink)}}
-      .desk-grid p{{color:var(--ink-2);margin:6px 0 14px;font-size:13.5px;line-height:1.55}}
+      .desk-grid h2{{font-size:18px;font-weight:650;letter-spacing:-0.022em;margin:4px 0 10px;color:var(--ink)}}
+      .desk-grid p{{color:var(--ink-2);margin:6px 0 14px;font-size:13.5px;line-height:1.58}}
       .desk-grid label{{display:grid;gap:6px;color:var(--ink-2);font-weight:550;font-size:13px}}
       .desk-grid form{{display:flex;flex-wrap:wrap;gap:12px;align-items:end}}
       .desk-grid .data-table-wrap{{overflow:auto;margin-top:12px}}
@@ -68,9 +68,24 @@ pub fn page(title: &str, icon: &str, subtitle: &str, body: &str) -> Reply {
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-cluster">
+          <span class="ipscans-hex-mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+              <defs>
+                <linearGradient id="ips-hex-grad" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#2F6BFF"/>
+                  <stop offset="50%" stop-color="#00C2FF"/>
+                  <stop offset="100%" stop-color="#7A5CFF"/>
+                </linearGradient>
+              </defs>
+              <path d="M16 3L27.2583 9.5V22.5L16 29L4.74167 22.5V9.5L16 3Z" stroke="url(#ips-hex-grad)" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M16 9V16M16 16L22 19.5M16 16L10 19.5" stroke="url(#ips-hex-grad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="16" cy="16" r="2.6" fill="url(#ips-hex-grad)"/>
+            </svg>
+          </span>
+          <span class="brand-divider" aria-hidden="true"></span>
           <img class="brand-logo" src="/brand/{icon}.png" alt="">
           <div>
-            <div class="brand-title">{title} <span class="badge badge-signal mono">RUST {version}</span></div>
+            <div class="brand-title">{title}</div>
             <div class="brand-sub">{subtitle}</div>
           </div>
         </div>
@@ -78,7 +93,6 @@ pub fn page(title: &str, icon: &str, subtitle: &str, body: &str) -> Reply {
           <button type="button" class="nav-tab active" onclick="window.filterDeskSection(-1, this)">Tüm Modüller</button>
         </nav>
         <div class="top-actions">
-          <span class="badge badge-ok mono"><span class="pulse-dot"></span>YEREL RUST MOTORU AKTİF</span>
           <button type="button" class="btn btn-secondary btn-sm" onclick="window.toggleIpScansTheme()"><span id="themeBtnLabel">Açık Tema</span></button>
         </div>
       </header>
@@ -94,7 +108,7 @@ pub fn page(title: &str, icon: &str, subtitle: &str, body: &str) -> Reply {
       if (nav && sections.length > 1) {{
         sections.forEach((sec, idx) => {{
           const h2 = sec.querySelector('h2');
-          const label = h2 ? h2.textContent.trim().slice(0, 26) : ('Modül ' + (idx + 1));
+          const raw = h2 ? h2.textContent.trim() : ('Modül ' + (idx + 1)); const label = raw.length > 24 ? raw.slice(0, 24).replace(/\s+\S*$/, '') : raw;
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'nav-tab';
@@ -112,7 +126,7 @@ pub fn page(title: &str, icon: &str, subtitle: &str, body: &str) -> Reply {
       }};
     }})();
     </script>
-    </body></html>"#
+    </body></html>"##
     );
     (200, "text/html; charset=utf-8", html.into_bytes())
 }

@@ -77,8 +77,7 @@ fn run_full_license_lifecycle_verification() -> (bool, String, String) {
         &["LIC-2026-001"],
     )
     .expect("sign crl");
-    let revoked_check =
-        enforce_cortex_license(&token_v1, Some(&crl_token), &[], now + 7200, 4);
+    let revoked_check = enforce_cortex_license(&token_v1, Some(&crl_token), &[], now + 7200, 4);
     // 4. Key rotation check: retire v1, issue v2
     let retired = ["cortex-key-2026-v1"];
     let rotated_old_check = enforce_cortex_license(&token_v1, None, &retired, now + 3600, 4);
@@ -149,7 +148,13 @@ fn screen(result: &str) -> Reply {
         "Asimetrik RSA-512-SHA256 kurumsal lisans imzalama, iptal listesi (CRL) ve anahtar rotasyonu konsolu",
         &format!(
             r#"
-    <section><div class="eyebrow">01 / ASİMETRİK LİSANS İMZALAMA (IPS2)</div><h2>Yeni lisans imzala</h2>
+    <div class="kpi-strip">
+      <div class="kpi-box"><div class="kpi-label">İMZALAMA ALGORİTMASI</div><div class="kpi-val mono">RSA-512 · SHA-256</div><div class="kpi-sub">Asimetrik IPS2 / CRL1 Standardı</div></div>
+      <div class="kpi-box"><div class="kpi-label">AKTİF ROTASYON ANAHTARI</div><div class="kpi-val mono" style="color:var(--signal)">cortex-key-2026-v2</div><div class="kpi-sub">v1 Geriye Dönük Doğrulama Destekli</div></div>
+      <div class="kpi-box"><div class="kpi-label">İPTAL LİSTESİ (CRL)</div><div class="kpi-val mono" style="color:var(--ok)">CRL1 İMZALI</div><div class="kpi-sub">Çevrimdışı Lisans İptal Denetimi</div></div>
+      <div class="kpi-box"><div class="kpi-label">ANAHTAR İZOLASYONU</div><div class="kpi-val mono">TAM AYRIM</div><div class="kpi-sub">İstemcide özel anahtar bulunmaz</div></div>
+    </div>
+    <section><div class="eyebrow">ASİMETRİK LİSANS İMZALAMA (IPS2)</div><h2>Yeni lisans imzala</h2>
     <p>Lisanslar RSA-512-SHA256 özel anahtarıyla (<span class="mono">CortexAdmin.exe</span> içinde) imzalanır; dağıtılan <span class="mono">IPScans-Cortex.exe</span> istemcisinde yalnızca açık doğrulama modülü (<span class="mono">PUBLIC_KEY_V1/V2</span>) bulunur.</p>
     <form method="post" action="/issue">
     <label>Lisans Kimliği (ID)<input class="input mono" required maxlength="64" name="licenseId" value="LIC-2026-104"></label>
@@ -160,7 +165,7 @@ fn screen(result: &str) -> Reply {
     <button class="btn btn-signal">IPS2 Lisansı İmzala</button>
     <button class="btn btn-secondary" formaction="/lifecycle-verify">Uygulama, süre dolumu, iptal ve rotasyon döngüsünü doğrula</button>
     </form>{result}</section>
-    <section><div class="eyebrow">02 / LİSANS İPTAL LİSTESİ (CRL1)</div><h2>İptal listesi imzala</h2>
+    <section><div class="eyebrow">LİSANS İPTAL LİSTESİ (CRL1)</div><h2>İptal listesi imzala</h2>
     <p>İptal edilen lisans kimliklerini virgülle ayırarak imzalı <span class="mono">CRL1</span> paketi üretin.</p>
     <form method="post" action="/revoke">
     <label>İptal Edilecek Lisans Kimlikleri<input class="input mono" name="revokedIds" value="LIC-2026-001,LIC-2026-089" required></label>
