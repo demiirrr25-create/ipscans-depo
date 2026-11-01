@@ -101,11 +101,13 @@ fn main() {
             }
             ("GET", "/api/sentinel") => {
                 let ctx = discover_gateway_context();
-                let (ollama_up, models, best) = check_ollama_status();
+                let (ollama_installed, models, ollama_up) = check_ollama_status();
+                let best = models.first().cloned().unwrap_or_else(|| "qwen2.5-coder:7b".to_string());
                 let models_json: Vec<String> = models.iter().map(|m| json_str(m)).collect();
                 let out = format!(
-                    "{{\"engine\":\"ipscans-sentinel-rust/3.0\",\"gatewayIp\":{},\"ollamaOnline\":{},\"bestModel\":{},\"models\":[{}]}}",
+                    "{{\"engine\":\"ipscans-sentinel-rust/3.0\",\"gatewayIp\":{},\"ollamaInstalled\":{},\"ollamaOnline\":{},\"bestModel\":{},\"models\":[{}]}}",
                     json_str(&ctx.gateway_ip),
+                    if ollama_installed { "true" } else { "false" },
                     if ollama_up { "true" } else { "false" },
                     json_str(&best),
                     models_json.join(",")
