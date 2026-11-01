@@ -12,3 +12,7 @@ ci-artifacts/
 dist/
 build/
 *.egg-info/
+
+/target/
+**/target/
+

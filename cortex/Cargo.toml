@@ -1,0 +1,27 @@
+﻿[workspace]
+resolver = "2"
+
+[package]
+name = "ipscans-cortex"
+version = "3.0.0"
+edition = "2021"
+authors = ["IPScans Engineering <security@ipscans.com>"]
+license = "LicenseRef-IPScans-Commercial"
+
+[[bin]]
+name = "IPScans-Cortex"
+path = "src/main.rs"
+
+[[bin]]
+name = "CortexAdmin"
+path = "src/admin.rs"
+
+[dependencies]
+ipscans-core = { path = "../crates/ipscans-core" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "unwind"

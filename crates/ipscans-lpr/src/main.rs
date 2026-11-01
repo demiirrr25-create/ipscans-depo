@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
 use std::sync::Arc;
@@ -152,7 +152,7 @@ const LPR_HTML: &str = r###"<!DOCTYPE html>
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.iter().any(|a| a == "--version" || a == "-V") {
+    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
         println!("IPScans-LPR-Pro 2.0.0 (Rust Native License Plate Recognition Engine)");
         return;
     }
@@ -180,3 +180,4 @@ fn main() {
     let _ = extract_json_string;
     run_http_loop(listener, handler);
 }
+

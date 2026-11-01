@@ -1,4 +1,4 @@
-//! `ipscans-network-scanner.exe` — High-speed native Rust CLI & JSON diagnostics engine
+﻿//! `ipscans-network-scanner.exe` — High-speed native Rust CLI & JSON diagnostics engine
 //! powering both command-line network audits and `ipscans.com` Next.js API routes.
 
 use std::env;
@@ -11,7 +11,7 @@ use ipscans_core::sentinel::execute_autonomous_incident_pipeline;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.iter().any(|a| a == "--version" || a == "-V") {
+    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
         println!("ipscans-network-scanner 3.0.0 (Rust Native Engine)");
         return;
     }
@@ -65,3 +65,4 @@ fn main() {
         hosts_json.join(",")
     );
 }
+

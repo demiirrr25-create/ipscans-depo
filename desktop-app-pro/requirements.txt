@@ -1,5 +1,0 @@
-# Everything the free desktop-app needs (imported via ../desktop-app), plus:
--r ../desktop-app/requirements.txt
-
-# Notifications (spec item 25) use QSystemTrayIcon.showMessage(), part of
-# PyQt6 itself — no extra dependency needed.

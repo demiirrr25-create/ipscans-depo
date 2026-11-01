@@ -1,0 +1,23 @@
+﻿[workspace]
+resolver = "2"
+
+[package]
+name = "ipscans-lpr"
+version = "2.0.0"
+edition = "2021"
+authors = ["IPScans Engineering <security@ipscans.com>"]
+license = "LicenseRef-IPScans-Commercial"
+
+[[bin]]
+name = "IPScans-LPR-Pro"
+path = "src/main.rs"
+
+[dependencies]
+ipscans-core = { path = "../crates/ipscans-core" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "unwind"

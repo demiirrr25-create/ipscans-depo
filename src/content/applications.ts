@@ -1,4 +1,4 @@
-import type { Locale } from "@/i18n/config";
+﻿import type { Locale } from "@/i18n/config";
 
 type Localized = Record<Locale, string>;
 
@@ -6,13 +6,13 @@ export const ipcastRelease = {
   version: "3.0.0",
   platform: "Windows 10/11 · x64 (Rust Native)",
   bytes: 2701312,
-  sha256: "8cdb54979e4c23afe0186c815d6d7eb86c6a6d2943dadebceb3312665d0b370c",
+  sha256: "b7746cc68d5bd436f90fd0763c4c3af27e1cc7212271e74db83e587976820481",
   fileName: "IPCast-3.0.0.exe",
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v3.0.0/IPCast-3.0.0.exe",
   publishedAt: "2026-11-01T06:40:00Z",
   installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipcast-v3.0.0/IPCast-3.0.0-Setup.exe",
   installerBytes: 2701312,
-  installerSha256: "8cdb54979e4c23afe0186c815d6d7eb86c6a6d2943dadebceb3312665d0b370c",
+  installerSha256: "b7746cc68d5bd436f90fd0763c4c3af27e1cc7212271e74db83e587976820481",
   releaseUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/tag/ipcast-v3.0.0",
 } as const;
 
@@ -23,9 +23,9 @@ export const desktopRelease = {
     installerUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v5.0.0/IPscans-Plus-Setup.exe",
     portableUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/ipscans-plus-v5.0.0/IPscans-Plus.exe",
     installerBytes: 2707968,
-    installerSha256: "032a17090481367530ad7732d774eb66726fcfec2462b2866b6fd0e58f4674fc",
+    installerSha256: "62304fa2dead50fedec31d3c65b383f8a139e7fa0087d66d4fe798349760a558",
     portableBytes: 2707968,
-    portableSha256: "032a17090481367530ad7732d774eb66726fcfec2462b2866b6fd0e58f4674fc",
+    portableSha256: "62304fa2dead50fedec31d3c65b383f8a139e7fa0087d66d4fe798349760a558",
   },
 } as const;
 
@@ -118,3 +118,4 @@ export const scannerApplication: Application = (() => {
   if (!app) throw new Error("IPscans+ product is missing from the catalog");
   return app;
 })();
+

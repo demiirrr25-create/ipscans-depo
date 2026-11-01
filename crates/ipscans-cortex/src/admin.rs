@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
 use std::sync::Arc;
@@ -115,7 +115,7 @@ const ADMIN_HTML: &str = r#"<!DOCTYPE html>
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.iter().any(|a| a == "--version" || a == "-V") {
+    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
         println!("CortexAdmin 3.0.0 (Rust Native Commercial License Control Center)");
         return;
     }
@@ -168,3 +168,4 @@ fn main() {
 
     run_http_loop(listener, handler);
 }
+

@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
 use std::sync::Arc;
@@ -580,7 +580,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     // CLI / Verification Modes
-    if args.iter().any(|a| a == "--version" || a == "-V") {
+    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
         println!("IPScans-Sentinel 3.0.0 (Rust Native Cybersecurity & Camera Defense Engine)");
         return;
     }
@@ -767,3 +767,4 @@ fn main() {
 
     run_http_loop(listener, handler);
 }
+

@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
 use std::sync::Arc;
@@ -173,7 +173,7 @@ SHA-256 Sertifika Parmak İzi: E4:9A:21:7C:88:10:BF:42:09:11:CC:3E:8A:5F:71:2D</
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.iter().any(|a| a == "--version" || a == "-V") {
+    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
         println!("IPCast 3.0.0 (Rust Native Encrypted Remote Desktop Engine)");
         return;
     }
@@ -223,3 +223,4 @@ fn main() {
 
     run_http_loop(listener, handler);
 }
+

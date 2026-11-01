@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
 use std::sync::Arc;
@@ -106,7 +106,7 @@ const HEALTH_HTML: &str = r#"<!DOCTYPE html>
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.iter().any(|a| a == "--version" || a == "-V") {
+    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
         println!("ipscans-network-health-pro 2.0.0 (Rust Native Network Telemetry Engine)");
         return;
     }
@@ -142,3 +142,4 @@ fn main() {
 
     run_http_loop(listener, handler);
 }
+
