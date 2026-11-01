@@ -6,10 +6,9 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { PublicDictionary } from "@/i18n/dictionaries";
-import { applications, platformCopy } from "@/content/applications";
+import { platformCopy } from "@/content/applications";
 import { toolKeys, toolPath } from "@/lib/tool-routes";
-import { lprRelease } from "@/content/lpr-release";
-import { cortexRelease } from "@/components/catalog/copy";
+import apps from "../../public/desktop/apps.json";
 
 export function ApplicationsSection({
   locale,
@@ -34,63 +33,15 @@ export function ApplicationsSection({
     preview: "/web-tools-preview.png",
   }));
 
+  const lang = locale === "tr" ? "tr" : "en";
   const results = [
-    {
-      id: "sentinel",
-      name: "IPScans Sentinel",
-      description:
-        locale === "tr"
-          ? "Rust 3.0 mimarisi, Yönetici CMD/PowerShell motoru ve yerel Ollama siber güvenlik ajanı (ipscans-cyber-agent) ile sızılan kameraların ağ çıkışını saliseler içinde kesen, ana modem portlarını kapatan ve onarım sonrası erişim veren otonom siber güvenlik sistemi."
-          : "Rust 3.0 autonomous cybersecurity suite with elevated Admin CMD/PowerShell engine and pre-configured Ollama cyber agent (ipscans-cyber-agent) for sub-second camera quarantine, main router UPnP hardening, and clean LAN restoration.",
-      href: `/${locale}/sentinel`,
+    ...apps.map((app) => ({
+      ...app,
+      description: app[lang],
+      href: `/desktop/${lang}.html#${app.id}`,
       category: "desktop",
-      icon: "/sentinel-mark.png",
-      preview: "/sentinel-preview.png",
-      version: "3.0.0",
-      platform: "Windows 10/11 · x64 (Rust)",
-      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/sentinel-v3.0.0/IPScans-Sentinel.exe",
-    },
-    {
-      id: "cortex",
-      name: "IPScans Cortex",
-      description: locale === "tr" ? "8 sektörel tek tıkla kurulum paketi, 8-tutamaçlı interaktif bölge (ROI) & geçiş hattı stüdyosu, canlı ısı haritası, akıllı takip (Loitering, Kapasite, Tailgating), Copilot arama ve SHA-256 adli kanıt paketleyici." : "8 one-click sector deployment packs, 8-handle interactive ROI & tripwire studio, live thermal heatmap, smart tracking (Loitering, Occupancy, Tailgating), Copilot search, and SHA-256 forensic bundler.",
-      href: `/${locale}/cortex`,
-      category: "desktop",
-      icon: "/cortex-mark.png",
-      preview: "/cortex-preview.png",
-      version: cortexRelease.version,
-      platform: cortexRelease.platform,
-      download: cortexRelease.url,
-    },
-    {
-      id: "lpr-pro",
-      name: "IPScans LPR Pro",
-      description:
-        locale === "tr"
-          ? "5 bölmeli canlı operatör çalışma alanı, bağımsız kalibrasyon çizgileri, blok/daire araç kütüğü ve yerel ONNX plaka tanıma."
-          : "5-page live operator workspace, independent calibration lines, resident vehicle registry, and local ONNX plate recognition.",
-      href: `/${locale}/lpr-pro`,
-      category: "desktop",
-      icon: "/lpr-mark.png",
-      preview: "/lpr-pro-preview.png",
-      version: lprRelease.version,
-      platform: "Windows 10/11 · x64",
-      download: lprRelease.url,
-    },
-    ...applications.map((app) => ({
-      id: app.id,
-      name: app.name,
-      description: app.description[locale],
-      href: `/${locale}/applications/${app.id}`,
-      category: "desktop",
-      icon: app.id === "ipcast" ? "/ipcast-mark.png" : "/scanner-mark.png",
-      preview:
-        app.id === "ipcast"
-          ? "/ipcast-v25-preview.png"
-          : "/scanner-v43-preview.png",
-      version: app.version,
-      platform: app.platform,
-      download: app.downloadUrl,
+      icon: `/brand/${app.id}-logo.png`,
+      platform: "Windows x64",
     })),
     ...tools,
   ].filter(
@@ -166,7 +117,7 @@ export function ApplicationsSection({
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {results.map((item, index) => (
+        {results.map((item) => (
           <article
             key={item.id}
             className="product-card agy-surface-card group flex flex-col overflow-hidden p-0"
@@ -230,7 +181,7 @@ export function ApplicationsSection({
                 >
                   <span>{copy.details} →</span>
                 </Link>
-                {"download" in item && (
+                {"download" in item && item.download && (
                   <a
                     href={item.download}
                     aria-label={`${item.name} — ${

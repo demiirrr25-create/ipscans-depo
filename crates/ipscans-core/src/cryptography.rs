@@ -13,8 +13,7 @@ const K: [u32; 64] = [
 ];
 
 const H0: [u32; 8] = [
-    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ];
 
 /// Computes the exact FIPS 180-4 SHA-256 digest of `data` as a 32-byte array.
@@ -132,24 +131,43 @@ pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
     sha256_bytes(&outer)
 }
 
-/// Generates a deterministic, cryptographically signed IPScans commercial license key.
-pub fn issue_commercial_license(customer: &str, tier: &str, valid_days: u32) -> String {
-    let normalized_tier = match tier.to_uppercase().as_str() {
-        "PRO" => "PRO",
-        "PLUS" => "PLUS",
-        _ => "ULTRA",
-    };
-    let payload = format!("{}|{}|{}", customer.trim(), normalized_tier, valid_days);
-    let mac = hmac_sha256(b"IPSCANS-RUST-COMMERCIAL-ROOT-KEY-2026", payload.as_bytes());
-    let seg1 = u16::from_be_bytes([mac[0], mac[1]]);
-    let seg2 = u16::from_be_bytes([mac[2], mac[3]]);
-    let seg3 = u16::from_be_bytes([mac[4], mac[5]]);
-    format!("IPS-{}-2026-{:04X}-{:04X}-{:04X}", normalized_tier, seg1, seg2, seg3)
+/// Issue a versioned, self-contained license using the operator's private issuer key.
+pub fn sign_license(
+    secret: &[u8],
+    customer: &str,
+    tier: &str,
+    expires: u64,
+) -> Result<String, &'static str> {
+    if secret.len() < 32 {
+        return Err("İmzalama anahtarı en az 32 bayt olmalı.");
+    }
+    let customer = customer.trim();
+    if customer.is_empty() || customer.len() > 240 || customer.chars().any(char::is_control) {
+        return Err("Geçerli bir müşteri adı girin.");
+    }
+    if !matches!(tier, "PRO" | "PLUS" | "ULTRA") {
+        return Err("Geçersiz lisans paketi.");
+    }
+    let customer_hex: String = customer.bytes().map(|b| format!("{b:02x}")).collect();
+    let payload = format!("IPS1.{tier}.{expires}.{customer_hex}");
+    let signature: String = hmac_sha256(secret, payload.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    Ok(format!("{payload}.{signature}"))
 }
 
 /// Chains a forensic event into a tamper-evident SHA-256 ledger entry.
-pub fn chain_forensic_evidence(previous_hash: &str, camera_id: &str, rule_id: &str, timestamp_iso: &str) -> String {
-    let record = format!("{}|{}|{}|{}", previous_hash, camera_id, rule_id, timestamp_iso);
+pub fn chain_forensic_evidence(
+    previous_hash: &str,
+    camera_id: &str,
+    rule_id: &str,
+    timestamp_iso: &str,
+) -> String {
+    let record = format!(
+        "{}|{}|{}|{}",
+        previous_hash, camera_id, rule_id, timestamp_iso
+    );
     sha256_hex(record.as_bytes())
 }
 
@@ -173,9 +191,15 @@ mod tests {
 
     #[test]
     fn test_commercial_license_and_forensic_chain() {
-        let key = issue_commercial_license("Marmara Teknoloji", "ULTRA", 365);
-        assert!(key.starts_with("IPS-ULTRA-2026-"));
-        assert_eq!(key.len(), 29);
+        let secret = [17; 32];
+        let key = sign_license(&secret, "Marmara Teknoloji", "ULTRA", 365).unwrap();
+        assert_eq!(key.split('.').count(), 5);
+        assert_ne!(
+            key,
+            sign_license(&secret, "Marmara Teknoloji", "ULTRA", 366).unwrap()
+        );
+        assert!(sign_license(b"short", "Firma", "ULTRA", 1).is_err());
+        assert!(sign_license(&secret, "Firma", "other", 1).is_err());
 
         let genesis = "0000000000000000000000000000000000000000000000000000000000000000";
         let h1 = chain_forensic_evidence(genesis, "CAM-01", "INTRUSION", "2026-11-01T10:00:00Z");

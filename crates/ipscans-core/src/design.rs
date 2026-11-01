@@ -13,8 +13,6 @@ pub const ICON_LPR_PNG: &[u8] = include_bytes!("../../../design/icons/lpr.png");
 pub const ICON_CORTEX_PNG: &[u8] = include_bytes!("../../../design/icons/cortex.png");
 pub const ICON_HEALTH_PNG: &[u8] = include_bytes!("../../../design/icons/health.png");
 
-pub const ICON_SENTINEL_ICO: &[u8] = include_bytes!("../../../design/icons/sentinel.ico");
-
 /// Exact 1:1 `ipscans.com` v2.0 Design System CSS (Light & Dark parity, OKLCH surfaces,
 /// 999px pill buttons with `scale(0.97)` press physics, `cubic-bezier(0.16, 1, 0.3, 1)` transitions,
 /// mouse-tracking radial spotlight cards, and tabular monospace telemetry).
@@ -415,12 +413,37 @@ html, body {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* Product accent follows the installed Windows icon. */
+.desk:has(header img[src*="sentinel"]) { --signal:#60d8b3 }
+.desk:has(header img[src*="ipcast"]) { --signal:#70caff }
+.desk:has(header img[src*="lpr"]) { --signal:#ecc27e }
+.desk:has(header img[src*="health"]) { --signal:#67cfc0 }
+.desk:has(header img[src*="cortex"]) { --signal:#b29aee }
+.desk:has(header img[src*="admin"]) { --signal:#ee9eba }
+.desk header:first-child {
+  position:relative; isolation:isolate; overflow:hidden; min-height:120px;
+  background:linear-gradient(115deg,var(--surface-elevated),var(--surface-dim));
+  border-top:2px solid var(--signal);
+}
+.desk header::after {
+  content:""; position:absolute; pointer-events:none; z-index:-1; right:-30px; inset-block:0;
+  width:38%; opacity:.22;
+  background:repeating-radial-gradient(circle at 95% 105%,transparent 0 17px,var(--signal) 18px,transparent 19px 36px);
+  mask-image:linear-gradient(90deg,transparent,#000);
+}
+.eyebrow {font:650 11px/1.4 "Cascadia Code",monospace;letter-spacing:.11em}
+.desk :is(input,select,textarea) { min-height:40px;padding:8px 12px;border:1px solid var(--line-3);border-radius:9px;background:var(--surface-muted);color:var(--ink);font:inherit;max-width:100% }
+.desk button {min-height:40px;cursor:pointer;font-weight:600}
+.desk .btn-signal {color:#0a1726}
+[data-theme="light"] .desk .eyebrow,[data-theme="light"] .desk a { color:color-mix(in srgb,var(--signal) 55%,#152334) }
+:focus-visible {outline:2px solid var(--signal);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 "###;
 
 /// Shared client-side JS helper for theme toggle, mouse-tracking spotlight cards, and subtle tactile audio.
 pub const IPSCANS_V2_JS: &str = r###"
 (function() {
-  const savedTheme = localStorage.getItem('ipscans-theme') || 'light';
+  const savedTheme = localStorage.getItem('ipscans-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   document.documentElement.setAttribute('data-theme', savedTheme);
   const initLabel = document.getElementById('themeBtnLabel');
   if (initLabel) initLabel.textContent = savedTheme === 'dark' ? 'Açık Tema' : 'Koyu Tema';
@@ -457,14 +480,12 @@ pub const IPSCANS_V2_JS: &str = r###"
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (tab && window.switchTab) setTimeout(() => window.switchTab(tab), 150);
-    if (params.get('autodefense') === '1' && typeof window.runAutonomousDefense === 'function') {
-      setTimeout(() => window.runAutonomousDefense(), 200);
-    }
   });
 })();
 "###;
 
-pub type RouteHandler = dyn Fn(&str, &str, &str) -> (u16, &'static str, Vec<u8>) + Send + Sync + 'static;
+pub type RouteHandler =
+    dyn Fn(&str, &str, &str) -> (u16, &'static str, Vec<u8>) + Send + Sync + 'static;
 
 /// Starts a multi-threaded HTTP server on `preferred_port` (or next available port) and invokes `handler`.
 pub fn bind_app_server(preferred_port: u16) -> (TcpListener, u16) {
@@ -482,69 +503,133 @@ pub fn bind_app_server(preferred_port: u16) -> (TcpListener, u16) {
 }
 
 pub fn run_http_loop(listener: TcpListener, handler: Arc<RouteHandler>) {
-    for incoming in listener.incoming() {
-        let Ok(stream) = incoming else { continue };
-        let h = Arc::clone(&handler);
-        thread::spawn(move || {
-            handle_http_connection(stream, h);
-        });
+    // Fixed workers also bound concurrent scans and partial request buffers.
+    thread::scope(|pool| {
+        for _ in 0..12 {
+            pool.spawn(|| {
+                for stream in listener.incoming().flatten() {
+                    handle_http_connection(stream, Arc::clone(&handler));
+                }
+            });
+        }
+    });
+}
+
+fn response(stream: &mut TcpStream, status: u16, kind: &str, body: &[u8]) {
+    let reason = match status {
+        200 => "OK",
+        201 => "Created",
+        202 => "Accepted",
+        204 => "No Content",
+        400 => "Bad Request",
+        403 => "Forbidden",
+        404 => "Not Found",
+        405 => "Method Not Allowed",
+        409 => "Conflict",
+        413 => "Content Too Large",
+        422 => "Unprocessable Content",
+        429 => "Too Many Requests",
+        503 => "Service Unavailable",
+        _ => "Error",
+    };
+    let _ = write!(stream, "HTTP/1.1 {status} {reason}\r\nContent-Type: {kind}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\nContent-Security-Policy: frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\nReferrer-Policy: no-referrer\r\nConnection: close\r\n\r\n", body.len());
+    let _ = stream.write_all(body);
+}
+
+fn local_headers(headers: &str, port: u16, write: bool) -> Result<usize, u16> {
+    let mut host = None;
+    let mut origin = None;
+    let mut length = None;
+    for line in headers.lines().skip(1) {
+        let (key, value) = line.split_once(':').ok_or(400u16)?;
+        let value = value.trim();
+        match key.to_ascii_lowercase().as_str() {
+            "host" if host.replace(value).is_some() => return Err(400),
+            "origin" if origin.replace(value).is_some() => return Err(400),
+            "transfer-encoding" => return Err(400),
+            "content-length" => {
+                if length.is_some() {
+                    return Err(400);
+                }
+                length = Some(value.parse::<usize>().map_err(|_| 400u16)?);
+            }
+            "sec-fetch-site" if !matches!(value, "none" | "same-origin") => return Err(403),
+            _ => {}
+        }
     }
+    let host = host.ok_or(403u16)?;
+    if host != format!("127.0.0.1:{port}") && host != format!("localhost:{port}") {
+        return Err(403);
+    }
+    if origin.is_some() || write {
+        if origin != Some(format!("http://{host}").as_str()) {
+            return Err(403);
+        }
+    }
+    let length = length.unwrap_or(0);
+    if length > 1024 * 1024 {
+        return Err(413);
+    }
+    Ok(length)
 }
 
 fn handle_http_connection(mut stream: TcpStream, handler: Arc<RouteHandler>) {
-    let _ = stream.set_read_timeout(Some(Duration::from_secs(15)));
-    let _ = stream.set_write_timeout(Some(Duration::from_secs(15)));
-
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(8)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(8)));
     let mut data = Vec::with_capacity(8192);
     let mut temp = [0u8; 8192];
-    let mut header_end = None;
-    let mut content_len = 0usize;
-
-    loop {
+    let header_end = loop {
         match stream.read(&mut temp) {
-            Ok(0) => break,
-            Ok(n) => {
-                data.extend_from_slice(&temp[..n]);
-                if header_end.is_none() {
-                    if let Some(pos) = data.windows(4).position(|w| w == b"\r\n\r\n") {
-                        header_end = Some(pos + 4);
-                        let hdr_str = String::from_utf8_lossy(&data[..pos]);
-                        for line in hdr_str.lines() {
-                            let lower = line.to_ascii_lowercase();
-                            if let Some(rest) = lower.strip_prefix("content-length:") {
-                                content_len = rest.trim().parse::<usize>().unwrap_or(0);
-                            }
-                        }
-                    }
-                }
-                if let Some(hend) = header_end {
-                    if data.len() >= hend + content_len {
-                        break;
-                    }
-                }
+            Ok(0) | Err(_) => return,
+            Ok(n) => data.extend_from_slice(&temp[..n]),
+        }
+        if let Some(end) = data.windows(4).position(|w| w == b"\r\n\r\n") {
+            if end <= 16384 {
+                break end;
             }
-            Err(_) => break,
+        }
+        if data.len() > 16384 {
+            response(&mut stream, 413, "text/plain", b"Header too large");
+            return;
+        }
+    };
+    let Ok(headers) = std::str::from_utf8(&data[..header_end]) else {
+        return;
+    };
+    let Some(mut parts) = headers.lines().next().map(str::split_whitespace) else {
+        return;
+    };
+    let (Some(method), Some(raw_path), Some("HTTP/1.1")) =
+        (parts.next(), parts.next(), parts.next())
+    else {
+        return;
+    };
+    if !matches!(method, "GET" | "POST") {
+        response(&mut stream, 405, "text/plain", b"Method not allowed");
+        return;
+    }
+    let Ok(addr) = stream.local_addr() else {
+        return;
+    };
+    let length = match local_headers(headers, addr.port(), method == "POST") {
+        Ok(length) => length,
+        Err(code) => {
+            response(&mut stream, code, "text/plain", b"Request rejected");
+            return;
+        }
+    };
+    let (method, raw_path) = (method.to_owned(), raw_path.to_owned());
+    let (method, raw_path) = (method.as_str(), raw_path.as_str());
+    let start = header_end + 4;
+    let buffered = data.len() - start;
+    if buffered < length {
+        data.resize(start + length, 0);
+        if stream.read_exact(&mut data[start + buffered..]).is_err() {
+            return;
         }
     }
-
-    if data.is_empty() {
-        return;
-    }
-    let raw = String::from_utf8_lossy(&data);
-    let mut lines = raw.lines();
-    let Some(first_line) = lines.next() else { return };
-    let parts: Vec<&str> = first_line.split_whitespace().collect();
-    if parts.len() < 2 {
-        return;
-    }
-    let method = parts[0];
-    let raw_path = parts[1];
+    let body = String::from_utf8_lossy(&data[start..start + length]);
     let full_path = raw_path.split('?').next().unwrap_or(raw_path);
-    let body = match header_end {
-        Some(hend) if data.len() >= hend => String::from_utf8_lossy(&data[hend..]).to_string(),
-        _ => String::new(),
-    };
-
     // Built-in brand icon routes
     let (status, content_type, resp_body) = match full_path {
         "/brand/sentinel.png" => (200, "image/png", ICON_SENTINEL_PNG.to_vec()),
@@ -553,31 +638,51 @@ fn handle_http_connection(mut stream: TcpStream, handler: Arc<RouteHandler>) {
         "/brand/lpr.png" => (200, "image/png", ICON_LPR_PNG.to_vec()),
         "/brand/cortex.png" => (200, "image/png", ICON_CORTEX_PNG.to_vec()),
         "/brand/health.png" => (200, "image/png", ICON_HEALTH_PNG.to_vec()),
-        "/favicon.ico" => (200, "image/x-icon", ICON_SENTINEL_ICO.to_vec()),
-        "/design/v2.css" => (200, "text/css; charset=utf-8", IPSCANS_V2_CSS.as_bytes().to_vec()),
+        "/brand/admin.png" => (
+            200,
+            "image/png",
+            include_bytes!("../../../design/icons/admin.png").to_vec(),
+        ),
+        "/brand/cli.png" => (
+            200,
+            "image/png",
+            include_bytes!("../../../design/icons/cli.png").to_vec(),
+        ),
+        "/design/v2.css" => (
+            200,
+            "text/css; charset=utf-8",
+            IPSCANS_V2_CSS.as_bytes().to_vec(),
+        ),
         "/design/v2.js" => (
             200,
             "application/javascript; charset=utf-8",
             IPSCANS_V2_JS.as_bytes().to_vec(),
         ),
-        _ => handler(method, full_path, &body),
+        _ => handler(method, raw_path, &body),
     };
 
-    let status_text = match status {
-        200 => "200 OK",
-        400 => "400 Bad Request",
-        404 => "404 Not Found",
-        _ => "500 Internal Server Error",
-    };
+    response(&mut stream, status, content_type, &resp_body);
+}
 
-    let header = format!(
-        "HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
-        status_text,
-        content_type,
-        resp_body.len()
-    );
-    let _ = stream.write_all(header.as_bytes());
-    let _ = stream.write_all(&resp_body);
-    let _ = stream.flush();
-    let _ = stream.shutdown(std::net::Shutdown::Write);
+#[cfg(test)]
+mod http_tests {
+    use super::local_headers;
+    #[test]
+    fn desktop_server_rejects_cross_origin_and_oversized_requests() {
+        let base = "POST / HTTP/1.1\r\nHost: 127.0.0.1:18000";
+        let check = |extra: &str| local_headers(&format!("{base}\r\n{extra}"), 18000, true);
+        assert_eq!(check("Origin: http://127.0.0.1:18000"), Ok(0));
+        assert_eq!(check("Origin: https://example.org"), Err(403));
+        assert_eq!(check("Origin: null"), Err(403));
+        assert_eq!(check(""), Err(403));
+        assert_eq!(check("Host: example.org"), Err(400));
+        assert_eq!(
+            check("Origin: http://127.0.0.1:18000\r\nContent-Length: 99999999"),
+            Err(413)
+        );
+        assert_eq!(
+            local_headers("GET / HTTP/1.1\r\nHost: attacker.test:18000", 18000, false),
+            Err(403)
+        );
+    }
 }

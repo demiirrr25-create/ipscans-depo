@@ -1,0 +1,31 @@
+:root { color-scheme: light dark; --bg: #f7f8fa; --panel: #fff; --ink: #10131a; --muted: #495160; --line: #dbe0e9; --link: #2458ca; --accent: #dfeaff; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #090b10; --panel: #121620; --ink: #f5f7fa; --muted: #afbacd; --line: #293141; --link: #8fb0ff; --accent: #1d3154; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--bg); font: 16px/1.55 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; }
+header { border-bottom: 1px solid var(--line); background: var(--panel); }
+main, nav { max-width: 1160px; margin: auto; padding: 0 clamp(18px, 4vw, 56px); }
+nav { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+a { color: var(--link); text-underline-offset: .2em; }
+a:focus-visible { outline: 3px solid var(--link); outline-offset: 3px; }
+.brand { font-size: 1.3rem; font-weight: 700; letter-spacing: -.055em; color: var(--ink); text-decoration: none; }
+.intro { padding: clamp(36px, 7vw, 84px) 0 32px; max-width: 680px; }
+.kicker, small, code { font: .81rem/1.55 "Cascadia Code", Consolas, monospace; }
+.kicker { color: var(--link); letter-spacing: .12em; font-weight: 700; }
+h1 { margin: 8px 0 15px; font-size: clamp(2.3rem, 6vw, 4.5rem); line-height: 1.03; letter-spacing: -.055em; }
+h2 { margin: 0; font-size: 1.25rem; letter-spacing: -.035em; }
+article p, .intro > p:not(.kicker), aside p, small { color: var(--muted); }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+article, aside { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); padding: clamp(18px, 3vw, 28px); }
+article { display: flex; flex-direction: column; }
+.identity, .file { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.identity img { object-fit: contain; }
+.preview { display: block; margin: 0 0 18px; }
+.preview img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; }
+.file { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); justify-content: space-between; }
+.file span { color: var(--muted); font-size: .86rem; }
+.download { background: var(--accent); color: var(--link); text-decoration: none; font-weight: 600; border-radius: 99px; padding: 8px 16px; }
+.download:hover { text-decoration: underline; }
+.download span { color: inherit; }
+aside { margin: 28px 0 50px; }

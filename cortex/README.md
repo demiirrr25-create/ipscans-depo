@@ -1,5 +1,7 @@
 # IPScans Cortex v3.0 — Kurumsal Kamera Görsel Zekâ ve Kural Motoru (Native Rust)
 
+> Historical snapshot. The current Windows implementation is in [ipscans-cortex](../crates/ipscans-cortex). Build and test from the [root Cargo workspace](../README.md#windows-applications).
+
 **IPScans Cortex v3.0 (`IPScans-Cortex.exe` ve `CortexAdmin.exe`)**, Windows 10/11 (x64) için **%100 Native Rust** mimarisiyle geliştirilmiş yerel RTSP/ONVIF kamera görsel zekâ, 8 hazır sektörel kurulum paketi, 8-tutamaçlı ROI kalibrasyon stüdyosu, Ollama VLM entegrasyonu ve SHA-256 adli kanıt kasası platformudur.
 
 ## Mimari Özellikler

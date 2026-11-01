@@ -7,7 +7,8 @@ import { uiText } from "@/i18n/ui";
 import type { Locale } from "@/i18n/config";
 import type { PublicDictionary } from "@/i18n/dictionaries";
 import { toolKeys, toolPath, type ToolKey } from "@/lib/tool-routes";
-import { applications, platformCopy } from "@/content/applications";
+import apps from "../../public/desktop/apps.json";
+import { platformCopy } from "@/content/applications";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeToggle } from "./ThemeToggle";
 import { LogoLockup } from "./Logo";
@@ -83,35 +84,13 @@ export function Header({
   }, [mobileOpen]);
 
   const copy = platformCopy[locale];
-  const scanner = applications.find((a) => a.id === "scanner");
-  const ipcast = applications.find((a) => a.id === "ipcast");
-
-  const products = [
-    {
-      name: "IPscans+",
-      href: `/${locale}/applications/scanner`,
-      icon: "/scanner-mark.svg",
-      desc: scanner?.description[locale] ?? "",
-    },
-    {
-      name: "IPCast",
-      href: `/${locale}/applications/ipcast`,
-      icon: "/ipcast-mark.svg",
-      desc: ipcast?.description[locale] ?? "",
-    },
-    {
-      name: "LPR Pro",
-      href: `/${locale}/lpr-pro`,
-      icon: "/lpr-mark.svg",
-      desc: uiText(locale, "License plate recognition for gates and parking", "Bariyer ve otoparklar için plaka tanıma"),
-    },
-    {
-      name: "Cortex",
-      href: `/${locale}/cortex`,
-      icon: "/cortex-mark.svg",
-      desc: uiText(locale, "Local AI rules engine for visual monitoring", "Görsel izleme için yerel yapay zekâ kural motoru"),
-    },
-  ];
+  const lang = locale === "tr" ? "tr" : "en";
+  const products = apps.map((app) => ({
+    name: app.name,
+    href: `/desktop/${lang}.html#${app.id}`,
+    icon: `/brand/${app.id}-logo.png`,
+    desc: app[lang],
+  }));
 
   const tools = toolKeys.map((key) => ({
     key,

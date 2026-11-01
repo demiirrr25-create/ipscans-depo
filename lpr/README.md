@@ -1,5 +1,7 @@
 # IPScans LPR Pro v2.0 — Plaka Tanıma ve Bariyer Operatör Konsolu (Native Rust)
 
+> Historical snapshot. The current Windows implementation is in [ipscans-lpr](../crates/ipscans-lpr). Build and test from the [root Cargo workspace](../README.md#windows-applications).
+
 **IPScans LPR Pro v2.0 (`IPScans-LPR-Pro.exe`)**, Windows 10/11 (x64) için Python/PySide6 bağımlılıklarından tamamen arındırılarak **%100 Native Rust** ile inşa edilmiş yerel RTSP/ONVIF plaka tanıma, okuma/tetik çizgisi kalibrasyonu ve bariyer röle kontrol konsoludur.
 
 ## Mimari Özellikler

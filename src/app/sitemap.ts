@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { locales, defaultLocale, type Locale } from "@/i18n/config";
 import { posts } from "@/content/posts";
 import { toolSlugs, toolKeys } from "@/lib/tool-routes";
-import { applications } from "@/content/applications";
 
 const BASE_URL = "https://ipscans.com";
 
@@ -15,12 +14,14 @@ function altLanguages(pathFor: (locale: Locale) => string) {
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
-  for (const locale of ['tr', 'en']) entries.push({ url: `${BASE_URL}/${locale}/cortex`, alternates: { languages: { tr: `${BASE_URL}/tr/cortex`, en: `${BASE_URL}/en/cortex`, 'x-default': `${BASE_URL}/en/cortex` } } });
-  for(const locale of ['tr','en']) entries.push({url:`${BASE_URL}/${locale}/lpr-pro`,alternates:{languages:{tr:`${BASE_URL}/tr/lpr-pro`,en:`${BASE_URL}/en/lpr-pro`,'x-default':`${BASE_URL}/en/lpr-pro`}}});
+  for (const locale of ["tr", "en"]) {
+    entries.push({ url: `${BASE_URL}/desktop/${locale}.html`, alternates: {
+      languages: { tr: `${BASE_URL}/desktop/tr.html`, en: `${BASE_URL}/desktop/en.html`, "x-default": `${BASE_URL}/desktop/en.html` },
+    } });
+  }
   for (const page of ['about','support','contact']) for (const locale of ['tr','en']) entries.push({url:`${BASE_URL}/${locale}/${page}`,alternates:{languages:{tr:`${BASE_URL}/tr/${page}`,en:`${BASE_URL}/en/${page}`,'x-default':`${BASE_URL}/en/${page}`}}});
   for (const locale of locales) {
-    const staticPaths = ["", "/scan", "/ip-scanner", "/download", "/download/ipcast", "/ipcast",
-      ...applications.map((app) => `/applications/${app.id}`)];
+    const staticPaths = ["", "/scan", "/download"];
     if (posts.some((post) => post.body[locale])) staticPaths.push("/blog");
     staticPaths.push("/privacy", "/terms");
 

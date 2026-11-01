@@ -1,5 +1,7 @@
 # IPscans+ v5.0 — Çok İş Parçacıklı Ağ Keşfi ve L2/L3 Topoloji Motoru (Native Rust)
 
+> Historical snapshot. The current Windows implementation is in [ipscans-plus](../crates/ipscans-plus). Build and test from the [root Cargo workspace](../README.md#windows-applications).
+
 **IPscans+ v5.0 (`IPscans-Plus.exe`)**, Windows 10/11 (x64) için Python/Qt bağımlılıklarından tamamen arındırılarak **%100 Native Rust** ile yeniden inşa edilmiş yüksek hızlı IPv4 alt ağ tarayıcısı ve topoloji haritalama uygulamasıdır.
 
 ## Mimari Özellikler

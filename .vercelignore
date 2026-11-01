@@ -15,4 +15,5 @@
 /artifacts/
 /ci-artifacts/
 /dist/
+/target/
 *.tsbuildinfo

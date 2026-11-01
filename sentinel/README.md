@@ -1,5 +1,7 @@
 # IPScans Sentinel v3.0 — Otonom Siber Savunma, Ana Modem Zırhı ve Ollama AI Komuta Merkezi (Native Rust)
 
+> Historical snapshot. The current Windows implementation is in [ipscans-sentinel](../crates/ipscans-sentinel). Build and test from the [root Cargo workspace](../README.md#windows-applications).
+
 **IPScans Sentinel v3.0**, Windows 10/11 (x64) için sıfır harici çalışma zamanı bağımlılığıyla **%100 Native Rust** olarak geliştirilmiş otonom siber güvenlik, yerel ağ (LAN) denetim ve aktif müdahale komuta merkezidir.
 
 ## Temel Yetenekler

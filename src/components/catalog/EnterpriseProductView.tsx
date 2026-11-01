@@ -63,7 +63,7 @@ export function EnterpriseProductView({
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px] opacity-60 [mask-image:radial-gradient(75%_80%_at_65%_20%,#000_20%,transparent_75%)]"
         >
-          {markSrc !== "/cortex-mark.svg" && <SignalField variant="ambient" />}
+          {markSrc !== "/brand/cortex-logo.png" && <SignalField variant="ambient" />}
         </div>
 
         <div className="ds-container">

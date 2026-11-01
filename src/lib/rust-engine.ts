@@ -9,7 +9,6 @@ function resolveRustScannerBinary(): string | null {
   const candidates = [
     path.join(process.cwd(), "target", "release", "ipscans-network-scanner.exe"),
     path.join(process.cwd(), "dist", "ipscans-network-scanner.exe"),
-    path.join(process.cwd(), "tools", "scanner", "ipscans-network-scanner.exe"),
   ];
   for (const candidate of candidates) {
     if (fs.existsSync(/*turbopackIgnore: true*/ candidate)) {
@@ -39,19 +38,4 @@ export async function runRustPortScan(
     // Fallback to Node socket probe when serverless or timed out
   }
   return null;
-}
-
-export async function runRustSentinelIncident(prompt: string): Promise<Record<string, unknown> | null> {
-  const bin = resolveRustScannerBinary();
-  if (!bin) return null;
-  try {
-    const { stdout } = await execFileAsync(
-      bin,
-      ["--incident", prompt],
-      { timeout: 18000, windowsHide: true }
-    );
-    return JSON.parse(stdout.trim());
-  } catch {
-    return null;
-  }
 }

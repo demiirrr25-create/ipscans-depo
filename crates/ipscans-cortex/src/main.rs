@@ -1,252 +1,186 @@
-﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::env;
+use ipscans_core::console::{escape, field, json, page, serve, Reply};
+use ipscans_core::json::json_str;
+use ipscans_core::network::scan_local_subnet;
+use ipscans_core::protocols::discover_onvif_cameras;
+use ipscans_core::sentinel::check_ollama_status;
+use ipscans_core::vision_rules::{cortex_sector_packs, sector_packs_to_json, Point2D, RoiPolygon};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use ipscans_core::design::{bind_app_server, run_http_loop};
-use ipscans_core::json::{extract_json_string, json_str};
-use ipscans_core::network::scan_local_subnet;
-use ipscans_core::sentinel::check_ollama_status;
-use ipscans_core::win32::launch_desktop_app_window;
-
-const CORTEX_HTML: &str = r###"<!DOCTYPE html>
-<html lang="tr" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IPScans Cortex v3.0 — Kurumsal Kamera Görsel Zekâ ve Kural Motoru (Rust Native)</title>
-  <link rel="icon" href="/favicon.ico" />
-  <link rel="stylesheet" href="/design/v2.css" />
-</head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand-cluster">
-        <img src="/brand/cortex.png" alt="IPScans Cortex" class="brand-logo" />
-        <div>
-          <div class="brand-title">
-            IPScans Cortex
-            <span class="badge badge-signal mono">RUST 3.0 ULTRA</span>
-          </div>
-          <div class="brand-sub">RTSP/ONVIF Kamera Zekâsı, 8 Sektörel Paket, 8-Tutamaçlı ROI Stüdyosu ve Ollama VLM</div>
-        </div>
-      </div>
-
-      <nav class="nav-pills" role="tablist">
-        <button class="nav-tab active" data-tab="overview" onclick="switchTab('overview')">Komuta Merkezi &amp; Sektör Paketleri</button>
-        <button class="nav-tab" data-tab="cameras" onclick="switchTab('cameras')">Kamera Duvarı &amp; ONVIF</button>
-        <button class="nav-tab" data-tab="rules" onclick="switchTab('rules')">ROI Stüdyosu &amp; 73 Kural</button>
-        <button class="nav-tab" data-tab="vault" onclick="switchTab('vault')">SHA-256 Kanıt Kasası</button>
-      </nav>
-
-      <div class="top-actions">
-        <span class="badge badge-ok mono" id="vlmBadge"><span class="pulse-dot"></span>Ollama VLM: HAZIR</span>
-        <button class="btn btn-secondary btn-sm" onclick="toggleIpScansTheme()"><span id="themeBtnLabel">Koyu Tema</span></button>
-      </div>
-    </header>
-
-    <main class="workspace">
-      <section id="pane-overview" class="view-pane active">
-        <div class="bento-grid">
-          <div class="bento-card col-12">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">TEK TIKLA SEKTÖREL KURULUM PAKETLERİ</div>
-                <h2 class="card-title">8 Hazır Sektör Paketi ile Otomatik ROI ve Kural Dağıtımı</h2>
-                <p class="card-desc">Seçtiğiniz sektöre uygun deterministik piksel kurallarını ve Ollama Görsel AI şablonlarını tek tuşla tüm kameralara uygulayın.</p>
-              </div>
-              <span class="badge badge-signal mono" id="activePackBadge">ULTRA LİSANS · 32 KAMERA</span>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px" id="sectorGrid"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pane-cameras" class="view-pane">
-        <div class="bento-grid">
-          <div class="bento-card col-12">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">RTSP &amp; ONVIF KAMERA HAVUZU</div>
-                <h2 class="card-title">Kayıtlı ve Keşfedilen Kameralar</h2>
-              </div>
-              <button class="btn btn-signal btn-sm" onclick="scanCameras()">ONVIF / Alt Ağ Kameralarını Keşfet</button>
-            </div>
-            <div class="data-table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Kamera Adı</th><th>IP / RTSP Akışı</th><th>Üretici</th><th>Durum</th><th>Aktif Kural</th></tr>
-                </thead>
-                <tbody id="camerasBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pane-rules" class="view-pane">
-        <div class="bento-grid">
-          <div class="bento-card col-7">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">8-TUTAMAÇLI KALİBRASYON STÜDYOSU</div>
-                <h2 class="card-title">Bölge (ROI) ve Geçiş Hattı (Tripwire) Çizim Sahnesi</h2>
-              </div>
-            </div>
-            <div style="background:var(--surface);border:1px solid var(--line-2);border-radius:16px;padding:16px;height:320px;position:relative">
-              <svg viewBox="0 0 800 380" style="width:100%;height:100%">
-                <rect x="120" y="60" width="520" height="250" fill="rgba(47,107,255,0.10)" stroke="#2F6BFF" stroke-width="2" stroke-dasharray="6 4"/>
-                <circle cx="120" cy="60" r="6" fill="#2F6BFF"/><circle cx="380" cy="60" r="6" fill="#2F6BFF"/><circle cx="640" cy="60" r="6" fill="#2F6BFF"/>
-                <circle cx="120" cy="185" r="6" fill="#2F6BFF"/><circle cx="640" cy="185" r="6" fill="#2F6BFF"/>
-                <circle cx="120" cy="310" r="6" fill="#2F6BFF"/><circle cx="380" cy="310" r="6" fill="#2F6BFF"/><circle cx="640" cy="310" r="6" fill="#2F6BFF"/>
-                <text x="140" y="92" fill="var(--ink)" font-size="14" font-weight="600" font-family="monospace">ROI-01 · ÇEVRE GÜVENLİK BÖLGESİ (±%12 DOĞRULAMA)</text>
-              </svg>
-            </div>
-          </div>
-          <div class="bento-card col-5">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">31 YEREL + 42 OLLAMA GÖRSEL AI KURALI</div>
-                <h2 class="card-title">Etkin Kural Motoru</h2>
-              </div>
-            </div>
-            <div style="display:grid;gap:8px">
-              <div style="padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)"><strong>Yasak Bölge &amp; Çevre İhlali</strong><div style="font-size:12px;color:var(--ink-2)">Cortex Pro Takip + MiniCPM-V / Gemma 3 Doğrulama</div></div>
-              <div style="padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)"><strong>İnsani Düşme / Hareketsizlik Tespiti</strong><div style="font-size:12px;color:var(--ink-2)">Çoklu Kare VLM Analizi + Anında Telegram Fotoğraf Alarmı</div></div>
-              <div style="padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)"><strong>Bırakılan / Unutulan Nesne ve Sabotaj</strong><div style="font-size:12px;color:var(--ink-2)">Deterministik Piksel + SHA-256 Adli Kanıt Kaydı</div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pane-vault" class="view-pane">
-        <div class="bento-grid">
-          <div class="bento-card col-12">
-            <div class="card-header">
-              <div>
-                <div class="eyebrow">ADLİ KANIT ARŞİVİ VE ZİNCİR DOĞRULAMA</div>
-                <h2 class="card-title">SHA-256 İmzalı Olay Kayıtları</h2>
-              </div>
-            </div>
-            <div class="data-table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Zaman</th><th>Kamera</th><th>Kural / Paket</th><th>Model</th><th>SHA-256 Bütünlük Özeti</th></tr>
-                </thead>
-                <tbody id="vaultBody">
-                  <tr>
-                    <td class="mono">08:48:19</td>
-                    <td>Kamera 01 · Ana Giriş</td>
-                    <td>Çevre İhlali (Site &amp; Rezidans)</td>
-                    <td class="mono">gemma3:4b</td>
-                    <td class="mono" style="color:var(--ok)">9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script src="/design/v2.js"></script>
-  <script>
-    const packs = [
-      { id: 'residential', name: 'Site & Rezidans', desc: 'Çevre ihlali, otopark, gece hareket ve tailgating paketi (6 Kural)' },
-      { id: 'pool', name: 'Havuz & Sosyal Tesis', desc: 'Mesai dışı havuz güvenliği, düşme ve çocuk koruma paketi (5 Kural)' },
-      { id: 'factory', name: 'Fabrika & Endüstriyel Saha', desc: 'KKD baret/yelek, duman/alev ve tehlikeli makine bölgesi (7 Kural)' },
-      { id: 'warehouse', name: 'Depo & Lojistik', desc: 'Yükleme rampası, forklift koridoru ve bırakılan nesne (6 Kural)' },
-      { id: 'retail', name: 'Perakende & Mağaza', desc: 'Kasa kuyruğu, yoğunluk ve mesai dışı kasa güvenliği (5 Kural)' },
-      { id: 'office', name: 'Ofis & Plaza', desc: 'Turnike tailgating, sunucu odası ve gece koridor denetimi (5 Kural)' },
-      { id: 'campus', name: 'Kampüs & Okul', desc: 'Bahçe sınırı, kalabalık kümelenme ve acil çıkış kontrolü (6 Kural)' },
-      { id: 'clinic', name: 'Klinik & Yaşlı Bakım', desc: 'Düşme/bayılma, yataktan kalkma ve koridor hareketsizlik (6 Kural)' }
-    ];
-    document.getElementById('sectorGrid').innerHTML = packs.map(p => `
-      <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;gap:12px">
-        <div>
-          <div style="font-weight:600;font-size:14.5px;color:var(--ink)">${p.name}</div>
-          <div style="font-size:12px;color:var(--ink-2);margin-top:4px">${p.desc}</div>
-        </div>
-        <button class="btn btn-signal btn-sm" onclick="deployPack('${p.name}')">Paketi Tüm Kameralara Kur</button>
-      </div>
-    `).join('');
-
-    function deployPack(name) {
-      document.getElementById('activePackBadge').textContent = `AKTİF PAKET: ${name.toUpperCase()}`;
-    }
-
-    async function scanCameras() {
-      const res = await fetch('/api/cameras');
-      const data = await res.json();
-      document.getElementById('vlmBadge').textContent = `Ollama: ${(data.models || ['gemma3:4b']).join(', ')}`;
-      document.getElementById('camerasBody').innerHTML = (data.cameras || []).map(c => `
-        <tr>
-          <td style="font-weight:600">${c.name}</td>
-          <td class="mono">${c.rtsp}</td>
-          <td>${c.vendor}</td>
-          <td><span class="badge badge-ok mono">BAĞLI · TCP</span></td>
-          <td class="mono">6 Aktif Kural</td>
-        </tr>
-      `).join('');
-    }
-    scanCameras();
-  </script>
-</body>
-</html>
-"###;
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.iter().any(|a| a == "--version" || a == "-V" || a == "--selftest") {
-        println!("IPScans-Cortex 3.0.0 (Rust Native Local Camera Vision AI Engine)");
-        return;
-    }
-
-    let (listener, port) = bind_app_server(17944);
-    let url = format!("http://127.0.0.1:{}", port);
-    if !args.iter().any(|a| a == "--headless") {
-        let _ = launch_desktop_app_window("ipscans-cortex", &url, 1440, 920);
-    }
-
-    let handler = Arc::new(|method: &str, path: &str, _body: &str| -> (u16, &'static str, Vec<u8>) {
-        match (method, path) {
-            ("GET", "/") | ("GET", "/index.html") => (
-                200,
-                "text/html; charset=utf-8",
-                CORTEX_HTML.as_bytes().to_vec(),
-            ),
-            ("GET", "/api/cameras") => {
-                let (ctx, hosts) = scan_local_subnet(None);
-                let (_, models, _) = check_ollama_status();
-                let models_json: Vec<String> = models.iter().map(|m| json_str(m)).collect();
-                let mut cam_items = Vec::new();
-                for h in hosts.iter().filter(|h| h.is_camera) {
-                    cam_items.push(format!(
-                        "{{\"name\":{},\"rtsp\":{},\"vendor\":{}}}",
-                        json_str(&h.hostname),
-                        json_str(&format!("rtsp://{}:554/cam/realmonitor?channel=1&subtype=0", h.ip)),
-                        json_str(&h.vendor)
-                    ));
-                }
-                if cam_items.is_empty() {
-                    cam_items.push(format!(
-                        "{{\"name\":\"Kamera 01 · Ana Giriş (Dahua)\",\"rtsp\":{},\"vendor\":\"Dahua Technology\"}}",
-                        json_str(&format!("rtsp://{}.108:554/cam/realmonitor?channel=1&subtype=0", ctx.subnet_prefix))
-                    ));
-                }
-                let out = format!(
-                    "{{\"ok\":true,\"models\":[{}],\"cameras\":[{}]}}",
-                    models_json.join(","),
-                    cam_items.join(",")
-                );
-                (200, "application/json; charset=utf-8", out.into_bytes())
-            }
-            _ => (404, "application/json", b"{\"error\":\"Not found\"}".to_vec()),
-        }
-    });
-
-    let _ = extract_json_string;
-    run_http_loop(listener, handler);
+struct Camera {
+    name: String,
+    address: String,
+    vendor: String,
 }
 
+fn cameras() -> Vec<Camera> {
+    let mut devices = BTreeMap::new();
+    let (_, hosts) = scan_local_subnet(None);
+    for host in hosts.into_iter().filter(|h| h.is_camera) {
+        devices.insert(
+            host.ip.clone(),
+            Camera {
+                name: host.hostname,
+                address: host.ip,
+                vendor: host.vendor,
+            },
+        );
+    }
+    for dev in discover_onvif_cameras(600) {
+        devices.insert(
+            dev.ip.clone(),
+            Camera {
+                name: dev.hardware_model,
+                address: dev.xaddrs,
+                vendor: dev.ip,
+            },
+        );
+    }
+    devices.into_values().collect()
+}
+
+fn roi_result(body: &str) -> Result<String, &'static str> {
+    let value = |key: &str| {
+        field(body, key)
+            .and_then(|s| s.parse::<u16>().ok())
+            .filter(|n| *n <= 100)
+            .map(f64::from)
+            .ok_or("Tüm koordinatlar 0–100 arasında olmalı.")
+    };
+    let (left, top, right, bottom) = (
+        value("left")?,
+        value("top")?,
+        value("right")?,
+        value("bottom")?,
+    );
+    if left >= right || top >= bottom {
+        return Err("Sağ ve alt sınırlar başlangıç noktasından büyük olmalı.");
+    }
+    let roi = RoiPolygon {
+        id: "preview".into(),
+        name: "ROI".into(),
+        tolerance_ratio: 0.0,
+        vertices: vec![
+            Point2D { x: left, y: top },
+            Point2D { x: right, y: top },
+            Point2D {
+                x: right,
+                y: bottom,
+            },
+            Point2D { x: left, y: bottom },
+        ],
+    };
+    let (x, y) = (value("x")?, value("y")?);
+    let on_edge = (x == left || x == right) && (top..=bottom).contains(&y)
+        || (y == top || y == bottom) && (left..=right).contains(&x);
+    let state = if on_edge {
+        "sınır üzerinde"
+    } else if roi.contains_point(Point2D { x, y }) {
+        "bölge içinde"
+    } else {
+        "bölge dışında"
+    };
+    Ok(format!(
+        r#"<output>Nokta ({x}, {y}) · {state}</output><svg role="img" aria-label="ROI ve test noktası" viewBox="0 0 100 100" height="160"><rect width="100" height="100" fill="var(--surface-dim)"/><rect x="{left}" y="{top}" width="{}" height="{}" fill="none" stroke="var(--signal)"/><circle cx="{x}" cy="{y}" r="2" fill="var(--ink)"/></svg>"#,
+        right - left,
+        bottom - top
+    ))
+}
+
+fn screen(camera_info: &str, roi_info: &str) -> Reply {
+    let packs =
+        cortex_sector_packs()
+            .into_iter()
+            .map(|p| {
+                format!(
+        "<details><summary>{} · {} kural</summary><p>{}</p><p class=mono>{}</p></details>",
+        escape(p.name_tr),p.rule_ids.len(),escape(p.description_tr),p.rule_ids.join(" · "))
+            })
+            .collect::<String>();
+    let coords = [("Sol","left",20),("Üst","top",20),("Sağ","right",80),("Alt","bottom",80),("Nokta X","x",50),("Nokta Y","y",50)]
+        .iter().map(|(s,k,v)|format!(r#"<label>{s}<input class="input mono" type="number" name="{k}" value="{v}" min="0" max="100" required></label>"#)).collect::<String>();
+    page(
+        "IPScans Cortex",
+        "cortex",
+        "Kamera keşfi ve görüntü analizi için bölge stüdyosu",
+        &format!(
+            r#"
+      <section><div class="eyebrow">01 / KAMERA ENVANTERİ</div><h2>Ağdaki kameraları bul</h2><p>ONVIF keşif yanıtlarını ve yerel alt ağdaki kamera adaylarını listeler. Akış adresi yalnızca cihazdan alındığında gösterilir.</p>
+      <form method="post" action="/discover"><button class="btn btn-signal">Yerel ağı tara</button></form>{camera_info}</section>
+      <section><div class="eyebrow">02 / GEOMETRİ STÜDYOSU</div><h2>İlgi bölgesini sınayın</h2><p>Görüntü genişliği ve yüksekliğinin yüzdesiyle bir dikdörtgen tanımlayın ve test noktasını yerleştirin.</p>
+      <form method="post" action="/roi">{coords}<button class="btn btn-signal">Bölgeyi test et</button></form>{roi_info}</section>
+      <section><div class="eyebrow">03 / SEKTÖR KÜTÜPHANESİ</div><h2>Sektöre göre kural şablonları</h2><p>Her paketi açarak kural listesini inceleyin. Canlı video analizi ve olay kaydı bu konsola bağlı değil.</p>{packs}</section>"#
+        ),
+    )
+}
+
+fn main() {
+    ipscans_core::win32::handle_desktop_install("IPScans-Cortex.exe");
+    let args: Vec<_> = std::env::args().collect();
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        println!("IPScans Cortex {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+    if args.iter().any(|a| a == "--selftest" || a == "--self-test") {
+        assert_eq!(cortex_sector_packs().len(), 8);
+        assert!(roi_result("left=10&top=10&right=80&bottom=80&x=50&y=30")
+            .unwrap()
+            .contains("bölge içinde"));
+        return;
+    }
+    serve(
+        "ipscans-cortex",
+        17944,
+        Arc::new(|method, path, body| match (method, path) {
+            ("GET", "/" | "/index.html") => screen("", ""),
+            ("POST", "/roi") => screen(
+                "",
+                &roi_result(body).unwrap_or_else(|e| format!("<output>{e}</output>")),
+            ),
+            ("GET", "/api/packs") => json(200, sector_packs_to_json()),
+            ("GET", "/api/cameras") => {
+                let (_, models, _) = check_ollama_status();
+                let models = models.iter().map(|m| json_str(m)).collect::<Vec<_>>();
+                let items = cameras()
+                    .iter()
+                    .map(|c| {
+                        format!(
+                            r#"{{"name":{},"address":{},"rtsp":"","vendor":{}}}"#,
+                            json_str(&c.name),
+                            json_str(&c.address),
+                            json_str(&c.vendor)
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                json(
+                    200,
+                    format!(
+                        r#"{{"ok":true,"models":[{}],"cameras":[{}]}}"#,
+                        models.join(","),
+                        items.join(",")
+                    ),
+                )
+            }
+            ("POST", "/discover") => {
+                let cameras = cameras();
+                let mut list = format!(
+                    "<output>Tarama tamamlandı · {} aday</output><ul>",
+                    cameras.len()
+                );
+                for c in cameras {
+                    list.push_str(&format!(
+                        "<li>{} · {} · {}</li>",
+                        escape(&c.name),
+                        escape(&c.address),
+                        escape(&c.vendor)
+                    ));
+                }
+                list.push_str("</ul>");
+                screen(&list, "")
+            }
+            _ => json(404, r#"{"error":"Bulunamadı"}"#.into()),
+        }),
+    );
+}

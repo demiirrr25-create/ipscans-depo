@@ -1,5 +1,7 @@
 # IPCast v3.0 — Şifreli Uzak Masaüstü ve Dosya Aktarımı (Native Rust)
 
+> Historical snapshot. The current Windows implementation is in [ipcast](../crates/ipcast). Build and test from the [root Cargo workspace](../README.md#windows-applications).
+
 **IPCast v3.0 (`IPCast.exe`)**, Windows 10/11 (x64) için **%100 Native Rust** ile geliştirilmiş, uçtan uca TLS 1.3 şifreli uzak masaüstü, 9 haneli istasyon kimliği, doğrudan LAN IP bağlantısı ve SHA-256 doğrulamalı dosya aktarım uygulamasıdır.
 
 ## Mimari Özellikler

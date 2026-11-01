@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { defaultLocale, locales } from "./i18n/config";
 
+const desktopProducts: Record<string, string> = {
+  "/applications/scanner": "scanner",
+  "/ip-scanner": "scanner",
+  "/applications/ipcast": "ipcast",
+  "/download/ipcast": "ipcast",
+  "/ipcast": "ipcast",
+  "/lpr-pro": "lpr",
+  "/cortex": "cortex",
+  "/cortex/admin": "admin",
+};
+
 function getPreferredLocale(request: NextRequest): string {
   const saved = request.cookies.get("ipscans-locale")?.value;
   if (saved && (locales as readonly string[]).includes(saved)) return saved;
@@ -31,7 +42,17 @@ export function proxy(request: NextRequest) {
   const hasLocale = locales.some(
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
   );
-  if (hasLocale) return NextResponse.next();
+  if (hasLocale) {
+    const [, locale, ...parts] = pathname.split("/");
+    const id = desktopProducts[`/${parts.join("/")}`];
+    if (id) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/desktop/${locale === "tr" ? "tr" : "en"}.html`;
+      url.hash = id;
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
 
   const locale = getPreferredLocale(request);
   const url = request.nextUrl.clone();

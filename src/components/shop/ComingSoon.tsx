@@ -1,3 +1,4 @@
+import apps from "../../../public/desktop/apps.json";
 import Image from "next/image";
 import Link from "next/link";
 import { downloadHubCopy } from "@/components/catalog/copy";
@@ -27,40 +28,15 @@ export function ComingSoon({
 }) {
   const copy = downloadHubCopy[locale];
 
-  const desktopLinks = [
-    {
-      id: "scanner",
-      name: "IPscans+",
-      mark: "/scanner-mark.svg",
-      category: copy.apps.scanner.category,
-      summary: copy.apps.scanner.valueProp,
-      href: `/${locale}/applications/scanner`,
-    },
-    {
-      id: "ipcast",
-      name: "IPCast",
-      mark: "/ipcast-mark.svg",
-      category: copy.apps.ipcast.category,
-      summary: copy.apps.ipcast.valueProp,
-      href: `/${locale}/applications/ipcast`,
-    },
-    {
-      id: "lpr-pro",
-      name: "IPScans LPR Pro",
-      mark: "/lpr-mark.svg",
-      category: copy.apps.lprPro.category,
-      summary: copy.apps.lprPro.valueProp,
-      href: `/${locale}/lpr-pro`,
-    },
-    {
-      id: "cortex",
-      name: "IPScans Cortex",
-      mark: "/cortex-mark.svg",
-      category: copy.apps.cortex.category,
-      summary: copy.apps.cortex.valueProp,
-      href: `/${locale}/cortex`,
-    },
-  ];
+  const lang = locale === "tr" ? "tr" : "en";
+  const desktopLinks = apps.map((app) => ({
+    id: app.id,
+    name: app.name,
+    mark: `/brand/${app.id}-logo.png`,
+    category: "Windows x64",
+    summary: app[lang],
+    href: `/desktop/${lang}.html#${app.id}`,
+  }));
 
   return (
     <div className="space-y-20 sm:space-y-28">

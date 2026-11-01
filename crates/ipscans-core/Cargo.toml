@@ -1,6 +1,6 @@
 [package]
 name = "ipscans-core"
-version = "3.0.0"
+version.workspace = true
 edition = "2021"
 authors = ["IPScans Engineering <security@ipscans.com>"]
 license = "LicenseRef-IPScans-Commercial"

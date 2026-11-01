@@ -1,5 +1,7 @@
 # IPScans Network Health Pro v3.0 — Sürekli Ağ Telemetrisi ve ARP/IP Çakışma Tanısı (Native Rust)
 
+> Historical snapshot. The current Windows implementation is in [ipscans-health-pro](../crates/ipscans-health-pro). Build and test from the [root Cargo workspace](../README.md#windows-applications).
+
 **IPScans Network Health Pro v3.0 (`ipscans-network-health-pro.exe`)**, Windows 10/11 (x64) için **%100 Native Rust** mimarisiyle geliştirilmiş sürekli ağ sağlığı, Gateway/WAN RTT, Jitter ve L2 ARP çakışma izleme motorudur.
 
 ## Mimari Özellikler

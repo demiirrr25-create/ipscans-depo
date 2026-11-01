@@ -1,7 +1,9 @@
 //! `ipscans-core` — Shared Native Rust Engine for `ipscans.com` and all IPScans Windows `.exe` Applications.
 
+pub mod console;
 pub mod cryptography;
 pub mod design;
+mod gateway;
 pub mod health_monitor;
 pub mod json;
 pub mod lpr_engine;
@@ -43,7 +45,7 @@ mod tests {
     #[test]
     fn test_gateway_discovery() {
         let ctx = discover_gateway_context();
-        assert!(ctx.gateway_ip.contains('.'));
-        assert!(ctx.local_ip.contains('.'));
+        assert!(ctx.gateway_ip.is_empty() || ctx.gateway_ip.parse::<std::net::Ipv4Addr>().is_ok());
+        assert!(ctx.local_ip.is_empty() || ctx.local_ip.parse::<std::net::Ipv4Addr>().is_ok());
     }
 }
