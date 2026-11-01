@@ -6,13 +6,13 @@ import { useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { applications, platformCopy, scannerApplication } from "@/content/applications";
 import { lprRelease } from "@/content/lpr-release";
+import { cortexRelease } from "@/components/catalog/copy";
 import { Icon } from "@/components/ds/Icon";
 import { Reveal } from "@/components/ds/Reveal";
 import { ScreenshotFrame, SectionHeader } from "@/components/ds/product";
 import { homeCopy, type ProductId } from "./copy";
 
-const CORTEX_DOWNLOAD_URL =
-  "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v1.0.0/IPScans-Cortex-1.0.0.exe";
+const CORTEX_DOWNLOAD_URL = cortexRelease.url;
 
 type ScannerView = "discovery" | "topology";
 
@@ -44,7 +44,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
     {
       id: "scanner",
       name: "IPscans+",
-      icon: "/scanner-mark.svg",
+      icon: "/scanner-mark.png",
       href: `/${locale}/applications/scanner`,
       downloadUrl: scannerApplication.downloadUrl,
       ...copy.products.scanner,
@@ -66,7 +66,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
     {
       id: "ipcast",
       name: "IPCast",
-      icon: "/ipcast-mark.svg",
+      icon: "/ipcast-mark.png",
       href: `/${locale}/applications/ipcast`,
       downloadUrl: ipcastApp.downloadUrl,
       ...copy.products.ipcast,
@@ -80,7 +80,7 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
     {
       id: "lpr",
       name: "LPR Pro",
-      icon: "/lpr-mark.svg",
+      icon: "/lpr-mark.png",
       href: `/${locale}/lpr-pro`,
       downloadUrl: lprRelease.url,
       ...copy.products.lpr,
@@ -94,14 +94,14 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
     {
       id: "cortex",
       name: "Cortex",
-      icon: "/cortex-mark.svg",
+      icon: "/cortex-mark.png",
       href: `/${locale}/cortex`,
       downloadUrl: CORTEX_DOWNLOAD_URL,
       ...copy.products.cortex,
       screenshot: {
         src: "/cortex-1-2-rc2.png",
-        width: 1265,
-        height: 712,
+        width: 1440,
+        height: 900,
         caption: copy.products.cortex.caption,
       },
     },
@@ -335,6 +335,32 @@ export function ProductShowcase({ locale }: { locale: Locale }) {
             </Reveal>
           ))}
         </div>
+        <Reveal delay={180} className="ds-card mt-6 flex flex-col justify-between gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
+          <div className="flex items-start gap-4">
+            <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-[14px] border border-line bg-surface">
+              <Image src="/sentinel-mark.png" alt="IPScans Sentinel" width={48} height={48} className="size-12 object-cover" />
+            </span>
+            <div>
+              <p className="ds-eyebrow">{locale === "tr" ? "YENİ · RUST 3.0 SİBER GÜVENLİK SİSTEMİ" : "NEW · RUST 3.0 CYBERSECURITY SUITE"}</p>
+              <h4 className="ds-h3 mt-1 text-ink">IPScans Sentinel 3.0</h4>
+              <p className="ds-body mt-1 max-w-[680px] text-ink-2">
+                {locale === "tr"
+                  ? "Yönetici CMD/PowerShell motoru ve yerel Ollama siber güvenlik ajanıyla (ipscans-cyber-agent) sızılan kameraların ağ çıkışını saliseler içinde keser, ana modem portlarını kapatır ve onarım sonrası ağa erişim verir."
+                  : "Elevated Admin CMD/PowerShell engine and pre-configured Ollama cyber agent (ipscans-cyber-agent) for sub-second camera quarantine, main router UPnP hardening, and clean LAN restoration."}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <a href="https://github.com/demiirrr25-create/ipscans-depo/releases/download/sentinel-v3.0.0/IPScans-Sentinel.exe" download className="btn btn-primary">
+              <Icon name="download" size={16} />
+              <span>{copy.downloadForWindows}</span>
+            </a>
+            <Link href={`/${locale}/sentinel`} className="btn btn-secondary">
+              <span>{platform.details}</span>
+              <Icon name="arrowRight" size={16} className="rtl-flip" />
+            </Link>
+          </div>
+        </Reveal>
       </div>
     </section>
   );

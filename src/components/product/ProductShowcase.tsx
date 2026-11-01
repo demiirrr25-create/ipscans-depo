@@ -194,7 +194,7 @@ export function ProductShowcase({
         question: item.question,
         answer: cleanMarketingCopy(item.answer),
       }));
-  const markSrc = isScanner ? "/scanner-mark.svg" : "/ipcast-mark.svg";
+  const markSrc = isScanner ? "/scanner-mark.png" : "/ipcast-mark.png";
   const heroScreenshot = isScanner
     ? "/scanner-4-8-1.png"
     : "/ipcast-2-9-1.png";

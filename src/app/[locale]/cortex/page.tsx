@@ -21,10 +21,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `https://ipscans.com/${locale}/cortex`,
       images: [
         {
-          url: "/cortex-3-overview.png",
-          width: 830,
-          height: 916,
+          url: "/cortex-2-1-plans.png",
+          width: 1440,
+          height: 900,
           alt: copy.screenshotAlt,
+        },
+        {
+          url: "/cortex-studio-preview.png",
+          width: 1440,
+          height: 900,
+          alt: "IPScans Cortex 3.0 Pro ROI & Tripwire Calibration Studio",
         },
       ],
     },
@@ -37,14 +43,8 @@ export default async function CortexPage({ params }: Props) {
   const copy = {...cortexCopy[locale],
     closing: {...cortexCopy[locale].closing, secondaryCta: locale === "tr" ? "Paketleri karşılaştır" : "Compare plans"},
     secondaryCta: locale === "tr" ? "Paketleri karşılaştır" : "Compare plans",
-    eyebrow: locale === "tr" ? "Cortex 3.0 · Bir ipscans.com projesi" : "Cortex 3.0 · An ipscans.com project",
-    name: "IPScans Cortex 3",
-    headline: locale === "tr" ? "Sahanın sessiz enstrümanı." : "A quiet instrument for the floor.",
-    lead: locale === "tr"
-      ? "Kameralar bu bilgisayarda kalır. Canlı izleme, kurallar ve arşiv tek bir sade masada. Yönetim merkezi de aynı dilde."
-      : "Cameras stay on this computer. Live view, rules, and archive share one quiet desk. The administration center speaks the same language.",
-    screenshotAlt: locale === "tr" ? "Cortex 3.0 giriş ekranı" : "Cortex 3.0 sign-in",
-    screenshotCaption: locale === "tr" ? "Cortex 3.0: gece stüdyosu girişi, sıcak kâğıt form, tek fosfor işaret." : "Cortex 3.0: night-studio sign-in, warm paper form, one phosphor mark.",
+    screenshotAlt: locale === "tr" ? "Cortex 2.3 PRO, PLUS ve ULTRA paket karşılaştırması" : "Cortex 2.3 PRO, PLUS and ULTRA plan comparison",
+    screenshotCaption: locale === "tr" ? "Paket kapasitesi, kullanım göstergeleri ve Ultra ayrıcalıkları tek ekranda. Bulut çalışma henüz sunulmuyor." : "Plan capacity, usage and Ultra benefits in one view. Cloud processing is not available yet.",
   };
 
   const jsonLd = {
@@ -56,7 +56,7 @@ export default async function CortexPage({ params }: Props) {
     softwareVersion: cortexRelease.version,
     downloadUrl: cortexRelease.url,
     fileSize: `${(cortexRelease.bytes / 1_000_000).toFixed(1)} MB`,
-    screenshot: "https://ipscans.com/cortex-3-overview.png",
+    screenshot: "https://ipscans.com/cortex-2-1-plans.png",
     description: copy.metaDescription,
   };
 
@@ -69,12 +69,25 @@ export default async function CortexPage({ params }: Props) {
       <EnterpriseProductView
         locale={locale}
         copy={copy}
-        markSrc="/cortex-mark.svg"
+        markSrc="/cortex-mark.png"
         markAlt="IPScans Cortex"
         screenshot={{
-          src: "/cortex-3-overview.png",
-          width: 830,
-          height: 916,
+          src: "/cortex-2-1-plans.png",
+          width: 1440,
+          height: 900,
+        }}
+        secondaryScreenshot={{
+          src: "/cortex-studio-preview.png",
+          width: 1440,
+          height: 900,
+          alt:
+            locale === "tr"
+              ? "IPScans Cortex 2.0 Pro Profesyonel 8-Tutamaçlı Bölge (ROI) ve Geçiş Hattı (Tripwire) Çizim Stüdyosu"
+              : "IPScans Cortex 2.0 Pro Professional 8-Handle ROI & Tripwire Calibration Studio",
+          caption:
+            locale === "tr"
+              ? "Profesyonel 8-Tutamaçlı Bölge (ROI) ve Geçiş Hattı (Tripwire) Çizim Stüdyosu: Canlı kamera akışı üzerinde sürükle-taşı, 8 noktalı hassas boyutlandırma, ±% doğrulama bandı ve hazır bölge/zaman şablonları."
+              : "Professional 8-Handle ROI & Tripwire Calibration Studio: drag-to-pan, 8-point resize handles, ±% verification band, and one-click spatial/schedule presets over live RTSP streams.",
         }}
         downloadHref={cortexRelease.url}
         secondaryHref="#plans"
@@ -86,12 +99,6 @@ export default async function CortexPage({ params }: Props) {
           releaseNotesHref: cortexRelease.guideUrl,
         }}
       />
-      <section className="border-t border-line bg-surface py-14">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-6 px-6">
-          <div><p className="text-xs uppercase tracking-widest text-muted">IPSCANS.COM / CORTEX 2.5</p><h2 className="mt-3 text-3xl font-medium tracking-tight">{locale === "tr" ? "Tarayıcı kapanır. Cortex çalışmaya devam eder." : "Close the browser. Cortex keeps working."}</h2><p className="mt-3 max-w-2xl text-muted">{locale === "tr" ? "Windows açılışında arka planda başlatma, sade canlı izleme ve ortak bir yönetim tasarımı. Bir ipscans.com projesi." : "Background startup at Windows boot, clear live monitoring and a consistent administration experience. A project by ipscans.com."}</p></div>
-          <a href={`/${locale}/cortex/admin`} className="rounded-full border border-line px-6 py-3 font-medium">{locale === "tr" ? "Yönetim merkezi ↗" : "Administration ↗"}</a>
-        </div>
-      </section>
       <section id="plans" className="border-t border-line bg-surface py-20 scroll-mt-24">
         <div className="mx-auto max-w-7xl px-6">
           <p className="text-xs font-semibold tracking-[0.18em] text-muted">CORTEX / {locale === "tr" ? "PAKET KARŞILAŞTIRMASI" : "COMPARE PLANS"}</p>
@@ -100,8 +107,8 @@ export default async function CortexPage({ params }: Props) {
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
             {[
               {name:"PRO", cameras:4, rules:8, days:7, tr:["Yerel kurallar ve geçiş kontrolü", "Bölge çizim stüdyosu", "Telegram bildirimleri", "Site ve perakende paketleri"], en:["Local rules and crossing detection", "Region drawing studio", "Telegram alerts", "Residential and retail packs"]},
-              {name:"PLUS", cameras:12, rules:32, days:15, tr:["PRO özelliklerinin tamamı", "Ollama görsel AI ve akıllı takip", "İki yönlü Telegram ve kanıt ZIP", "9 sektör paketi"], en:["Everything in PRO", "Ollama vision AI and smart tracking", "Two-way Telegram and evidence ZIP", "9 sector packs"]},
-              {name:"ULTRA", cameras:32, rules:128, days:30, tr:["PLUS özelliklerinin tamamı", "Copilot arama ve gizlilik maskeleme", "İmzalı webhook ve denetim izi", "NVR filo yönetimi ve 10 sektör"], en:["Everything in PLUS", "Copilot search and privacy masking", "Signed webhooks and audit trail", "NVR fleet management and 10 sectors"]},
+              {name:"PLUS", cameras:12, rules:32, days:15, tr:["PRO özelliklerinin tamamı", "Ollama görsel AI ve akıllı takip", "İki yönlü Telegram ve kanıt ZIP", "7 sektör paketi"], en:["Everything in PRO", "Ollama vision AI and smart tracking", "Two-way Telegram and evidence ZIP", "7 sector packs"]},
+              {name:"ULTRA", cameras:32, rules:128, days:30, tr:["PLUS özelliklerinin tamamı", "Copilot arama ve gizlilik maskeleme", "İmzalı webhook ve denetim izi", "NVR filo yönetimi ve 8 sektör"], en:["Everything in PLUS", "Copilot search and privacy masking", "Signed webhooks and audit trail", "NVR fleet management and 8 sectors"]},
             ].map(plan => <article key={plan.name} className={`flex flex-col rounded-3xl border p-7 ${plan.name === "ULTRA" ? "border-blue-500 bg-blue-500/5" : "border-line"}`}>
               <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-sm font-semibold tracking-widest">CORTEX {plan.name}</h3>{plan.name === "ULTRA" && <span className="rounded-full border border-blue-500 px-3 py-1 text-xs">{locale === "tr" ? "En kapsamlı" : "Most complete"}</span>}</div>
               <p className="mt-8 text-6xl font-semibold tracking-tight">{plan.cameras}<span className="ml-2 text-base font-normal text-muted">{locale === "tr" ? "kamera" : "cameras"}</span></p>

@@ -1,0 +1,13 @@
+[package]
+name = "ipscans-sentinel"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "IPScans-Sentinel"
+path = "src/main.rs"
+
+[dependencies]
+ipscans-core = { path = "../ipscans-core" }

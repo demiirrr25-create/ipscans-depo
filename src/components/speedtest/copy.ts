@@ -263,7 +263,7 @@ export const speedTestCopy: Record<Locale, SpeedTestCopy> = {
     chart: {
       title: "Gerçek Zamanlı Akış Grafiği",
       waiting: "Ölçüm sırasında canlı indirme ve yükleme eğrileri burada görünür",
-      live: "Canlı örnek akışı",
+      live: "Canlı veri akışı",
     },
     results: {
       eyebrow: "Tanı Raporu",

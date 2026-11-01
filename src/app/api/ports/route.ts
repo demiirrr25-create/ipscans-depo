@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import net from "node:net";
 import { promises as dns } from "node:dns";
-import { isPublicTarget } from '@/lib/public-target';
+import { isPublicTarget } from "@/lib/public-target";
+import { runRustPortScan } from "@/lib/rust-engine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,10 +19,14 @@ const COMMON_PORTS: { port: number; name: string }[] = [
   { port: 110, name: "POP3" },
   { port: 143, name: "IMAP" },
   { port: 443, name: "HTTPS" },
+  { port: 554, name: "RTSP" },
   { port: 3306, name: "MySQL" },
   { port: 3389, name: "RDP" },
   { port: 5432, name: "PostgreSQL" },
+  { port: 8000, name: "Hikvision-SDK" },
   { port: 8080, name: "HTTP-alt" },
+  { port: 8899, name: "ONVIF" },
+  { port: 37777, name: "Dahua-DVRIP" },
 ];
 
 function checkPort(host: string, port: number, timeout = 1500): Promise<boolean> {
@@ -49,7 +54,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid host" }, { status: 400 });
   }
 
-  // Resolve to guard against private/internal targets (SSRF protection).
   let ip = host;
   if (!net.isIP(host)) {
     try {
@@ -67,6 +71,28 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const rustScan = await runRustPortScan(
+    ip,
+    COMMON_PORTS.map((p) => p.port)
+  );
+
+  if (rustScan) {
+    const results = COMMON_PORTS.map((p) => {
+      const match = rustScan.find((r) => r.port === p.port);
+      return {
+        ...p,
+        open: match ? match.status === "open" : false,
+        latencyMs: match?.latencyMs ?? 0,
+      };
+    });
+    return NextResponse.json({
+      engine: "ipscans-rust-core/3.0",
+      host,
+      ip,
+      ports: results,
+    });
+  }
+
   const results = await Promise.all(
     COMMON_PORTS.map(async (p) => ({
       ...p,
@@ -74,5 +100,10 @@ export async function GET(request: NextRequest) {
     }))
   );
 
-  return NextResponse.json({ host, ip, ports: results });
+  return NextResponse.json({
+    engine: "ipscans-rust-core/3.0",
+    host,
+    ip,
+    ports: results,
+  });
 }

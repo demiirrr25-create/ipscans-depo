@@ -1,0 +1,13 @@
+[package]
+name = "ipcast"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "IPCast"
+path = "src/main.rs"
+
+[dependencies]
+ipscans-core = { path = "../ipscans-core" }

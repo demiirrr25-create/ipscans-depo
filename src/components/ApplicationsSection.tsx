@@ -36,12 +36,27 @@ export function ApplicationsSection({
 
   const results = [
     {
+      id: "sentinel",
+      name: "IPScans Sentinel",
+      description:
+        locale === "tr"
+          ? "Rust 3.0 mimarisi, Yönetici CMD/PowerShell motoru ve yerel Ollama siber güvenlik ajanı (ipscans-cyber-agent) ile sızılan kameraların ağ çıkışını saliseler içinde kesen, ana modem portlarını kapatan ve onarım sonrası erişim veren otonom siber güvenlik sistemi."
+          : "Rust 3.0 autonomous cybersecurity suite with elevated Admin CMD/PowerShell engine and pre-configured Ollama cyber agent (ipscans-cyber-agent) for sub-second camera quarantine, main router UPnP hardening, and clean LAN restoration.",
+      href: `/${locale}/sentinel`,
+      category: "desktop",
+      icon: "/sentinel-mark.png",
+      preview: "/sentinel-preview.png",
+      version: "3.0.0",
+      platform: "Windows 10/11 · x64 (Rust)",
+      download: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/sentinel-v3.0.0/IPScans-Sentinel.exe",
+    },
+    {
       id: "cortex",
       name: "IPScans Cortex",
       description: locale === "tr" ? "8 sektörel tek tıkla kurulum paketi, 8-tutamaçlı interaktif bölge (ROI) & geçiş hattı stüdyosu, canlı ısı haritası, akıllı takip (Loitering, Kapasite, Tailgating), Copilot arama ve SHA-256 adli kanıt paketleyici." : "8 one-click sector deployment packs, 8-handle interactive ROI & tripwire studio, live thermal heatmap, smart tracking (Loitering, Occupancy, Tailgating), Copilot search, and SHA-256 forensic bundler.",
       href: `/${locale}/cortex`,
       category: "desktop",
-      icon: "/cortex-mark.svg",
+      icon: "/cortex-mark.png",
       preview: "/cortex-preview.png",
       version: cortexRelease.version,
       platform: cortexRelease.platform,
@@ -56,7 +71,7 @@ export function ApplicationsSection({
           : "5-page live operator workspace, independent calibration lines, resident vehicle registry, and local ONNX plate recognition.",
       href: `/${locale}/lpr-pro`,
       category: "desktop",
-      icon: "/lpr-mark.svg",
+      icon: "/lpr-mark.png",
       preview: "/lpr-pro-preview.png",
       version: lprRelease.version,
       platform: "Windows 10/11 · x64",
@@ -68,7 +83,7 @@ export function ApplicationsSection({
       description: app.description[locale],
       href: `/${locale}/applications/${app.id}`,
       category: "desktop",
-      icon: app.icon,
+      icon: app.id === "ipcast" ? "/ipcast-mark.png" : "/scanner-mark.png",
       preview:
         app.id === "ipcast"
           ? "/ipcast-v25-preview.png"
@@ -96,7 +111,7 @@ export function ApplicationsSection({
         <div className="mb-10 sm:flex sm:items-end sm:justify-between">
           <div>
             <p className="agy-eyebrow">
-              02 / {uiText(locale, "IPScans ecosystem", "IPScans ekosistemi")}
+              {uiText(locale, "IPScans ecosystem", "IPScans ekosistemi")}
             </p>
             <Heading id="applications-title" className="agy-section-title">
               {copy.applications}
@@ -105,13 +120,6 @@ export function ApplicationsSection({
               {copy.applicationsIntro}
             </p>
           </div>
-          <span
-            aria-hidden="true"
-            className="mt-6 hidden font-mono text-xs tracking-widest text-neutral-500 sm:block"
-          >
-            {uiText(locale, "EXPLORE", "KEŞFET")} / 01—
-            {String(applications.length + tools.length + 2).padStart(2, "0")}
-          </span>
         </div>
       )}
 
@@ -196,7 +204,6 @@ export function ApplicationsSection({
                   </span>
                 )}
                 <span className="max-w-[65%] text-end font-mono text-xs text-neutral-400">
-                  {String(index + 1).padStart(2, "0")} /{" "}
                   {item.category === "desktop"
                     ? dict.experience.categories.desktop
                     : item.category === "ip"

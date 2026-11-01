@@ -3,39 +3,39 @@ import type { EnterpriseProductCopy } from "./lpr-copy";
 
 export const cortexRelease = {
   version: "3.0.0",
-  platform: "Windows 10/11 · x64",
+  platform: "Windows 10/11 · x64 (Rust Native)",
   fileName: "IPScans-Cortex-Setup-3.0.0.exe",
   url: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/IPScans-Cortex-Setup-3.0.0.exe",
   guideUrl: "https://github.com/demiirrr25-create/ipscans-depo/releases/download/cortex-v3.0.0/Cortex-3.0.0-Kullanim.md",
   ollamaUrl: "https://ollama.com/download",
-  sha256: "c95ba7c3cf8b340e006d6a9253109e3a4438bcb5d9b93b7ca19086f5bfcd95bd",
-  bytes: 123028806,
+  sha256: "9c3fe54713d1858a5113c90b0ca65456d1feb46dac3fec390c3f49a4d9a0a2c6",
+  bytes: 2705920,
 } as const;
 
 export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
   en: {
-    metaTitle: "IPScans Cortex 2.5 — Local Camera Vision AI, Operations Center & 10 Sector Packs",
+    metaTitle: "IPScans Cortex — Local Camera Vision AI, Spatial Bento Command Center & 8 Sector Packs",
     metaDescription:
-      "Turn RTSP and ONVIF cameras into a private operations center with 10 One-Click Sector Deployment Packages, an 8-Handle ROI & Tripwire Studio, Interactive Live Pipeline Schematic, Multi-Page Command Palette (Ctrl+K), 31 model-free + smart tracking rules, 66 multi-model Ollama vision AI templates, a 2-way Telegram Command Bot, PRO/PLUS/ULTRA commercial tiers, and SHA-256 forensic ZIP bundles.",
+      "Turn RTSP and ONVIF cameras into a private operations center with 8 One-Click Sector Deployment Packages, an 8-Handle ROI & Tripwire Studio, Multi-Page Command Palette (Ctrl+K), 31 model-free + smart tracking rules, 42 multi-model Ollama vision AI templates, a 2-way Telegram Command Bot, PRO/PLUS/ULTRA commercial tiers, and SHA-256 forensic ZIP bundles.",
     backToApps: "All applications",
-    eyebrow: "Cortex 2.5 · A project by ipscans.com",
-    name: "IPScans Cortex 2.5",
+    eyebrow: "Cortex · Local Camera Intelligence, Spatial Bento Command Center & Commercial Control",
+    name: "IPScans Cortex",
     headline: "Commercial intelligence for every camera.",
     lead:
-      "A quieter workspace for every camera. Monitor live feeds, configure 66 vision templates and 10 sector packs, and keep your station running after the browser closes. An ipscans.com project, with a dedicated local administration center.",
+      "Deploy 8 One-Click Sector Packages (Residential, Pool, Factory, Warehouse, Retail, Office, Campus, Clinic) with pre-calibrated zones, navigate at lightning speed via the Multi-Page Command Palette (Ctrl+K & G-chords), calibrate cameras in the 8-Handle ROI & Tripwire Studio, run 31 model-free and smart tracking rules alongside 42 multi-model Ollama vision AI templates (Gemma 3, Qwen 2.5 VL, MiniCPM-V), control your station via a 2-way Telegram Bot, and manage PRO / PLUS / ULTRA commercial licenses from the Admin Control Center.",
     primaryCta: "Download for Windows",
     secondaryCta: "User guide",
-    screenshotAlt: "IPScans Cortex 2.5 Spatial Bento Control Center and 10 One-Click Sector Deployment Packages",
-    screenshotCaption: "IPScans Cortex 2.5 Control Center with Perceptual OKLCH Bento Surfaces, Interactive Pipeline Schematic, Matrix Camera Wall, and 10 One-Click Sector Deployment Packages.",
+    screenshotAlt: "IPScans Cortex Spatial Bento Control Center and 8 One-Click Sector Deployment Packages",
+    screenshotCaption: "IPScans Cortex Control Center with Perceptual OKLCH Bento Surfaces, Matrix Camera Wall, and 8 One-Click Sector Deployment Packages.",
     capabilities: {
       eyebrow: "Core capabilities",
-      title: "Visual analytics, 10 sector packages, 2-way Telegram bot, and forensic evidence without cloud uploads.",
+      title: "Visual analytics, 8 sector packages, 2-way Telegram bot, and forensic evidence without cloud uploads.",
       lead:
         "Combine deterministic pixel rules, multi-target trajectory tracking, and multi-model local Ollama vision AI so your camera feeds never leave your premises.",
       items: [
         {
           icon: "bolt",
-          title: "10 One-Click Sector Deployment Packages",
+          title: "8 One-Click Sector Deployment Packages",
           body: "Ready-to-deploy rule suites for Residential Sites, Pools & Social Clubs, Factories, Warehouses, Retail Stores, Office Plazas, Campuses & Schools, and Clinics & Elder Care—each with pre-calibrated ROI zones, schedules, selective rule checklists, and single or all-camera ('ALL') deployment.",
         },
         {
@@ -45,13 +45,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "cpu",
-          title: "31 Native + Smart Tracking & 66 Multi-Model Vision AI Rules",
-          body: "Run 22 deterministic pixel/health rules, 6 Cortex Pro smart tracking rules (Loitering, Crowd/Occupancy, Tailgating, Perimeter Intrusion, Human Fall Detection, Abandoned Object), and 3 crossing rules—plus 66 vision AI templates powered by Gemma 3, Qwen 2.5 VL, and MiniCPM-V with a Live AI Test Studio.",
+          title: "31 Native + Smart Tracking & 42 Multi-Model Vision AI Rules",
+          body: "Run 22 deterministic pixel/health rules, 6 Cortex Pro smart tracking rules (Loitering, Crowd/Occupancy, Tailgating, Perimeter Intrusion, Human Fall Detection, Abandoned Object), and 3 crossing rules—plus 42 vision AI templates powered by Gemma 3, Qwen 2.5 VL, and MiniCPM-V with a Live AI Test Studio.",
         },
         {
           icon: "play",
           title: "Forensic ZIP Bundle & Natural-Language Copilot",
-          body: "Search events in natural language via SQLite FTS5 ('unreviewed tailgating today', 'night pool') and download event evidence ZIP bundles containing pre/post MP4 clips, keyframes, JSON metadata, and a CHAIN_OF_CUSTODY.sha256 manifest.",
+          body: "Search events in natural language via SQLite FTS5 ('unreviewed tailgating today', 'night pool') and download court-ready ZIP bundles containing pre/post MP4 clips, keyframes, JSON metadata, and a CHAIN_OF_CUSTODY.sha256 manifest.",
         },
         {
           icon: "shield",
@@ -80,7 +80,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Deploy a Sector Pack & connect Telegram Bot",
-          body: "Apply one of the 10 One-Click Sector Packages to your RTSP/ONVIF cameras and pair your Telegram Bot for two-way mobile control.",
+          body: "Apply one of the 8 One-Click Sector Packages to your RTSP/ONVIF cameras and pair your Telegram Bot for two-way mobile control.",
         },
       ],
       helperText:
@@ -99,11 +99,11 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Cortex PLUS (Up to 12 Cameras / 32 Rules)",
-          body: "Adds 6 Cortex Pro smart tracking rules (Fall, Abandoned Object, Loitering, Tailgating, Occupancy, Perimeter), 66 Ollama Vision AI templates, Two-Way Telegram Command Bot, Forensic ZIP exports, and 9 sector packs.",
+          body: "Adds 6 Cortex Pro smart tracking rules (Fall, Abandoned Object, Loitering, Tailgating, Occupancy, Perimeter), 42 Ollama Vision AI templates, Two-Way Telegram Command Bot, Forensic ZIP exports, and 7 sector packs.",
         },
         {
           title: "Cortex ULTRA (Up to 32 Cameras / 128 Rules)",
-          body: "Unlocks all 10 sector packs (including Clinic & Elder Care), SQLite FTS5 Copilot search, KVKK/GDPR privacy masking, HMAC-SHA256 webhooks, ONVIF NVR fleet sync, and 30-day archive retention.",
+          body: "Unlocks all 8 sector packs (including Clinic & Elder Care), SQLite FTS5 Copilot search, KVKK/GDPR privacy masking, HMAC-SHA256 webhooks, ONVIF NVR fleet sync, and 30-day archive retention.",
         },
       ],
     },
@@ -121,36 +121,36 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
     },
     closing: {
       title: "Give your cameras a commercial local rule engine.",
-      lead: "Download IPScans Cortex 2.5 and start capturing rule-driven video evidence on your own hardware.",
+      lead: "Download IPScans Cortex 2.3 and start capturing rule-driven video evidence on your own hardware.",
       primaryCta: "Download IPScans Cortex",
       secondaryCta: "All applications",
       note: "Standalone executable for Windows. Verify file integrity with SHA-256.",
     },
   },
   tr: {
-    metaTitle: "IPScans Cortex 2.5 — Kurumsal Kamera Zekâsı, Canlı Veri Yolu Şeması, 10 Sektörel Paket ve Yönetim Merkezi",
+    metaTitle: "IPScans Cortex — Kurumsal Kamera Zekâsı, 8 Sektörel Paket ve Yönetim Merkezi",
     metaDescription:
-      "RTSP/ONVIF kameralarınızı Canlı SVG Veri Yolu Şeması, Çok Sayfalı Komut Paleti (Ctrl+K), 10 Tek Tıkla Sektörel Kurulum Paketi, 8-Tutamaçlı Bölge (ROI) & Geçiş Hattı Stüdyosu, 31 yerel + akıllı takip kuralı, 66 çoklu model (Gemma 3, Qwen 2.5 VL, MiniCPM-V) görsel AI şablonu, İki Yönlü Telegram Botu ve PRO/PLUS/ULTRA Yönetim Merkezi v2.5 ile tam donanımlı güvenlik üssüne dönüştürün.",
+      "RTSP/ONVIF kameralarınızı Çok Sayfalı Komut Paleti (Ctrl+K), 8 Tek Tıkla Sektörel Kurulum Paketi, 8-Tutamaçlı Bölge (ROI) & Geçiş Hattı Stüdyosu, 31 yerel + akıllı takip kuralı, 42 çoklu model (Gemma 3, Qwen 2.5 VL, MiniCPM-V) görsel AI şablonu, İki Yönlü Telegram Botu ve PRO/PLUS/ULTRA Yönetim Merkezi ile tam donanımlı güvenlik üssüne dönüştürün.",
     backToApps: "Tüm uygulamalar",
-    eyebrow: "Cortex 2.5 · Bir ipscans.com projesi",
-    name: "IPScans Cortex 2.5",
-    headline: "Kameralarınız için sade ve güçlü bir kontrol merkezi.",
+    eyebrow: "Cortex · Kurumsal Kamera Zekâsı, Uzamsal Bento Komuta Merkezi ve Merkezi Lisans Yönetimi",
+    name: "IPScans Cortex",
+    headline: "Her kameraya kurumsal görsel zekâ ve tam saha otomasyonu.",
     lead:
-      "Her kameraya düzenli bir çalışma alanı. Canlı yayınları izleyin, 66 görsel şablon ve 10 sektör paketiyle kurallarınızı oluşturun. Tarayıcı kapansa da istasyon çalışmaya devam eder. Bir ipscans.com projesi.",
+      "8 Tek Tıkla Sektörel Kurulum Paketi (Site & Rezidans, Havuz & Sosyal Tesis, Fabrika & Saha, Depo & Lojistik, Perakende & Mağaza, Ofis & Plaza, Kampüs & Okul, Klinik & Yaşlı Bakım), Çok Sayfalı Komut Paleti (Ctrl+K & G Kısayol Akorları), 8-Tutamaçlı Profesyonel Bölge (ROI) & Geçiş Hattı Stüdyosu, 31 model gerektirmeyen yerel ve akıllı takip kuralı, 42 çoklu Ollama görsel AI şablonu (Gemma 3, Qwen 2.5 VL, MiniCPM-V), İki Yönlü Telegram Komuta Botu ve PRO / PLUS / ULTRA Merkezi Yönetim Merkezi ile tam yerel kontrol.",
     primaryCta: "Windows İçin İndir",
     secondaryCta: "Kullanım kılavuzu",
-    screenshotAlt: "IPScans Cortex 2.5 Operasyon Kontrol Merkezi ve 10 Tek Tıkla Sektörel Kurulum Paketi",
-    screenshotCaption: "OKLCH Operasyon yüzeyleri, Canlı Veri Yolu Şeması, Matrix Kamera Duvarı ve 10 Tek Tıkla Sektörel Kurulum Paketi sunan IPScans Cortex 2.5 Kontrol Merkezi.",
+    screenshotAlt: "IPScans Cortex Uzamsal Bento Kontrol Merkezi ve 8 Tek Tıkla Sektörel Kurulum Paketi",
+    screenshotCaption: "OKLCH Uzamsal Bento yüzeyleri, Matrix Kamera Duvarı ve 8 Tek Tıkla Sektörel Kurulum Paketi sunan IPScans Cortex Kontrol Merkezi.",
     capabilities: {
       eyebrow: "Temel yetenekler",
-      title: "Buluta görüntü yüklemeden 10 sektörel paket, iki yönlü Telegram botu ve çoklu görsel AI.",
+      title: "Buluta görüntü yüklemeden 8 sektörel paket, iki yönlü Telegram botu ve çoklu görsel AI.",
       lead:
         "Deterministik sinyal kurallarını, çoklu hedef yörünge takibini ve çoklu yerel Ollama görsel yapay zekâ modellerini birleştirerek kamera akışlarınızı kendi ağınızda tutun.",
       items: [
         {
           icon: "bolt",
-          title: "10 Tek Tıkla Sektörel Kurulum Paketi",
-          body: "Site & Rezidans, Havuz & Sosyal Tesis, Fabrika & Endüstriyel Saha, Depo & Lojistik, Perakende & Mağaza, Ofis & Plaza, Kampüs & Okul, Klinik & Yaşlı Bakım, Otel ve Müstakil Ev için hazır ROI bölgeleri ve zaman çizelgeleriyle tek kameraya veya tüm kameralara ('ALL') tek tuşla kurulum.",
+          title: "8 Tek Tıkla Sektörel Kurulum Paketi",
+          body: "Site & Rezidans, Havuz & Sosyal Tesis, Fabrika & Endüstriyel Saha, Depo & Lojistik, Perakende & Mağaza, Ofis & Plaza, Kampüs & Okul ve Klinik & Yaşlı Bakım için hazır ROI bölgeleri ve zaman çizelgeleriyle tek kameraya veya tüm kameralara ('ALL') tek tuşla kurulum.",
         },
         {
           icon: "camera",
@@ -159,13 +159,13 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           icon: "cpu",
-          title: "31 Yerel + Akıllı Takip ve 66 Çoklu Ollama Görsel AI Kuralı",
-          body: "22 deterministik piksel/sabotaj kuralı, 6 Cortex Pro akıllı takip kuralı (Loitering, Kalabalık/Kapasite, Tailgating, Yasak Bölge, İnsani Düşme / Bayılma, Bırakılan / Unutulan Nesne) ve 3 geçiş kuralına ek olarak Gemma 3, Qwen 2.5 VL ve MiniCPM-V destekli 66 görsel AI şablonu ve Canlı AI Test Stüdyosu.",
+          title: "31 Yerel + Akıllı Takip ve 42 Çoklu Ollama Görsel AI Kuralı",
+          body: "22 deterministik piksel/sabotaj kuralı, 6 Cortex Pro akıllı takip kuralı (Loitering, Kalabalık/Kapasite, Tailgating, Yasak Bölge, İnsani Düşme / Bayılma, Bırakılan / Unutulan Nesne) ve 3 geçiş kuralına ek olarak Gemma 3, Qwen 2.5 VL ve MiniCPM-V destekli 42 görsel AI şablonu ve Canlı AI Test Stüdyosu.",
         },
         {
           icon: "play",
           title: "SHA-256 Adli Kanıt ZIP Paketi ve Doğal Dil Arama",
-          body: "SQLite FTS5 'Cortex Copilot' ile ('bugün incelenmemiş tailgating', 'gece havuz') saniyeler içinde arama yapın; olay öncesi/sonrası MP4 videoları ve CHAIN_OF_CUSTODY.sha256 bütünlük dosyasını tek ZIP paketinde indirin.",
+          body: "SQLite FTS5 'Cortex Copilot' ile ('bugün incelenmemiş tailgating', 'gece havuz') saniyeler içinde arama yapın; olay öncesi/sonrası MP4 videoları ve CHAIN_OF_CUSTODY.sha256 sertifikasını tek ZIP paketinde indirin.",
         },
         {
           icon: "shield",
@@ -194,7 +194,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Sektörel paketi kurun ve Telegram Botunu bağlayın",
-          body: "10 hazır sektörel paketten birini tek tıkla kameralarınıza dağıtın ve iki yönlü Telegram komuta botuyla cebinizden yönetmeye başlayın.",
+          body: "8 hazır sektörel paketten birini tek tıkla kameralarınıza dağıtın ve iki yönlü Telegram komuta botuyla cebinizden yönetmeye başlayın.",
         },
       ],
       helperText:
@@ -213,11 +213,11 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
         },
         {
           title: "Cortex PLUS (12 Kamera · 32 Kural · 15 Gün Arşiv)",
-          body: "6 Cortex Pro akıllı takip kuralı (Düşme, Unutulan Nesne, Loitering, Tailgating, Kapasite, Çevre), 66 Çoklu Ollama Görsel AI şablonu, İki Yönlü Telegram Komuta Botu, Adli Kanıt ZIP ve 9 sektörel paketi açar.",
+          body: "6 Cortex Pro akıllı takip kuralı (Düşme, Unutulan Nesne, Loitering, Tailgating, Kapasite, Çevre), 42 Çoklu Ollama Görsel AI şablonu, İki Yönlü Telegram Komuta Botu, Adli Kanıt ZIP ve 7 sektörel paketi açar.",
         },
         {
           title: "Cortex ULTRA (32 Kamera · 128 Kural · 30 Gün Arşiv)",
-          body: "Klinik & Yaşlı Bakım dahil tüm 10 sektörel paket, SQLite FTS5 Doğal Dil Copilot arama, KVKK gizlilik maskeleme, imzalı kurumsal Webhook, toplu ONVIF NVR filo eşitleme ve tam uzaktan yönetim sunar.",
+          body: "Klinik & Yaşlı Bakım dahil tüm 8 sektörel paket, SQLite FTS5 Doğal Dil Copilot arama, KVKK gizlilik maskeleme, imzalı kurumsal Webhook, toplu ONVIF NVR filo eşitleme ve tam uzaktan yönetim sunar.",
         },
       ],
     },
@@ -235,7 +235,7 @@ export const cortexCopy: Record<Locale, EnterpriseProductCopy> = {
     },
     closing: {
       title: "Kameralarınıza kurumsal bir kural ve yapay zekâ motoru kazandırın.",
-      lead: "IPScans Cortex 2.5 sürümünü indirin ve olay bazlı video kanıtlarını kendi donanımınızda arşivlemeye başlayın.",
+      lead: "IPScans Cortex 2.3 sürümünü indirin ve olay bazlı video kanıtlarını kendi donanımınızda arşivlemeye başlayın.",
       primaryCta: "IPScans Cortex'i İndir",
       secondaryCta: "Tüm uygulamalar",
       note: "Bağımsız Windows uygulaması. Dosya bütünlüğünü SHA-256 ile doğrulayabilirsiniz.",

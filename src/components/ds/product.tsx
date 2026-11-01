@@ -86,11 +86,6 @@ export function ScreenshotFrame({
           className="h-auto w-full rounded-[22px]"
         />
       </div>
-      {caption && (
-        <figcaption className={`mt-4 text-center text-sm ${tone === "dark" ? "text-on-stage-3" : "text-ink-3"}`}>
-          {caption}
-        </figcaption>
-      )}
     </figure>
   );
 }

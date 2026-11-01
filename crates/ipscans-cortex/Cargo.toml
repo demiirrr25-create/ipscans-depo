@@ -1,0 +1,17 @@
+[package]
+name = "ipscans-cortex"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "IPScans-Cortex"
+path = "src/main.rs"
+
+[[bin]]
+name = "CortexAdmin"
+path = "src/admin.rs"
+
+[dependencies]
+ipscans-core = { path = "../ipscans-core" }

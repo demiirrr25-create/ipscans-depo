@@ -1746,7 +1746,7 @@ Window {
                                             color: Theme.signal
                                         }
                                         Text {
-                                            text: rootWindow.tr("Hibrit Görsel AI İşleme Hattı ve 24s Yoğunluk", "Hybrid Vision AI Pipeline & 24h Density")
+                                            text: rootWindow.tr("24 Saatlik Olay Yoğunluğu", "24-Hour Event Density")
                                             color: Theme.ink
                                             font.family: Theme.sans
                                             font.pixelSize: 13
@@ -1765,71 +1765,6 @@ Window {
                                                 color: Theme.ink2
                                                 font.family: Theme.mono
                                                 font.pixelSize: 10
-                                            }
-                                        }
-                                    }
-
-                                    // 4-Stage Pipeline Row
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 72
-                                        Layout.maximumHeight: 72
-                                        spacing: 8
-
-                                        Repeater {
-                                            model: backend ? backend.pipelineStages : []
-                                            delegate: Rectangle {
-                                                required property var modelData
-                                                Layout.fillWidth: true
-                                                Layout.preferredHeight: 72
-                                                Layout.maximumHeight: 72
-                                                radius: 14
-                                                color: Theme.bgSubtle
-                                                border.width: 1
-                                                border.color: Theme.border
-
-                                                ColumnLayout {
-                                                    anchors.fill: parent
-                                                    anchors.margins: 9
-                                                    spacing: 3
-
-                                                    RowLayout {
-                                                        Layout.fillWidth: true
-                                                        Text {
-                                                            text: modelData.step
-                                                            color: Theme.ink3
-                                                            font.family: Theme.mono
-                                                            font.pixelSize: 9
-                                                            font.weight: Font.Medium
-                                                        }
-                                                        Item { Layout.fillWidth: true }
-                                                        Rectangle {
-                                                            width: 6
-                                                            height: 6
-                                                            radius: 3
-                                                            color: Theme.ok
-                                                        }
-                                                    }
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: modelData.title
-                                                        color: Theme.ink
-                                                        font.family: Theme.sans
-                                                        font.pixelSize: 11
-                                                        font.weight: Theme.wMedium
-                                                        elide: Text.ElideRight
-                                                    }
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: modelData.metric
-                                                        color: Theme.ink2
-                                                        font.family: Theme.mono
-                                                        font.pixelSize: 10
-                                                        elide: Text.ElideRight
-                                                    }
-                                                }
                                             }
                                         }
                                     }
