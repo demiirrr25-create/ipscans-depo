@@ -10,7 +10,7 @@ cargo build --workspace --release --locked
 if ($LASTEXITCODE -ne 0) { throw "cargo build --release failed" }
 
 Write-Host "=== 3. Export Desktop Catalog ==="
-.\target\release\ipscans-web.exe --export-catalog public\desktop
+.\target\release\ipscans-web.exe --export-catalog public
 if ($LASTEXITCODE -ne 0) { throw "export-catalog failed" }
 
 Write-Host "=== 4. Verify 8 Windows EXEs (PE x64, .rsrc Icon, --version, --selftest, --install-desktop SHA-256) ==="
